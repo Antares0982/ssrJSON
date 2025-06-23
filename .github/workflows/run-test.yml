@@ -1,0 +1,59 @@
+name: "Run Test"
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "dev"
+    paths:
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+  pull_request:
+    paths:
+      - "src/**"
+      - "test/**"
+      - "CMakeLists.txt"
+
+jobs:
+  RUN-TEST:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: ["9", "10", "11", "12", "13", "14"]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+    - name: Install nix
+      uses: cachix/install-nix-action@master
+    - name: Setup cachix
+      uses: cachix/cachix-action@master
+      with:
+        name: antares0982
+    - name: Test Release Build
+      run: |
+        nix develop -c python ./dev_tools/automated_test.py --build-only --pyver ${{ matrix.pyver }} --build-type Release
+    - name: Build and Run Python Tests (DEBUG)
+      run: |
+        nix develop -c python ./dev_tools/automated_test.py --build-type Debug --pyver ${{ matrix.pyver }}
+    - name: Print Features
+      id: "print_features"
+      run: |
+        result=$(PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-pyenv/bin/python3.${{ matrix.pyver }} -c "import ssrjson;print(ssrjson.get_current_features()['SIMD'])")
+        echo $result
+        echo "result=$result" >> $GITHUB_OUTPUT
+    - name: Run Python Tests (SDE, AVX512)
+      if: steps.print_features.outputs.result != 'AVX512'
+      run: |
+        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-pyenv/bin/run-sde-clx .nix-pyenv/bin/python3.${{ matrix.pyver }} -m pytest --random-order python-test
+    - name: Run Python Tests (SDE, AVX2)
+      if: steps.print_features.outputs.result != 'AVX2'
+      run: |
+        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-pyenv/bin/run-sde-rpl .nix-pyenv/bin/python3.${{ matrix.pyver }} -m pytest --random-order python-test
+    - name: Run Python Tests (SDE, SSE2)
+      if: steps.print_features.outputs.result != 'SSE2'
+      run: |
+        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-pyenv/bin/run-sde-ivb .nix-pyenv/bin/python3.${{ matrix.pyver }} -m pytest --random-order python-test
+    - name: Run C Tests (SDE, ALL)
+      run: |
+        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-pyenv/bin/run-sde-clx ./build-py3.${{ matrix.pyver }}/ssrjson_test

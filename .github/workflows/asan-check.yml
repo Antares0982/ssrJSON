@@ -1,0 +1,28 @@
+name: "ASAN Check"
+on:
+  workflow_dispatch:
+  # pull_request:
+  #   paths:
+  #     - "src/**"
+  #     - "test/**"
+  #     - "CMakeLists.txt"
+
+jobs:
+  ASAN-CHECK:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: ["9", "10", "11", "12", "13", "14"]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+    - name: Install nix
+      uses: cachix/install-nix-action@master
+    - name: Setup cachix
+      uses: cachix/cachix-action@master
+      with:
+        name: antares0982
+    - name: Run asan check
+      run: |
+        nix develop -c python ./dev_tools/automated_test.py --pyver ${{ matrix.pyver }} --asan

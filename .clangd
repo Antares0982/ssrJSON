@@ -1,0 +1,4 @@
+CompileFlags:
+  Add: [-DSSRJSON_CLANGD_DUMMY]
+Diagnostics:
+  Suppress: [undefined-internal, unused-includes]

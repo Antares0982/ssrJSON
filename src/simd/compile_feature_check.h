@@ -1,0 +1,7 @@
+#if SUPPORT_SIMD_512BITS
+#    define COMPILE_SIMD_BITS 512
+#elif SUPPORT_SIMD_256BITS
+#    define COMPILE_SIMD_BITS 256
+#else
+#    define COMPILE_SIMD_BITS 128
+#endif

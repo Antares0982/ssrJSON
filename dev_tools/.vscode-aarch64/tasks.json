@@ -1,0 +1,132 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMake: build with last config",
+            "type": "shell",
+            "command": "${workspaceFolder}/dev_tools/build.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Call build.sh with nix develop"
+        },
+        {
+            "label": "CMake: build: Release",
+            "type": "shell",
+            "command": "${workspaceFolder}/dev_tools/build_release.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Call build.sh with nix develop"
+        },
+        {
+            "label": "CMake: build: Debug",
+            "type": "shell",
+            "command": "${workspaceFolder}/dev_tools/build_debug.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Call build.sh with nix develop"
+        },
+        {
+            "label": "CMake: build: RelWithDebInfo",
+            "type": "shell",
+            "command": "${workspaceFolder}/dev_tools/build_rel_with_debug_info.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Call build.sh with nix develop"
+        },
+        {
+            "label": "CMake: build test.cpp",
+            "type": "shell",
+            "command": "${workspaceFolder}/.nix-pyenv/bin/clang++",
+            "args": [
+                "${workspaceFolder}/test.cpp",
+                "-msse4.1",
+                "-o",
+                "${workspaceFolder}/build/a.out",
+                "-g"
+            ],
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Call build.sh with nix develop"
+        }
+    ]
+}

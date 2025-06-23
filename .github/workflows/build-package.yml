@@ -1,0 +1,28 @@
+name: "Build Package"
+on:
+  workflow_dispatch:
+
+jobs:
+  RUN-TEST:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: ["13"]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+      with:
+        fetch-depth: 0
+    - name: Install nix
+      uses: cachix/install-nix-action@master
+    - name: Setup cachix
+      uses: cachix/cachix-action@master
+      with:
+        name: antares0982
+    - name: Test Release Build
+      run: |
+        nix develop -c python ./dev_tools/automated_test.py --build-only --pyver ${{ matrix.pyver }} --build-type Release
+    - name: Print Version
+      run: |
+        PYTHONPATH=./build-py3.${{ matrix.pyver }} .nix-pyenv/bin/python3.${{ matrix.pyver }} -c "import ssrjson;print(ssrjson.__version__)"

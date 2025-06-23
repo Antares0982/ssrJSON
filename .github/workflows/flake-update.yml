@@ -1,0 +1,78 @@
+name: "Flake Automated Update"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 11 * * *'
+  push:
+    branches:
+      - "dev_flake"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Maximize build space
+      uses: easimon/maximize-build-space@master
+      with:
+        build-mount-path: '/nix'
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+    - name: Checkout
+      uses: actions/checkout@main
+      with:
+        token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
+    - name: Install nix
+      uses: cachix/install-nix-action@master
+      with:
+        github_access_token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
+    - name: Set nix daemon tmp path
+      run: |
+        sudo mkdir --parents /nix/tmp
+        sudo chmod 777 /nix/tmp
+
+        cat > override.conf <<EOF
+        [Service]
+        Environment="TMPDIR=/nix/tmp"
+        EOF
+        sudo mkdir /etc/systemd/system/nix-daemon.service.d/
+        sudo mv override.conf /etc/systemd/system/nix-daemon.service.d/override.conf
+        sudo systemctl daemon-reload
+        sudo systemctl restart nix-daemon
+    - name: Import GPG key
+      id: import-gpg
+      uses: crazy-max/ghaction-import-gpg@master
+      with:
+        gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+        passphrase: ${{ secrets.PASSPHRASE }}
+        git_user_signingkey: true
+        git_commit_gpgsign: true
+    - name: Configure git credentials
+      run: |
+        git config --global user.email "${{ steps.import-gpg.outputs.email }}"
+        git config --global user.name "${{ steps.import-gpg.outputs.name }}"
+    - name: Setup cachix
+      uses: cachix/cachix-action@master
+      with:
+        name: antares0982
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    - name: Nix flake update
+      run: |
+        nix flake update --commit-lock-file
+    - name: Test Nix Develop
+      run: |
+        nix develop --command echo DONE
+        nix flake check
+        if [ -z $(git status --porcelain) ]; then
+          echo "clean, skip..."
+        else
+          git add --all
+          git commit --message "Flake Update"
+        fi
+    - name: Git push
+      run: |
+        git config --global pull.rebase false
+        git pull
+        git push

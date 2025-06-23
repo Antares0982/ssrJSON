@@ -1,0 +1,249 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debug: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "python": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/build"
+            }
+        },
+        {
+            "name": "(gdb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "args": [
+                "${file}"
+            ],
+            "sourceFileMap": {
+                "/build": "${workspaceFolder}/debug_source"
+            },
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "PYTHONPATH",
+                    "value": "${workspaceFolder}/build"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "enable gdb pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "set disassembly flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "miDebuggerArgs": "-x ${workspaceFolder}/dev_tools/.gdbinit",
+            "preLaunchTask": "CMake: build with last config"
+        },
+        {
+            "name": "(gdb) Launch test/all_test.py",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/usr/bin/env",
+            "args": [
+                "-S",
+                "bash",
+                "${workspaceFolder}/dev_tools/run_tests.sh"
+            ],
+            "sourceFileMap": {
+                "/build": "${workspaceFolder}/debug_source"
+            },
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "enable gdb pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "set disassembly flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "miDebuggerArgs": "-x ${workspaceFolder}/dev_tools/.gdbinit",
+            "preLaunchTask": "CMake: build with last config"
+        },
+        {
+            "name": "(gdb) Launch test.cpp",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/a.out",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "PYTHONPATH",
+                    "value": "${workspaceFolder}/build"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "enable gdb pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "set disassembly flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "CMake: build test.cpp"
+        },
+        {
+            "name": "(gdb) Launch python",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "PYTHONPATH",
+                    "value": "${workspaceFolder}/build"
+                }
+            ],
+            "sourceFileMap": {
+                "/build": "${workspaceFolder}/debug_source"
+            },
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "enable gdb pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "set disassembly flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "CMake: build with last config"
+        },
+        {
+            "name": "(gdb) Launch pytest",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "args": [
+                "-m",
+                "pytest",
+                "-s",
+                "-rxX",
+                "./python-test"
+            ],
+            "environment": [
+                {
+                    "name": "PYTHONPATH",
+                    "value": "${workspaceFolder}/build"
+                }
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "sourceFileMap": {
+                "/build": "${workspaceFolder}/debug_source"
+            },
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "enable gdb pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "set disassembly flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "CMake: build with last config"
+        },
+        {
+            "name": "(gdb) Launch fuzzer",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/ssrjson_fuzzer",
+            "args": [
+                "-dict=fuzzer.dict",
+                "-max_total_time=300",
+                "./corpus"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [],
+            "sourceFileMap": {
+                "/build": "${workspaceFolder}/debug_source"
+            },
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "enable gdb pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "set disassembly flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "CMake: build with last config"
+        },
+        {
+            "name": "(gdb) Launch C test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/ssrjson_test",
+            "args": [
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [],
+            "sourceFileMap": {
+                "/build": "${workspaceFolder}/debug_source"
+            },
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "enable gdb pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "set disassembly flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            // "preLaunchTask": "CMake: build with last config"
+        }
+    ]
+}

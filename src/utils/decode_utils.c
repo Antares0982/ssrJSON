@@ -1,0 +1,47 @@
+#include "decode/decode_shared.h"
+
+bool _decode_obj_stack_resize(
+        decode_obj_stack_ptr_t *decode_obj_writer_addr,
+        decode_obj_stack_ptr_t *decode_obj_stack_addr,
+        decode_obj_stack_ptr_t *decode_obj_stack_end_addr) {
+    decode_obj_stack_ptr_t decode_obj_writer = *decode_obj_writer_addr;
+    decode_obj_stack_ptr_t decode_obj_stack = *decode_obj_stack_addr;
+    decode_obj_stack_ptr_t decode_obj_stack_end = *decode_obj_stack_end_addr;
+    if (likely(SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE == decode_obj_stack_end - decode_obj_stack)) {
+        void *new_buffer_void = malloc(sizeof(pyobj_ptr_t) * (SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1));
+        decode_obj_stack_ptr_t new_buffer = new_buffer_void;
+        if (unlikely(!new_buffer)) {
+            PyErr_NoMemory();
+            return false;
+        }
+        memcpy(new_buffer, decode_obj_stack, sizeof(pyobj_ptr_t) * SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE);
+        *decode_obj_stack_addr = new_buffer;
+        *decode_obj_writer_addr = new_buffer + SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE;
+        *decode_obj_stack_end_addr = new_buffer + (SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1);
+    } else {
+        usize old_capacity = decode_obj_stack_end - decode_obj_stack;
+        if (unlikely((PY_SSIZE_T_MAX >> 1) < old_capacity)) {
+            PyErr_NoMemory();
+            return false;
+        }
+        usize new_capacity = old_capacity << 1;
+        void *new_buffer_void = realloc(decode_obj_stack, sizeof(PyObject *) * new_capacity);
+        decode_obj_stack_ptr_t new_buffer = new_buffer_void;
+        if (unlikely(!new_buffer)) {
+            PyErr_NoMemory();
+            return false;
+        }
+        *decode_obj_stack_addr = new_buffer;
+        *decode_obj_writer_addr = new_buffer + old_capacity;
+        *decode_obj_stack_end_addr = new_buffer + new_capacity;
+    }
+    return true;
+}
+
+#if !defined(Py_GIL_DISABLED)
+ssrjson_align(64) u8 _DecodeTempBuffer[SSRJSON_STRING_BUFFER_SIZE];
+decode_cache_t DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
+ssrjson_align(64) u8 _DecodeBytesSrcBuffer[SSRJSON_STRING_BUFFER_SIZE];
+DecodeCtnWithSize _DecodeCtnBuffer[SSRJSON_DECODE_MAX_RECURSION];
+PyObject *_DecodeObjBuffer[SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE];
+#endif

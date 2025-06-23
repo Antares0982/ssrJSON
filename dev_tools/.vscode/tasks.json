@@ -1,0 +1,201 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMake: build with last config",
+            "type": "shell",
+            "command": "${workspaceFolder}/dev_tools/build.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Call build.sh with nix develop"
+        },
+        {
+            "label": "CMake: build: Release",
+            "type": "shell",
+            "command": "${workspaceFolder}/dev_tools/build_release.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Call build.sh with nix develop"
+        },
+        {
+            "label": "CMake: build: Debug",
+            "type": "shell",
+            "command": "${workspaceFolder}/dev_tools/build_debug.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Call build.sh with nix develop"
+        },
+        {
+            "label": "CMake: build: RelWithDebInfo",
+            "type": "shell",
+            "command": "${workspaceFolder}/dev_tools/build_rel_with_debug_info.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Call build.sh with nix develop"
+        },
+        {
+            "label": "CMake: build test.cpp",
+            "type": "shell",
+            "command": "${workspaceFolder}/.nix-pyenv/bin/clang++",
+            "args": [
+                "${workspaceFolder}/test.cpp",
+                "-msse4.1",
+                "-o",
+                "${workspaceFolder}/build/a.out",
+                "-g"
+            ],
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Call build.sh with nix develop"
+        },
+        {
+            "label": "Bloaty: generate symbol size info",
+            "type": "shell",
+            "command": "${workspaceFolder}/dev_tools/run_bloaty.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Run bloaty to generate symbol size info"
+        },
+        {
+            "label": "Benchmark",
+            "type": "shell",
+            "command": "${workspaceFolder}/dev_tools/run_benchmark.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "zsh"
+                    ]
+                },
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/build"
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Run benchmark"
+        },
+        {
+            "label": "Benchmark and draw graphs",
+            "type": "shell",
+            "command": "run_benchmark.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "-c",
+                        "zsh"
+                    ]
+                },
+                "env": {
+                    "PYTHONPATH": "${workspaceFolder}/build"
+                },
+                "cwd": "${workspaceFolder}/../ssrJSON-benchmark"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Run benchmark"
+        }
+    ]
+}

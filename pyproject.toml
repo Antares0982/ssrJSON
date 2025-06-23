@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ssrjson"
+version = "0.0.0"
+description = "A package that bundles a prebuilt binary dynamic library."
+readme = "README.md"
+requires-python = ">=3.9"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Antares", email = "antares0982@gmail.com" }
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent"
+]
+
+[tool.setuptools]
+packages = ["ssrjson"]
+zip-safe = false
+
+
+[tool.autopep8]
+max-line-length = 160
+
+[tool.pylint]
+disable = [
+    "C0114",
+    "C0115",
+    "C0116",
+    "C0415",
+]
+max-line-length = 160
