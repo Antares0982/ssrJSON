@@ -25,7 +25,7 @@ force_inline bool unicode_buffer_append_key_internal(PyObject *key, usize len, _
     write_unicode_indent(writer_addr, cur_nested_depth);
     _dst_t *writer = *writer_addr;
     *writer++ = '"';
-    encode_unicode_impl(&writer, (_src_t *)get_unicode_data(key), len);
+    encode_unicode_impl(&writer, (_src_t *)get_unicode_data(key), len, true);
     *writer++ = '"';
     *writer++ = ':';
 #if COMPILE_INDENT_LEVEL > 0
@@ -51,7 +51,7 @@ force_inline bool unicode_buffer_append_str_internal(PyObject *str, usize len, _
     }
     _dst_t *writer = *writer_addr;
     *writer++ = '"';
-    encode_unicode_impl_noinline(&writer, (_src_t *)get_unicode_data(str), len);
+    encode_unicode_impl_no_key(&writer, (_src_t *)get_unicode_data(str), len);
     *writer++ = '"';
     *writer++ = ',';
     *writer_addr = writer;

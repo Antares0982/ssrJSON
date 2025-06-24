@@ -14,7 +14,7 @@
 #define encode_unicode_loop MAKE_SRW_NAME(encode_unicode_loop)
 #define encode_unicode_loop4 MAKE_SRW_NAME(encode_unicode_loop4)
 #define encode_unicode_impl MAKE_SRW_NAME(encode_unicode_impl)
-#define encode_unicode_impl_noinline MAKE_SRW_NAME(encode_unicode_impl_noinline)
+#define encode_unicode_impl_no_key MAKE_SRW_NAME(encode_unicode_impl_no_key)
 #define long_cvt MAKE_SRW_NAME(long_cvt)
 #define long_back_cvt MAKE_SRW_NAME(long_back_cvt)
 #endif // SSRJSON_COMPILE_CONTEXT_SRW
