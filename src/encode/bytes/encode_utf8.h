@@ -17,16 +17,16 @@
 #include "compile_context/srw_in.inl.h"
 
 /* ASCII src. */
-force_inline void bytes_write_ascii(u8 **writer_addr, const u8 *src, usize len) {
+force_inline void bytes_write_ascii(u8 **writer_addr, const u8 *src, usize len, bool is_key) {
     // reuse the unicode encode loop.
-    encode_unicode_loop4(writer_addr, &src, &len);
+    if (!is_key) encode_unicode_loop4(writer_addr, &src, &len);
     encode_unicode_loop(writer_addr, &src, &len);
     if (!len) return;
     encode_trailing_copy_with_cvt(writer_addr, src, len);
 }
 
-static force_noinline void bytes_write_ascii_noinline(u8 **writer_addr, const u8 *src, usize len) {
-    bytes_write_ascii(writer_addr, src, len);
+static force_noinline void bytes_write_ascii_not_key(u8 **writer_addr, const u8 *src, usize len) {
+    bytes_write_ascii(writer_addr, src, len, false);
 }
 
 /* UCS1 src. */
