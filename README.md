@@ -27,7 +27,7 @@ Since ssrJSON utilizes LLVM's vectorization extensions, it requires compilation 
 # export CC=clang
 # export CXX=clang++
 mkdir build
-cmake -S . -B build  # On Windows, configure with `clang -T ClangCL`
+cmake -S . -B build  # On Windows, configure with `cmake -T ClangCL`
 cmake --build build
 ```
 
