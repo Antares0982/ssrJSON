@@ -182,13 +182,14 @@ class TestApi:
         """
         ssrjson.dumps.__module__ is a str
         """
-        assert ssrjson.dumps.__module__ == "ssrjson"
+        assert "ssrjson" in ssrjson.dumps.__module__
+        assert "ssrjson" in ssrjson.dumps_to_bytes.__module__
 
     def test_loads_module_str(self):
         """
         ssrjson.loads.__module__ is a str
         """
-        assert ssrjson.loads.__module__ == "ssrjson"
+        assert "ssrjson" in ssrjson.loads.__module__
 
     def test_bytes_buffer(self):
         """

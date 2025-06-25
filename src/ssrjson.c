@@ -23,8 +23,6 @@ PyObject *JSONDecodeError = NULL;
 PyObject *JSONEncodeError = NULL;
 
 static PyMethodDef ssrjson_Methods[] = {
-        {"encode", (PyCFunction)ssrjson_Encode, METH_VARARGS | METH_KEYWORDS, "dumps(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."},
-        {"decode", (PyCFunction)ssrjson_Decode, METH_VARARGS | METH_KEYWORDS, "decode(s)\n--\n\nConverts JSON as string to dict object structure."},
         {"dumps", (PyCFunction)ssrjson_Encode, METH_VARARGS | METH_KEYWORDS, "dumps(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."},
         {"dumps_to_bytes", (PyCFunction)ssrjson_EncodeToBytes, METH_VARARGS | METH_KEYWORDS, "dumps_to_bytes(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."},
         {"loads", (PyCFunction)ssrjson_Decode, METH_VARARGS | METH_KEYWORDS, "loads(s)\n--\n\nConverts JSON as string to dict object structure."},

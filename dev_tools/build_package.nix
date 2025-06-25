@@ -6,7 +6,7 @@
 }:
 clangStdenv.mkDerivation rec {
   pname = "ssrjson";
-  version = "0.0.0";
+  version = builtins.readFile ../version_file;
   src = ./.;
   unpackPhase = ''
     cp -r ${./..}/* .

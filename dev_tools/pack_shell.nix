@@ -11,6 +11,7 @@ let
       packaging
       build
       twine
+      pip
     ]
   );
 in

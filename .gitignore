@@ -14,8 +14,11 @@ bench/*.py
 *.ll
 *.s
 /src/version.h
+
+# reserved for packaging
 /result
 /wheelhouse
+/ssrjson
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

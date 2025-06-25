@@ -311,11 +311,6 @@ include(CheckIncludeFile)
 check_include_file(stdint.h YYJSON_HAS_STDINT_H)
 check_include_file(stdbool.h YYJSON_HAS_STDBOOL_H)
 
-if(WIN32)
-    target_compile_definitions(commonBuild INTERFACE
-        $<BUILD_INTERFACE:YYJSON_EXPORTS>
-        $<INSTALL_INTERFACE:YYJSON_IMPORTS>)
-endif()
 
 if(MSVC)
     # TODO remove this

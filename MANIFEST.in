@@ -1,4 +1,11 @@
 include CMakeLists.txt
+include LICENSE
+include version_file
+include dev_tools/automated_test.py
+include dev_tools/scm.py
 recursive-include src *
+recursive-include python-test *
 recursive-include cmake *
-recursive-include result *
+recursive-include ssrjson *
+recursive-include test_data *
+recursive-include licenses *
