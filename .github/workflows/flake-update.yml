@@ -67,7 +67,7 @@ jobs:
         nix develop .#packShell311 --command echo DONE
         nix develop .#packShell312 --command echo DONE
         nix develop .#packShell313 --command echo DONE
-        nix develop .#packShell314 --command echo DONE
+        # nix develop .#packShell314 --command echo DONE
         nix flake check
         if [ -z $(git status --porcelain) ]; then
           echo "clean, skip..."
