@@ -22,7 +22,4 @@ jobs:
         name: antares0982
     - name: Test Release Build
       run: |
-        nix develop -c python ./dev_tools/automated_test.py --build-only --pyver ${{ matrix.pyver }} --build-type Release
-    - name: Print Version
-      run: |
-        PYTHONPATH=./build-py3.${{ matrix.pyver }} .nix-pyenv/bin/python3.${{ matrix.pyver }} -c "import ssrjson;print(ssrjson.__version__)"
+        bash dev_tools/autopack.sh
