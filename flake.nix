@@ -95,6 +95,18 @@
           ssrjson-py312 = pkgs.callPackage ./dev_tools/build_package.nix { python = pkgs-24-05.python312; };
           ssrjson-py313 = pkgs.callPackage ./dev_tools/build_package.nix { python = pkgs.python313; };
           ssrjson-py314 = pkgs.callPackage ./dev_tools/build_package.nix { python = pkgs.python314; };
+          ssrjson-wheel-py39 = pkgs.callPackage ./dev_tools/build_wheel.nix { python = pkgs-24-05.python39; };
+          ssrjson-wheel-py310 = pkgs.callPackage ./dev_tools/build_wheel.nix {
+            python = pkgs-24-05.python310;
+          };
+          ssrjson-wheel-py311 = pkgs.callPackage ./dev_tools/build_wheel.nix {
+            python = pkgs-24-05.python311;
+          };
+          ssrjson-wheel-py312 = pkgs.callPackage ./dev_tools/build_wheel.nix {
+            python = pkgs-24-05.python312;
+          };
+          ssrjson-wheel-py313 = pkgs.callPackage ./dev_tools/build_wheel.nix { python = pkgs.python313; };
+          ssrjson-wheel-py314 = pkgs.callPackage ./dev_tools/build_wheel.nix { python = pkgs.python314; };
           default = ssrjson-py313;
         }
       );
