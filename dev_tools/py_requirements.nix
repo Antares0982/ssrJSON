@@ -13,13 +13,13 @@ with pypkgs;
   pytz
   pytest
   pytest-random-order
-  pip
 ]
 ++ (
   with pypkgs; # needed by tests, but cannot be built in python3.14
   (lib.optionals (minorVer < 14) [
     arrow
     orjson
+    pip
     pytest-xdist
   ])
 )
