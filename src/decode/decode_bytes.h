@@ -1285,7 +1285,7 @@ static force_noinline PyObject *ssrjson_decode_bytes(char *_buffer, Py_ssize_t l
         uintptr_t _buffer_int = (uintptr_t)_buffer;
         usize align_offset = (_buffer_int & (SSRJSON_MEMCPY_SIMD_SIZE - 1));
         buffer = _new_buffer + align_offset;
-        ssrjson_memcpy((void *)buffer, (const void *)_buffer, (usize)len);
+        ssrjson_memcpy_prealigned((void *)buffer, (const void *)_buffer, (usize)len);
     }
 
     u8 *const end = buffer + len;

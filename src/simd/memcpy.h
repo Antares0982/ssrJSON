@@ -5,13 +5,16 @@
 
 // provide inline version of memcpy.
 #if __AVX512F__
-#    define ssrjson_memcpy(_d, _s, _size) ssrjson_memcpy_simd((_d), (_s), (_size), 512)
+#    define ssrjson_memcpy(_d, _s, _size) ssrjson_memcpy_simd((_d), (_s), (_size), 512, false)
+#    define ssrjson_memcpy_prealigned(_d, _s, _size) ssrjson_memcpy_simd((_d), (_s), (_size), 512, true)
 #    define SSRJSON_MEMCPY_SIMD_SIZE 64
 #elif __AVX__
-#    define ssrjson_memcpy(_d, _s, _size) ssrjson_memcpy_simd((_d), (_s), (_size), 256)
+#    define ssrjson_memcpy(_d, _s, _size) ssrjson_memcpy_simd((_d), (_s), (_size), 256, false)
+#    define ssrjson_memcpy_prealigned(_d, _s, _size) ssrjson_memcpy_simd((_d), (_s), (_size), 256, true)
 #    define SSRJSON_MEMCPY_SIMD_SIZE 32
 #else
-#    define ssrjson_memcpy(_d, _s, _size) ssrjson_memcpy_simd((_d), (_s), (_size), 128)
+#    define ssrjson_memcpy(_d, _s, _size) ssrjson_memcpy_simd((_d), (_s), (_size), 128, false)
+#    define ssrjson_memcpy_prealigned(_d, _s, _size) ssrjson_memcpy_simd((_d), (_s), (_size), 128, true)
 #    define SSRJSON_MEMCPY_SIMD_SIZE 16
 #endif
 // use libc memcpy if need noinline version.
@@ -220,7 +223,7 @@ force_inline void __ssrjson_short_memcpy_large_first(u8 **restrict dest_addr, co
     if (size_less_than >= 2 && (n_bytes & 1)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 1);
 }
 
-force_inline void ssrjson_memcpy_simd(void *restrict dest, const void *restrict src, size_t n_bytes, size_t per_cpy_bitsize) {
+force_inline void ssrjson_memcpy_simd(void *restrict dest, const void *restrict src, size_t n_bytes, size_t per_cpy_bitsize, bool prealigned) {
     const size_t per_cpy_bytesize = per_cpy_bitsize / 8;
     assert(per_cpy_bytesize && ((per_cpy_bytesize - 1) & per_cpy_bytesize) == 0);
     u8 *d = (u8 *)dest;
@@ -242,7 +245,7 @@ force_inline void ssrjson_memcpy_simd(void *restrict dest, const void *restrict 
         n -= nh;
     }
 
-    if (s_int & (per_cpy_bytesize - 1)) { // src is not aligned to 256-bits
+    if (!prealigned && (s_int & (per_cpy_bytesize - 1))) { // src is not aligned to 256-bits
         // unroll 4
         while (n >= 4 * per_cpy_bytesize) {
             ssrjson_memcpy_aligned_store_power2(d, s, 4 * per_cpy_bytesize);
