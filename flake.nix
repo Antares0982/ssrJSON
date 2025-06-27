@@ -87,6 +87,9 @@
         let
           pkgs-24-05 = import nixpkgs-24-05 { inherit (pkgs) system; };
           pythonVerConfig = pkgs.lib.importJSON ./dev_tools/pyver.json;
+          stablePython = builtins.getAttr (
+            "python3" + (builtins.toString pythonVerConfig.latestStableVer)
+          ) pkgs;
         in
         rec {
           ssrjson-py39 = pkgs.callPackage ./dev_tools/build_package.nix { python = pkgs-24-05.python39; };
@@ -107,6 +110,7 @@
           };
           ssrjson-wheel-py313 = pkgs.callPackage ./dev_tools/build_wheel.nix { python = pkgs.python313; };
           ssrjson-wheel-py314 = pkgs.callPackage ./dev_tools/build_wheel.nix { python = pkgs.python314; };
+          ssrjson-tarball = pkgs.callPackage ./dev_tools/build_tarball.nix { python = stablePython; };
           default = ssrjson-py313;
         }
       );
