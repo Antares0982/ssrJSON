@@ -1,5 +1,6 @@
 #include "pyutils.h"
 #include "pythonlib.h"
+#include "simd/cvt.h"
 #include "simd/memcpy.h"
 #include "utils/unicode.h"
 

@@ -2,6 +2,56 @@
 #define SSRJSON_PYTHONLIB_H
 
 #include "ssrjson.h"
+#if SSRJSON_X86
+
+typedef enum X86SIMDFeatureLevel {
+    X86SIMDFeatureLevelSSE2 = 0,
+    X86SIMDFeatureLevelSSE4_2 = 1,
+    X86SIMDFeatureLevelAVX2 = 2,
+    X86SIMDFeatureLevelAVX512 = 3,
+    X86SIMDFeatureLevelMAX = 4,
+} X86SIMDFeatureLevel;
+
+#    define PLATFORM_SIMD_LEVEL X86SIMDFeatureLevel
+
+force_inline X86SIMDFeatureLevel get_simd_feature(void) {
+    // https://www.intel.com/content/dam/develop/external/us/en/documents/319433-024-697869.pdf
+
+    int max_leaf = get_cpuid_max();
+
+    if (max_leaf >= 7) {
+        int info[4] = {0};
+        cpuid_count(info, 7, 0);
+        int ebx = info[1];
+        if ((ebx & (1 << 16))    // AVX512F(ebx,16)
+            && (ebx & (1 << 28)) // AVX512CD(ebx,28)
+            && (ebx & (1 << 31)) // AVX512VL(ebx,31)
+            && (ebx & (1 << 17)) // AVX512DQ(ebx,17)
+            && (ebx & (1 << 30)) // AVX512BW(ebx,30)
+        )
+            return X86SIMDFeatureLevelAVX512;
+
+        // check AVX2
+        if (ebx & (1 << 5)) // AVX2(ebx,5)
+            return X86SIMDFeatureLevelAVX2;
+    }
+
+    // check SSE4.2
+    if (max_leaf >= 1) {
+        int info[4] = {0};
+        cpuid(info, 1);
+        int ecx = info[2];
+        if (ecx & (1 << 20)) // SSE4.2(20)
+            return X86SIMDFeatureLevelSSE4_2;
+    }
+
+    return X86SIMDFeatureLevelSSE2;
+}
+#endif
+
+const char *_update_simd_features(void);
+PyObject *ssrjson_print_current_features(PyObject *self, PyObject *args);
+PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
 
 #if BUILD_MULTI_LIB
 #    if SSRJSON_X86
@@ -24,7 +74,6 @@
 
 #        define MAKE_FORWARD_PYFUNCTION_IMPL(_func_name_)                             \
             PyObject *_func_name_(PyObject *self, PyObject *args, PyObject *kwargs) { \
-                _update_simd_features();                                              \
                 assert(SSRJSON_CONCAT2(_func_name_, interface));                      \
                 return SSRJSON_CONCAT2(_func_name_, interface)(self, args, kwargs);   \
             }
@@ -41,7 +90,23 @@ DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u32_u16, void, u16 *restrict writ
 DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u32_u8, void, u8 *restrict write_start, const u32 *restrict read_start, usize _len)
 DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u16_u8, void, u8 *restrict write_start, const u16 *restrict read_start, usize _len)
 
+#        define BATCH_SET_INTERFACE(_feature_name_)                   \
+            SET_INTERFACE(ssrjson_Encode, _feature_name_);            \
+            SET_INTERFACE(ssrjson_Decode, _feature_name_);            \
+            SET_INTERFACE(ssrjson_EncodeToBytes, _feature_name_);     \
+            SET_INTERFACE(long_cvt_noinline_u16_u32, _feature_name_); \
+            SET_INTERFACE(long_cvt_noinline_u8_u32, _feature_name_);  \
+            SET_INTERFACE(long_cvt_noinline_u8_u16, _feature_name_);  \
+            SET_INTERFACE(long_cvt_noinline_u32_u16, _feature_name_); \
+            SET_INTERFACE(long_cvt_noinline_u32_u8, _feature_name_);  \
+            SET_INTERFACE(long_cvt_noinline_u16_u8, _feature_name_);
 #    endif // SSRJSON_X86
-#endif     // BUILD_MULTI_LIB
-
+#else      // BUILD_MULTI_LIB
+#    define long_cvt_noinline_u16_u32_interface long_cvt_noinline_u16_u32
+#    define long_cvt_noinline_u8_u32_interface long_cvt_noinline_u8_u32
+#    define long_cvt_noinline_u8_u16_interface long_cvt_noinline_u8_u16
+#    define long_cvt_noinline_u32_u16_interface long_cvt_noinline_u32_u16
+#    define long_cvt_noinline_u32_u8_interface long_cvt_noinline_u32_u8
+#    define long_cvt_noinline_u16_u8_interface long_cvt_noinline_u16_u8
+#endif
 #endif // SSRJSON_PYTHONLIB_H

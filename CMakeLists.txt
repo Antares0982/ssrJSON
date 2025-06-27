@@ -110,6 +110,7 @@ endif()
 
 if(BUILD_NATIVE)
     add_native_compile_option(commonBuild INTERFACE)
+    target_compile_definitions(commonBuild INTERFACE SSRJSON_BUILD_NATIVE=1)
 endif()
 
 message("CMAKE_C_COMPILER_ID = ${CMAKE_C_COMPILER_ID}")
@@ -236,7 +237,7 @@ if(BUILD_MULTI_LIB)
     endif()
 else()
     set(SRC_FILES ${SRC_FILES} src/singlelib.c)
-    add_library(ssrjson SHARED ${SRC_FILES} ${SRC_WITH_SIMD})
+    add_library(ssrjson SHARED ${SRC_FILES} ${SRC_WITH_SIMD} ${SRC_DRAGON_BOX})
     target_link_libraries(ssrjson PRIVATE commonBuild)
 endif()
 

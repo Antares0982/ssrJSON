@@ -1,7 +1,7 @@
 #include "ssrjson.h"
+#include "pythonlib.h"
 #include "tls.h"
 #include "version.h"
-
 
 extern decode_cache_t DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
 
@@ -88,6 +88,12 @@ PyMODINIT_FUNC PyInit_ssrjson(void) {
     if ((module = PyState_FindModule(&moduledef)) != NULL) {
         Py_INCREF(module);
         return module;
+    }
+
+    const char *err = _update_simd_features();
+    if (err) {
+        PyErr_SetString(PyExc_ImportError, err);
+        return NULL;
     }
 
     module = PyModule_Create(&moduledef);

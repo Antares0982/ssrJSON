@@ -1,3 +1,5 @@
+#include "pythonlib.h"
+#include "simd/simd_detect.h"
 #include "ssrjson.h"
 
 PyObject *ssrjson_print_current_features(PyObject *self, PyObject *args) {
@@ -38,4 +40,39 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("NEON"));
 #endif
     return ret;
+}
+
+const char *_update_simd_features(void) {
+#if SSRJSON_BUILD_NATIVE
+    // if using native build, don't check for features, assume all features are available
+    return NULL;
+#else
+
+    PLATFORM_SIMD_LEVEL simd_feature = get_simd_feature();
+#    if SSRJSON_X86
+#        if SUPPORT_SIMD_512BITS
+    // compile support 512 bits
+    if (simd_feature < X86SIMDFeatureLevelAVX512) {
+        return "AVX512 is not supported by the current CPU, but the library was compiled with AVX512 support.";
+    }
+    return NULL;
+#        elif SUPPORT_SIMD_256BITS
+    // compile support 256 bits
+    if (simd_feature < X86SIMDFeatureLevelAVX2) {
+        return "AVX2 is not supported by the current CPU, but the library was compiled with AVX2 support.";
+    }
+    return NULL;
+#        elif __SSE4_2__
+    if (simd_feature < X86SIMDFeatureLevelSSE4_2) {
+        return "SSE4.2 is not supported by the current CPU, but the library was compiled with SSE4.2 support.";
+    }
+    return NULL;
+#        else
+    return NULL;
+#        endif
+
+#    else
+
+#    endif
+#endif
 }
