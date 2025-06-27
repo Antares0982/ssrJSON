@@ -6,7 +6,8 @@
 }:
 let
   lib = pkgs.lib;
-  pythonVerConfig = lib.importJSON ./pyver.json;
+  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
+  pythonVerConfig = versionUtils.pythonVerConfig;
   maxSupportVer = pythonVerConfig.maxSupportVer;
   minSupportVer = pythonVerConfig.minSupportVer;
   latestStableVer = pythonVerConfig.latestStableVer;
@@ -20,7 +21,7 @@ let
           packageOverrides = (
             self: super:
             {
-              orjson = curPkgs.callPackage ./orjson_fixed.nix { inherit super; };
+              orjson = curPkgs.callPackage ./orjson_fixed.nix { inherit super pkgs-24-05; };
               pytest-benchmark = curPkgs.callPackage ./pytest-benchmark-fixed.nix { inherit super; };
             }
             // (curPkgs.lib.optionalAttrs (py.pythonVersion == "3.14") {
@@ -32,18 +33,6 @@ let
                     pytestCheckPhase = ":";
                   };
             })
-            # // (curPkgs.lib.optionalAttrs (py.pythonOlder "3.11") {
-            #   # tomli =
-            #   #   assert (lib.versionAtLeast super.tomli.version "2.0.3");
-            #   #   (super.tomli.overrideAttrs {
-            #   #     src = fetchFromGitHub {
-            #   #       owner = "hukkin";
-            #   #       repo = super.tomli.pname;
-            #   #       rev = "2.0.2";
-            #   #       hash = "sha256-YduGLNprrW1yFQ2gUNuueHTtQ+bXH43hVFzDR6rKtFI=";
-            #   #     };
-            #   #   });
-            # })
           );
         }
       );
@@ -58,7 +47,7 @@ let
     )
   );
   # import required python packages
-  required_python_packages = import ./py_requirements.nix;
+  required_python_packages = pkgs.callPackage ./py_requirements.nix { inherit pkgs-24-05; };
   pyenvs_map = py: (py.withPackages required_python_packages);
   pyenvs = builtins.map pyenvs_map using_pythons;
   sde = pkgs.callPackage ./sde.nix { };

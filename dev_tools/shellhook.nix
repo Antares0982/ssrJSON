@@ -5,6 +5,7 @@
   pyenvs,
   using_python,
   pkgs,
+  pkgs-24-05,
   inputDerivation,
   lib,
 }:
@@ -49,7 +50,7 @@ let
   orjsonSource =
     lib.optionalString (using_python.sourceVersion.minor != "14")
       (builtins.elemAt (builtins.filter (x: x.pname == "orjson") (
-        import ./py_requirements.nix using_python.pkgs
+        (pkgs.callPackage ./py_requirements.nix { inherit pkgs-24-05; }) using_python.pkgs
       )) 0).src;
   pythonpathEnvLiteral = "\${" + "PYTHONPATH+x}";
   sde = pkgs.callPackage ./sde.nix { };

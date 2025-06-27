@@ -5,7 +5,8 @@
 }:
 let
   lib = pkgs.lib;
-  pythonVerConfig = pkgs.lib.importJSON ./pyver.json;
+  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
+  pythonVerConfig = versionUtils.pythonVerConfig;
   curVer = pythonVerConfig.curVer;
   leastVer = pythonVerConfig.minSupportVer;
   drvs = (pkgs.callPackage ./_drvs.nix { inherit pkgs-24-05; });

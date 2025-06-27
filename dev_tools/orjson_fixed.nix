@@ -1,6 +1,7 @@
 {
   super,
   pkgs,
+  pkgs-24-05,
   lib,
   fetchFromGitHub,
   stdenv,
@@ -9,7 +10,8 @@
 }:
 let
   minorVer = lib.strings.toInt super.python.sourceVersion.minor;
-  pythonVerConfig = lib.importJSON ./pyver.json;
+  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
+  pythonVerConfig = versionUtils.pythonVerConfig;
   useNixpkgsUnstable = (minorVer >= pythonVerConfig.latestStableVer);
 in
 super.buildPythonPackage rec {

@@ -38,6 +38,7 @@
         pkgs:
         let
           pkgs-24-05 = import nixpkgs-24-05 { inherit (pkgs) system; };
+          versionUtils = pkgs.callPackage ./dev_tools/version_utils.nix { inherit pkgs-24-05; };
           defaultShell = pkgs.callPackage ./dev_tools/shell.nix {
             inherit pkgs-24-05;
             debugLLVM = false;
@@ -47,7 +48,7 @@
             debugLLVM = true;
           };
           _drvs = pkgs.callPackage ./dev_tools/_drvs.nix { inherit pkgs-24-05; };
-          pythonVerConfig = pkgs.lib.importJSON ./dev_tools/pyver.json;
+          pythonVerConfig = versionUtils.pythonVerConfig;
           curVer = pythonVerConfig.curVer;
           leastVer = pythonVerConfig.minSupportVer;
           verLength = curVer - leastVer;
@@ -57,6 +58,7 @@
               (shell.overrideAttrs {
                 shellHook = pkgs.callPackage ./dev_tools/shellhook.nix {
                   parentShell = shell;
+                  inherit pkgs-24-05;
                   inherit (shell) inputDerivation;
                   inherit (_drvs) pyenvs;
                   nix_pyenv_directory = if shell.debugLLVM then ".nix-pyenv-llvm" else ".nix-pyenv";
@@ -74,45 +76,36 @@
           default = mkMyShell { shell = defaultShell; };
           inherit debugLLVMInternal;
           debugLLVM = mkMyShell { shell = debugLLVMInternal; };
-          packShell39 = pkgs.callPackage ./dev_tools/pack_shell.nix { py = pkgs-24-05.python39; };
-          packShell310 = pkgs.callPackage ./dev_tools/pack_shell.nix { py = pkgs-24-05.python310; };
-          packShell311 = pkgs.callPackage ./dev_tools/pack_shell.nix { py = pkgs-24-05.python311; };
-          packShell312 = pkgs.callPackage ./dev_tools/pack_shell.nix { py = pkgs-24-05.python312; };
-          packShell313 = pkgs.callPackage ./dev_tools/pack_shell.nix { py = pkgs.python313; };
-          packShell314 = pkgs.callPackage ./dev_tools/pack_shell.nix { py = pkgs.python314; };
         }
       );
       packages = forAllSystems (
         pkgs:
         let
           pkgs-24-05 = import nixpkgs-24-05 { inherit (pkgs) system; };
-          pythonVerConfig = pkgs.lib.importJSON ./dev_tools/pyver.json;
-          stablePython = builtins.getAttr (
-            "python3" + (builtins.toString pythonVerConfig.latestStableVer)
-          ) pkgs;
+          versionUtils = pkgs.callPackage ./dev_tools/version_utils.nix { inherit pkgs-24-05; };
+          pythonVerConfig = versionUtils.pythonVerConfig;
+          stablePython = versionUtils.stablePython;
+          verToPackageDef = ver: {
+            name = "ssrjson-py3" + (builtins.toString ver);
+            value = pkgs.callPackage ./dev_tools/build_package.nix {
+              python = versionUtils.pyVerToPyPackage ver;
+            };
+          };
+          verToWheelDef = ver: {
+            name = "ssrjson-wheel-py3" + (builtins.toString ver);
+            value = pkgs.callPackage ./dev_tools/build_wheel.nix {
+              python = versionUtils.pyVerToPyPackage ver;
+            };
+          };
+          ssrjsonPackages = builtins.listToAttrs (map verToPackageDef versionUtils.versions);
+          ssrjsonWheels = builtins.listToAttrs (map verToWheelDef versionUtils.versions);
         in
-        rec {
-          ssrjson-py39 = pkgs.callPackage ./dev_tools/build_package.nix { python = pkgs-24-05.python39; };
-          ssrjson-py310 = pkgs.callPackage ./dev_tools/build_package.nix { python = pkgs-24-05.python310; };
-          ssrjson-py311 = pkgs.callPackage ./dev_tools/build_package.nix { python = pkgs-24-05.python311; };
-          ssrjson-py312 = pkgs.callPackage ./dev_tools/build_package.nix { python = pkgs-24-05.python312; };
-          ssrjson-py313 = pkgs.callPackage ./dev_tools/build_package.nix { python = pkgs.python313; };
-          ssrjson-py314 = pkgs.callPackage ./dev_tools/build_package.nix { python = pkgs.python314; };
-          ssrjson-wheel-py39 = pkgs.callPackage ./dev_tools/build_wheel.nix { python = pkgs-24-05.python39; };
-          ssrjson-wheel-py310 = pkgs.callPackage ./dev_tools/build_wheel.nix {
-            python = pkgs-24-05.python310;
-          };
-          ssrjson-wheel-py311 = pkgs.callPackage ./dev_tools/build_wheel.nix {
-            python = pkgs-24-05.python311;
-          };
-          ssrjson-wheel-py312 = pkgs.callPackage ./dev_tools/build_wheel.nix {
-            python = pkgs-24-05.python312;
-          };
-          ssrjson-wheel-py313 = pkgs.callPackage ./dev_tools/build_wheel.nix { python = pkgs.python313; };
-          ssrjson-wheel-py314 = pkgs.callPackage ./dev_tools/build_wheel.nix { python = pkgs.python314; };
+        {
           ssrjson-tarball = pkgs.callPackage ./dev_tools/build_tarball.nix { python = stablePython; };
-          default = ssrjson-py313;
+          default = ssrjsonPackages.ssrjson-py313;
         }
+        // ssrjsonPackages
+        // ssrjsonWheels
       );
     };
 }
