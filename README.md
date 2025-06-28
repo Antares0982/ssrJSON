@@ -10,13 +10,13 @@ The development of ssrJSON is still actively ongoing, and some features have yet
 
 ## How To Install
 
-ssrJSON requires at least SSE4.2 on x86-64 ([x86-64-v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels:~:text=their%20encryption%20extensions.-,Microarchitecture%20levels,-%5Bedit%5D)). ssrJSON does not work with other Python implementations other than CPython. Currently supported CPython versions are 3.9, 3.10, 3.11, 3.12, 3.13, 3.14.
-
-Pre-built wheels will soon be available on PyPI. Then you can install it with
+Pre-built wheels is available on PyPI.
 
 ```
 pip install ssrjson
 ```
+
+Note: ssrJSON requires at least SSE4.2 on x86-64 ([x86-64-v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels:~:text=their%20encryption%20extensions.-,Microarchitecture%20levels,-%5Bedit%5D)). ssrJSON does not work with other Python implementations other than CPython. Currently supported CPython versions are 3.9, 3.10, 3.11, 3.12, 3.13, 3.14. For Python 3.14, you need to build it from source.
 
 ### Build From Source
 
