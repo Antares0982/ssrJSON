@@ -1,12 +1,14 @@
 {
+  pkgs,
   clangStdenv,
   python,
   cmake,
   ...
 }:
 let
-  dylib = import ./build_package.nix {
+  dylib = pkgs.callPackage ./build_package.nix {
     inherit clangStdenv python cmake;
+    forNonNix = true;
   };
   pyenv = python.withPackages (
     pypkgs: with pypkgs; [
@@ -29,6 +31,7 @@ clangStdenv.mkDerivation {
   buildPhase = ''
     SSRJSON_SONAME=ssrjson.cpython-3${python.sourceVersion.minor}-x86_64-linux-gnu.so
     cp -r pysrc ssrjson
+    cp licenses/* .
     cp ${dylib}/$SSRJSON_SONAME ssrjson
     chmod 700 ssrjson/$SSRJSON_SONAME
     python dev_tools/check_glibc_version.py ssrjson/$SSRJSON_SONAME ${targetGLIBCVerString}

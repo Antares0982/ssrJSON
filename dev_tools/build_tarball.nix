@@ -24,6 +24,8 @@ clangStdenv.mkDerivation {
   buildPhase = ''
     export PATH=${cmake}/bin:$PATH
     cp -r pysrc ssrjson
+    cp licenses/* .
+    rm -r licenses
     python -m build --no-isolation
     mkdir -p $out
     cp dist/*.tar.gz $out

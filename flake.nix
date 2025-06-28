@@ -98,7 +98,7 @@
             };
           };
           ssrjsonPackages = builtins.listToAttrs (map verToPackageDef versionUtils.versions);
-          ssrjsonWheels = builtins.listToAttrs (map verToWheelDef versionUtils.versions);
+          ssrjsonWheels = builtins.listToAttrs (map verToWheelDef versionUtils.wheelBuildableVersions);
         in
         {
           ssrjson-tarball = pkgs.callPackage ./dev_tools/build_tarball.nix { python = stablePython; };

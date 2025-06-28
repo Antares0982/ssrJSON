@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ssrjson"
-version = "0.1.0"
+version = "0.0.1"
 description = "A high-performance Python JSON library that fully leverages modern processor capabilities."
 readme = "README.md"
 requires-python = ">=3.9"
-license-files = ["LICENSE"]
+
 authors = [
   { name = "Antares", email = "antares0982@gmail.com" }
 ]
