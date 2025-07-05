@@ -9,7 +9,7 @@ def generate_scm_version_and_copy(
         raise ValueError("Template file should ends with '.in'")
     if not version:
         scm_raw = (
-            subprocess.check_output(["git", "describe", "--always"], cwd=repo)
+            subprocess.check_output(["git", "describe", "--tags", "--always"], cwd=repo)
             .decode()
             .strip()
         )
