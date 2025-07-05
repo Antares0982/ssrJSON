@@ -21,7 +21,6 @@ let
           packageOverrides = (
             self: super:
             {
-              orjson = curPkgs.callPackage ./orjson_fixed.nix { inherit super pkgs-24-05; };
               pytest-benchmark = curPkgs.callPackage ./pytest-benchmark-fixed.nix { inherit super; };
             }
             // (curPkgs.lib.optionalAttrs (py.pythonVersion == "3.14") {
