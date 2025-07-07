@@ -19,9 +19,7 @@ in
   bloaty
   clang
   cmake
-  gcc
   gdb
-  python-launcher
   valgrind
 ])
 ++ drvs.pyenvs

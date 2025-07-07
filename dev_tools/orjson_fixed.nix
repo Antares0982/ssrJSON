@@ -1,3 +1,6 @@
+# Some dependencies are dropped because of build failure,
+# and tests are skipped.
+# The others are same as orjson in Nixpkgs
 {
   super,
   pkgs,
@@ -63,26 +66,4 @@ super.buildPythonPackage rec {
   ];
 
   pythonImportsCheck = [ "orjson" ];
-
-  # passthru.tests = {
-  #   inherit (super)
-  #     falcon
-  #     fastapi
-  #     gradio
-  #     mashumaro
-  #     ufolib2
-  #     ;
-  # };
-
-  # meta = with lib; {
-  #   description = "Fast, correct Python JSON library supporting dataclasses, datetimes, and numpy";
-  #   homepage = "https://github.com/ijl/orjson";
-  #   changelog = "https://github.com/ijl/orjson/blob/${version}/CHANGELOG.md";
-  #   license = with licenses; [
-  #     asl20
-  #     mit
-  #   ];
-  #   platforms = platforms.unix;
-  #   maintainers = with maintainers; [ misuzu ];
-  # };
 }

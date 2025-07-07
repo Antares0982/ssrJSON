@@ -25,5 +25,3 @@ with pypkgs;
     pytest-xdist
   ])
 )
-# benchmark is only needed for latestStableVer
-++ (with pypkgs; (lib.optionals (minorVer == pythonVerConfig.latestStableVer) [ pytest-benchmark ]))
