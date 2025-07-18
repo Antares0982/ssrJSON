@@ -10,7 +10,7 @@ The development of ssrJSON is still actively ongoing, and some features have yet
 
 ## How To Install
 
-Pre-built wheels is available on PyPI.
+Pre-built wheels are available on PyPI.
 
 ```
 pip install ssrjson
