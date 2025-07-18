@@ -38,16 +38,16 @@
         pkgs:
         let
           pkgs-24-05 = import nixpkgs-24-05 { inherit (pkgs) system; };
-          versionUtils = pkgs.callPackage ./dev_tools/version_utils.nix { inherit pkgs-24-05; };
-          defaultShell = pkgs.callPackage ./dev_tools/shell.nix {
+          versionUtils = pkgs.callPackage ./dev_tools/nixfiles/version_utils.nix { inherit pkgs-24-05; };
+          defaultShell = pkgs.callPackage ./dev_tools/nixfiles/shell.nix {
             inherit pkgs-24-05;
             debugLLVM = false;
           };
-          debugLLVMInternal = pkgs.callPackage ./dev_tools/shell.nix {
+          debugLLVMInternal = pkgs.callPackage ./dev_tools/nixfiles/shell.nix {
             inherit pkgs-24-05;
             debugLLVM = true;
           };
-          _drvs = pkgs.callPackage ./dev_tools/_drvs.nix { inherit pkgs-24-05; };
+          _drvs = pkgs.callPackage ./dev_tools/nixfiles/_drvs.nix { inherit pkgs-24-05; };
           pythonVerConfig = versionUtils.pythonVerConfig;
           curVer = pythonVerConfig.curVer;
           leastVer = pythonVerConfig.minSupportVer;
@@ -56,7 +56,7 @@
             { shell, ... }:
             (
               (shell.overrideAttrs {
-                shellHook = pkgs.callPackage ./dev_tools/shellhook.nix {
+                shellHook = pkgs.callPackage ./dev_tools/nixfiles/shellhook.nix {
                   parentShell = shell;
                   inherit pkgs-24-05;
                   inherit (shell) inputDerivation;
@@ -82,18 +82,18 @@
         pkgs:
         let
           pkgs-24-05 = import nixpkgs-24-05 { inherit (pkgs) system; };
-          versionUtils = pkgs.callPackage ./dev_tools/version_utils.nix { inherit pkgs-24-05; };
+          versionUtils = pkgs.callPackage ./dev_tools/nixfiles/version_utils.nix { inherit pkgs-24-05; };
           pythonVerConfig = versionUtils.pythonVerConfig;
           stablePython = versionUtils.stablePython;
           verToPackageDef = ver: {
             name = "ssrjson-py3" + (builtins.toString ver);
-            value = pkgs.callPackage ./dev_tools/build_package.nix {
+            value = pkgs.callPackage ./dev_tools/nixfiles/build_package.nix {
               python = versionUtils.pyVerToPyPackage ver;
             };
           };
           verToWheelDef = ver: {
             name = "ssrjson-wheel-py3" + (builtins.toString ver);
-            value = pkgs.callPackage ./dev_tools/build_wheel.nix {
+            value = pkgs.callPackage ./dev_tools/nixfiles/build_wheel.nix {
               python = versionUtils.pyVerToPyPackage ver;
             };
           };
@@ -101,7 +101,7 @@
           ssrjsonWheels = builtins.listToAttrs (map verToWheelDef versionUtils.wheelBuildableVersions);
         in
         {
-          ssrjson-tarball = pkgs.callPackage ./dev_tools/build_tarball.nix { python = stablePython; };
+          ssrjson-tarball = pkgs.callPackage ./dev_tools/nixfiles/build_tarball.nix { python = stablePython; };
           default = ssrjsonPackages.ssrjson-py313;
         }
         // ssrjsonPackages

@@ -1,6 +1,6 @@
 { pkgs, pkgs-24-05, ... }:
 let
-  pythonVerConfig = pkgs.lib.importJSON ./pyver.json;
+  pythonVerConfig = pkgs.lib.importJSON ./../pyver.json;
 in
 rec {
   inherit pythonVerConfig;
