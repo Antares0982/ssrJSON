@@ -22,10 +22,10 @@ let
 in
 clangStdenv.mkDerivation {
   pname = "ssrjson-wheel";
-  version = builtins.readFile ../version_file;
+  version = builtins.readFile ../../version_file;
   src = ./.;
   unpackPhase = ''
-    cp -r ${./..}/* .
+    cp -r ${./../..}/* .
     chmod -R 700 .
   '';
   buildPhase = ''

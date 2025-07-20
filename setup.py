@@ -45,8 +45,7 @@ else:
             build_dir = os.path.abspath("build")
             if not os.path.exists(build_dir):
                 os.makedirs(build_dir)
-
-            # configure
+            # Configure
             if os.name == "nt":
                 cmake_cmd = [
                     "cmake",
@@ -72,14 +71,13 @@ else:
                     "build",
                 ]
             subprocess.check_call(cmake_cmd)
-            # 运行 cmake --build .
+            # Build
             if os.name == "nt":
                 build_cmd = ["cmake", "--build", "build", "--config", "Release"]
             else:
                 nproc = subprocess.check_output("nproc").strip()
                 build_cmd = ["cmake", "--build", "build", "--", "-j", nproc]
             subprocess.check_call(build_cmd)
-
             # Copy file
             if os.name == "nt":
                 built_filename = "Release/ssrjson.dll"
@@ -87,18 +85,15 @@ else:
             else:
                 built_filename = "ssrjson.so"
                 target_filename = built_filename
-
+            #
             built_path = os.path.join(build_dir, built_filename)
-
             if not os.path.exists(built_path):
                 raise RuntimeError(f"Built library not found: {built_path}")
-
+            #
             target_dir = os.path.join(self.build_lib, "ssrjson")
             if not os.path.exists(target_dir):
                 raise RuntimeError("ssrjson directory not found")
-
             target_path = os.path.join(target_dir, target_filename)
-
             self.announce(f"Copying {built_path} to {target_path}")
             print(f"Copying {built_path} to {target_path}")
             shutil.copyfile(built_path, target_path)

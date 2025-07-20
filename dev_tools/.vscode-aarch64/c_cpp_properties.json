@@ -2,14 +2,14 @@
     "configurations": [
         {
             "name": "Linux",
-            "includePath": [
-            ],
+            "includePath": [],
             "defines": [],
             "compilerPath": ".nix-pyenv/bin/clang",
             "cStandard": "c17",
             "cppStandard": "gnu++17",
-            "intelliSenseMode": "linux-gcc-x64",
-            "configurationProvider": "ms-vscode.cmake-tools"
+            "intelliSenseMode": "linux-clang-arm64",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
         }
     ],
     "version": 4

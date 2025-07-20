@@ -122,6 +122,7 @@ in
   ensure_symlink "${nix_pyenv_directory}/bin/clang++" $CXX
   ensure_symlink "${nix_pyenv_directory}/bin/cmake" ${pkgs.cmake}/bin/cmake
   ensure_symlink "${nix_pyenv_directory}/bin/clang-format" ${pkgs.clang-tools}/bin/clang-format
+  ensure_symlink "${nix_pyenv_directory}/bin/cmake-format" ${pkgs.cmake-format}/bin/cmake-format
   # clang -print-file-name will give wrong asan path, use gcc version
   ensure_symlink "${nix_pyenv_directory}/lib/libasan.so" $(readlink -f $(gcc -print-file-name=libasan.so))
 
