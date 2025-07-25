@@ -1,8 +1,8 @@
 #ifndef SSRJSON_SIMD_IMPL_H
 #define SSRJSON_SIMD_IMPL_H
 
-#include "ssrjson.h"
 #include "simd/simd_detect.h"
+#include "ssrjson.h"
 #include "vector_types.h"
 //
 

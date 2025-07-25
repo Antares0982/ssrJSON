@@ -2,8 +2,8 @@
 #define SSRJSON_SIMD_LONG_CVT_PART_BACK_CVT_H
 
 #ifdef SSRJSON_CLANGD_DUMMY
-#    include "ssrjson.h"
 #    include "simd/simd_impl.h"
+#    include "ssrjson.h"
 #    ifndef COMPILE_SIMD_BITS
 #        define COMPILE_SIMD_BITS 512
 #    endif

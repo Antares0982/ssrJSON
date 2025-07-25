@@ -450,7 +450,6 @@ force_inline bool unicode_buffer_append_arr_end(_dst_t **writer_addr, EncodeUnic
     return true;
 }
 
-
 force_inline EncodeValJumpFlag encode_process_val(
         EncodeUnicodeWriter *writer_addr,
         EncodeUnicodeBufferInfo *unicode_buffer_info, PyObject *val,

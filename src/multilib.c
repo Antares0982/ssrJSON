@@ -16,7 +16,6 @@ IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u32_u8)
 IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u16_u8)
 
 
-
 int CurrentSIMDFeatureLevel = -1;
 
 const char *_update_simd_features(void) {

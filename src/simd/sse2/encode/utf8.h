@@ -9,5 +9,4 @@
 #include "simd/sse2/common.h"
 
 
-
 #endif // SSRJSON_SIMD_SSE2_UTF8_H

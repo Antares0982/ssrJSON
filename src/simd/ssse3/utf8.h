@@ -15,6 +15,4 @@
  */
 
 
-
-
 #endif // SSRJSON_SIMD_SSSE3_UTF8_H

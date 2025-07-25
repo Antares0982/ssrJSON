@@ -12,7 +12,6 @@
 #define COMPILE_SIMD_BITS 128
 #include "compile_context/sr_in.inl.h"
 
-
 force_inline void fast_skip_spaces(const _src_t **cur_addr, const _src_t *end) {
     const vector_a template = broadcast(' ');
     const _src_t *cur = *cur_addr;
