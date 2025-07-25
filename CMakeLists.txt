@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD 17)
 # Build Options for tests and docs
 option(ASAN_ENABLED "Build with asan" OFF)
 
-option(BUILD_BENCHMARK "Build benchmarks" ON)
 option(BUILD_TEST "Build tests" ON)
 option(BUILD_SHIPPING_SIMD "Build all simd for shipping" ON)
 option(BUILD_AVX512 "Force build avx512, non-shipping" OFF)
@@ -94,6 +93,9 @@ target_compile_definitions(commonBuild
                            INTERFACE BUILD_MULTI_LIB=${BUILD_MULTI_LIB})
 if(MSVC)
   target_compile_options(commonBuild INTERFACE /FAcs)
+else()
+  target_compile_options(commonBuild INTERFACE -fvisibility=hidden
+                                               -fvisibility-inlines-hidden)
 endif()
 
 # custom target: update SCM file
@@ -159,11 +161,6 @@ else()
   # TODO cannot detect simd
 endif()
 
-if(BUILD_BENCHMARK)
-  message("ENABLE BENCHMARK")
-  target_compile_definitions(commonBuild INTERFACE SSRJSON_BUILD_BENCHMARK=1)
-endif()
-
 if(ASAN_ENABLED)
   message("ENABLE ASAN")
   target_compile_definitions(commonBuild INTERFACE SSRJSON_ASAN_CHECK=1)
@@ -194,10 +191,6 @@ set(SRC_TEST src/ctests/tools.c src/ctests/main.c src/utils/float_tables.c)
 set(SRC_TEST_WITH_SIMD src/ctests/test.c)
 
 set(SRC_FUZZER src/ctests/fuzzer.c)
-
-if(BUILD_BENCHMARK)
-  set(SRC_FILES ${SRC_FILES} src/benchmark.c)
-endif()
 
 add_library(dragon_box OBJECT ${SRC_DRAGON_BOX})
 target_link_libraries(dragon_box PUBLIC commonBuild)

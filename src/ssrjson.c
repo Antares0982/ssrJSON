@@ -10,12 +10,6 @@ PyObject *ssrjson_EncodeToBytes(PyObject *self, PyObject *args, PyObject *kwargs
 PyObject *ssrjson_Decode(PyObject *self, PyObject *args, PyObject *kwargs);
 PyObject *ssrjson_FileEncode(PyObject *self, PyObject *args, PyObject *kwargs);
 PyObject *ssrjson_DecodeFile(PyObject *self, PyObject *args, PyObject *kwargs);
-#if SSRJSON_BUILD_BENCHMARK
-PyObject *run_unicode_accumulate_benchmark(PyObject *self, PyObject *args, PyObject *kwargs);
-PyObject *run_object_accumulate_benchmark(PyObject *self, PyObject *args, PyObject *kwargs);
-PyObject *run_object_benchmark(PyObject *self, PyObject *args, PyObject *kwargs);
-PyObject *inspect_pyunicode(PyObject *self, PyObject *args, PyObject *kwargs);
-#endif
 PyObject *ssrjson_print_current_features(PyObject *self, PyObject *);
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *);
 
@@ -28,12 +22,6 @@ static PyMethodDef ssrjson_Methods[] = {
         {"loads", (PyCFunction)ssrjson_Decode, METH_VARARGS | METH_KEYWORDS, "loads(s)\n--\n\nConverts JSON as string to dict object structure."},
         {"print_current_features", ssrjson_print_current_features, METH_NOARGS, "print_current_features()\n--\n\nPrints current features."},
         {"get_current_features", ssrjson_get_current_features, METH_NOARGS, "get_current_features()\n--\n\nGet current features."},
-#if SSRJSON_BUILD_BENCHMARK
-        {"run_unicode_accumulate_benchmark", (PyCFunction)run_unicode_accumulate_benchmark, METH_VARARGS | METH_KEYWORDS, "Benchmark."},
-        {"run_object_accumulate_benchmark", (PyCFunction)run_object_accumulate_benchmark, METH_VARARGS | METH_KEYWORDS, "Benchmark."},
-        {"run_object_benchmark", (PyCFunction)run_object_benchmark, METH_VARARGS | METH_KEYWORDS, "Benchmark."},
-        {"inspect_pyunicode", (PyCFunction)inspect_pyunicode, METH_VARARGS | METH_KEYWORDS, "Inspect PyUnicode."},
-#endif
         {NULL, NULL, 0, NULL} /* Sentinel */
 };
 

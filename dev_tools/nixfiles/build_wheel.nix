@@ -34,6 +34,7 @@ clangStdenv.mkDerivation {
     cp licenses/* .
     cp ${dylib}/$SSRJSON_SONAME ssrjson
     chmod 700 ssrjson/$SSRJSON_SONAME
+    strip --strip-all ssrjson/$SSRJSON_SONAME
     python dev_tools/check_glibc_version.py ssrjson/$SSRJSON_SONAME ${targetGLIBCVerString}
     SSRJSON_USE_NIX_PREBUILT=1 python -m build --no-isolation
     auditwheel repair --plat manylinux_2_${targetGLIBCVerString}_x86_64 dist/*.whl
