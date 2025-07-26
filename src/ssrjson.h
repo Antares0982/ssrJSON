@@ -66,6 +66,17 @@
 #    define GCC_HAS_CTZLL 0
 #endif
 
+/* export symbol */
+#if defined(_WIN32) || defined(__CYGWIN__)
+#    ifdef SSRJSON_EXPORTS
+#        define SSRJSON_EXPORTED_SYMBOL __declspec(dllexport)
+#    else
+#        define SSRJSON_EXPORTED_SYMBOL __declspec(dllimport)
+#    endif
+#elif ssrjson_has_attribute(visibility)
+#    define SSRJSON_EXPORTED_SYMBOL __attribute__((visibility("default")))
+#endif
+
 /** C version (STDC) */
 #if defined(__STDC__) && (__STDC__ >= 1) && defined(__STDC_VERSION__)
 #    define SSRJSON_STDC_VER __STDC_VERSION__
@@ -73,7 +84,7 @@
 #    define SSRJSON_STDC_VER 0
 #endif
 
-/** C++ version */
+/* C++ version */
 #if defined(__cplusplus)
 #    define SSRJSON_CPP_VER __cplusplus
 #else
