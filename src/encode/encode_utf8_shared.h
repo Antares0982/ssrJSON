@@ -104,9 +104,9 @@ force_inline bool encode_one_ucs4(u8 **writer_addr, u32 unicode) {
         // assert(unicode <= 0x10ffff); // cannot create such unicode object in normal way
         u8 *writer = *writer_addr;
         *writer++ = (unicode >> 18) | 0xf0;
-        *writer++ = (unicode >> 12) & 0x3f | 0x80;
-        *writer++ = (unicode >> 6) & 0x3f | 0x80;
-        *writer++ = unicode & 0x3f | 0x80;
+        *writer++ = ((unicode >> 12) & 0x3f) | 0x80;
+        *writer++ = ((unicode >> 6) & 0x3f) | 0x80;
+        *writer++ = (unicode & 0x3f) | 0x80;
         *writer_addr = writer;
     }
     return true;

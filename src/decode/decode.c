@@ -144,13 +144,13 @@ force_inline bool push_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
 
 force_inline bool decode_arr(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_addr,
-                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, Py_ssize_t arr_len) {
+                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize arr_len) {
     assert(arr_len >= 0);
     PyObject *list = PyList_New(arr_len);
     RETURN_ON_UNLIKELY_ERR(!list);
     decode_obj_stack_ptr_t list_val_start = (*decode_obj_writer_addr) - arr_len;
     assert(list_val_start >= (*decode_obj_stack_addr));
-    for (Py_ssize_t j = 0; j < arr_len; j++) {
+    for (usize j = 0; j < arr_len; j++) {
         PyObject *val = list_val_start[j];
         assert(val);
         PyList_SET_ITEM(list, j, val); // this never fails
@@ -161,12 +161,12 @@ force_inline bool decode_arr(decode_obj_stack_ptr_t *decode_obj_writer_addr,
 
 force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_addr,
-                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, Py_ssize_t dict_len) {
-    PyObject *dict = _PyDict_NewPresized(dict_len);
+                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize dict_len) {
+    PyObject *dict = _PyDict_NewPresized((Py_ssize_t)dict_len);
     RETURN_ON_UNLIKELY_ERR(!dict);
     decode_obj_stack_ptr_t dict_val_start = (*decode_obj_writer_addr) - dict_len * 2;
     decode_obj_stack_ptr_t dict_val_view = dict_val_start;
-    for (size_t j = 0; j < dict_len; j++) {
+    for (usize j = 0; j < dict_len; j++) {
         PyObject *key = *dict_val_view++;
         assert(PyUnicode_Check(key));
         PyObject *val = *dict_val_view++;
@@ -181,7 +181,7 @@ force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
             // we already decrefed some objects, have to manually handle all refcnt here
             Py_DECREF(dict);
             // also need to clean up the rest k-v pairs
-            for (size_t k = j * 2; k < dict_len * 2; k++) {
+            for (usize k = j * 2; k < dict_len * 2; k++) {
                 Py_DECREF(dict_val_start[k]);
             }
             // move decode_obj_writer to the first key addr, avoid double decref
@@ -301,3 +301,5 @@ done:;
     }
     return ret;
 }
+
+static_assert(SSRJSON_EXPORTS, "SSRJSON_EXPORTS=1");

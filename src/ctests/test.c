@@ -145,7 +145,7 @@ int SIMD_NAME_MODIFIER(test_cvt_u16_to_u32)(void) {
 force_inline int _test_ucs2_encode_ssse3(void) {
     u16 input[8];
     u8 output[24];
-    for (int i = 0; i < COUNT_OF(input); ++i) {
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
         input[i] = get_random_3bytes_u16();
     }
     ucs2_encode_3bytes_utf8_ssse3(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
@@ -161,7 +161,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_3bytes_utf8)(void) {
     GUARDED_SIMD;
     u16 input[32];
     u8 output[96];
-    for (int i = 0; i < COUNT_OF(input); ++i) {
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
         input[i] = get_random_3bytes_u16();
     }
     ucs2_encode_3bytes_utf8_avx512(output, (vector_a_u16_512) * (vector_u_u16_512 *)input);
@@ -171,7 +171,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_3bytes_utf8)(void) {
     {
         u16 input[16];
         u8 output[48];
-        for (int i = 0; i < COUNT_OF(input); ++i) {
+        for (usize i = 0; i < COUNT_OF(input); ++i) {
             input[i] = get_random_3bytes_u16();
         }
         ucs2_encode_3bytes_utf8_avx2(output, (vector_a_u8_256) * (vector_u_u8_256 *)input);
@@ -197,7 +197,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_2bytes_utf8)(void) {
     GUARDED_SIMD;
     u16 input[32];
     u8 output[64];
-    for (int i = 0; i < COUNT_OF(input); ++i) {
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
         input[i] = get_random_2bytes_u16();
     }
     ucs2_encode_2bytes_utf8_avx512(output, (vector_a_u16_512) * (vector_u_u16_512 *)input);
@@ -206,7 +206,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_2bytes_utf8)(void) {
     GUARDED_SIMD;
     u16 input[16];
     u8 output[32];
-    for (int i = 0; i < COUNT_OF(input); ++i) {
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
         input[i] = get_random_2bytes_u16();
     }
     ucs2_encode_2bytes_utf8_avx2(output, (vector_a_u8_256) * (vector_u_u8_256 *)input);
@@ -214,7 +214,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_2bytes_utf8)(void) {
 #    else
     u16 input[8];
     u8 output[16];
-    for (int i = 0; i < COUNT_OF(input); ++i) {
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
         input[i] = get_random_2bytes_u16();
     }
     ucs2_encode_2bytes_utf8_sse2(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
@@ -227,7 +227,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_2bytes_utf8)(void) {
 force_inline int _test_ucs4_encode_ssse3(void) {
     u32 input[4];
     u8 output[12];
-    for (int i = 0; i < COUNT_OF(input); ++i) {
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
         input[i] = get_random_3bytes_u16();
     }
     ucs4_encode_3bytes_utf8_ssse3(output, (vector_a_u32_128) * (vector_u_u32_128 *)input);
@@ -243,7 +243,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_3bytes_utf8)(void) {
     GUARDED_SIMD;
     u32 input[16];
     u8 output[48];
-    for (int i = 0; i < COUNT_OF(input); ++i) {
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
         input[i] = get_random_3bytes_u16();
     }
     ucs4_encode_3bytes_utf8_avx512(output, (vector_a_u32_512) * (vector_u_u32_512 *)input);
@@ -253,7 +253,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_3bytes_utf8)(void) {
     {
         u32 input[8];
         u8 output[24];
-        for (int i = 0; i < COUNT_OF(input); ++i) {
+        for (usize i = 0; i < COUNT_OF(input); ++i) {
             input[i] = get_random_3bytes_u16();
         }
         ucs4_encode_3bytes_utf8_avx2(output, (vector_a_u8_256) * (vector_u_u8_256 *)input);
@@ -276,7 +276,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_2bytes_utf8)(void) {
     GUARDED_SIMD;
     u32 input[16];
     u8 output[32];
-    for (int i = 0; i < COUNT_OF(input); ++i) {
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
         input[i] = get_random_2bytes_u16();
     }
     ucs4_encode_2bytes_utf8_avx512(output, (vector_a_u16_512) * (vector_u_u16_512 *)input);
@@ -285,7 +285,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_2bytes_utf8)(void) {
     GUARDED_SIMD;
     u32 input[8];
     u8 output[16];
-    for (int i = 0; i < COUNT_OF(input); ++i) {
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
         input[i] = get_random_2bytes_u16();
     }
     ucs4_encode_2bytes_utf8_avx2(output, (vector_a_u8_256) * (vector_u_u8_256 *)input);
@@ -293,7 +293,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_2bytes_utf8)(void) {
 #    else
     u32 input[4];
     u8 output[8];
-    for (int i = 0; i < COUNT_OF(input); ++i) {
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
         input[i] = get_random_2bytes_u16();
     }
     ucs4_encode_2bytes_utf8_sse2(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);

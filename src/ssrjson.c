@@ -3,6 +3,8 @@
 #include "tls.h"
 #include "version.h"
 
+#pragma clang diagnostic ignored "-Wcast-function-type-mismatch"
+
 extern decode_cache_t DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
 
 PyObject *ssrjson_Encode(PyObject *self, PyObject *args, PyObject *kwargs);

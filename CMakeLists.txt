@@ -46,6 +46,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CompilerFeatures)
 include(XcodeProperty)
 
+if(NOT (CMAKE_C_COMPILER_ID MATCHES Clang))
+  message(FATAL_ERROR "CMAKE_C_COMPILER_ID must be Clang")
+endif()
 # ------------------------------------------------------------------------------
 # Search Python Package
 if(BUILD_TEST)
@@ -134,6 +137,7 @@ if(BUILD_NATIVE)
 endif()
 
 message("CMAKE_C_COMPILER_ID = ${CMAKE_C_COMPILER_ID}")
+message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
 message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 message("CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
 
@@ -198,21 +202,22 @@ if(BUILD_MULTI_LIB)
   set(SRC_FILES ${SRC_FILES} src/multilib.c)
 
   if("${TARGET_SIMD_ARCH}" STREQUAL "x86")
-    add_library(ssrjson_common OBJECT ${SRC_FILES})
-    target_link_libraries(ssrjson_common PUBLIC commonBuild)
+    add_library(_ssrjson_common OBJECT ${SRC_FILES})
+    target_link_libraries(_ssrjson_common PUBLIC commonBuild)
+    target_compile_definitions(_ssrjson_common PUBLIC SSRJSON_EXPORTS=1)
     add_library(ssrjson_avx512 OBJECT ${SRC_WITH_SIMD})
-    target_link_libraries(ssrjson_avx512 PUBLIC ssrjson_common)
+    target_link_libraries(ssrjson_avx512 PUBLIC _ssrjson_common)
     add_library(ssrjson_avx2 OBJECT ${SRC_WITH_SIMD})
-    target_link_libraries(ssrjson_avx2 PUBLIC ssrjson_common)
+    target_link_libraries(ssrjson_avx2 PUBLIC _ssrjson_common)
 
     add_library(ssrjson_sse4 OBJECT ${SRC_WITH_SIMD})
-    target_link_libraries(ssrjson_sse4 PUBLIC ssrjson_common)
+    target_link_libraries(ssrjson_sse4 PUBLIC _ssrjson_common)
     # add_library(ssrjson_sse2 OBJECT ${SRC_WITH_SIMD})
-    # target_link_libraries(ssrjson_sse2 PUBLIC ssrjson_common)
+    # target_link_libraries(ssrjson_sse2 PUBLIC _ssrjson_common)
     add_library(
       ssrjson SHARED
       $<TARGET_OBJECTS:ssrjson_avx512> $<TARGET_OBJECTS:ssrjson_avx2>
-      $<TARGET_OBJECTS:ssrjson_sse4> $<TARGET_OBJECTS:ssrjson_common>
+      $<TARGET_OBJECTS:ssrjson_sse4> $<TARGET_OBJECTS:_ssrjson_common>
       $<TARGET_OBJECTS:dragon_box>)
     target_link_libraries(ssrjson PUBLIC ${Python3_LIBRARIES})
 
@@ -221,14 +226,15 @@ if(BUILD_MULTI_LIB)
     add_sse4_compile_option(ssrjson_sse4)
 
   elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
-    add_library(ssrjson_common OBJECT ${SRC_FILES})
-    target_link_libraries(ssrjson_common PUBLIC commonBuild)
+    add_library(_ssrjson_common OBJECT ${SRC_FILES})
+    target_link_libraries(_ssrjson_common PUBLIC commonBuild)
+    target_compile_definitions(_ssrjson_common PUBLIC SSRJSON_EXPORTS=1)
     add_library(ssrjson_neon OBJECT ${SRC_WITH_SIMD})
-    target_link_libraries(ssrjson_neon PUBLIC ssrjson_common)
+    target_link_libraries(ssrjson_neon PUBLIC _ssrjson_common)
     add_library(
       ssrjson SHARED
-      $<TARGET_OBJECTS:ssrjson_neon> $<TARGET_OBJECTS:ssrjson_common>
-      $<TARGET_OBJECTS:ssrjson_common> $<TARGET_OBJECTS:dragon_box>)
+      $<TARGET_OBJECTS:ssrjson_neon> $<TARGET_OBJECTS:_ssrjson_common>
+      $<TARGET_OBJECTS:_ssrjson_common> $<TARGET_OBJECTS:dragon_box>)
     target_link_libraries(ssrjson PUBLIC ${Python3_LIBRARIES})
 
   else()
@@ -237,10 +243,10 @@ if(BUILD_MULTI_LIB)
 else()
   set(SRC_FILES ${SRC_FILES} src/singlelib.c)
   add_library(ssrjson SHARED ${SRC_FILES} ${SRC_WITH_SIMD} ${SRC_DRAGON_BOX})
+  target_compile_definitions(ssrjson PUBLIC SSRJSON_EXPORTS=1)
   target_link_libraries(ssrjson PRIVATE commonBuild)
 endif()
 
-target_compile_definitions(ssrjson PUBLIC SSRJSON_EXPORTS=1)
 set_target_properties(ssrjson PROPERTIES PREFIX "")
 
 if(ASAN_ENABLED AND MSVC)
@@ -291,17 +297,27 @@ if(XCODE)
 
 elseif(MSVC)
   set(SSRJSON_FLAGS)
-  list(APPEND SSRJSON_FLAGS "/utf-8")
+  list(
+    APPEND
+    SSRJSON_FLAGS
+    "/utf-8"
+    "/W4"
+    "/WX"
+    "-Wno-unused-parameter"
+    "-Wno-unused-variable"
+    "-Wno-unused-label"
+    "-Wno-unused-function"
+    "-Wno-uninitialized"
+    "-Wno-unused-but-set-variable"
+    "-Wno-deprecated-declarations")
 
   target_compile_options(commonBuild INTERFACE ${SSRJSON_FLAGS})
 
-elseif(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|Intel")
+else()
   set(SSRJSON_FLAGS)
 
-  if(CMAKE_C_COMPILER_ID MATCHES Clang)
-    # https://github.com/llvm/llvm-project/issues/63963
-    list(APPEND SSRJSON_FLAGS "-Wno-constant-logical-operand")
-  endif()
+  # https://github.com/llvm/llvm-project/issues/63963
+  list(APPEND SSRJSON_FLAGS "-Wno-constant-logical-operand")
 
   if(CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
     message(
