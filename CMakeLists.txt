@@ -309,7 +309,8 @@ elseif(MSVC)
     "-Wno-unused-function"
     "-Wno-uninitialized"
     "-Wno-unused-but-set-variable"
-    "-Wno-deprecated-declarations")
+    "-Wno-deprecated-declarations"
+    "-Wno-visibility")
 
   target_compile_options(commonBuild INTERFACE ${SSRJSON_FLAGS})
 
