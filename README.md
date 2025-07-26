@@ -1,5 +1,9 @@
 # ssrJSON
 
+A SIMD boosted high-performance and correct Python JSON library that fully leverages modern processor capabilities.
+
+## Introduction
+
 ssrJSON is a Python JSON library that leverages modern hardware capabilities to achieve peak performance, implemented primarily in C with some components written in C++. It offers a fully compatible interface to Python’s standard `json` module, making it a seamless drop-in replacement, while providing exceptional performance for JSON encoding and decoding.
 
 `ssrjson.dumps()` is about 4x-26x as fast as `json.dumps()` (Python3.13, x86-64, AVX2). `ssrjson.loads()` is about 2x-8x as fast as `json.loads()` for `str` input and is about 2x-8x as fast as `json.loads()` for `bytes` input (Python3.13, x86-64, AVX2). ssrJSON also provides `ssrjson.dumps_to_bytes()`, which encode Python objects directly to `bytes` object using SIMD instructions, similar to `orjson.dumps` but without calling slow CPython functions to do the UTF-8 encoding. ssrJSON is faster than or nearly as fast as [orjson](https://github.com/ijl/orjson) on most benchmark cases, which means ssrJSON is the world's fastest Python JSON library at now. Typically, ssrJSON is capable of processing non-ASCII strings directly without invoking any slow CPython UTF-8 encoding and decoding interfaces, eliminating the need for intermediate representations. Furthermore, the underlying implementation leverages SIMD acceleration to optimize this process. Details of benchmarking can be found in the [benchmark repository](https://github.com/Nambers/ssrJSON-benchmark). Implementation details can be found in [Implementation Details](#implementation-details) section.
@@ -16,7 +20,7 @@ Pre-built wheels are available on PyPI.
 pip install ssrjson
 ```
 
-Note: ssrJSON requires at least SSE4.2 on x86-64 ([x86-64-v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels:~:text=their%20encryption%20extensions.-,Microarchitecture%20levels,-%5Bedit%5D)). ssrJSON does not work with other Python implementations other than CPython. Currently supported CPython versions are 3.9, 3.10, 3.11, 3.12, 3.13, 3.14. For Python 3.14, you need to build it from source.
+Note: ssrJSON requires at least SSE4.2 on x86-64 ([x86-64-v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels:~:text=their%20encryption%20extensions.-,Microarchitecture%20levels,-%5Bedit%5D)). ssrJSON does not work with Python implementations other than CPython. Currently supported CPython versions are 3.9, 3.10, 3.11, 3.12, 3.13, 3.14. For Python 3.14, you need to build it from source.
 
 ### Build From Source
 
@@ -55,10 +59,28 @@ ssrJSON only supports encoding with indent = 2, 4 or no indent (indent=0). When 
 >>> import ssrjson
 >>> ssrjson.dumps({"a": "b", "c": {"d": True}, "e": [1, 2]})
 '{"a":"b","c":{"d":true},"e":[1,2]}'
->>> ssrjson.dumps({"a": "b", "c": {"d": True}, "e": [1, 2]}, indent=2)
-'{\n  "a": "b",\n  "c": {\n    "d": true\n  },\n  "e": [\n    1,\n    2\n  ]\n}'
->>> ssrjson.dumps({"a": "b", "c": {"d": True}, "e": [1, 2]}, indent=4)
-'{\n    "a": "b",\n    "c": {\n        "d": true\n    },\n    "e": [\n        1,\n        2\n    ]\n}'
+>>> print(ssrjson.dumps({"a": "b", "c": {"d": True}, "e": [1, 2]}, indent=2))
+{
+  "a": "b",
+  "c": {
+    "d": true
+  },
+  "e": [
+    1,
+    2
+  ]
+}
+>>> print(ssrjson.dumps({"a": "b", "c": {"d": True}, "e": [1, 2]}, indent=4))
+{
+    "a": "b",
+    "c": {
+        "d": true
+    },
+    "e": [
+        1,
+        2
+    ]
+}
 >>> ssrjson.dumps({"a": "b", "c": {"d": True}, "e": [1, 2]}, indent=3)
 Traceback (most recent call last):
   File "<python-input>", line 1, in <module>
@@ -173,7 +195,7 @@ The case of `math.nan` is similar.
 
 Please note that ssrJSON is currently in the **beta stage** of development.
 
-Several commonly used features are still under development, including the serialization of subclass objects of built-in types such as `dict`, `list`, and `str`, the `object_hook` functionality, and error location reporting during decoding. ssrJSON will not support encoding and decoding of third-party data structures.
+Several commonly used features are still under development, including serialization of subclasses of `str`, the `object_hook` functionality, and error location reporting during decoding. Additionally, ssrJSON will not support encoding or decoding of third-party data structures.
 
 The ARM64 architecture is not yet supported but will be supported in the near future.
 

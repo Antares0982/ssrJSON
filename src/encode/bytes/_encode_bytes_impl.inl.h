@@ -120,9 +120,9 @@ force_inline EncodeValJumpFlag encode_bytes_process_val(
         }                                        \
     } while (0)
 
-    PyFastTypes fast_type = fast_type_check(val);
+    ssrjson_py_types obj_type = ssrjson_type_check(val);
 
-    switch (fast_type) {
+    switch (obj_type) {
         case T_Unicode: {
             RETURN_JUMP_FAIL_ON_UNLIKELY_ERR(!bytes_buffer_append_str(val, writer_addr, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj));
             break;
@@ -198,7 +198,7 @@ force_inline EncodeValJumpFlag encode_bytes_process_val(
             break;
         }
         default: {
-            PyErr_SetString(JSONEncodeError, "Unsupported type");
+            PyErr_SetString(JSONEncodeError, "Unsupported type to encode");
             return JumpFlag_Fail;
         }
     }
@@ -234,7 +234,7 @@ ssrjson_dumps_to_bytes_obj(PyObject *in_obj) {
 
     // this is the starting, we don't need an indent before container.
     // so is_in_obj always pass true
-    if (PyDict_CheckExact(cur_obj)) {
+    if (PyDict_Check(cur_obj)) {
         if (unlikely(PyDict_GET_SIZE(cur_obj) == 0)) {
             bool _c = unicode_buffer_append_empty_obj(&_WRITER(&writer), &_unicode_buffer_info, cur_nested_depth, true);
             assert(_c);
@@ -248,7 +248,7 @@ ssrjson_dumps_to_bytes_obj(PyObject *in_obj) {
         cur_nested_depth = 1;
         // NOTE: ctn_stack[0] is always invalid
         goto dict_pair_begin;
-    } else if (PyList_CheckExact(cur_obj)) {
+    } else if (PyList_Check(cur_obj)) {
         cur_list_size = PyList_GET_SIZE(cur_obj);
         if (unlikely(cur_list_size == 0)) {
             bool _c = unicode_buffer_append_empty_arr(&_WRITER(&writer), &_unicode_buffer_info, cur_nested_depth, true);
@@ -265,7 +265,7 @@ ssrjson_dumps_to_bytes_obj(PyObject *in_obj) {
         cur_is_tuple = false;
         goto arr_val_begin;
     } else {
-        if (unlikely(!PyTuple_CheckExact(cur_obj))) {
+        if (unlikely(!PyTuple_Check(cur_obj))) {
             goto fail_ctntype;
         }
         cur_list_size = PyTuple_GET_SIZE(cur_obj);
@@ -429,7 +429,7 @@ fail:;
     }
     return NULL;
 fail_ctntype:;
-    PyErr_SetString(JSONEncodeError, "Unsupported type");
+    PyErr_SetString(JSONEncodeError, "Unsupported type to encode");
     goto fail;
 fail_keytype:;
     PyErr_SetString(JSONEncodeError, "Expected `str` as key");

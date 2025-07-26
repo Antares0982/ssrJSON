@@ -149,19 +149,18 @@ force_inline int pydict_next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
 #endif
 }
 
-typedef enum PyFastTypes {
+typedef enum ssrjson_py_types {
     T_Unicode,
     T_Long,
     T_Bool,
-    // T_False,
-    // T_True,
     T_None,
     T_Float,
     T_List,
     T_Dict,
     T_Tuple,
-    Unknown,
-} PyFastTypes;
+    T_UnicodeNonCompact,
+    T_Unknown,
+} ssrjson_py_types;
 #if PY_MINOR_VERSION >= 13
 // _PyNone_Type is hidden in Python 3.13
 extern PyTypeObject *PyNone_Type;
@@ -172,8 +171,26 @@ extern PyTypeObject *PyNone_Type;
 extern PyTypeObject *PyNone_Type;
 #endif
 
+force_inline ssrjson_py_types slow_type_check(PyTypeObject *type) {
+    // common subclasses: collections.defaultdict
+    if (PyType_FastSubclass(type, Py_TPFLAGS_DICT_SUBCLASS)) {
+        return T_Dict;
+    } else if (PyType_FastSubclass(type, Py_TPFLAGS_LIST_SUBCLASS)) {
+        return T_List;
+    } else if (PyType_FastSubclass(type, Py_TPFLAGS_TUPLE_SUBCLASS)) {
+        return T_Tuple;
+    } else if (PyType_FastSubclass(type, Py_TPFLAGS_UNICODE_SUBCLASS)) {
+        return T_UnicodeNonCompact;
+    } else if (PyType_FastSubclass(type, Py_TPFLAGS_LONG_SUBCLASS)) {
+        return T_Long;
+    } else if (PyType_IsSubtype(type, &PyFloat_Type)) {
+        return T_Float;
+    }
+    return T_Unknown;
+}
+
 /* Get the value type as fast as possible. */
-force_inline PyFastTypes fast_type_check(PyObject *val) {
+force_inline ssrjson_py_types ssrjson_type_check(PyObject *val) {
     PyTypeObject *type = Py_TYPE(val);
     assert(type);
     // #if SSRJSON_X86 && __AVX2__
@@ -207,17 +224,17 @@ force_inline PyFastTypes fast_type_check(PyObject *val) {
     //         if (PY_MINOR_VERSION >= 13 && type == PyNone_Type) {
     //             return T_None;
     //         }
-    //         return Unknown;
+    //         return T_Unknown;
     //     }
     //     usize index = u32_tz_bits(mask);
     //     assert(index < 8);
-    //     return (PyFastTypes)index;
+    //     return (ssrjson_py_types)index;
     // #    else
     //     __m256i vec = _mm256_set1_epi64x((i64)(uintptr_t)type);
     //     __m256i m1 = _mm256_cmpeq_epi64(vec, *(SSRJSON_CAST(__m256i *, vector_py_types) + 0));
     //     if (likely(!_mm256_testz_si256(m1, m1))) {
     //         u32 mask = (u32)_mm256_movemask_epi8(m1);
-    //         return SSRJSON_CAST(PyFastTypes, u32_tz_bits(mask) / 8);
+    //         return SSRJSON_CAST(ssrjson_py_types, u32_tz_bits(mask) / 8);
     //     }
     //     if (PY_MINOR_VERSION >= 13 && type == PyNone_Type) {
     //         return T_None;
@@ -225,9 +242,9 @@ force_inline PyFastTypes fast_type_check(PyObject *val) {
     //     m1 = _mm256_cmpeq_epi64(vec, *(SSRJSON_CAST(__m256i *, vector_py_types) + 1));
     //     if (likely(!_mm256_testz_si256(m1, m1))) {
     //         u32 mask = (u32)_mm256_movemask_epi8(m1);
-    //         return SSRJSON_CAST(PyFastTypes, u32_tz_bits(mask) / 8 + 4);
+    //         return SSRJSON_CAST(ssrjson_py_types, u32_tz_bits(mask) / 8 + 4);
     //     }
-    //     return Unknown;
+    //     return T_Unknown;
     // #    endif
     // #else
     if (type == &PyUnicode_Type) {
@@ -247,7 +264,7 @@ force_inline PyFastTypes fast_type_check(PyObject *val) {
     } else if (type == &PyTuple_Type) {
         return T_Tuple;
     } else {
-        return Unknown;
+        return slow_type_check(type);
     }
     // #endif
 }
