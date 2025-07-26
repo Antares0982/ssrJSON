@@ -3,6 +3,7 @@
   nix_pyenv_directory,
   pyenv,
   pyenvs,
+  debuggable_py,
   using_python,
   pkgs,
   pkgs-24-05,
@@ -10,43 +11,55 @@
   lib,
 }:
 let
+  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
+  versions = versionUtils.versions;
   debugSourceDir = "debug_source";
   path_concate = x: builtins.toString "${x}";
   env_concate = builtins.map path_concate pyenvs;
-  link_python_cmd = python_env: ''
-    ensure_symlink ${nix_pyenv_directory}/bin/${python_env.executable} ${python_env.interpreter}
-    # creating python library symlinks
-    NIX_LIB_DIR=${nix_pyenv_directory}/lib/${python_env.libPrefix}
-    mkdir -p $NIX_LIB_DIR
-    # adding site packages
-    for file in ${python_env}/${python_env.sitePackages}/*; do
-        basefile=$(basename $file)
-        if [ -d "$file" ]; then
-            if [[ "$basefile" != *dist-info && "$basefile" != __pycache__ ]]; then
-                ensure_symlink "$NIX_LIB_DIR/$basefile" $file
-            fi
-        else
-            # the typing_extensions.py will make the vscode type checker not working!
-            if [[ $basefile == *.so ]] || ([[ $basefile == *.py ]] && [[ $basefile != typing_extensions.py ]]); then
-                ensure_symlink "$NIX_LIB_DIR/$basefile" $file
-            fi
-        fi
-    done
-    for file in $NIX_LIB_DIR/*; do
-        if [[ -L "$file" ]] && [[ "$(dirname $(readlink "$file"))" != "${python_env}/${python_env.sitePackages}" ]]; then
-            rm -f "$file"
-        fi
-    done
-    # ensure the typing_extensions.py is not in the lib directory
-    rm $NIX_LIB_DIR/typing_extensions.py > /dev/null 2>&1
-    unset NIX_LIB_DIR
+  minSupportVer = versionUtils.pythonVerConfig.minSupportVer;
+  latestStableVer = versionUtils.pythonVerConfig.latestStableVer;
+  link_python_cmd =
+    ver:
+    let
+      python_env = builtins.elemAt pyenvs (ver - minSupportVer);
+      debuggable_python = builtins.elemAt debuggable_py (ver - minSupportVer);
+    in
+    ''
+      echo "PYTHONPATH=\$PYTHONPATH:${python_env}/${python_env.sitePackages} exec ${debuggable_python}/bin/${debuggable_python.executable} \"\$@\"" > ${nix_pyenv_directory}/bin/${python_env.executable}
+      chmod 755 ${nix_pyenv_directory}/bin/${python_env.executable}
+      # ensure_symlink ${nix_pyenv_directory}/bin/${python_env.executable} ${python_env.interpreter}
+      # creating python library symlinks
+      NIX_LIB_DIR=${nix_pyenv_directory}/lib/${python_env.libPrefix}
+      mkdir -p $NIX_LIB_DIR
+      # adding site packages
+      for file in ${python_env}/${python_env.sitePackages}/*; do
+          basefile=$(basename $file)
+          if [ -d "$file" ]; then
+              if [[ "$basefile" != *dist-info && "$basefile" != __pycache__ ]]; then
+                  ensure_symlink "$NIX_LIB_DIR/$basefile" $file
+              fi
+          else
+              # the typing_extensions.py will make the vscode type checker not working!
+              if [[ $basefile == *.so ]] || ([[ $basefile == *.py ]] && [[ $basefile != typing_extensions.py ]]); then
+                  ensure_symlink "$NIX_LIB_DIR/$basefile" $file
+              fi
+          fi
+      done
+      for file in $NIX_LIB_DIR/*; do
+          if [[ -L "$file" ]] && [[ "$(dirname $(readlink "$file"))" != "${python_env}/${python_env.sitePackages}" ]]; then
+              rm -f "$file"
+          fi
+      done
+      # ensure the typing_extensions.py is not in the lib directory
+      rm $NIX_LIB_DIR/typing_extensions.py > /dev/null 2>&1
+      unset NIX_LIB_DIR
 
-    mkdir -p ${debugSourceDir}
-    if [[ ! -d ${debugSourceDir}/Python-${python_env.python.version} ]]; then
-      tar xvf ${python_env.python.src} -C ${debugSourceDir} --exclude='Doc' --exclude='Grammar' --exclude='Lib' > /dev/null 2>&1
-      chmod -R 755 ${debugSourceDir}/Python-${python_env.python.version}
-    fi
-  '';
+      mkdir -p ${debugSourceDir}
+      if [[ ! -d ${debugSourceDir}/Python-${python_env.python.version} ]]; then
+        tar xvf ${python_env.python.src} -C ${debugSourceDir} --exclude='Doc' --exclude='Grammar' --exclude='Lib' > /dev/null 2>&1
+        chmod -R 755 ${debugSourceDir}/Python-${python_env.python.version}
+      fi
+    '';
   orjsonSource =
     lib.optionalString (using_python.sourceVersion.minor != "14")
       (builtins.elemAt (builtins.filter (x: x.pname == "orjson") (
@@ -103,10 +116,10 @@ in
   mkdir -p ${nix_pyenv_directory}/lib
   mkdir -p ${nix_pyenv_directory}/bin
 ''
-+ (pkgs.lib.strings.concatStrings (builtins.map link_python_cmd pyenvs))
++ (pkgs.lib.strings.concatStrings (builtins.map link_python_cmd versions))
 + ''
   # add python executable to the bin directory
-  ensure_symlink "${nix_pyenv_directory}/bin/python" ${pyenv}/bin/python
+  ensure_symlink "${nix_pyenv_directory}/bin/python" python3.${builtins.toString latestStableVer}
   # export PATH=${using_python}/bin:${nix_pyenv_directory}/bin:$PATH
   export PATH=${nix_pyenv_directory}/bin:$PATH
 

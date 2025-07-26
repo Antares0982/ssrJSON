@@ -16,12 +16,13 @@ let
     { py, curPkgs, ... }:
     let
       x = (
-        (curPkgs.enableDebugging py).override {
+        py.override {
           self = x;
           packageOverrides = (
             self: super:
             {
-              orjson = curPkgs.callPackage ./orjson_fixed.nix { inherit super pkgs-24-05; };
+              orjson = curPkgs.callPackage ./orjson_fixed.nix { inherit self pkgs-24-05; };
+              ssrjson-benchmark = curPkgs.callPackage ./ssrjson_benchmark.nix { inherit self pkgs-24-05; };
             }
             // (curPkgs.lib.optionalAttrs (py.pythonVersion == "3.14") {
               pytest-random-order =
@@ -49,11 +50,22 @@ let
   required_python_packages = pkgs.callPackage ./py_requirements.nix { inherit pkgs-24-05; };
   pyenvs_map = py: (py.withPackages required_python_packages);
   pyenvs = builtins.map pyenvs_map using_pythons;
+  debuggable_py = builtins.map (
+    py:
+    (if ((lib.strings.toInt py.sourceVersion.minor) >= latestStableVer) then pkgs else pkgs-24-05)
+    .enableDebugging
+      py
+  ) using_pythons;
   sde = pkgs.callPackage ./sde.nix { };
   llvmDbg = pkgs.enableDebugging pkgs.llvmPackages.libllvm;
+  verToEnvDef = ver: {
+    name = "internal_py3" + (builtins.toString ver) + "env";
+    value = builtins.elemAt pyenvs (ver - minSupportVer);
+  };
 in
 {
   inherit pyenvs; # list
+  inherit debuggable_py; # list
   inherit using_pythons; # list
   inherit llvmDbg;
   inherit (pkgs)
@@ -65,12 +77,8 @@ in
     python-launcher
     valgrind
     ; # packages
-  py39env = builtins.elemAt pyenvs 0;
-  py310env = builtins.elemAt pyenvs 1;
-  py311env = builtins.elemAt pyenvs 2;
-  py312env = builtins.elemAt pyenvs 3;
-  py313env = builtins.elemAt pyenvs 4;
 }
+// (builtins.listToAttrs (map verToEnvDef versionUtils.versions))
 // lib.optionalAttrs (pkgs.system == "x86_64-linux") {
   inherit sde;
 }

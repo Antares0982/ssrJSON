@@ -23,5 +23,6 @@ with pypkgs;
     orjson
     pip
     pytest-xdist
+    ssrjson-benchmark
   ])
 )

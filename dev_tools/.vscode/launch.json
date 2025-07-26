@@ -48,8 +48,10 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "program": "/usr/bin/env",
             "args": [
+                "bash",
+                "${workspaceFolder}/.nix-pyenv/bin/python",
                 "${file}"
             ],
             "sourceFileMap": {
@@ -147,8 +149,11 @@
             "name": "(gdb) Launch python",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.nix-pyenv/bin/python",
-            "args": [],
+            "program": "/usr/bin/env",
+            "args": [
+                "bash",
+                "${workspaceFolder}/.nix-pyenv/bin/python"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [
@@ -180,8 +185,10 @@
             "name": "(gdb) Launch pytest",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "program": "/usr/bin/env",
             "args": [
+                "bash",
+                "${workspaceFolder}/.nix-pyenv/bin/python",
                 "-m",
                 "pytest",
                 "-s",
@@ -219,8 +226,10 @@
             "name": "(gdb) Launch benchmark",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "program": "/usr/bin/env",
             "args": [
+                "bash",
+                "${workspaceFolder}/.nix-pyenv/bin/python",
                 "bench/benchmark.py",
                 "--process-bytes",
                 "1000000000"

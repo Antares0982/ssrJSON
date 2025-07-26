@@ -2,7 +2,7 @@
 # and tests are skipped.
 # The others are same as orjson in Nixpkgs
 {
-  super,
+  self,
   pkgs,
   pkgs-24-05,
   lib,
@@ -12,17 +12,17 @@
   ...
 }:
 let
-  minorVer = lib.strings.toInt super.python.sourceVersion.minor;
+  minorVer = lib.strings.toInt self.python.sourceVersion.minor;
   versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
   pythonVerConfig = versionUtils.pythonVerConfig;
   useNixpkgsUnstable = (minorVer >= pythonVerConfig.latestStableVer);
 in
-super.buildPythonPackage rec {
+self.buildPythonPackage rec {
   pname = "orjson";
   version = if useNixpkgsUnstable then "3.10.16" else "3.10.13";
   pyproject = true;
 
-  disabled = super.pythonOlder "3.8";
+  disabled = self.pythonOlder "3.8";
 
   src = fetchFromGitHub {
     owner = "ijl";
@@ -48,15 +48,15 @@ super.buildPythonPackage rec {
       };
 
   nativeBuildInputs =
-    [ super.cffi ]
+    [ self.cffi ]
     ++ (with rustPlatform; [
       cargoSetupHook
       maturinBuildHook
     ]);
 
-  buildInputs = lib.optionals stdenv.hostPlatform.isDarwin [ super.libiconv ];
+  buildInputs = lib.optionals stdenv.hostPlatform.isDarwin [ self.libiconv ];
 
-  nativeCheckInputs = with super; [
+  nativeCheckInputs = with self; [
     # numpy
     psutil
     pytestCheckHook

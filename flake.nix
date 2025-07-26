@@ -60,7 +60,7 @@
                   parentShell = shell;
                   inherit pkgs-24-05;
                   inherit (shell) inputDerivation;
-                  inherit (_drvs) pyenvs;
+                  inherit (_drvs) pyenvs debuggable_py;
                   nix_pyenv_directory = if shell.debugLLVM then ".nix-pyenv-llvm" else ".nix-pyenv";
                   pyenv = builtins.elemAt _drvs.pyenvs verLength;
                   using_python = builtins.elemAt _drvs.using_pythons verLength;
@@ -101,7 +101,9 @@
           ssrjsonWheels = builtins.listToAttrs (map verToWheelDef versionUtils.wheelBuildableVersions);
         in
         {
-          ssrjson-tarball = pkgs.callPackage ./dev_tools/nixfiles/build_tarball.nix { python = stablePython; };
+          ssrjson-tarball = pkgs.callPackage ./dev_tools/nixfiles/build_tarball.nix {
+            python = stablePython;
+          };
           default = ssrjsonPackages.ssrjson-py313;
         }
         // ssrjsonPackages
