@@ -4,6 +4,7 @@
   pyenv,
   pyenvs,
   debuggable_py,
+  pyenv_nodebug,
   using_python,
   pkgs,
   pkgs-24-05,
@@ -132,6 +133,7 @@ in
   nix-store --add-root ${nix_pyenv_directory}/.nix-shell-inputs --realise ${inputDerivation}
 
   # custom
+  ensure_symlink "${nix_pyenv_directory}/bin/python_nodebug" ${pyenv_nodebug}/bin/python
   ensure_symlink "${nix_pyenv_directory}/bin/valgrind" ${pkgs.valgrind}/bin/valgrind
   export CC=${pkgs.clang}/bin/clang
   export CXX=${pkgs.clang}/bin/clang++

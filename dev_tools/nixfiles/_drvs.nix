@@ -56,6 +56,7 @@ let
     .enableDebugging
       py
   ) using_pythons;
+  pyenv_nodebug = builtins.elemAt pyenvs (latestStableVer - minSupportVer);
   sde = pkgs.callPackage ./sde.nix { };
   llvmDbg = pkgs.enableDebugging pkgs.llvmPackages.libllvm;
   verToEnvDef = ver: {
@@ -65,6 +66,7 @@ let
 in
 {
   inherit pyenvs; # list
+  inherit pyenv_nodebug;
   inherit debuggable_py; # list
   inherit using_pythons; # list
   inherit llvmDbg;

@@ -311,18 +311,6 @@
                 }
             ],
             "preLaunchTask": "CMake: build with last config"
-        },
-        {
-            "name": "Python Debug: Build",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "-m",
-            "args": [
-                "build"
-            ],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {}
         }
     ]
 }

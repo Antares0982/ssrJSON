@@ -1,1 +1,2 @@
-python bench/benchmark.py --process-bytes 1000000000
+#!/usr/bin/env -S bash
+python_nodebug -m ssrjson_benchmark

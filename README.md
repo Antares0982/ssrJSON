@@ -6,11 +6,26 @@ A SIMD boosted high-performance and correct Python JSON library that fully lever
 
 ssrJSON is a Python JSON library that leverages modern hardware capabilities to achieve peak performance, implemented primarily in C with some components written in C++. It offers a fully compatible interface to Python’s standard `json` module, making it a seamless drop-in replacement, while providing exceptional performance for JSON encoding and decoding.
 
-`ssrjson.dumps()` is about 4x-26x as fast as `json.dumps()` (Python3.13, x86-64, AVX2). `ssrjson.loads()` is about 2x-8x as fast as `json.loads()` for `str` input and is about 2x-8x as fast as `json.loads()` for `bytes` input (Python3.13, x86-64, AVX2). ssrJSON also provides `ssrjson.dumps_to_bytes()`, which encode Python objects directly to `bytes` object using SIMD instructions, similar to `orjson.dumps` but without calling slow CPython functions to do the UTF-8 encoding. ssrJSON is faster than or nearly as fast as [orjson](https://github.com/ijl/orjson) on most benchmark cases, which means ssrJSON is the world's fastest Python JSON library at now. Typically, ssrJSON is capable of processing non-ASCII strings directly without invoking any slow CPython UTF-8 encoding and decoding interfaces, eliminating the need for intermediate representations. Furthermore, the underlying implementation leverages SIMD acceleration to optimize this process. Details of benchmarking can be found in the [benchmark repository](https://github.com/Nambers/ssrJSON-benchmark). Implementation details can be found in [Implementation Details](#implementation-details) section.
+### How Fast is ssrJSON?
 
-The design goal of ssrJSON is to provide a straightforward and highly compatible approach to replace the inherently slower Python standard JSON encoding and decoding implementation with a significantly more efficient and high-performance alternative. If your module exclusively utilizes `dumps` and `loads`, you can replace the current JSON implementation by importing ssrJSON as `import ssrjson as json`. To facilitate this, ssrJSON maintains compatibility with the argument formats of `json.dumps` and `json.loads`; however, it does not guarantee identical results to the standard JSON module, as many features are either not yet supported or intentionally omitted. For further information, please refer to the section [Implementation Details](#implementation-details).
+TL;DR: ssrJSON is faster than or nearly as fast as [orjson](https://github.com/ijl/orjson) (which announces itself as the fastest Python library for JSON) on most benchmark cases.
 
-The development of ssrJSON is still actively ongoing, and some features have yet to be supported. Your code contributions are highly appreciated.
+`ssrjson.dumps()` is about 4x-26x as fast as `json.dumps()` (Python3.13, x86-64, AVX2). `ssrjson.loads()` is about 2x-8x as fast as `json.loads()` for `str` input and is about 2x-8x as fast as `json.loads()` for `bytes` input (Python3.13, x86-64, AVX2). ssrJSON also provides `ssrjson.dumps_to_bytes()`, which encode Python objects directly to `bytes` object using SIMD instructions, similar to `orjson.dumps` but without calling slow CPython functions to do the UTF-8 encoding. Typically, ssrJSON is capable of processing non-ASCII strings directly without invoking any slow CPython UTF-8 encoding and decoding interfaces, eliminating the need for intermediate representations. Furthermore, the underlying implementation leverages SIMD acceleration to optimize this process. Details of benchmarking can be found in the [benchmark repository](https://github.com/Nambers/ssrJSON-benchmark). If you wish to run the benchmark tests yourself, you can execute the following commands:
+
+```bash
+pip install ssrjson-benchmark
+python -m ssrjson_benchmark
+```
+
+This will generate a PDF report of the results. If you choose to, you may submit this report to the benchmark repository, allowing others to view the performance metrics of ssrJSON on your device.
+
+### Design Goal
+
+The design goal of ssrJSON is to provide a straightforward and highly compatible approach to replace the inherently slower Python standard JSON encoding and decoding implementation with a significantly more efficient and high-performance alternative. If your module exclusively utilizes `dumps` and `loads`, you can replace the current JSON implementation by importing ssrJSON as `import ssrjson as json`. To facilitate this, ssrJSON maintains compatibility with the argument formats of `json.dumps` and `json.loads`; however, it does not guarantee identical results to the standard JSON module, as many features are either intentionally omitted or not yet supported. For further information, please refer to the section [Implementation Details](#implementation-details).
+
+### Current Status
+
+ssrJSON is currently operational, although some potentially useful features have yet to be implemented. The development of ssrJSON is still actively ongoing, and your code contributions are highly appreciated.
 
 ## How To Install
 
@@ -24,7 +39,7 @@ Note: ssrJSON requires at least SSE4.2 on x86-64 ([x86-64-v2](https://en.wikiped
 
 ### Build From Source
 
-Since ssrJSON utilizes LLVM's vectorization extensions, it requires compilation with Clang and cannot be compiled in GCC or MSVC environments. On Windows, `clang-cl` can be used for this purpose. Build can be easily done by the following commands (make sure CMake, Clang and Python are already installed)
+Since ssrJSON utilizes LLVM's vectorization extensions, it requires compilation with Clang and cannot be compiled in GCC or pure MSVC environments. On Windows, `clang-cl` can be used for this purpose. Build can be easily done by the following commands (make sure CMake, Clang and Python are already installed)
 
 ```bash
 # On Linux:
@@ -89,15 +104,15 @@ Traceback (most recent call last):
 ValueError: indent must be 0, 2, or 4
 ```
 
-### Other Arguments
+### Other Arguments Supported by Python's json
 
-Arguments like `ensure_ascii`, `parse_float` provided by `json` can be recognized but ignored by design.
+Arguments like `ensure_ascii`, `parse_float` provided by `json` can be recognized but ignored *by design*.
 
 The functionality of `object_hook` in `json.loads` will be supported in future.
 
 ## Implementation Details
 
-The implementations of ssrJSON's `dumps` and `loads` functions are designed to perform in-place processing as much as possible, avoiding intermediate representations. The `dumps` function employs SIMD instructions for rapid encoding in a single step. Similarly, `dumps_to_bytes` uses SIMD to efficiently handle both UTF-8 encoding and JSON serialization at the same time. With minor modifications, the code used by `dumps_to_bytes` can also serve as a SIMD-accelerated replacement for `str.encode("utf-8")`.
+The implementations of ssrJSON's `dumps` and `loads` functions are designed to perform in-place processing as much as possible, avoiding intermediate representations. The `dumps` function employs SIMD instructions for rapid encoding in a single step. Similarly, `dumps_to_bytes` uses SIMD to efficiently handle both UTF-8 encoding and JSON serialization at the same time. With some modifications, the code used by `dumps_to_bytes` can also serve as a SIMD-accelerated replacement for `str.encode("utf-8")`.
 
 The implementation of ssrJSON's `loads` draws inspiration from [yyjson](https://github.com/ibireme/yyjson), and also [orjson](https://github.com/ijl/orjson)'s caching algorithm for short dictionary keys. When the input type is `str`, `loads` avoids any UTF-8 encoding or decoding operations on non-ASCII strings. If the input is bytes, loads utilizes a modified string decoding algorithm based on yyjson. The main control flow and number decoding of `loads` are also modified from yyjson.
 

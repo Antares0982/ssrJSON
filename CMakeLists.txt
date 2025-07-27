@@ -317,14 +317,13 @@ elseif(MSVC)
 else()
   set(SSRJSON_FLAGS)
 
-  # https://github.com/llvm/llvm-project/issues/63963
   list(
     APPEND
     SSRJSON_FLAGS
     "-Wall"
     "-Wextra"
     "-Wno-unknown-warning-option"
-    "-Wno-constant-logical-operand"
+    "-Wno-constant-logical-operand" # https://github.com/llvm/llvm-project/issues/63963
     "-Wno-unused-parameter"
     "-Wno-unused-variable"
     "-Wno-unused-label"

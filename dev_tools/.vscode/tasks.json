@@ -150,7 +150,7 @@
             "detail": "Run bloaty to generate symbol size info"
         },
         {
-            "label": "Benchmark",
+            "label": "Benchmark and Draw Graphs",
             "type": "shell",
             "command": "${workspaceFolder}/dev_tools/run_benchmark.sh",
             "options": {
@@ -166,30 +166,6 @@
                 "env": {
                     "PYTHONPATH": "${workspaceFolder}/build"
                 }
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "detail": "Run benchmark"
-        },
-        {
-            "label": "Benchmark and draw graphs",
-            "type": "shell",
-            "command": "run_benchmark.sh",
-            "options": {
-                "shell": {
-                    "executable": "nix",
-                    "args": [
-                        "develop",
-                        "-c",
-                        "zsh"
-                    ]
-                },
-                "env": {
-                    "PYTHONPATH": "${workspaceFolder}/build"
-                },
-                "cwd": "${workspaceFolder}/../ssrJSON-benchmark"
             },
             "group": {
                 "kind": "build",
