@@ -23,10 +23,15 @@ let
     let
       python_env = builtins.elemAt pyenvs (ver - minSupportVer);
       debuggable_python = builtins.elemAt debuggable_py (ver - minSupportVer);
+      dev_python = pkgs.callPackage ./dev_python.nix {
+        pyenv_with_site_packages = python_env;
+        inherit debuggable_python ver;
+      };
     in
     ''
-      echo "PYTHONPATH=\$PYTHONPATH:${python_env}/${python_env.sitePackages} exec ${debuggable_python}/bin/${debuggable_python.executable} \"\$@\"" > ${nix_pyenv_directory}/bin/${python_env.executable}
-      chmod 755 ${nix_pyenv_directory}/bin/${python_env.executable}
+      ensure_symlink ${nix_pyenv_directory}/bin/${python_env.executable} ${dev_python}/bin/python3.${builtins.toString ver}
+      # echo "PYTHONPATH=\$PYTHONPATH:${python_env}/${python_env.sitePackages} exec ${debuggable_python}/bin/${debuggable_python.executable} \"\$@\"" > ${nix_pyenv_directory}/bin/${python_env.executable}
+      # chmod 755 ${nix_pyenv_directory}/bin/${python_env.executable}
       # ensure_symlink ${nix_pyenv_directory}/bin/${python_env.executable} ${python_env.interpreter}
       # creating python library symlinks
       NIX_LIB_DIR=${nix_pyenv_directory}/lib/${python_env.libPrefix}
@@ -83,7 +88,7 @@ let
   sdeIvbScript = builtins.replaceStrings [ "@cpuid@" "@sde64@" ] [ "-ivb" sde64Path ] sdeScript;
 in
 ''
-  _SOURCE_ROOT=$(readlink -f ${builtins.toString ./.}/..)
+  _SOURCE_ROOT=$(readlink -f ${builtins.toString ./.}/../..)
   if [[ $_SOURCE_ROOT == /nix/store* ]]; then
       IN_FLAKE=true
       _SOURCE_ROOT=$(readlink -f .)
