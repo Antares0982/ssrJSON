@@ -318,7 +318,21 @@ else()
   set(SSRJSON_FLAGS)
 
   # https://github.com/llvm/llvm-project/issues/63963
-  list(APPEND SSRJSON_FLAGS "-Wno-constant-logical-operand")
+  list(
+    APPEND
+    SSRJSON_FLAGS
+    "-Wall"
+    "-Wextra"
+    "-Wno-unknown-warning-option"
+    "-Wno-constant-logical-operand"
+    "-Wno-unused-parameter"
+    "-Wno-unused-variable"
+    "-Wno-unused-label"
+    "-Wno-unused-function"
+    "-Wno-uninitialized"
+    "-Wno-unused-but-set-variable"
+    "-Wno-deprecated-declarations"
+    "-Wno-visibility")
 
   if(CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
     message(
