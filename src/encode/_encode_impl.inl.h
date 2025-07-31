@@ -501,7 +501,7 @@ force_inline EncodeValJumpFlag encode_process_val(
         Py_ssize_t *cur_list_size_addr,
         EncodeCtnWithIndex *ctn_stack,
         EncodeUnicodeInfo *unicode_info_addr,
-        bool is_in_obj) {
+        bool is_in_obj, bool is_in_tuple) {
 #define CTN_SIZE_GROW()                                                         \
     do {                                                                        \
         if (unlikely(*cur_nested_depth_addr == SSRJSON_ENCODE_MAX_RECURSION)) { \
@@ -568,7 +568,7 @@ force_inline EncodeValJumpFlag encode_process_val(
                 CTN_SIZE_GROW();
                 EncodeCtnWithIndex *cur_write_ctn = ctn_stack + ((*cur_nested_depth_addr)++);
                 cur_write_ctn->ctn = *cur_obj_addr;
-                cur_write_ctn->index = *cur_pos_addr;
+                set_index_and_type(cur_write_ctn, *cur_pos_addr, get_encode_ctn_type(is_in_obj, is_in_tuple));
                 *cur_obj_addr = val;
                 *cur_pos_addr = 0;
                 *cur_list_size_addr = this_list_size;
@@ -584,7 +584,7 @@ force_inline EncodeValJumpFlag encode_process_val(
                 CTN_SIZE_GROW();
                 EncodeCtnWithIndex *cur_write_ctn = ctn_stack + ((*cur_nested_depth_addr)++);
                 cur_write_ctn->ctn = *cur_obj_addr;
-                cur_write_ctn->index = *cur_pos_addr;
+                set_index_and_type(cur_write_ctn, *cur_pos_addr, get_encode_ctn_type(is_in_obj, is_in_tuple));
                 *cur_obj_addr = val;
                 *cur_pos_addr = 0;
                 return JumpFlag_DictPairBegin;
@@ -600,7 +600,7 @@ force_inline EncodeValJumpFlag encode_process_val(
                 CTN_SIZE_GROW();
                 EncodeCtnWithIndex *cur_write_ctn = ctn_stack + ((*cur_nested_depth_addr)++);
                 cur_write_ctn->ctn = *cur_obj_addr;
-                cur_write_ctn->index = *cur_pos_addr;
+                set_index_and_type(cur_write_ctn, *cur_pos_addr, get_encode_ctn_type(is_in_obj, is_in_tuple));
                 *cur_obj_addr = val;
                 *cur_pos_addr = 0;
                 *cur_list_size_addr = this_list_size;
@@ -764,7 +764,7 @@ dict_pair_begin:;
         }
     dict_key_done:;
         //
-        EncodeValJumpFlag jump_flag = encode_process_val(&writer, &_unicode_buffer_info, val, &cur_obj, &cur_pos, &cur_nested_depth, &cur_list_size, ctn_stack, &unicode_info, true);
+        EncodeValJumpFlag jump_flag = encode_process_val(&writer, &_unicode_buffer_info, val, &cur_obj, &cur_pos, &cur_nested_depth, &cur_list_size, ctn_stack, &unicode_info, true, false);
         switch ((jump_flag)) {
             case JumpFlag_Default: {
                 break;
@@ -815,19 +815,26 @@ dict_pair_begin:;
 
         // update cur_obj and cur_pos
         cur_obj = last_pos->ctn;
-        cur_pos = last_pos->index;
+        EncodeContainerType ctn_type;
+        extract_index_and_type(last_pos, &cur_pos, &ctn_type);
 
-        if (PyDict_CheckExact(cur_obj)) {
-            goto dict_pair_begin;
-        } else if (PyList_CheckExact(cur_obj)) {
-            cur_list_size = PyList_GET_SIZE(cur_obj);
-            cur_is_tuple = false;
-            goto arr_val_begin;
-        } else {
-            assert(PyTuple_CheckExact(cur_obj));
-            cur_list_size = PyTuple_GET_SIZE(cur_obj);
-            cur_is_tuple = true;
-            goto arr_val_begin;
+        switch (ctn_type) {
+            case EncodeContainerType_Dict: {
+                goto dict_pair_begin;
+            }
+            case EncodeContainerType_List: {
+                cur_list_size = PyList_GET_SIZE(cur_obj);
+                cur_is_tuple = false;
+                goto arr_val_begin;
+            }
+            case EncodeContainerType_Tuple: {
+                cur_list_size = PyTuple_GET_SIZE(cur_obj);
+                cur_is_tuple = true;
+                goto arr_val_begin;
+            }
+            default: {
+                SSRJSON_UNREACHABLE();
+            }
         }
     }
 
@@ -844,7 +851,7 @@ arr_val_begin:;
         }
         cur_pos++;
         //
-        EncodeValJumpFlag jump_flag = encode_process_val(&writer, &_unicode_buffer_info, val, &cur_obj, &cur_pos, &cur_nested_depth, &cur_list_size, ctn_stack, &unicode_info, false);
+        EncodeValJumpFlag jump_flag = encode_process_val(&writer, &_unicode_buffer_info, val, &cur_obj, &cur_pos, &cur_nested_depth, &cur_list_size, ctn_stack, &unicode_info, false, cur_is_tuple);
         switch ((jump_flag)) {
             case JumpFlag_Default: {
                 break;
@@ -896,19 +903,26 @@ arr_val_begin:;
 
         // update cur_obj and cur_pos
         cur_obj = last_pos->ctn;
-        cur_pos = last_pos->index;
+        EncodeContainerType ctn_type;
+        extract_index_and_type(last_pos, &cur_pos, &ctn_type);
 
-        if (PyDict_CheckExact(cur_obj)) {
-            goto dict_pair_begin;
-        } else if (PyList_CheckExact(cur_obj)) {
-            cur_list_size = PyList_GET_SIZE(cur_obj);
-            cur_is_tuple = false;
-            goto arr_val_begin;
-        } else {
-            assert(PyTuple_CheckExact(cur_obj));
-            cur_list_size = PyTuple_GET_SIZE(cur_obj);
-            cur_is_tuple = true;
-            goto arr_val_begin;
+        switch (ctn_type) {
+            case EncodeContainerType_Dict: {
+                goto dict_pair_begin;
+            }
+            case EncodeContainerType_List: {
+                cur_list_size = PyList_GET_SIZE(cur_obj);
+                cur_is_tuple = false;
+                goto arr_val_begin;
+            }
+            case EncodeContainerType_Tuple: {
+                cur_list_size = PyTuple_GET_SIZE(cur_obj);
+                cur_is_tuple = true;
+                goto arr_val_begin;
+            }
+            default: {
+                SSRJSON_UNREACHABLE();
+            }
         }
     }
     SSRJSON_UNREACHABLE();

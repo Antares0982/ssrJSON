@@ -62,14 +62,23 @@ class TestSubclass:
         assert ssrjson.loads(ssrjson.dumps(SubList(ref))) == ref
         assert ssrjson.loads(ssrjson.dumps_to_bytes(SubList(ref))) == ref
 
+    def test_nested_containers(self):
+        d = collections.defaultdict(SubList)
+        d["a"].append("b")
+        assert ssrjson.dumps(d) == '{"a":["b"]}'
+        assert ssrjson.dumps_to_bytes(d) == b'{"a":["b"]}'
+        d = SubList([collections.defaultdict(a="b")])
+        assert ssrjson.dumps(d) == '[{"a":"b"}]'
+        assert ssrjson.dumps_to_bytes(d) == b'[{"a":"b"}]'
+
     def test_subclass_float(self):
         assert ssrjson.dumps(SubFloat(1.1)) == "1.1"
         assert ssrjson.dumps_to_bytes(SubFloat(1.1)) == b"1.1"
         assert json.dumps(SubFloat(1.1)) == "1.1"
 
     def test_subclass_tuple(self):
-        ssrjson.dumps(SubTuple((1, 2))) == "[1,2]"
-        ssrjson.dumps_to_bytes(SubTuple((1, 2))) == b"[1,2]"
+        assert ssrjson.dumps(SubTuple((1, 2))) == "[1,2]"
+        assert ssrjson.dumps_to_bytes(SubTuple((1, 2))) == b"[1,2]"
         assert json.dumps(SubTuple((1, 2))) == "[1, 2]"
 
     def test_namedtuple(self):

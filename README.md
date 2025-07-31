@@ -1,6 +1,11 @@
 # ssrJSON
 
+<div align="center">
+[![PyPI - Version](https://img.shields.io/pypi/v/ssrjson)](https://pypi.org/project/ssrjson/) [![PyPI - Wheel](https://img.shields.io/pypi/wheel/ssrjson)](https://pypi.org/project/ssrjson/)
+
 A SIMD boosted high-performance and correct Python JSON library that fully leverages modern processor capabilities.
+
+</div>
 
 ## Introduction
 
@@ -39,7 +44,7 @@ Note: ssrJSON requires at least SSE4.2 on x86-64 ([x86-64-v2](https://en.wikiped
 
 ### Build From Source
 
-Since ssrJSON utilizes LLVM's vectorization extensions, it requires compilation with Clang and cannot be compiled in GCC or pure MSVC environments. On Windows, `clang-cl` can be used for this purpose. Build can be easily done by the following commands (make sure CMake, Clang and Python are already installed)
+Since ssrJSON utilizes Clang's vector extensions, it requires compilation with Clang and cannot be compiled in GCC or pure MSVC environments. On Windows, `clang-cl` can be used for this purpose. Build can be easily done by the following commands (make sure CMake, Clang and Python are already installed)
 
 ```bash
 # On Linux:

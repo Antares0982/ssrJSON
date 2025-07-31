@@ -28,28 +28,6 @@
 #include "tls.h"
 #include "utils/unicode.h"
 
-#define CONTROL_SEQ_ESCAPE_PREFIX _Slash, 'u', '0', '0'
-#define CONTROL_SEQ_ESCAPE_SUFFIX '\0', '\0'
-#define CONTROL_SEQ_ESCAPE_MIDDLE CONTROL_SEQ_ESCAPE_SUFFIX, CONTROL_SEQ_ESCAPE_SUFFIX
-#define CONTROL_SEQ_ESCAPE_FULL_ZERO CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_MIDDLE
-#define CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT2 CONTROL_SEQ_ESCAPE_FULL_ZERO, CONTROL_SEQ_ESCAPE_FULL_ZERO
-#define CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT4 CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT2, CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT2
-#define CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT8 CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT4, CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT4
-#define CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT16 CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT8, CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT8
-#define CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT32 CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT16, CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT16
-
-// /** Minimum decimal exponent in pow10_sig_table. */
-// #define POW10_SIG_TABLE_MIN_EXP -343
-
-// /** Maximum decimal exponent in pow10_sig_table. */
-// #define POW10_SIG_TABLE_MAX_EXP 324
-
-// /** Minimum exact decimal exponent in pow10_sig_table */
-// #define POW10_SIG_TABLE_MIN_EXACT_EXP 0
-
-// /** Maximum exact decimal exponent in pow10_sig_table */
-// #define POW10_SIG_TABLE_MAX_EXACT_EXP 55
-
 /* double number exponent bias */
 #define F64_EXP_BIAS 1023
 
@@ -75,10 +53,38 @@
 
 static_assert((SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE % 64) == 0, "(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE % 64) == 0");
 
+typedef enum EncodeContainerType {
+    EncodeContainerType_Dict = 0,
+    EncodeContainerType_List = 1,
+    EncodeContainerType_Tuple = 2,
+} EncodeContainerType;
+
+static_assert((EncodeContainerType_List << true) == EncodeContainerType_Tuple, "");
+
+// generally, `is_dict` is known at compile time, but `is_tuple` is not
+force_inline EncodeContainerType get_encode_ctn_type(bool is_dict, bool is_tuple) {
+    if (is_dict) {
+        return EncodeContainerType_Dict;
+    }
+    return EncodeContainerType_List << unlikely(is_tuple);
+}
+
 typedef struct EncodeCtnWithIndex {
     PyObject *ctn;
-    Py_ssize_t index;
+    usize index_and_type;
 } EncodeCtnWithIndex;
+
+force_inline void extract_index_and_type(EncodeCtnWithIndex *ctn_with_index, Py_ssize_t *index, EncodeContainerType *type) {
+    *index = SSRJSON_CAST(Py_ssize_t, ctn_with_index->index_and_type >> 2);
+    *type = ctn_with_index->index_and_type & 0x3;
+}
+
+force_inline void set_index_and_type(EncodeCtnWithIndex *ctn_with_index, Py_ssize_t index, EncodeContainerType type) {
+    usize _index = SSRJSON_CAST(usize, index);
+    // not expect index so large that it will overflow after left shift
+    assert((_index & ~(SSRJSON_CAST(usize, -1) >> 2)) == 0);
+    ctn_with_index->index_and_type = (_index << 2) | type;
+}
 
 #if !defined(Py_GIL_DISABLED)
 
@@ -193,8 +199,7 @@ extern PyTypeObject *PyNone_Type;
 extern PyTypeObject *PyNone_Type;
 #endif
 
-force_inline ssrjson_py_types slow_type_check(PyTypeObject *type) {
-    // common subclasses: collections.defaultdict
+static force_noinline ssrjson_py_types slow_type_check(PyTypeObject *type) {
     if (PyType_FastSubclass(type, Py_TPFLAGS_DICT_SUBCLASS)) {
         return T_Dict;
     } else if (PyType_FastSubclass(type, Py_TPFLAGS_LIST_SUBCLASS)) {
