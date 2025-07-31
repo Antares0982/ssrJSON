@@ -11,7 +11,7 @@ jobs:
   Linux-Build-And-Test-Wheel:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         pyver: ["9", "10", "11", "12", "13"]
 
@@ -65,7 +65,7 @@ jobs:
   Build-Tarball:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
 
     steps:
     - name: Checkout
@@ -100,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: Build-Tarball
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         pyver: ["9", "10", "11", "12", "13"]
 
@@ -137,7 +137,7 @@ jobs:
   Windows-Build-And-Test-Wheel:
     runs-on: windows-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         pyver: ["9", "10", "11", "12", "13"]
 
@@ -178,7 +178,7 @@ jobs:
     runs-on: windows-latest
     needs: Build-Tarball
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         pyver: ["9", "10", "11", "12", "13"]
 
