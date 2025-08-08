@@ -14,6 +14,7 @@ bench/*.py
 *.ll
 *.s
 /src/version.h
+/benchmark_result*
 
 # reserved for packaging
 /result

@@ -23,6 +23,11 @@ with pypkgs;
     orjson
     pip
     pytest-xdist
-    ssrjson-benchmark
   ])
+)
+++ (
+  with pypkgs;
+  lib.optionals (minorVer == pythonVerConfig.curVer) [
+    ssrjson-benchmark
+  ]
 )
