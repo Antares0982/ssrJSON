@@ -15,14 +15,14 @@ let
 in
 self.buildPythonPackage rec {
   pname = "ssrjson_benchmark";
-  version = "0.0.1rc2";
+  version = "0.0.2";
   pyproject = true;
 
   disabled = self.pythonOlder "3.8";
 
   src = fetchPypi {
     inherit pname version;
-    sha256 = "sha256-VMG9DD6ZgLNkG2oGKcngjuuyzvs1jGmHrbkpyi5+rpw=";
+    sha256 = "sha256-DggYqXL3DwXvwf78tMcGWP6R/nhmcCNGQB/gZn1G5mQ=";
   };
 
   build-system = with self; [ setuptools ];
