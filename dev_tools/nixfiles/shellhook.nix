@@ -61,9 +61,12 @@ let
       unset NIX_LIB_DIR
 
       mkdir -p ${debugSourceDir}
-      if [[ ! -d ${debugSourceDir}/Python-${python_env.python.version} ]]; then
-        tar xvf ${python_env.python.src} -C ${debugSourceDir} --exclude='Doc' --exclude='Grammar' --exclude='Lib' > /dev/null 2>&1
-        chmod -R 755 ${debugSourceDir}/Python-${python_env.python.version}
+      if [[ ! -d ${debugSourceDir}/Python-${debuggable_python.version} ]]; then
+        cp -r ${debuggable_python.src} ${debugSourceDir}/Python-${debuggable_python.version}
+        chmod -R 755 ${debugSourceDir}/Python-${debuggable_python.version}
+        rm -rf ${debugSourceDir}/Python-${debuggable_python.version}/Doc
+        rm -rf ${debugSourceDir}/Python-${debuggable_python.version}/Grammar
+        rm -rf ${debugSourceDir}/Python-${debuggable_python.version}/Lib
       fi
     '';
   orjsonSource =

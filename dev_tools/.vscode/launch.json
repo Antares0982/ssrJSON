@@ -216,6 +216,44 @@
             "preLaunchTask": "CMake: build with last config"
         },
         {
+            "name": "(gdb) Launch pytest python315",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.nix-pyenv/bin/python3.15",
+            "args": [
+                "-m",
+                "pytest",
+                "-s",
+                "-rxX",
+                "./python-test"
+            ],
+            "environment": [
+                {
+                    "name": "PYTHONPATH",
+                    "value": "${workspaceFolder}/build-py3.15"
+                }
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "sourceFileMap": {
+                "/build": "${workspaceFolder}/debug_source"
+            },
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "enable gdb pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "set disassembly flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "(gdb) Launch benchmark",
             "type": "cppdbg",
             "request": "launch",

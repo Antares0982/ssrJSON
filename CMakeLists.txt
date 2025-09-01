@@ -13,6 +13,8 @@ option(BUILD_AVX512 "Force build avx512, non-shipping" OFF)
 option(BUILD_AVX2 "Force build avx2, non-shipping" OFF)
 option(BUILD_SSE4 "Force build sse4, non-shipping" OFF)
 option(BUILD_NATIVE "Force build with -march=native, non-shipping" OFF)
+option(SEARCH_PYTHON3_USE_ENV
+       "Search python3 using environment variables without cmake way" OFF)
 
 if(BUILD_SHIPPING_SIMD)
   if(BUILD_AVX512
@@ -51,13 +53,14 @@ if(NOT (CMAKE_C_COMPILER_ID MATCHES Clang))
 endif()
 # ------------------------------------------------------------------------------
 # Search Python Package
-if(BUILD_TEST)
+if(SEARCH_PYTHON3_USE_ENV)
+  set(Python3_INCLUDE_DIRS $ENV{Python3_INCLUDE_DIR})
+  set(Python3_LIBRARIES $ENV{Python3_LIBRARY})
+else()
   find_package(
     Python3
     COMPONENTS Development
     REQUIRED)
-else()
-  find_package(Python3 COMPONENTS Development)
 endif()
 
 # check for python3
@@ -67,7 +70,6 @@ endif()
 
 message("Python3_INCLUDE_DIRS = ${Python3_INCLUDE_DIRS}")
 message("Python3_LIBRARIES = ${Python3_LIBRARIES}")
-message("Python3_LIBRARY_DIRS = ${Python3_LIBRARY_DIRS}")
 
 # ------------------------------------------------------------------------------
 # Build Type
@@ -90,8 +92,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(commonBuild INTERFACE)
 target_link_libraries(commonBuild INTERFACE ${Python3_LIBRARIES})
 target_include_directories(
-  commonBuild INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-                        ${Python3_INCLUDE_DIRS})
+  commonBuild INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
+target_include_directories(commonBuild SYSTEM INTERFACE ${Python3_INCLUDE_DIRS})
 target_compile_definitions(commonBuild
                            INTERFACE BUILD_MULTI_LIB=${BUILD_MULTI_LIB})
 if(MSVC)
@@ -393,7 +395,6 @@ if(BUILD_TEST)
   endif()
 
   target_link_libraries(ssrjson_test PUBLIC commonBuild)
-  target_link_libraries(ssrjson_test PUBLIC Python3::Python)
   install(TARGETS ssrjson_test RUNTIME DESTINATION .)
   add_test(ssrjson_test ${CMAKE_CURRENT_BINARY_DIR}/ssrjson_test)
 
@@ -408,7 +409,6 @@ if(BUILD_TEST)
          DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/corpus")
     add_executable(ssrjson_fuzzer ${SRC_FUZZER})
     target_link_libraries(ssrjson_fuzzer PUBLIC commonBuild)
-    target_link_libraries(ssrjson_fuzzer PUBLIC Python3::Python)
 
     add_asan_compile_option(ssrjson_fuzzer)
     target_compile_options(ssrjson_fuzzer PRIVATE -fsanitize=fuzzer -g -O1)

@@ -8,7 +8,7 @@ if [ -z ${TARGET_BUILD_TYPE+x} ]; then
     TARGET_BUILD_TYPE=Release
 fi
 
-./.nix-pyenv/bin/cmake . -B $BUILD_DIR -DCMAKE_BUILD_TYPE=$TARGET_BUILD_TYPE -DPython3_ROOT_DIR=$Python3_ROOT_DIR
+./.nix-pyenv/bin/cmake . -B $BUILD_DIR -DCMAKE_BUILD_TYPE=$TARGET_BUILD_TYPE -DPython3_ROOT_DIR=$Python3_ROOT_DIR -DSEARCH_PYTHON3_USE_ENV=ON
 cmake --build $BUILD_DIR -- -j $(nproc)
 
 export PYTHONPATH=$(pwd)/$BUILD_DIR
