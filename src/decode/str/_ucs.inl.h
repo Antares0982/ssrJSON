@@ -281,7 +281,7 @@ decode_loop_ucs1:;
         }
 #    define ON_ESCAPE process_escape_ucs1_u8(escape_info, &u8writer, &u16writer, &u32writer, &u8size, &max_escape, temp_buffer)
 
-        if (is_key) {
+        if (!is_key) {
             while (CAN_LOOP4()) {
                 EscapeInfo escape_info;
                 int state_code = decode_str_copy_loop4_to_u8(&u8writer, &src, src_end, &escape_info, &maxvec);
@@ -378,7 +378,7 @@ decode_loop_ucs2:;
 #    else
 #        define ON_ESCAPE process_escape_ucs1_u16(escape_info, &u16writer, &u32writer, &u8size, &u16size, &max_escape, temp_buffer)
 #    endif
-        if (is_key) {
+        if (!is_key) {
             while (CAN_LOOP4()) {
                 EscapeInfo escape_info;
                 int state_code = decode_str_copy_loop4_to_u16(&u16writer, &src, src_end, &escape_info, &maxvec);
@@ -459,7 +459,7 @@ decode_loop_ucs4:;
             }                                   \
         }                                       \
     }
-        if (is_key) {
+        if (!is_key) {
             while (CAN_LOOP4()) {
                 EscapeInfo escape_info;
                 int state_code = decode_str_copy_loop4_to_u32(&u32writer, &src, src_end, &escape_info, &maxvec);

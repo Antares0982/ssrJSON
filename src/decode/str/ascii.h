@@ -96,7 +96,7 @@ force_inline PyObject *make_unicode_ucs2(void *src_buffer, usize u8count, usize 
         if (u8count) {
             SIMD_NAME_MODIFIER(long_cvt_noinline_u8_u16)(target, src_buffer, u8count);
         }
-        memcpy(target + u8count, SSRJSON_CAST(u16 *, src_buffer) + u8count, total_count - u8count);
+        memcpy(target + u8count, SSRJSON_CAST(u16 *, src_buffer) + u8count, (total_count - u8count) * 2);
         if (should_hash) {
             assert(total_count && SSRJSON_CAST(PyASCIIObject *, ret)->hash == -1);
             make_hash(SSRJSON_CAST(PyASCIIObject *, ret), target, total_count * 2);
@@ -121,7 +121,7 @@ force_inline PyObject *make_unicode_ucs4(void *src_buffer, usize u8count, usize 
         if (u16count) {
             SIMD_NAME_MODIFIER(long_cvt_noinline_u16_u32)(target + u8count, SSRJSON_CAST(u16 *, src_buffer) + u8count, u16count);
         }
-        memcpy(target + u8count + u16count, SSRJSON_CAST(u32 *, src_buffer) + u8count + u16count, total_count - u8count - u16count);
+        memcpy(target + u8count + u16count, SSRJSON_CAST(u32 *, src_buffer) + u8count + u16count, (total_count - u8count - u16count) * 4);
         if (should_hash) {
             assert(total_count && SSRJSON_CAST(PyASCIIObject *, ret)->hash == -1);
             make_hash(SSRJSON_CAST(PyASCIIObject *, ret), target, total_count * 4);
@@ -485,7 +485,7 @@ decode_loop_ucs1:;
         }                                               \
     }
 #define ON_ESCAPE process_escape_ascii_u8(escape_info, &u8writer, &u16writer, &u32writer, &u8size, &is_ascii, temp_buffer)
-        if (is_key) {
+        if (!is_key) {
             while (CAN_LOOP4()) {
                 EscapeInfo escape_info;
                 int state_code = decode_str_copy_loop4_ascii_u8(&u8writer, &src, src_end, &escape_info);
@@ -578,7 +578,7 @@ decode_loop_ucs2:;
         }                                               \
     }
 #define ON_ESCAPE process_escape_ascii_u16(escape_info, &u16writer, &u32writer, &u16size, u8size, temp_buffer)
-        if (is_key) {
+        if (!is_key) {
             while (CAN_LOOP4()) {
                 EscapeInfo escape_info;
                 int state_code = decode_str_copy_loop4_ascii_u16(&u16writer, &src, src_end, &escape_info);
@@ -657,7 +657,7 @@ decode_loop_ucs4:;
             }                                   \
         }                                       \
     }
-        if (is_key) {
+        if (!is_key) {
             while (CAN_LOOP4()) {
                 EscapeInfo escape_info;
                 int state_code = decode_str_copy_loop4_ascii_u32(&u32writer, &src, src_end, &escape_info);

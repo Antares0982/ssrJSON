@@ -110,7 +110,7 @@ force_inline PyObject *create_empty_unicode(usize size, int kind) {
     assert(kind == 0 || kind == 1 || kind == 2 || kind == 4);
     usize offset = kind ? sizeof(PyCompactUnicodeObject) : sizeof(PyASCIIObject);
     usize tpsize = kind ? kind : 1;
-    PyObject *str = PyObject_Malloc(offset + size * (tpsize + 1));
+    PyObject *str = PyObject_Malloc(offset + (size + 1) * tpsize);
     if (likely(str)) {
         init_pyunicode(str, size, kind);
     }
