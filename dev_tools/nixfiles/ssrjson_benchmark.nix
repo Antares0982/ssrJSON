@@ -15,14 +15,14 @@ let
 in
 self.buildPythonPackage rec {
   pname = "ssrjson_benchmark";
-  version = "0.0.2";
+  version = "0.0.3";
   pyproject = true;
 
   disabled = self.pythonOlder "3.8";
 
   src = fetchPypi {
     inherit pname version;
-    sha256 = "sha256-DggYqXL3DwXvwf78tMcGWP6R/nhmcCNGQB/gZn1G5mQ=";
+    sha256 = "sha256-jqDkFuT+TFJ9JDSmlfC1HjaoTT2+IY/DtLfJzABiKEg=";
   };
 
   build-system = with self; [ setuptools ];
@@ -37,6 +37,7 @@ self.buildPythonPackage rec {
     psutil
     reportlab
     svglib
+    ujson
   ];
 
   configurePhase = ":";
