@@ -15,6 +15,7 @@ bench/*.py
 *.s
 /src/version.h
 /benchmark_result*
+/_coverage
 
 # reserved for packaging
 /result

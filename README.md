@@ -16,7 +16,27 @@ ssrJSON is a Python JSON library that leverages modern hardware capabilities to 
 
 TL;DR: ssrJSON is faster than or nearly as fast as [orjson](https://github.com/ijl/orjson) (which announces itself as the fastest Python library for JSON) on most benchmark cases.
 
-`ssrjson.dumps()` is about 4x-23x as fast as `json.dumps()` (Python3.13, x86-64, AVX2). `ssrjson.loads()` is about 2x-8x as fast as `json.loads()` for `str` input and is about 2x-8x as fast as `json.loads()` for `bytes` input (Python3.13, x86-64, AVX2). ssrJSON also provides `ssrjson.dumps_to_bytes()`, which encode Python objects directly to `bytes` object using SIMD instructions, similar to `orjson.dumps` but without calling slow CPython functions to do the UTF-8 encoding. Typically, ssrJSON is capable of processing non-ASCII strings directly without invoking any slow CPython UTF-8 encoding and decoding interfaces, eliminating the need for intermediate representations. Furthermore, the underlying implementation leverages SIMD acceleration to optimize this process. Details of benchmarking can be found in the [benchmark repository](https://github.com/Nambers/ssrJSON-benchmark). If you wish to run the benchmark tests yourself, you can execute the following commands:
+ssrJSON is the first JSON parsing library that handles non-ASCII `str` object directly using SIMD without any translation between `str` and it's UTF-8 encoding. Other Python JSON libraries are slow when handling non-ASCII strings [without UTF-8 cache](https://github.com/ijl/orjson/issues/586). ([simple_object_zh.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/simple_object_zh.json))
+
+![](pics/simple_object_zh.json_0.0.4.svg)
+
+Real-world non-ASCII case ([twitter.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/twitter.json)):
+
+![](pics/twitter.json_0.0.4.svg)
+
+ASCII case ([github.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/github.json)):
+
+![](pics/github.json_0.0.4.svg)
+
+Floats ([canada.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/canada.json)):
+
+![](pics/canada.json_0.0.4.svg)
+
+Numbers ([mesh.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/mesh.json)):
+
+![](pics/mesh.json_0.0.4.svg)
+
+`ssrjson.dumps()` is about 4x-25x as fast as `json.dumps()` (Python3.13, x86-64, AVX2). `ssrjson.loads()` is about 2x-8x as fast as `json.loads()` for `str` input and is about 2x-8x as fast as `json.loads()` for `bytes` input (Python3.13, x86-64, AVX2). ssrJSON also provides `ssrjson.dumps_to_bytes()`, which encode Python objects directly to `bytes` object using SIMD instructions, similar to `orjson.dumps` but without calling slow CPython functions to do the UTF-8 encoding. Typically, ssrJSON is capable of processing non-ASCII strings directly without invoking any slow CPython UTF-8 encoding and decoding interfaces, eliminating the need for intermediate representations. Furthermore, the underlying implementation leverages SIMD acceleration to optimize this process. Details of benchmarking can be found in the [benchmark repository](https://github.com/Nambers/ssrJSON-benchmark). If you wish to run the benchmark tests yourself, you can execute the following commands:
 
 ```bash
 pip install ssrjson-benchmark
