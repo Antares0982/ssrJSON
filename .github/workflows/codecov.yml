@@ -1,0 +1,25 @@
+name: Coverage
+
+on:
+  workflow_dispatch:
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+    - name: Install nix
+      uses: cachix/install-nix-action@master
+    - name: Setup cachix
+      uses: cachix/cachix-action@master
+      with:
+        name: antares0982
+    - name: Run coverage test
+      run: |
+        nix develop -c bash ./dev_tools/coverage_test.sh
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        files: ./_coverage/coverage.lcov
+        token: ${{ secrets.CODECOV_TOKEN }}
