@@ -23,12 +23,13 @@
 #ifdef SSRJSON_CLANGD_DUMMY
 #    ifndef COMPILE_SIMD_BITS
 #        define COMPILE_CONTEXT_DECODE
-#        include "decode/decode_float_utils.h"
 #        include "decode/decode_float_wrap.h"
 #        include "decode/decode_shared.h"
+#        include "decode/float/decode_float_utils.h"
 #        include "decode/str/ascii.h"
 //
 #        define DECODE_READ_PRETTY 1
+#        define READ_ROOT_IMPL decode_root_pretty
 #        define COMPILE_UCS_LEVEL 0
 #        define COMPILE_READ_UCS_LEVEL 1
 #        include "simd/compile_feature_check.h"
@@ -55,7 +56,7 @@ force_inline bool check_and_reserve_str_buffer(Py_ssize_t len, _src_t **buffer_h
     } while (0)
 
 /** Read JSON document (accept all style, but optimized for pretty). */
-static force_noinline PyObject *READ_ROOT_IMPL(const _src_t *dat, Py_ssize_t len) {
+internal_simd_noinline PyObject *READ_ROOT_IMPL(const _src_t *dat, Py_ssize_t len) {
     static _src_t _CommaReturn[2] = {',', '\n'};
     static _src_t _CommaSpace[2] = {',', ' '};
     static _src_t _ColonSpace[2] = {':', ' '};
@@ -101,23 +102,9 @@ arr_val_begin:
 #if DECODE_READ_PRETTY
     // assume that we jumped from arr_val_end, already skipped a dot and a return
     if (*cur == ' ') {
-        // cur++;
-        // if (*cur == ' ')
         fast_skip_spaces(&cur, end);
     }
-    // #if SSRJSON_IS_REAL_GCC
-    //     while (true) REPEAT_CALL_16({
-    //         if (byte_match_2((void *)cur, "  ")) cur += 2;
-    //         else
-    //             break;
-    //     })
-    // #else
-    //     while (true) REPEAT_CALL_16({
-    //         if (likely(byte_match_2(cur, "  "))) cur += 2;
-    //         else
-    //             break;
-    //     })
-    // #endif
+
 #endif
 
     if (*cur == '{') {
@@ -264,19 +251,6 @@ obj_key_begin:
         // if (*cur == ' ')
         fast_skip_spaces(&cur, end);
     }
-    // #if SSRJSON_IS_REAL_GCC
-    //     while (true) REPEAT_CALL_16({
-    //         if (byte_match_2((void *)cur, "  ")) cur += 2;
-    //         else
-    //             break;
-    //     })
-    // #else
-    //     while (true) REPEAT_CALL_16({
-    //         if (likely(byte_match_2(cur, "  "))) cur += 2;
-    //         else
-    //             break;
-    //     })
-    // #endif
 #endif
 
     if (likely(*cur == '"')) {
@@ -524,9 +498,6 @@ fail_character_obj_sep:
 fail_character_obj_end:
     return_err(cur, JSONDecodeError,
                "unexpected character, expected a comma or a closing brace");
-fail_comment:
-    return_err(cur, JSONDecodeError,
-               "unclosed multiline comment");
 fail_garbage:
     return_err(cur, JSONDecodeError,
                "unexpected content after document");

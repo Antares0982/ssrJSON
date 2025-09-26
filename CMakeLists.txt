@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 # ------------------------------------------------------------------------------
 # Build Options for tests and docs
 option(ASAN_ENABLED "Build with asan" OFF)
-
+option(BUILD_COVERAGE "Build with coverage" OFF)
 option(BUILD_TEST "Build tests" ON)
 option(BUILD_SHIPPING_SIMD "Build all simd for shipping" ON)
 option(BUILD_AVX512 "Force build avx512, non-shipping" OFF)
@@ -15,6 +15,7 @@ option(BUILD_SSE4 "Force build sse4, non-shipping" OFF)
 option(BUILD_NATIVE "Force build with -march=native, non-shipping" OFF)
 option(SEARCH_PYTHON3_USE_ENV
        "Search python3 using environment variables without cmake way" OFF)
+option(USE_LTO "Use LTO" OFF)
 
 if(BUILD_SHIPPING_SIMD)
   if(BUILD_AVX512
@@ -75,8 +76,14 @@ message("Python3_LIBRARIES = ${Python3_LIBRARIES}")
 # Build Type
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   if(NOT CMAKE_BUILD_TYPE)
-    message(STATUS "No build type selected, default to: Release")
-    set(CMAKE_BUILD_TYPE Release)
+    if(BUILD_COVERAGE)
+      message(
+        STATUS "No build type selected, default to: Debug (BUILD_COVERAGE)")
+      set(CMAKE_BUILD_TYPE Debug)
+    else()
+      message(STATUS "No build type selected, default to: Release")
+      set(CMAKE_BUILD_TYPE Release)
+    endif()
   endif()
 endif()
 
@@ -101,6 +108,15 @@ if(MSVC)
 else()
   target_compile_options(commonBuild INTERFACE -fvisibility=hidden
                                                -fvisibility-inlines-hidden)
+endif()
+
+if(USE_LTO)
+  target_compile_options(commonBuild INTERFACE -flto)
+  target_link_options(commonBuild INTERFACE -flto)
+endif()
+
+if(BUILD_COVERAGE)
+  target_compile_definitions(commonBuild INTERFACE SSRJSON_COVERAGE=1)
 endif()
 
 # custom target: update SCM file
@@ -199,6 +215,10 @@ set(SRC_FUZZER src/ctests/fuzzer.c)
 add_library(dragon_box OBJECT ${SRC_DRAGON_BOX})
 target_link_libraries(dragon_box PUBLIC commonBuild)
 
+if(BUILD_COVERAGE)
+  add_coverage_flags(dragon_box)
+endif()
+
 # add library ssrjson
 if(BUILD_MULTI_LIB)
   set(SRC_FILES ${SRC_FILES} src/multilib.c)
@@ -207,6 +227,8 @@ if(BUILD_MULTI_LIB)
     add_library(_ssrjson_common OBJECT ${SRC_FILES})
     target_link_libraries(_ssrjson_common PUBLIC commonBuild)
     target_compile_definitions(_ssrjson_common PUBLIC SSRJSON_EXPORTS=1)
+    target_compile_definitions(_ssrjson_common
+                               PRIVATE DISABLE_INTERNAL_NOINLINE=1)
     add_library(ssrjson_avx512 OBJECT ${SRC_WITH_SIMD})
     target_link_libraries(ssrjson_avx512 PUBLIC _ssrjson_common)
     add_library(ssrjson_avx2 OBJECT ${SRC_WITH_SIMD})
@@ -221,23 +243,37 @@ if(BUILD_MULTI_LIB)
       $<TARGET_OBJECTS:ssrjson_avx512> $<TARGET_OBJECTS:ssrjson_avx2>
       $<TARGET_OBJECTS:ssrjson_sse4> $<TARGET_OBJECTS:_ssrjson_common>
       $<TARGET_OBJECTS:dragon_box>)
-    target_link_libraries(ssrjson PUBLIC ${Python3_LIBRARIES})
+    target_link_libraries(ssrjson PUBLIC commonBuild ${Python3_LIBRARIES})
 
     add_avx512_compile_option(ssrjson_avx512)
     add_avx2_compile_option(ssrjson_avx2)
     add_sse4_compile_option(ssrjson_sse4)
 
+    if(BUILD_COVERAGE)
+      add_coverage_flags(_ssrjson_common)
+      add_coverage_flags(ssrjson_avx512)
+      add_coverage_flags(ssrjson_avx2)
+      add_coverage_flags(ssrjson_sse4)
+    endif()
+
   elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
     add_library(_ssrjson_common OBJECT ${SRC_FILES})
     target_link_libraries(_ssrjson_common PUBLIC commonBuild)
     target_compile_definitions(_ssrjson_common PUBLIC SSRJSON_EXPORTS=1)
+    target_compile_definitions(_ssrjson_common
+                               PRIVATE DISABLE_INTERNAL_NOINLINE=1)
     add_library(ssrjson_neon OBJECT ${SRC_WITH_SIMD})
     target_link_libraries(ssrjson_neon PUBLIC _ssrjson_common)
     add_library(
       ssrjson SHARED
       $<TARGET_OBJECTS:ssrjson_neon> $<TARGET_OBJECTS:_ssrjson_common>
       $<TARGET_OBJECTS:_ssrjson_common> $<TARGET_OBJECTS:dragon_box>)
-    target_link_libraries(ssrjson PUBLIC ${Python3_LIBRARIES})
+    target_link_libraries(ssrjson PUBLIC commonBuild ${Python3_LIBRARIES})
+
+    if(BUILD_COVERAGE)
+      add_coverage_flags(_ssrjson_common)
+      add_coverage_flags(ssrjson_neon)
+    endif()
 
   else()
     message(FATAL_ERROR "TARGET_SIMD_ARCH=${TARGET_SIMD_ARCH} not supported")
@@ -246,10 +282,14 @@ else()
   set(SRC_FILES ${SRC_FILES} src/singlelib.c)
   add_library(ssrjson SHARED ${SRC_FILES} ${SRC_WITH_SIMD} ${SRC_DRAGON_BOX})
   target_compile_definitions(ssrjson PUBLIC SSRJSON_EXPORTS=1)
-  target_link_libraries(ssrjson PRIVATE commonBuild)
+  target_link_libraries(ssrjson PUBLIC commonBuild)
 endif()
 
 set_target_properties(ssrjson PROPERTIES PREFIX "")
+
+if(BUILD_COVERAGE)
+  add_coverage_flags(ssrjson)
+endif()
 
 if(ASAN_ENABLED AND MSVC)
   get_filename_component(MSVC_COMPILER_DIR "${CMAKE_C_COMPILER}" PATH)

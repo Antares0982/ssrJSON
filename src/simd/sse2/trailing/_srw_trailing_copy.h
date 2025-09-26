@@ -20,6 +20,8 @@
  SOFTWARE.
  *============================================================================*/
 
+/* This file is unused but left here intentionally for future use. */
+
 #ifdef SSRJSON_CLANGD_DUMMY
 #    include "simd/sse2/checker.h"
 #    include "simd/sse2/common.h"

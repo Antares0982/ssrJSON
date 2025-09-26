@@ -60,6 +60,8 @@
 #undef digi_is_exp
 #undef digi_is_sign
 #undef digi_is_fp
+#undef bigint_set_buf
+#undef bigint_set_buf_noinline
 //
 #undef decode
 #undef should_read_pretty

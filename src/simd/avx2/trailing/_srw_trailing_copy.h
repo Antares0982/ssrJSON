@@ -20,6 +20,8 @@
  SOFTWARE.
  *============================================================================*/
 
+/* This file is unused but left here intentionally for future use. */
+
 #ifdef SSRJSON_CLANGD_DUMMY
 #    include "simd/avx2/checker.h"
 #    include "simd/avx2/common.h"
@@ -38,6 +40,7 @@
 
 #include "compile_context/srw_in.inl.h"
 
+// unused
 force_inline void trailing_copy_with_cvt(_dst_t **dst_addr, const _src_t *src, usize len) {
     // use 128-bits trailing impl
     if (len >= READ_BATCH_COUNT / 2) {

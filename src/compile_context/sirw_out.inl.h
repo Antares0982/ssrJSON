@@ -37,7 +37,11 @@
 //
 #undef prepare_unicode_write
 #undef unicode_buffer_append_key
+#undef unicode_buffer_append_key_distribute2
+#undef unicode_buffer_append_key_distribute4
 #undef unicode_buffer_append_str
+#undef unicode_buffer_append_str_distribute2
+#undef unicode_buffer_append_str_distribute4
 #undef unicode_buffer_append_long
 #undef write_unicode_false
 #undef unicode_buffer_append_false

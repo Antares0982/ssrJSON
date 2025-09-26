@@ -230,7 +230,7 @@ force_inline EncodeValJumpFlag encode_bytes_process_val(
 #undef CTN_SIZE_GROW
 }
 
-static force_noinline PyObject *
+internal_simd_noinline PyObject *
 ssrjson_dumps_to_bytes_obj(PyObject *in_obj) {
 #define GOTO_FAIL_ON_UNLIKELY_ERR(_condition) \
     do {                                      \

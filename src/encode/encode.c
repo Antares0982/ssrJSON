@@ -302,7 +302,7 @@ force_inline PyObject *ssrjson_dumps_single_constant(ssrjson_py_types py_type, P
     return ret;
 }
 
-static int invalid_arg_checked = 0;
+extern int ssrjson_invalid_arg_checked;
 
 /* Entrance for python code. */
 PyObject *SIMD_NAME_MODIFIER(ssrjson_Encode)(PyObject *self, PyObject *args, PyObject *kwargs) {
@@ -318,9 +318,9 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Encode)(PyObject *self, PyObject *args, PyO
         goto fail;
     }
 
-    if (!invalid_arg_checked && (skipkeys || ensure_ascii || check_circular || allow_nan || cls || separators || default_ || sort_keys)) {
+    if (!ssrjson_invalid_arg_checked && (skipkeys || ensure_ascii || check_circular || allow_nan || cls || separators || default_ || sort_keys)) {
         fprintf(stderr, "Warning: some options are not supported in this version of ssrjson\n");
-        invalid_arg_checked = 1;
+        ssrjson_invalid_arg_checked = 1;
     }
 
     if (indent) {
@@ -330,7 +330,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Encode)(PyObject *self, PyObject *args, PyO
         }
         if (indent != Py_None) {
             int _indent = PyLong_AsLong(indent);
-            if (_indent < 0 || _indent > 4 || (_indent / 2) * 2 != _indent) {
+            if (_indent != 0 && _indent != 2 && _indent != 4) {
                 PyErr_SetString(PyExc_ValueError, "indent must be 0, 2, or 4");
                 goto fail;
             }
@@ -355,8 +355,6 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Encode)(PyObject *self, PyObject *args, PyO
             goto dumps_long;
         }
         case T_Bool:
-        // case T_False:
-        // case T_True:
         case T_None: {
             goto dumps_constant;
         }

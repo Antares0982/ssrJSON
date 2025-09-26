@@ -20,6 +20,8 @@
  SOFTWARE.
  *============================================================================*/
 
+/* This file is unused but left here intentionally for future use. */
+
 #ifdef SSRJSON_CLANGD_DUMMY
 #    include "simd/avx512f_cd/common.h"
 #    include "simd/avx512vl_dq_bw/checker.h"

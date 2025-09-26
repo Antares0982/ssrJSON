@@ -161,7 +161,7 @@ typedef struct SpecialCharReadResult {
 #define F64_EXP_BIAS 1023
 
 /* double number significant digits count in decimal */
-#define F64_DEC_DIG 17
+// #define F64_DEC_DIG 17
 
 /* max significant digits count in decimal when reading double number */
 #define F64_MAX_DEC_DIG 768
@@ -199,12 +199,12 @@ force_inline bool byte_match_2(const void *buf, const void *pat) {
     return u1 == u2;
 }
 
-force_inline bool byte_match_4(const void *buf, const void *pat) {
-    u32 u1, u2;
-    memcpy(&u1, buf, 4);
-    memcpy(&u2, pat, 4);
-    return u1 == u2;
-}
+// force_inline bool byte_match_4(const void *buf, const void *pat) {
+//     u32 u1, u2;
+//     memcpy(&u1, buf, 4);
+//     memcpy(&u2, pat, 4);
+//     return u1 == u2;
+// }
 
 force_inline void byte_move_2(void *dst, const void *src) {
     u16 tmp;
@@ -364,8 +364,6 @@ force_inline bool push_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
 
 force_inline PyObject *read_bytes(const u8 **ptr, u8 *write_buffer, bool is_key);
 
-static force_noinline PyObject *read_bytes_not_key(const u8 **ptr, u8 *write_buffer);
-
 force_inline bool decode_true(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                               decode_obj_stack_ptr_t *decode_obj_stack_addr,
                               decode_obj_stack_ptr_t *decode_obj_stack_end_addr);
@@ -445,34 +443,25 @@ extern const u64 pow10_sig_table[];
 
 /**
  Convert normalized u64 (highest bit is 1) to f64.
- 
- Some compiler (such as Microsoft Visual C++ 6.0) do not support converting
- number from u64 to f64. This function will first convert u64 to i64 and then
- to f64, with `to nearest` rounding mode.
  */
 force_inline f64 normalized_u64_to_f64(u64 val) {
-#if SSRJSON_U64_TO_F64_NO_IMPL
-    i64 sig = (i64)((val >> 1) | (val & 1));
-    return ((f64)sig) * (f64)2.0;
-#else
     return (f64)val;
-#endif
 }
 
 /*==============================================================================
  * Read state utilities
  *============================================================================*/
 
-force_inline void update_max_char_type(ReadStrState *read_state, int max_char_type) {
-    assert(read_state->max_char_type < max_char_type);
-    read_state->max_char_type = max_char_type;
-    read_state->state_dirty = true;
-}
+// force_inline void update_max_char_type(ReadStrState *read_state, int max_char_type) {
+//     assert(read_state->max_char_type < max_char_type);
+//     read_state->max_char_type = max_char_type;
+//     read_state->state_dirty = true;
+// }
 
-force_inline void init_read_state(ReadStrState *state) {
-    // all initialized as 0 or false
-    memset(state, 0, sizeof(ReadStrState));
-}
+// force_inline void init_read_state(ReadStrState *state) {
+//     // all initialized as 0 or false
+//     memset(state, 0, sizeof(ReadStrState));
+// }
 
 /*==============================================================================
  * xxhash and key cache utilities

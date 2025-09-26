@@ -61,17 +61,19 @@
 
 #define rshift_u16_512 _mm512_srli_epi16
 
-force_inline u64 get_bitmask_from_u8_512(vector_a_u8_512 z) {
-    return (u64)_mm512_movepi8_mask(z);
-}
+/* get_bitmask_from functions for AVX512 are not used. */
 
-force_inline u32 get_bitmask_from_u16_512(vector_a_u16_512 z) {
-    return (u32)_mm512_movepi16_mask(z);
-}
+// force_inline u64 get_bitmask_from_u8_512(vector_a_u8_512 z) {
+//     return (u64)_mm512_movepi8_mask(z);
+// }
 
-force_inline u16 get_bitmask_from_u32_512(vector_a_u32_512 z) {
-    return (u16)_mm512_movepi32_mask(z);
-}
+// force_inline u32 get_bitmask_from_u16_512(vector_a_u16_512 z) {
+//     return (u32)_mm512_movepi16_mask(z);
+// }
+
+// force_inline u16 get_bitmask_from_u32_512(vector_a_u32_512 z) {
+//     return (u16)_mm512_movepi32_mask(z);
+// }
 
 force_inline vector_a_u16_512 cvt_u8_to_u16_512(vector_a_u8_256 y) {
     return _mm512_cvtepu8_epi16(y);

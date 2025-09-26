@@ -73,33 +73,6 @@ MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_Encode)
 MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_Decode)
 MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_EncodeToBytes)
 
-PyObject *ssrjson_print_current_features(PyObject *self, PyObject *args) {
-    // TODO change to returning a dict with all build info
-    switch (CurrentSIMDFeatureLevel) {
-        case X86SIMDFeatureLevelSSE2: {
-            printf("SIMD: SSE2\n");
-            break;
-        }
-        case X86SIMDFeatureLevelSSE4_2: {
-            printf("SIMD: SSE4.2\n");
-            break;
-        }
-        case X86SIMDFeatureLevelAVX2: {
-            printf("SIMD: AVX2\n");
-            break;
-        }
-        case X86SIMDFeatureLevelAVX512: {
-            printf("SIMD: AVX512\n");
-            break;
-        }
-        default: {
-            printf("SIMD: Unknown\n");
-            break;
-        }
-    }
-    Py_RETURN_NONE;
-}
-
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     PyObject *ret = PyDict_New();
     PyDict_SetItemString(ret, "MultiLib", PyBool_FromLong(true));

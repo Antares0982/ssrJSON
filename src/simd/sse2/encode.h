@@ -26,7 +26,6 @@
 #include "checker.h"
 #include "cvt.h"
 #include "encode/utf8.h"
-#include "trailing.h"
 
 
 #define COMPILE_READ_UCS_LEVEL 1

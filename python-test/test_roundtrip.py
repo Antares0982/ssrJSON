@@ -2,7 +2,7 @@
 
 import ssrjson
 
-from util import read_fixture_str
+from util import read_fixture_str, read_fixture_bytes
 
 
 class TestJsonChecker:
@@ -10,6 +10,10 @@ class TestJsonChecker:
         data = read_fixture_str("json/test_roundtrip/" + filename)
         assert ssrjson.dumps(ssrjson.loads(data)) == data
         assert ssrjson.dumps_to_bytes(ssrjson.loads(data)) == data.encode("utf-8")
+
+        data_bytes = read_fixture_bytes("json/test_roundtrip/" + filename)
+        assert ssrjson.dumps(ssrjson.loads(data_bytes)) == data_bytes.decode("utf-8")
+        assert ssrjson.dumps_to_bytes(ssrjson.loads(data_bytes)) == data_bytes
 
     def test_roundtrip001(self):
         """
@@ -172,3 +176,9 @@ class TestJsonChecker:
         roundtrip027.json
         """
         self._run_roundtrip_json("roundtrip27.json")
+
+    def test_roundtrip201(self):
+        """
+        roundtrip027.json
+        """
+        self._run_roundtrip_json("roundtrip201.json")

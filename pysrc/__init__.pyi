@@ -1,13 +1,16 @@
 from typing import Any, Dict
 
 __all__ = [
+    # Classes
     "JSONDecodeError",
     "JSONEncodeError",
+    # General API
     "dumps",
     "dumps_to_bytes",
     "loads",
+    # Utilities
     "get_current_features",
-    "print_current_features",
+    "suppress_api_warning",
 ]
 
 __version__: str
@@ -37,5 +40,5 @@ def loads(
     parse_constant: Any = None,
     object_pairs_hook: Any = None,
 ): ...
-def print_current_features() -> None: ...
 def get_current_features() -> Dict[str, str]: ...
+def suppress_api_warning() -> None: ...

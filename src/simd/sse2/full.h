@@ -27,7 +27,6 @@
 #include "checkmax.h"
 #include "common.h"
 #include "cvt.h"
-#include "trailing.h"
 #if defined(COMPILE_CONTEXT_DECODE)
 #    include "decode.h"
 #endif

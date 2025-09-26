@@ -64,7 +64,7 @@ force_inline bool check_and_reserve_str_buffer(Py_ssize_t len, _src_t **buffer_h
 }
 
 /** Read single value JSON document. */
-static force_noinline PyObject *decode_root_single(const _src_t *dat, Py_ssize_t len) {
+internal_simd_noinline PyObject *decode_root_single(const _src_t *dat, Py_ssize_t len) {
 #define return_err(_pos, _type, _msg)                                                             \
     do {                                                                                          \
         if (_type == JSONDecodeError) {                                                           \
@@ -166,9 +166,6 @@ fail_literal_null:
 fail_character:
     return_err(cur, JSONDecodeError,
                "unexpected character, expected a valid root value");
-fail_comment:
-    return_err(cur, JSONDecodeError,
-               "unclosed multiline comment");
 fail_garbage:
     return_err(cur, JSONDecodeError,
                "unexpected content after document");
@@ -195,7 +192,7 @@ force_inline bool should_read_pretty(const _src_t *buffer, const _src_t *end) {
     return false;
 }
 
-static force_noinline PyObject *decode(PyUnicodeObject *in_unicode) {
+internal_simd_noinline PyObject *decode(PyUnicodeObject *in_unicode) {
     // some checks
     assert(in_unicode);
     PyASCIIObject *ascii_head = SSRJSON_CAST(PyASCIIObject *, in_unicode);

@@ -61,19 +61,19 @@
 #    if SSRJSON_ENCODE_UCS1_TO_BYTES_IMPL_INLINE
 #        define _IMPL_INLINE_SPECIFIER force_inline
 #    else
-#        define _IMPL_INLINE_SPECIFIER static force_noinline
+#        define _IMPL_INLINE_SPECIFIER internal_simd_noinline
 #    endif
 #elif COMPILE_READ_UCS_LEVEL == 2
 #    if SSRJSON_ENCODE_UCS2_TO_BYTES_IMPL_INLINE
 #        define _IMPL_INLINE_SPECIFIER force_inline
 #    else
-#        define _IMPL_INLINE_SPECIFIER static force_noinline
+#        define _IMPL_INLINE_SPECIFIER internal_simd_noinline
 #    endif
 #elif COMPILE_READ_UCS_LEVEL == 4
 #    if SSRJSON_ENCODE_UCS4_TO_BYTES_IMPL_INLINE
 #        define _IMPL_INLINE_SPECIFIER force_inline
 #    else
-#        define _IMPL_INLINE_SPECIFIER static force_noinline
+#        define _IMPL_INLINE_SPECIFIER internal_simd_noinline
 #    endif
 #endif
 
@@ -120,6 +120,8 @@
 #define digi_is_exp MAKE_R_NAME(digi_is_exp)
 #define digi_is_sign MAKE_R_NAME(digi_is_sign)
 #define digi_is_fp MAKE_R_NAME(digi_is_fp)
+#define bigint_set_buf MAKE_R_NAME(bigint_set_buf)
+#define bigint_set_buf_noinline MAKE_R_NAME(bigint_set_buf_noinline)
 
 #ifdef COMPILE_UCS_LEVEL
 #    define decode MAKE_UCS_NAME(decode)

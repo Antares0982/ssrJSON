@@ -17,9 +17,10 @@ in
 [ pyenv ]
 ++ (with drvs; [
   bloaty
-  clang
   cmake
   gdb
+  pax-utils
+  triton-llvm
   valgrind
 ])
 ++ drvs.pyenvs

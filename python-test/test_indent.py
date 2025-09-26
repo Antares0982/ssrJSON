@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-import datetime
+import pytest
 import json
 
 import ssrjson
@@ -14,9 +14,7 @@ class TestIndentedOutput:
         OPT_INDENT_2 is equivalent to indent=2
         """
         obj = {"a": "b", "c": {"d": True}, "e": [1, 2]}
-        assert ssrjson.dumps(obj, indent=2) == json.dumps(
-            obj, indent=2
-        )
+        assert ssrjson.dumps(obj, indent=2) == json.dumps(obj, indent=2)
         assert ssrjson.dumps_to_bytes(obj, indent=2) == json.dumps(
             obj, indent=2
         ).encode("utf-8")
@@ -68,3 +66,28 @@ class TestIndentedOutput:
         assert ssrjson.dumps_to_bytes(obj, indent=2) == json.dumps(
             obj, indent=2, ensure_ascii=False
         ).encode("utf-8")
+        assert ssrjson.dumps(obj, indent=4) == json.dumps(
+            obj, indent=4, ensure_ascii=False
+        )
+        assert ssrjson.dumps_to_bytes(obj, indent=4) == json.dumps(
+            obj, indent=4, ensure_ascii=False
+        ).encode("utf-8")
+
+    def test_err_indent(self):
+        obj = {"a": "b"}
+        with pytest.raises(TypeError):
+            ssrjson.dumps(obj, indent="2")
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes(obj, indent="2")
+        with pytest.raises(ValueError):
+            ssrjson.dumps(obj, indent=1)
+        with pytest.raises(ValueError):
+            ssrjson.dumps(obj, indent=3)
+        with pytest.raises(ValueError):
+            ssrjson.dumps(obj, indent=5)
+        with pytest.raises(ValueError):
+            ssrjson.dumps_to_bytes(obj, indent=1)
+        with pytest.raises(ValueError):
+            ssrjson.dumps_to_bytes(obj, indent=3)
+        with pytest.raises(ValueError):
+            ssrjson.dumps_to_bytes(obj, indent=5)

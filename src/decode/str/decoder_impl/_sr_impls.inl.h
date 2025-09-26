@@ -94,7 +94,7 @@ force_inline EscapeInfo do_decode_escape(const _src_t *const src, const _src_t *
 #undef RETURN_ESCAPE
 }
 
-static force_noinline EscapeInfo do_decode_escape_noinline(const _src_t *const src, const _src_t *src_end) {
+internal_simd_noinline EscapeInfo do_decode_escape_noinline(const _src_t *const src, const _src_t *src_end) {
     return do_decode_escape(src, src_end);
 }
 

@@ -41,7 +41,7 @@ class TestUltraJSON:
         sut = {"a": 4.56}
         encoded = ssrjson.dumps(sut)
         decoded = ssrjson.loads(encoded)
-        pytest.approx(sut["a"], decoded["a"])
+        assert decoded["a"] == pytest.approx(sut["a"])
         assert encoded == ssrjson.dumps_to_bytes(sut).decode("utf-8")
 
     def test_encodeDictWithUnicodeKeys(self):

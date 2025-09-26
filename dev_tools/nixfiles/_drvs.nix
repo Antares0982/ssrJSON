@@ -119,11 +119,10 @@ in
   inherit llvmDbg;
   inherit (pkgs)
     bloaty
-    clang
     cmake
-    gcc
     gdb
-    python-launcher
+    pax-utils
+    triton-llvm
     valgrind
     ; # packages
 }

@@ -1,17 +1,22 @@
 # # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-import io
+import json
+import random
 import sys
 
 import pytest
-import random
-
-try:
-    import xxhash
-except ImportError:
-    xxhash = None
-
 import ssrjson
+
+
+def full_cover_dumps(obj, indent):
+    reference = json.dumps(obj, indent=indent if indent else None, ensure_ascii=False)
+    if not indent:
+        reference = reference.replace(" ", "")
+    x = ssrjson.dumps(obj, indent=indent)
+    y = ssrjson.dumps_to_bytes(obj, indent=indent)
+    assert x == reference
+    assert x.encode("utf-8") == y
+    return x
 
 
 class TestType:
@@ -399,8 +404,6 @@ class TestType:
         """
         str unicode surrogates loads()
         """
-        import json
-
         json.loads('"\ud800"')
         json.loads('"\ud83d\ude80"')
         json.loads('"\udcff"')
@@ -418,8 +421,6 @@ class TestType:
         """
         str unicode surrogates dumps()
         """
-        import json
-
         json.dumps("\ud800")
         json.dumps("\ud83d\ude80")
         json.dumps("\udcff")
@@ -480,6 +481,11 @@ class TestType:
             assert ssrjson.dumps(obj) == ref
             assert ssrjson.dumps_to_bytes(obj) == ref.encode("utf-8")
             assert ssrjson.loads(ref) == obj
+        # cover all paths
+        for k in ("a", "ÿ", "好", "🐈"):
+            for indent in (0, 2, 4):
+                full_cover_dumps({k: True}, indent)
+                full_cover_dumps({k: False}, indent)
 
     def test_bool_true_array(self):
         """
@@ -510,6 +516,12 @@ class TestType:
         assert ssrjson.dumps(obj) == ref
         assert ssrjson.dumps_to_bytes(obj) == ref.encode("utf-8")
         assert ssrjson.loads(ref) == obj
+        assert ssrjson.loads(ref.encode("utf-8")) == obj
+        # cover all paths
+        for k in ("a", "ÿ", "好", "🐈"):
+            for indent in (0, 2, 4):
+                d = {k: None}
+                full_cover_dumps(d, indent)
 
     def test_int(self):
         """
@@ -520,6 +532,11 @@ class TestType:
         assert ssrjson.dumps(obj) == ref
         assert ssrjson.dumps_to_bytes(obj) == ref.encode("utf-8")
         assert ssrjson.loads(ref) == obj
+        # cover all paths
+        for k in ("a", "ÿ", "好", "🐈"):
+            for indent in (0, 2, 4):
+                full_cover_dumps({k: 0}, indent)
+                full_cover_dumps({k: 1000}, indent)
 
     def test_null_array(self):
         """
@@ -530,6 +547,7 @@ class TestType:
         assert ssrjson.dumps(obj) == ref
         assert ssrjson.dumps_to_bytes(obj) == ref.encode("utf-8")
         assert ssrjson.loads(ref) == obj
+        assert ssrjson.loads(ref.encode("utf-8")) == obj
 
     def test_nan_dumps(self):
         """
@@ -551,6 +569,58 @@ class TestType:
 
         is_nan_list(ssrjson.loads("[NaN]"))
         is_nan_list(ssrjson.loads("[nan]"))
+        is_nan_list(ssrjson.loads(b"[NaN]"))
+        is_nan_list(ssrjson.loads(b"[nan]"))
+
+        is_nan_list(ssrjson.loads("[\n  NaN\n]"))
+        is_nan_list(ssrjson.loads("[\n  nan\n]"))
+        is_nan_list(ssrjson.loads(b"[\n  NaN\n]"))
+        is_nan_list(ssrjson.loads(b"[\n  nan\n]"))
+
+        def is_nan_dict(obj, k="a"):
+            assert type(obj) is dict
+            assert len(obj) == 1
+            assert math.isnan(obj[k])
+
+        is_nan_dict(ssrjson.loads('{"a":NaN}'))
+        is_nan_dict(ssrjson.loads('{"a":nan}'))
+        is_nan_dict(ssrjson.loads(b'{"a":NaN}'))
+        is_nan_dict(ssrjson.loads(b'{"a":nan}'))
+
+        is_nan_dict(ssrjson.loads('{\n  "a": NaN\n}'))
+        is_nan_dict(ssrjson.loads('{\n  "a": nan\n}'))
+        is_nan_dict(ssrjson.loads(b'{\n  "a": NaN\n}'))
+        is_nan_dict(ssrjson.loads(b'{\n  "a": nan\n}'))
+
+        is_nan_dict(ssrjson.loads('{"ÿ":nan}'), k="ÿ")
+        is_nan_dict(ssrjson.loads('{"ÿ":NaN}'), k="ÿ")
+        is_nan_dict(ssrjson.loads('{"ÿ":nan}'.encode("utf-8")), k="ÿ")
+        is_nan_dict(ssrjson.loads('{"ÿ":NaN}'.encode("utf-8")), k="ÿ")
+
+        is_nan_dict(ssrjson.loads('{\n  "ÿ": nan\n}'), k="ÿ")
+        is_nan_dict(ssrjson.loads('{\n  "ÿ": NaN\n}'), k="ÿ")
+        is_nan_dict(ssrjson.loads('{\n  "ÿ": nan\n}'.encode("utf-8")), k="ÿ")
+        is_nan_dict(ssrjson.loads('{\n  "ÿ": NaN\n}'.encode("utf-8")), k="ÿ")
+
+        is_nan_dict(ssrjson.loads('{"好":nan}'), k="好")
+        is_nan_dict(ssrjson.loads('{"好":NaN}'), k="好")
+        is_nan_dict(ssrjson.loads('{"好":nan}'.encode("utf-8")), k="好")
+        is_nan_dict(ssrjson.loads('{"好":NaN}'.encode("utf-8")), k="好")
+
+        is_nan_dict(ssrjson.loads('{\n  "好": nan\n}'), k="好")
+        is_nan_dict(ssrjson.loads('{\n  "好": NaN\n}'), k="好")
+        is_nan_dict(ssrjson.loads('{\n  "好": nan\n}'.encode("utf-8")), k="好")
+        is_nan_dict(ssrjson.loads('{\n  "好": NaN\n}'.encode("utf-8")), k="好")
+
+        is_nan_dict(ssrjson.loads('{"🐈":nan}'), k="🐈")
+        is_nan_dict(ssrjson.loads('{"🐈":NaN}'), k="🐈")
+        is_nan_dict(ssrjson.loads('{"🐈":nan}'.encode("utf-8")), k="🐈")
+        is_nan_dict(ssrjson.loads('{"🐈":NaN}'.encode("utf-8")), k="🐈")
+
+        is_nan_dict(ssrjson.loads('{\n  "🐈": nan\n}'), k="🐈")
+        is_nan_dict(ssrjson.loads('{\n  "🐈": NaN\n}'), k="🐈")
+        is_nan_dict(ssrjson.loads('{\n  "🐈": nan\n}'.encode("utf-8")), k="🐈")
+        is_nan_dict(ssrjson.loads('{\n  "🐈": NaN\n}'.encode("utf-8")), k="🐈")
 
     def test_infinity_dumps(self):
         """
@@ -574,6 +644,11 @@ class TestType:
         is_inf_list(ssrjson.loads("[Infinity]"))
         is_inf_list(ssrjson.loads("[-Infinity]"))
         is_inf_list(ssrjson.loads("[-infinity]"))
+
+        is_inf_list(ssrjson.loads("[\n  infinity\n]"))
+        is_inf_list(ssrjson.loads("[\n  Infinity\n]"))
+        is_inf_list(ssrjson.loads("[\n  -Infinity\n]"))
+        is_inf_list(ssrjson.loads("[\n  -infinity\n]"))
 
     def test_int_53(self):
         """
@@ -654,6 +729,11 @@ class TestType:
         assert 1.893 == ssrjson.loads("1.893")
         assert 1.3 == ssrjson.loads("1.3")
 
+        # cover all paths
+        for k in ("a", "ÿ", "好", "🐈"):
+            for indent in (0, 2, 4):
+                full_cover_dumps({k: 1.3}, indent)
+
     def test_float_precision_loads(self):
         """
         float precision loads()
@@ -731,6 +811,13 @@ class TestType:
         assert ssrjson.dumps(obj) == ref
         assert ssrjson.dumps_to_bytes(obj) == ref.encode("utf-8")
         assert ssrjson.loads(ref) == obj
+        # cover all paths
+        for k in ("a", "ÿ", "好", "🐈"):
+            for indent in (0, 2, 4):
+                d = {k: ["a", "b", True, {"b": 1.1}, 2, {}, (1, "a"), [1, "a"]]}
+                full_cover_dumps(d, indent=indent)
+                d = {k: []}
+                full_cover_dumps(d, indent=indent)
 
     def test_tuple(self):
         """
@@ -741,6 +828,16 @@ class TestType:
         assert ssrjson.dumps(obj) == ref
         assert ssrjson.dumps_to_bytes(obj) == ref.encode("utf-8")
         assert ssrjson.loads(ref) == list(obj)
+
+        # cover all paths
+        for k in ("a", "ÿ", "好", "🐈"):
+            for indent in (0, 2, 4):
+                tp = tuple()
+                d = {k: tp}
+                full_cover_dumps(d, indent)
+                tp = ("b", "c")
+                d = {k: tp}
+                full_cover_dumps(d, indent)
 
     def test_object(self):
         """

@@ -209,9 +209,30 @@
 
 #define force_inline static ssrjson_inline
 #define force_noinline ssrjson_noinline
+/* For functions only used in one SIMD compile unit. */
+#if DISABLE_INTERNAL_NOINLINE
+#    define internal_simd_noinline static_assert(0, "internal_simd_noinline is disabled");
+#else
+#    define internal_simd_noinline static ssrjson_noinline
+#endif
 #define likely ssrjson_likely
 #define unlikely ssrjson_unlikely
 
+/* assume for compiler */
+#ifdef NDEBUG
+#    if defined(__GNUC__) || defined(__clang__)
+#        define assume(cond)                          \
+            do {                                      \
+                if (!(cond)) __builtin_unreachable(); \
+            } while (0)
+#    elif defined(_MSC_VER)
+#        define assume(cond) __assume(cond)
+#    else
+#        define assume(cond) ((void)0)
+#    endif
+#else
+#    define assume(cond) assert(cond)
+#endif
 
 /* x86: check cpu features */
 #if SSRJSON_X86
@@ -246,8 +267,8 @@ force_inline int get_cpuid_max(void) {
 #define REPEAT_64(x) REPEAT_32(x) REPEAT_32(x)
 
 #define SSRJSON_CAST(type, expr) ((type)(expr))
-#ifdef NDEBUG
-#    define SSRJSON_UNREACHABLE() Py_UNREACHABLE()
+#if defined(SSRJSON_COVERAGE) || defined(NDEBUG)
+#    define SSRJSON_UNREACHABLE() __builtin_unreachable()
 #else
 #    define SSRJSON_UNREACHABLE() assert(false)
 #endif
@@ -341,19 +362,6 @@ force_inline int get_cpuid_max(void) {
 #        define SSRJSON_HAS_IEEE_754 1
 #    else
 #        define SSRJSON_HAS_IEEE_754 0
-#    endif
-#endif
-
-
-/**
- Microsoft Visual C++ 6.0 doesn't support converting number from u64 to f64:
- error C2520: conversion from unsigned __int64 to double not implemented.
- */
-#ifndef SSRJSON_U64_TO_F64_NO_IMPL
-#    if (0 < SSRJSON_MSC_VER) && (SSRJSON_MSC_VER <= 1200)
-#        define SSRJSON_U64_TO_F64_NO_IMPL 1
-#    else
-#        define SSRJSON_U64_TO_F64_NO_IMPL 0
 #    endif
 #endif
 
@@ -776,28 +784,6 @@ force_inline void split_tail_len_two_parts(usize tail_len, usize check_count, us
     *part1 = p1;
 }
 
-force_inline void split_tail_len_four_parts(usize tail_len, usize check_count, usize *restrict part1, usize *restrict part2, usize *restrict part3, usize *restrict part4) {
-    assert(tail_len > 0 && tail_len < check_count);
-    assert(check_count / 4 * 4 == check_count);
-    const usize orig_tail_len = tail_len;
-    const usize check_quad = check_count / 4;
-    usize p1, p2, p3, p4;
-    p4 = tail_len > check_quad ? check_quad : tail_len;
-    tail_len -= p4;
-    p3 = tail_len > check_quad ? check_quad : tail_len;
-    tail_len -= p3;
-    p2 = tail_len > check_quad ? check_quad : tail_len;
-    tail_len -= p2;
-    p1 = tail_len;
-    assert(p1 >= 0 && p2 >= 0 && p3 >= 0 && p4 >= 0);
-    assert(p1 <= check_quad && p2 <= check_quad && p3 <= check_quad && p4 <= check_quad);
-    assert(p1 + p2 + p3 + p4 == orig_tail_len);
-    *part4 = p4;
-    *part3 = p3;
-    *part2 = p2;
-    *part1 = p1;
-}
-
 /* Get tail length at specific part.*/
 force_inline usize get_tail_len_parts_by_index(usize tail_len, usize batch_count, usize parts, usize index) {
     usize small_batch = batch_count / parts;
@@ -808,24 +794,17 @@ force_inline usize get_tail_len_parts_by_index(usize tail_len, usize batch_count
     return ret;
 }
 
-#define BLEND_HIGH_WRITER_2PARTS(_dst_, _u_vec_t_, _batch_size_, _len_, _blendv_func_, _get_high_mask_func_, _expr0_, _expr1_)                 \
-    _u_vec_t_ *uvec = SSRJSON_CAST(_u_vec_t_ *, _dst_);                                                                                        \
-    assert(_len_ > 0);                                                                                                                         \
-    usize batch_half = (_batch_size_) / 2;                                                                                                     \
-    usize batch_index = (_len_ - 1) / batch_half;                                                                                              \
-    switch (batch_index) {                                                                                                                     \
-        case 0: {                                                                                                                              \
-            *(uvec + 1) = _blendv_func_(*(uvec + 1), (_expr1_), _get_high_mask_func_(get_tail_len_parts_by_index(_len_, _batch_size_, 2, 0))); \
-            break;                                                                                                                             \
-        }                                                                                                                                      \
-        case 1: {                                                                                                                              \
-            *(uvec + 0) = _blendv_func_(*(uvec + 0), (_expr0_), _get_high_mask_func_(get_tail_len_parts_by_index(_len_, _batch_size_, 2, 1))); \
-            *(uvec + 1) = (_expr1_);                                                                                                           \
-            break;                                                                                                                             \
-        }                                                                                                                                      \
-        default: {                                                                                                                             \
-            SSRJSON_UNREACHABLE();                                                                                                             \
-        }                                                                                                                                      \
+#define BLEND_HIGH_WRITER_2PARTS(_dst_, _u_vec_t_, _batch_size_, _len_, _blendv_func_, _get_high_mask_func_, _expr0_, _expr1_)             \
+    _u_vec_t_ *uvec = SSRJSON_CAST(_u_vec_t_ *, _dst_);                                                                                    \
+    assert(_len_ > 0);                                                                                                                     \
+    usize batch_half = (_batch_size_) / 2;                                                                                                 \
+    usize batch_index = (_len_ - 1) / batch_half;                                                                                          \
+    if (batch_index == 0) {                                                                                                                \
+        *(uvec + 1) = _blendv_func_(*(uvec + 1), (_expr1_), _get_high_mask_func_(get_tail_len_parts_by_index(_len_, _batch_size_, 2, 0))); \
+    } else {                                                                                                                               \
+        assert(batch_index == 1);                                                                                                          \
+        *(uvec + 0) = _blendv_func_(*(uvec + 0), (_expr0_), _get_high_mask_func_(get_tail_len_parts_by_index(_len_, _batch_size_, 2, 1))); \
+        *(uvec + 1) = (_expr1_);                                                                                                           \
     }
 
 #define BLEND_HIGH_WRITER_4PARTS(_dst_, _u_vec_t_, _batch_size_, _len_, _blendv_func_, _get_high_mask_func_, _expr0_, _expr1_, _expr2_, _expr3_) \

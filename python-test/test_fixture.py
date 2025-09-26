@@ -77,6 +77,7 @@ class TestFixture:
         """
         val = read_fixture_str("truenull.json")
         read = ssrjson.loads(val)
+        assert read == ssrjson.loads(val.encode("utf-8"))
         assert ssrjson.loads(ssrjson.dumps(read)) == read
         assert ssrjson.loads(ssrjson.dumps_to_bytes(read)) == read
 

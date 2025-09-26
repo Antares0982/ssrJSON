@@ -22,8 +22,10 @@
 
 #ifdef SSRJSON_CLANGD_DUMMY
 #    ifndef COMPILE_READ_UCS_LEVEL
-#        include "decode/decode_float_utils.h"
+#        include "bigint.h"
+#        include "decode/float/decode_float_utils.h"
 #        include "decode/str/tools.h"
+#        define COMPILE_READ_UCS_LEVEL 1
 #    endif
 #endif
 
@@ -51,64 +53,10 @@ force_inline bool digi_is_fp(_src_t d) {
 
 #if SSRJSON_HAS_IEEE_754
 #    define DIGI_IS_NONZERO MAKE_R_NAME(digi_is_nonzero)
-#    define BIGINT_SET_BUF MAKE_R_NAME(bigint_set_buf)
 
 ////////////////
 force_inline bool DIGI_IS_NONZERO(_src_t d) {
     return d <= U8MAX && _digi_is_nonzero((u8)d);
-}
-
-/** Set a bigint with floating point number string. */
-static force_noinline void BIGINT_SET_BUF(
-        bigint *big, u64 sig, i32 *exp,
-        const _src_t *sig_cut, const _src_t *sig_end, const _src_t *dot_pos) {
-
-    if (unlikely(!sig_cut)) {
-        /* no digit cut, set significant part only */
-        bigint_set_u64(big, sig);
-        return;
-
-    } else {
-        /* some digits were cut, read them from 'sig_cut' to 'sig_end' */
-        const _src_t *hdr = sig_cut;
-        const _src_t *cur = hdr;
-        u32 len = 0;
-        u64 val = 0;
-        bool dig_big_cut = false;
-        bool has_dot = (hdr < dot_pos) & (dot_pos < sig_end);
-        u32 dig_len_total = U64_SAFE_DIG + (u32)(sig_end - hdr) - has_dot;
-
-        sig -= (*sig_cut >= '5'); /* sig was rounded before */
-        if (dig_len_total > F64_MAX_DEC_DIG) {
-            dig_big_cut = true;
-            sig_end -= dig_len_total - (F64_MAX_DEC_DIG + 1);
-            sig_end -= (dot_pos + 1 == sig_end);
-            dig_len_total = (F64_MAX_DEC_DIG + 1);
-        }
-        *exp -= (i32)dig_len_total - U64_SAFE_DIG;
-
-        big->used = 1;
-        big->bits[0] = sig;
-        while (cur < sig_end) {
-            if (likely(cur != dot_pos)) {
-                val = val * 10 + (u64)(*cur++ - '0');
-                len++;
-                if (unlikely(cur == sig_end && dig_big_cut)) {
-                    /* The last digit must be non-zero,    */
-                    /* set it to '1' for correct rounding. */
-                    val = val - (val % 10) + 1;
-                }
-                if (len == U64_SAFE_DIG || cur == sig_end) {
-                    bigint_mul_pow10(big, (i32)len);
-                    bigint_add_u64(big, val);
-                    val = 0;
-                    len = 0;
-                }
-            } else {
-                cur++;
-            }
-        }
-    }
 }
 
 /*==============================================================================
@@ -123,7 +71,7 @@ static force_noinline void BIGINT_SET_BUF(
     number is infinite, the return value is based on flag.
  3. This function (with inline attribute) may generate a lot of instructions.
  */
-static force_noinline PyObject *read_number(const _src_t **ptr, const _src_t *buffer_end) {
+internal_simd_noinline PyObject *read_number(const _src_t **ptr, const _src_t *buffer_end) {
 #    define return_err(_end, _msg)                                                  \
         do {                                                                        \
             PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, _end - hdr); \
@@ -185,11 +133,6 @@ static force_noinline PyObject *read_number(const _src_t **ptr, const _src_t *bu
     const _src_t *cur = *ptr;
     const _src_t **end = ptr;
     bool sign;
-
-    /* read number as raw string if has `YYJSON_READ_NUMBER_AS_RAW` flag */
-    // if (has_read_flag(NUMBER_AS_RAW)) {
-    //     return read_number_raw(ptr, pre, flg, val, msg);
-    // }
 
     sign = (*hdr == '-');
     cur += sign;
@@ -258,7 +201,6 @@ static force_noinline PyObject *read_number(const _src_t **ptr, const _src_t *bu
     if (!digi_is_digit_or_fp(*cur)) {
         /* this number is an integer consisting of 19 digits */
         if (sign && (sig > ((u64)1 << 63))) { /* overflow */
-            // if (has_read_flag(BIGNUM_AS_RAW)) return_raw();
             return_f64(normalized_u64_to_f64(sig));
         }
         return_i64(sig);
@@ -314,7 +256,6 @@ digi_intg_more:
                 cur++;
                 /* convert to double if overflow */
                 if (sign) {
-                    // if (has_read_flag(BIGNUM_AS_RAW)) return_raw();
                     return_f64(normalized_u64_to_f64(sig));
                 }
                 return_u64(sig);
@@ -341,9 +282,6 @@ digi_frac_more:
     sig += (*cur >= '5'); /* round */
     while (digi_is_digit(*++cur));
     if (!dot_pos) {
-        // if (!digi_is_fp(*cur) && has_read_flag(BIGNUM_AS_RAW)) {
-        //     return_raw(); /* it's a large integer */
-        // }
         dot_pos = cur;
         if (*cur == '.') {
             if (!digi_is_digit(*++cur)) {
@@ -692,7 +630,7 @@ digi_finish:
         fp_upper.sig += 1; /* add half ulp */
 
         /* compare with bigint */
-        BIGINT_SET_BUF(&big_full, sig, &exp, sig_cut, sig_end, dot_pos);
+        bigint_set_buf_noinline(&big_full, sig, &exp, sig_cut, sig_end, dot_pos);
         bigint_set_u64(&big_comp, fp_upper.sig);
         if (exp >= 0) {
             bigint_mul_pow10(&big_full, +exp);
@@ -727,7 +665,6 @@ digi_finish:
 #    undef return_raw
 }
 
-#    undef BIGINT_SET_BUF
 #    undef DIGI_IS_NONZERO
 
 #else /* !SSRJSON_HAS_IEEE_754 */
@@ -737,7 +674,7 @@ digi_finish:
  This is a fallback function if the custom number reader is disabled.
  This function use libc's strtod() to read floating-point number.
  */
-static force_noinline PyObject *read_number(const _src_t **ptr, const _src_t *buffer_end) {
+internal_simd_noinline PyObject *read_number(const _src_t **ptr, const _src_t *buffer_end) {
 
 #    define return_err(_end, _msg)                                                  \
         do {                                                                        \
@@ -796,7 +733,6 @@ static force_noinline PyObject *read_number(const _src_t **ptr, const _src_t *bu
 
     /* read first digit, check leading zero */
     if (unlikely(!digi_is_digit(*cur))) {
-        // if (has_read_flag(ALLOW_INF_AND_NAN)) {
         PyObject *number_obj = read_inf_or_nan(sign, &cur, buffer_end);
         if (likely(number_obj)) {
             *end = cur;
@@ -837,7 +773,6 @@ static force_noinline PyObject *read_number(const _src_t **ptr, const _src_t *bu
             sig = num + sig * 10;
             cur++;
             if (sign) {
-                // if (has_read_flag(BIGNUM_AS_RAW)) return_raw();
                 return_f64(normalized_u64_to_f64(sig));
             }
             return_u64(sig);
@@ -849,7 +784,6 @@ intg_end:
     if (!digi_is_digit_or_fp(*cur)) {
         /* this number is an integer consisting of 1 to 19 digits */
         if (sign && (sig > ((u64)1 << 63))) {
-            // if (has_read_flag(BIGNUM_AS_RAW)) return_raw();
             return_f64(normalized_u64_to_f64(sig));
         }
         return_i64(sig);
@@ -858,9 +792,6 @@ intg_end:
 read_double:
     /* this number should be read as double */
     while (digi_is_digit(*cur)) cur++;
-    // if (!digi_is_fp(*cur) && has_read_flag(BIGNUM_AS_RAW)) {
-    //     return_raw(); /* it's a large integer */
-    // }
     if (*cur == '.') {
         /* skip fraction part */
         dot = cur;

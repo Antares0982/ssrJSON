@@ -133,10 +133,7 @@ DATACLASS_FIXTURE = [
     for i in range(100000, 101000)
 ]
 
-# For the case `sde64 -ivb` checks, the memory allocation strategy is different, which uses more memory.
-# For asan check, the memory will not be released and rss increases over time.
-# For other cases, 4MiB is enough.
-MAX_INCREASE = 1024 * 1024 * 6  # 6MiB.
+MAX_INCREASE = 1024 * 1024 * 4  # 4MiB.
 
 
 class Unsupported:

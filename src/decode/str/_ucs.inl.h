@@ -164,7 +164,7 @@ done:;
     return ret;
 }
 
-static force_noinline PyObject *decode_str_with_escape(
+internal_simd_noinline PyObject *decode_str_with_escape(
         const _src_t *src_start,
         const _src_t **src_addr,
         const _src_t *src_end,
@@ -580,7 +580,7 @@ failed:;
 #undef CAN_LOOP
 }
 
-static force_noinline PyObject *decode_str(
+internal_simd_noinline PyObject *decode_str(
         const _src_t **src_addr,
         const _src_t *const src_end,
         void *temp_buffer,

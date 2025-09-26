@@ -151,6 +151,10 @@ class TestApi:
         """
         with pytest.raises(TypeError):
             ssrjson.dumps({}, zxc=default)  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes({}, zxc=default)  # type: ignore
+        ssrjson.suppress_api_warning()
+        assert ssrjson.dumps({}, skipkeys="a") == "{}"
 
     def test_default_empty_kwarg(self):
         """
@@ -163,14 +167,8 @@ class TestApi:
         """
         dumps() valid __text_signature__
         """
-        assert (
-            str(inspect.signature(ssrjson.dumps))
-            == "(obj, indent=None)"
-        )
-        assert (
-            str(inspect.signature(ssrjson.dumps_to_bytes))
-            == "(obj, indent=None)"
-        )
+        assert str(inspect.signature(ssrjson.dumps)) == "(obj, indent=None)"
+        assert str(inspect.signature(ssrjson.dumps_to_bytes)) == "(obj, indent=None)"
 
     def test_loads_signature(self):
         """
@@ -199,7 +197,9 @@ class TestApi:
         b = "b" * 4096
         c = "c" * 4096 * 4096
         assert ssrjson.dumps([a, b, c]) == f'["{a}","{b}","{c}"]'
-        assert ssrjson.dumps_to_bytes([a, b, c]) == f'["{a}","{b}","{c}"]'.encode("utf-8")
+        assert ssrjson.dumps_to_bytes([a, b, c]) == f'["{a}","{b}","{c}"]'.encode(
+            "utf-8"
+        )
 
     def test_bytes_null_terminated(self):
         """

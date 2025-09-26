@@ -41,7 +41,11 @@
 //
 #    define prepare_unicode_write MAKE_IU_NAME(_prepare_unicode_write)
 #    define unicode_buffer_append_key MAKE_IU_NAME(_unicode_buffer_append_key)
+#    define unicode_buffer_append_key_distribute2 MAKE_IU_NAME(_unicode_buffer_append_key_distribute2)
+#    define unicode_buffer_append_key_distribute4 MAKE_IU_NAME(_unicode_buffer_append_key_distribute4)
 #    define unicode_buffer_append_str MAKE_IU_NAME(_unicode_buffer_append_str)
+#    define unicode_buffer_append_str_distribute2 MAKE_IU_NAME(_unicode_buffer_append_str_distribute2)
+#    define unicode_buffer_append_str_distribute4 MAKE_IU_NAME(_unicode_buffer_append_str_distribute4)
 #    define unicode_buffer_append_long MAKE_IU_NAME(_unicode_buffer_append_long)
 #    define write_unicode_false MAKE_IU_NAME(_write_unicode_false)
 #    define unicode_buffer_append_false MAKE_IU_NAME(_unicode_buffer_append_false)
@@ -64,7 +68,7 @@
 #    define unicode_buffer_append_obj_end MAKE_IU_NAME(_unicode_buffer_append_obj_end)
 #    define ssrjson_dumps_obj MAKE_IU_NAME(_ssrjson_dumps_obj)
 //
-#    define encode_process_val SSRJSON_CONCAT3(encode_process_val, COMPILE_INDENT_LEVEL, COMPILE_UCS_LEVEL)
+#    define encode_process_val MAKE_IU_NAME(encode_process_val)
 #endif
 
 #endif // SSRJSON_COMPILE_CONTEXT_SIRW

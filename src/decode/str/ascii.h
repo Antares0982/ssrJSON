@@ -381,7 +381,7 @@ force_inline void process_escape_ascii_u32(EscapeInfo escape_info, u32 **u32writ
     *(*u32writer_addr)++ = escape_val;
 }
 
-static force_noinline PyObject *decode_str_with_escape_ascii(
+internal_simd_noinline PyObject *decode_str_with_escape_ascii(
         const _src_t *src_start,
         const _src_t **src_addr,
         const _src_t *src_end,
@@ -826,9 +826,9 @@ failed:;
 #undef CAN_LOOP
 }
 
-static force_noinline PyObject *decode_str_ascii_not_key(const _src_t **src_addr,
-                                                         const _src_t *const src_end,
-                                                         void *temp_buffer) {
+internal_simd_noinline PyObject *decode_str_ascii_not_key(const _src_t **src_addr,
+                                                          const _src_t *const src_end,
+                                                          void *temp_buffer) {
     return decode_str_ascii(src_addr, src_end, temp_buffer, false);
 }
 

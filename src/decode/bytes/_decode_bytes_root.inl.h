@@ -47,7 +47,9 @@
         } while (char_is_space(*_u8ptr)); \
     } while (0)
 
-static force_noinline PyObject *READ_ROOT_IMPL(const u8 *dat, usize len) {
+internal_simd_noinline PyObject *read_bytes_not_key(const u8 **ptr, u8 *write_buffer);
+
+internal_simd_noinline PyObject *READ_ROOT_IMPL(const u8 *dat, usize len) {
     // container stack info
     DecodeCtnWithSize *ctn = NULL;
     DecodeCtnWithSize *ctn_start = NULL;
@@ -94,23 +96,9 @@ arr_begin:
 arr_val_begin:
 #if DECODE_READ_PRETTY
     if (*cur == ' ') {
-        // cur++;
-        // if (*cur == ' ')
         fast_skip_spaces_u8(&cur, end);
     }
-// #    if SSRJSON_IS_REAL_GCC
-//     while (true) REPEAT_CALL_16({
-//         if (byte_match_2((void *)cur, "  ")) cur += 2;
-//         else
-//             break;
-//     })
-// #    else
-//     while (true) REPEAT_CALL_16({
-//         if (likely(byte_match_2(cur, "  "))) cur += 2;
-//         else
-//             break;
-//     })
-// #    endif
+
 #endif
     if (*cur == '{') {
         cur++;
@@ -176,7 +164,6 @@ arr_val_begin:
         // guess it occurs when the document is using some `CHAR_TYPE_SPACE` characters
         // other than space itself as indent, like, tabs.
         SKIP_CONSECUTIVE_SPACES(cur);
-        // while (char_is_space(*++cur));
         goto arr_val_begin;
     }
     if ((*cur == 'i' || *cur == 'I' || *cur == 'N')) {
@@ -214,7 +201,6 @@ arr_val_end:
         if (char_is_space(*cur)) {
             SKIP_CONSECUTIVE_SPACES(cur);
         }
-        // while (char_is_space(*++cur));
         goto arr_val_end;
     }
 
@@ -245,23 +231,8 @@ obj_begin:
 obj_key_begin:
 #if DECODE_READ_PRETTY
     if (*cur == ' ') {
-        // cur++;
-        // if (*cur == ' ')
         fast_skip_spaces_u8(&cur, end);
     }
-// #if SSRJSON_IS_REAL_GCC
-//     while (true) REPEAT_CALL_16({
-//         if (byte_match_2((void *)cur, "  ")) cur += 2;
-//         else
-//             break;
-//     })
-// #else
-//     while (true) REPEAT_CALL_16({
-//         if (likely(byte_match_2(cur, "  "))) cur += 2;
-//         else
-//             break;
-//     })
-// #endif
 #endif
 
     if (likely(*cur == '"')) {
@@ -282,7 +253,6 @@ obj_key_begin:
         //   other than space as indent.
         //   see the comment in `arr_val_begin` for more details.
         SKIP_CONSECUTIVE_SPACES(cur);
-        // while (char_is_space(*++cur));
         goto obj_key_begin;
     }
     goto fail_character_obj_key;
@@ -303,7 +273,6 @@ obj_key_end:
         if (char_is_space(*cur)) {
             SKIP_CONSECUTIVE_SPACES(cur);
         }
-        // while (char_is_space(*++cur));
         goto obj_key_end;
     }
     goto fail_character_obj_sep;
@@ -371,7 +340,6 @@ obj_val_begin:
             // handle unlikely cases
             SKIP_CONSECUTIVE_SPACES(cur);
         }
-        // while (char_is_space(*++cur));
         goto obj_val_begin;
     }
     if ((*cur == 'i' || *cur == 'I' || *cur == 'N')) {
@@ -380,7 +348,6 @@ obj_val_begin:
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
-        goto fail_character_val;
     }
 
     goto fail_character_val;
@@ -410,7 +377,6 @@ obj_val_end:
         if (char_is_space(*cur)) {
             SKIP_CONSECUTIVE_SPACES(cur);
         }
-        // while (char_is_space(*++cur));
         goto obj_val_end;
     }
 
@@ -504,9 +470,6 @@ fail_character_obj_sep:
 fail_character_obj_end:
     return_err(cur, JSONDecodeError,
                "unexpected character, expected a comma or a closing brace");
-fail_comment:
-    return_err(cur, JSONDecodeError,
-               "unclosed multiline comment");
 fail_garbage:
     return_err(cur, JSONDecodeError,
                "unexpected content after document");

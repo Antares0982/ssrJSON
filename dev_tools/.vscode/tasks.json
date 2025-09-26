@@ -12,7 +12,7 @@
                         "develop",
                         "--no-net",
                         "-c",
-                        "zsh"
+                        "bash"
                     ]
                 }
             },
@@ -36,7 +36,7 @@
                         "develop",
                         "--no-net",
                         "-c",
-                        "zsh"
+                        "bash"
                     ]
                 }
             },
@@ -60,7 +60,7 @@
                         "develop",
                         "--no-net",
                         "-c",
-                        "zsh"
+                        "bash"
                     ]
                 }
             },
@@ -84,7 +84,7 @@
                         "develop",
                         "--no-net",
                         "-c",
-                        "zsh"
+                        "bash"
                     ]
                 }
             },
@@ -115,7 +115,7 @@
                         "develop",
                         "--no-net",
                         "-c",
-                        "zsh"
+                        "bash"
                     ]
                 }
             },
@@ -139,7 +139,7 @@
                         "develop",
                         "--no-net",
                         "-c",
-                        "zsh"
+                        "bash"
                     ]
                 }
             },
@@ -160,7 +160,7 @@
                         "develop",
                         "--no-net",
                         "-c",
-                        "zsh"
+                        "bash"
                     ]
                 },
                 "env": {
@@ -172,6 +172,27 @@
                 "isDefault": true
             },
             "detail": "Run benchmark"
+        },
+        {
+            "label": "Run coverage test",
+            "type": "shell",
+            "command": "${workspaceFolder}/dev_tools/coverage_test.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "bash"
+                    ]
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Run coverage test"
         }
     ]
 }

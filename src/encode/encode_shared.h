@@ -111,13 +111,6 @@ force_inline Py_ssize_t get_indent_char_count(Py_ssize_t cur_nested_depth, Py_ss
 
 extern PyObject *JSONEncodeError;
 
-force_inline void *get_unicode_data(PyObject *unicode) {
-    if (((PyASCIIObject *)unicode)->state.ascii) {
-        return (void *)(((PyASCIIObject *)unicode) + 1);
-    }
-    return (void *)(((PyCompactUnicodeObject *)unicode) + 1);
-}
-
 force_inline bool pylong_is_unsigned(PyObject *obj) {
 #if PY_MINOR_VERSION >= 12
     return !(bool)(((PyLongObject *)obj)->long_value.lv_tag & 2);
@@ -199,22 +192,7 @@ extern PyTypeObject *PyNone_Type;
 extern PyTypeObject *PyNone_Type;
 #endif
 
-static force_noinline ssrjson_py_types slow_type_check(PyTypeObject *type) {
-    if (PyType_FastSubclass(type, Py_TPFLAGS_DICT_SUBCLASS)) {
-        return T_Dict;
-    } else if (PyType_FastSubclass(type, Py_TPFLAGS_LIST_SUBCLASS)) {
-        return T_List;
-    } else if (PyType_FastSubclass(type, Py_TPFLAGS_TUPLE_SUBCLASS)) {
-        return T_Tuple;
-    } else if (PyType_FastSubclass(type, Py_TPFLAGS_UNICODE_SUBCLASS)) {
-        return T_UnicodeNonCompact;
-    } else if (PyType_FastSubclass(type, Py_TPFLAGS_LONG_SUBCLASS)) {
-        return T_Long;
-    } else if (PyType_IsSubtype(type, &PyFloat_Type)) {
-        return T_Float;
-    }
-    return T_Unknown;
-}
+ssrjson_py_types slow_type_check(PyTypeObject *type);
 
 /* Get the value type as fast as possible. */
 force_inline ssrjson_py_types ssrjson_type_check(PyObject *val) {
@@ -326,9 +304,11 @@ typedef union {
 
 bool _unicode_buffer_reserve(EncodeUnicodeBufferInfo *unicode_buffer_info, usize target_size);
 
+#ifndef NDEBUG
 force_inline bool check_unicode_writer_valid(void *writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
     return SSRJSON_CAST(u8 *, writer) <= (u8 *)unicode_buffer_info->end && SSRJSON_CAST(u8 *, writer) >= (u8 *)unicode_buffer_info->head;
 }
+#endif
 
 /* Resize the buffer described by `unicode_buffer_info`.
  * If resize succeed, the buffer will be updated to the new address and return true.
@@ -358,14 +338,6 @@ extern const u64 pow10_sig_table[];
 
 force_inline void byte_copy_2(void *dst, const void *src) {
     memcpy(dst, src, 2);
-}
-
-force_inline void byte_copy_4(void *dst, const void *src) {
-    memcpy(dst, src, 4);
-}
-
-force_inline void byte_copy_8(void *dst, const void *src) {
-    memcpy(dst, src, 8);
 }
 
 /*==============================================================================

@@ -20,6 +20,8 @@
  SOFTWARE.
  *============================================================================*/
 
+/* This file is unused but left here intentionally for future use. */
+
 #ifndef SSRJSON_SIMD_AVX2_TRAILING_H
 #define SSRJSON_SIMD_AVX2_TRAILING_H
 

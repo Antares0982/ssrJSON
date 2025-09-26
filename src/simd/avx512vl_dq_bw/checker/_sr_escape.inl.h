@@ -34,14 +34,16 @@
 #define COMPILE_SIMD_BITS 512
 #include "compile_context/sr_in.inl.h"
 
-force_inline vector_a get_high_mask(usize count) {
-    const vector_a *mask_ptr = read_tail_mask_table_8(64 - count * sizeof(_src_t));
-    return *mask_ptr;
-}
+/* High mask functions for AVX512 are not used. */
 
-force_inline vector_a high_mask(vector_a x, usize count) {
-    return x & get_high_mask(count);
-}
+// force_inline vector_a get_high_mask(usize count) {
+//     const vector_a *mask_ptr = read_tail_mask_table_8(64 - count * sizeof(_src_t));
+//     return *mask_ptr;
+// }
+
+// force_inline vector_a high_mask(vector_a x, usize count) {
+//     return x & get_high_mask(count);
+// }
 
 force_inline vector_a get_low_mask(usize count) {
     const vector_a *mask_ptr = read_head_mask_table_8(count * sizeof(_src_t));
@@ -63,7 +65,7 @@ force_inline usize escape_bitmask_to_done_count(avx512_bitmask_t bitmask) {
     if (sizeof(avx512_bitmask_t) == 8) {
         return u64_tz_bits((u64)bitmask);
     }
-    assert(sizeof(avx512_bitmask_t) < 8);
+    assert(sizeof(avx512_bitmask_t) == 2 || sizeof(avx512_bitmask_t) == 4);
     return u32_tz_bits((u32)bitmask);
 }
 

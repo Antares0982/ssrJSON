@@ -28,19 +28,19 @@
 #include "simd/compile_feature_check.h"
 
 #define COMPILE_UCS_LEVEL 0
-#include "decode/decode_str.inl.h"
+#include "decode/_decode_str.inl.h"
 #undef COMPILE_UCS_LEVEL
 
 #define COMPILE_UCS_LEVEL 1
-#include "decode/decode_str.inl.h"
+#include "decode/_decode_str.inl.h"
 #undef COMPILE_UCS_LEVEL
 
 #define COMPILE_UCS_LEVEL 2
-#include "decode/decode_str.inl.h"
+#include "decode/_decode_str.inl.h"
 #undef COMPILE_UCS_LEVEL
 
 #define COMPILE_UCS_LEVEL 4
-#include "decode/decode_str.inl.h"
+#include "decode/_decode_str.inl.h"
 #undef COMPILE_UCS_LEVEL
 
 #undef COMPILE_SIMD_BITS

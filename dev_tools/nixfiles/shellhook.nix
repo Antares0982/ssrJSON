@@ -12,6 +12,9 @@
   lib,
 }:
 let
+  llvmClang = pkgs.llvmPackages.libcxxClang;
+  llvmBintools = pkgs.llvmPackages.bintools-unwrapped;
+  libcxx = pkgs.llvmPackages.libcxx;
   versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
   versions = versionUtils.versions;
   debugSourceDir = "debug_source";
@@ -129,8 +132,7 @@ in
 + ''
   # add python executable to the bin directory
   ensure_symlink "${nix_pyenv_directory}/bin/python" python3.${builtins.toString latestStableVer}
-  # export PATH=${using_python}/bin:${nix_pyenv_directory}/bin:$PATH
-  export PATH=${nix_pyenv_directory}/bin:$PATH
+  export PATH=$(pwd)/${nix_pyenv_directory}/bin:$PATH
 
   # prevent gc
   nix-store --add-root ${nix_pyenv_directory}/.nix-shell-inputs --realise ${inputDerivation}
@@ -138,8 +140,10 @@ in
   # custom
   ensure_symlink "${nix_pyenv_directory}/bin/python_nodebug" ${pyenv_nodebug}/bin/python
   ensure_symlink "${nix_pyenv_directory}/bin/valgrind" ${pkgs.valgrind}/bin/valgrind
-  export CC=${pkgs.clang}/bin/clang
-  export CXX=${pkgs.clang}/bin/clang++
+  export CC=${llvmClang}/bin/clang
+  export CXX=${llvmClang}/bin/clang++
+  export LIBRARY_PATH=${libcxx}/lib:$LIBRARY_PATH
+  export LD_LIBRARY_PATH=${libcxx}/lib:$LD_LIBRARY_PATH
   export Python3_ROOT_DIR=${using_python}
   ensure_symlink "${nix_pyenv_directory}/bin/clang" $CC
   ensure_symlink "${nix_pyenv_directory}/bin/clang++" $CXX

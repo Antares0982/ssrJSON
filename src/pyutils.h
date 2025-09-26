@@ -73,13 +73,12 @@ force_inline void init_pyunicode(void *head, Py_ssize_t size, int kind) {
 #if PY_MINOR_VERSION < 12
         is_sharing = sizeof(wchar_t) == 2;
 #endif
-    } else if (kind == 4) {
+    } else {
+        assert(kind == 4);
         ((u32 *)data)[size] = 0;
 #if PY_MINOR_VERSION < 12
         is_sharing = sizeof(wchar_t) == 4;
 #endif
-    } else {
-        SSRJSON_UNREACHABLE();
     }
     if (kind) {
         unicode->utf8 = NULL;

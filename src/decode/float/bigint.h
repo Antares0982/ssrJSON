@@ -20,23 +20,19 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifndef SSRJSON_DECODE_DECODE_FLOAT_WRAP_H
-#define SSRJSON_DECODE_DECODE_FLOAT_WRAP_H
-
-#include "float/bigint.h"
-#include "float/decode_float_utils.h"
-#include "str/tools.h"
+#ifndef DECODE_FLOAT_BIGINT_H
+#define DECODE_FLOAT_BIGINT_H
 
 #define COMPILE_READ_UCS_LEVEL 1
-#include "float/_decode_float.inl.h"
+#include "_bigint.inl.h"
 #undef COMPILE_READ_UCS_LEVEL
 
 #define COMPILE_READ_UCS_LEVEL 2
-#include "float/_decode_float.inl.h"
+#include "_bigint.inl.h"
 #undef COMPILE_READ_UCS_LEVEL
 
 #define COMPILE_READ_UCS_LEVEL 4
-#include "float/_decode_float.inl.h"
+#include "_bigint.inl.h"
 #undef COMPILE_READ_UCS_LEVEL
 
-#endif // SSRJSON_DECODE_DECODE_FLOAT_WRAP_H
+#endif // DECODE_FLOAT_BIGINT_H

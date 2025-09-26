@@ -22,6 +22,9 @@
 
 #include "decode/decode_shared.h"
 
+#define BIGINT_IMPL 1
+#include "decode/float/bigint.h"
+
 bool _decode_obj_stack_resize(
         decode_obj_stack_ptr_t *decode_obj_writer_addr,
         decode_obj_stack_ptr_t *decode_obj_stack_addr,

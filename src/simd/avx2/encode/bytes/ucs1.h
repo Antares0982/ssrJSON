@@ -63,11 +63,8 @@ restart:;
         writer += real_done_count;
         src = last_batch_start + done_count + 1;
         u8 unicode = last_batch_start[done_count];
-        if (unicode >= ControlMax && unicode < 0x80 && unicode != _Slash && unicode != _Quote) {
-            SSRJSON_UNREACHABLE();
-        } else {
-            encode_one_special_ucs1(&writer, unicode);
-        }
+        assume(!(unicode >= ControlMax && unicode < 0x80 && unicode != _Slash && unicode != _Quote));
+        encode_one_special_ucs1(&writer, unicode);
         if (len) goto restart;
     }
     *writer_addr = writer;

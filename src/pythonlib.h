@@ -72,8 +72,8 @@ force_inline X86SIMDFeatureLevel get_simd_feature(void) {
 #endif
 
 const char *_update_simd_features(void);
-PyObject *ssrjson_print_current_features(PyObject *self, PyObject *args);
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
+PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args);
 
 #if BUILD_MULTI_LIB
 #    if SSRJSON_X86

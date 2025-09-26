@@ -22,8 +22,7 @@
 
 #ifndef DECODE_FLOAT_UTILS_H
 #define DECODE_FLOAT_UTILS_H
-#include "decode_shared.h"
-
+#include "decode/decode_shared.h"
 
 #if SSRJSON_HAS_IEEE_754
 /** Maximum exponent of exact pow10 */

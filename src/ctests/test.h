@@ -43,14 +43,29 @@
         fill_random_buffer(&(_x), sizeof(_x)); \
     } while (0)
 
+#define RANDOM_FILLPTR_WITH_SIZE(_x, _u8size_) \
+    do {                                       \
+        fill_random_buffer((_x), (_u8size_));  \
+    } while (0)
+
 #define GARBAGE_FILL(_x)                 \
     do {                                 \
         memset(&(_x), 0xfa, sizeof(_x)); \
     } while (0)
 
+#define GARBAGE_FILLPTR_WITH_SIZE(_x, _u8size_) \
+    do {                                        \
+        memset((_x), 0xfa, (_u8size_));         \
+    } while (0)
+
 #define ZERO_FILL(_x)                 \
     do {                              \
         memset(&(_x), 0, sizeof(_x)); \
+    } while (0)
+
+#define ZERO_FILLPTR_WITH_SIZE(_x, _u8size_) \
+    do {                                     \
+        memset((_x), 0, (_u8size_));         \
     } while (0)
 
 static const int INVALID = -1;
@@ -119,6 +134,7 @@ DECLARE_TEST(test_ucs2_encode_3bytes_utf8)
 DECLARE_TEST(test_ucs2_encode_2bytes_utf8)
 DECLARE_TEST(test_ucs4_encode_3bytes_utf8)
 DECLARE_TEST(test_ucs4_encode_2bytes_utf8)
-DECLARE_TEST(test_long_cvt_u8_u16)
+DECLARE_TEST(test_long_back_cvt_u8_u16)
+DECLARE_TEST(test_long_cvt)
 
 #endif // SSRJSON_CTESTS_TEST_H

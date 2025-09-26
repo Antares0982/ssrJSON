@@ -248,7 +248,7 @@ force_inline bool decode_nan(decode_obj_stack_ptr_t *decode_obj_writer_addr,
     return push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, o);
 }
 
-static int invalid_arg_checked = 0;
+extern int ssrjson_invalid_arg_checked;
 
 PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *args, PyObject *kwargs) {
     PyObject *obj;
@@ -261,9 +261,9 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *args, PyO
         return NULL;
     }
 
-    if (!invalid_arg_checked && (cls || object_hook || parse_float || parse_int || parse_constant || object_pairs_hook)) {
+    if (!ssrjson_invalid_arg_checked && (cls || object_hook || parse_float || parse_int || parse_constant || object_pairs_hook)) {
         fprintf(stderr, "Warning: some options are not supported in this version of ssrjson\n");
-        invalid_arg_checked = 1;
+        ssrjson_invalid_arg_checked = 1;
     }
 
     if (PyUnicode_Check(obj)) {

@@ -24,7 +24,6 @@
 #define SSRJSON_SIMD_AVX2_ENCODE_H
 
 #include "encode/utf8.h"
-#include "trailing.h"
 
 #define COMPILE_READ_UCS_LEVEL 1
 #define COMPILE_WRITE_UCS_LEVEL 1

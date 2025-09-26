@@ -324,7 +324,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_2bytes_utf8)(void) {
 #endif
 }
 
-int SIMD_NAME_MODIFIER(test_long_cvt_u8_u16)(void) {
+int SIMD_NAME_MODIFIER(test_long_back_cvt_u8_u16)(void) {
     GUARDED_SIMD;
     for (usize _ = 0; _ < 10; _++) {
         static const usize buffer_len = (1 << 11);
@@ -360,6 +360,115 @@ int SIMD_NAME_MODIFIER(test_long_cvt_u8_u16)(void) {
         // check content
         for (usize i = 0; i < out_u16_length; ++i) {
             CHECK(ref_start[i] == start[i]);
+        }
+    }
+    return PASSED;
+}
+
+static inline int _test_long_cvt(size_t from_size, size_t to_size) {
+    u8 *buffer_from, *buffer_to, *buffer_ref;
+
+    static const usize buffer_len = (1 << 9);
+
+    usize random_start_index = rand() % buffer_len;
+    usize length = (usize)rand() % (buffer_len - random_start_index);
+
+#define TEST_LONG_CVT_ALLOC_BUFFER_FROM(_from_type_)                                                                \
+    buffer_from = (u8 *)malloc(buffer_len * sizeof(_from_type_));                                                   \
+    GARBAGE_FILLPTR_WITH_SIZE(buffer_from, random_start_index * sizeof(_from_type_));                               \
+    RANDOM_FILLPTR_WITH_SIZE(buffer_from + random_start_index * sizeof(_from_type_), length * sizeof(_from_type_)); \
+    GARBAGE_FILLPTR_WITH_SIZE(buffer_from + (random_start_index + length) * sizeof(_from_type_), (buffer_len - (random_start_index + length)) * sizeof(_from_type_));
+    if (from_size == 1) {
+        TEST_LONG_CVT_ALLOC_BUFFER_FROM(u8);
+    } else if (from_size == 2) {
+        TEST_LONG_CVT_ALLOC_BUFFER_FROM(u16);
+    } else if (from_size == 4) {
+        TEST_LONG_CVT_ALLOC_BUFFER_FROM(u32);
+    } else {
+        return FAILED;
+    }
+#undef TEST_LONG_CVT_ALLOC_BUFFER_FROM
+
+#define TEST_LONG_CVT_ALLOC_BUFFER_TO_AND_REF(_to_type_)                  \
+    buffer_to = (u8 *)malloc(buffer_len * sizeof(_to_type_));             \
+    buffer_ref = (u8 *)malloc(buffer_len * sizeof(_to_type_));            \
+    GARBAGE_FILLPTR_WITH_SIZE(buffer_to, buffer_len * sizeof(_to_type_)); \
+    GARBAGE_FILLPTR_WITH_SIZE(buffer_ref, buffer_len * sizeof(_to_type_));
+    if (to_size == 1) {
+        TEST_LONG_CVT_ALLOC_BUFFER_TO_AND_REF(u8);
+    } else if (to_size == 2) {
+        TEST_LONG_CVT_ALLOC_BUFFER_TO_AND_REF(u16);
+    } else if (to_size == 4) {
+        TEST_LONG_CVT_ALLOC_BUFFER_TO_AND_REF(u32);
+    } else {
+        free(buffer_from);
+        return FAILED;
+    }
+#undef TEST_LONG_CVT_ALLOC_BUFFER_TO_AND_REF
+
+    if (from_size == 4 && to_size == 1) {
+        u32 *from_ptr = SSRJSON_CAST(u32 *, buffer_from + random_start_index * sizeof(u32));
+        for (size_t i = 0; i < length; ++i) {
+            from_ptr[i] = from_ptr[i] & 0xFF;
+        }
+    } else if (from_size == 4 && to_size == 2) {
+        u32 *from_ptr = SSRJSON_CAST(u32 *, buffer_from + random_start_index * sizeof(u32));
+        for (size_t i = 0; i < length; ++i) {
+            from_ptr[i] = from_ptr[i] & 0xFFFF;
+        }
+    } else if (from_size == 2 && to_size == 1) {
+        u16 *from_ptr = SSRJSON_CAST(u16 *, buffer_from + random_start_index * sizeof(u16));
+        for (size_t i = 0; i < length; ++i) {
+            from_ptr[i] = from_ptr[i] & 0xFF;
+        }
+    }
+
+#define TEST_LONG_CVT_IMPL(_from_type_, _to_type_)                                                                                                                                                                                                \
+    _func = find_extension_symbol(TEST_STRINGIZE(SIMD_NAME_MODIFIER(SSRJSON_CONCAT3(long_cvt_noinline, _from_type_, _to_type_))));                                                                                                                \
+    SSRJSON_CAST(void (*)(_to_type_ *, _from_type_ *, usize), _func)(SSRJSON_CAST(_to_type_ *, buffer_to + random_start_index * sizeof(_to_type_)), SSRJSON_CAST(_from_type_ *, buffer_from + random_start_index * sizeof(_from_type_)), length); \
+    _to_type_ *ref_target = SSRJSON_CAST(_to_type_ *, buffer_ref + random_start_index * sizeof(_to_type_));                                                                                                                                       \
+    _from_type_ *from = SSRJSON_CAST(_from_type_ *, buffer_from + random_start_index * sizeof(_from_type_));                                                                                                                                      \
+    for (size_t i = 0; i < length; ++i) {                                                                                                                                                                                                         \
+        ref_target[i] = SSRJSON_CAST(_to_type_, from[i]);                                                                                                                                                                                         \
+    }                                                                                                                                                                                                                                             \
+    bool suc = (memcmp(buffer_to, buffer_ref, buffer_len * sizeof(_to_type_)) == 0);                                                                                                                                                              \
+    free(buffer_from);                                                                                                                                                                                                                            \
+    free(buffer_to);                                                                                                                                                                                                                              \
+    free(buffer_ref);                                                                                                                                                                                                                             \
+    return suc ? PASSED : FAILED;
+
+    uintptr_t _func;
+    if (from_size == 1 && to_size == 2) {
+        TEST_LONG_CVT_IMPL(u8, u16);
+    } else if (from_size == 1 && to_size == 4) {
+        TEST_LONG_CVT_IMPL(u8, u32);
+    } else if (from_size == 2 && to_size == 1) {
+        TEST_LONG_CVT_IMPL(u16, u8);
+    } else if (from_size == 2 && to_size == 4) {
+        TEST_LONG_CVT_IMPL(u16, u32);
+    } else if (from_size == 4 && to_size == 1) {
+        TEST_LONG_CVT_IMPL(u32, u8);
+    } else if (from_size == 4 && to_size == 2) {
+        TEST_LONG_CVT_IMPL(u32, u16);
+    } else {
+        free(buffer_from);
+        free(buffer_to);
+        free(buffer_ref);
+        return FAILED;
+    }
+#undef TEST_LONG_CVT_IMPL
+}
+
+int SIMD_NAME_MODIFIER(test_long_cvt)(void) {
+    GUARDED_SIMD;
+    for (usize _ = 0; _ < 10; _++) {
+        static size_t allow_sizes[3] = {1, 2, 4};
+        for (size_t i = 0; i < COUNT_OF(allow_sizes); ++i) {
+            for (size_t j = 0; j < COUNT_OF(allow_sizes); ++j) {
+                if (i == j) continue;
+                int subtest_ret = _test_long_cvt(allow_sizes[i], allow_sizes[j]);
+                if (subtest_ret != PASSED) return subtest_ret;
+            }
         }
     }
     return PASSED;

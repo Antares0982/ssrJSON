@@ -59,6 +59,23 @@ bool resize_to_fit_pyunicode(EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ss
     return true;
 }
 
+ssrjson_py_types slow_type_check(PyTypeObject *type) {
+    if (PyType_FastSubclass(type, Py_TPFLAGS_DICT_SUBCLASS)) {
+        return T_Dict;
+    } else if (PyType_FastSubclass(type, Py_TPFLAGS_LIST_SUBCLASS)) {
+        return T_List;
+    } else if (PyType_FastSubclass(type, Py_TPFLAGS_TUPLE_SUBCLASS)) {
+        return T_Tuple;
+    } else if (PyType_FastSubclass(type, Py_TPFLAGS_UNICODE_SUBCLASS)) {
+        return T_UnicodeNonCompact;
+    } else if (PyType_FastSubclass(type, Py_TPFLAGS_LONG_SUBCLASS)) {
+        return T_Long;
+    } else if (PyType_IsSubtype(type, &PyFloat_Type)) {
+        return T_Float;
+    }
+    return T_Unknown;
+}
+
 #if !defined(Py_GIL_DISABLED)
 EncodeCtnWithIndex _EncodeCtnBuffer[SSRJSON_ENCODE_MAX_RECURSION];
 #endif

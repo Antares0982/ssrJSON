@@ -34,7 +34,6 @@ PyObject *ssrjson_EncodeToBytes(PyObject *self, PyObject *args, PyObject *kwargs
 PyObject *ssrjson_Decode(PyObject *self, PyObject *args, PyObject *kwargs);
 PyObject *ssrjson_FileEncode(PyObject *self, PyObject *args, PyObject *kwargs);
 PyObject *ssrjson_DecodeFile(PyObject *self, PyObject *args, PyObject *kwargs);
-PyObject *ssrjson_print_current_features(PyObject *self, PyObject *);
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *);
 
 PyObject *JSONDecodeError = NULL;
@@ -44,8 +43,8 @@ static PyMethodDef ssrjson_Methods[] = {
         {"dumps", (PyCFunction)ssrjson_Encode, METH_VARARGS | METH_KEYWORDS, "dumps(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."},
         {"dumps_to_bytes", (PyCFunction)ssrjson_EncodeToBytes, METH_VARARGS | METH_KEYWORDS, "dumps_to_bytes(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."},
         {"loads", (PyCFunction)ssrjson_Decode, METH_VARARGS | METH_KEYWORDS, "loads(s)\n--\n\nConverts JSON as string to dict object structure."},
-        {"print_current_features", ssrjson_print_current_features, METH_NOARGS, "print_current_features()\n--\n\nPrints current features."},
         {"get_current_features", ssrjson_get_current_features, METH_NOARGS, "get_current_features()\n--\n\nGet current features."},
+        {"suppress_api_warning", ssrjson_suppress_api_warning, METH_NOARGS, "suppress_api_warning()\n--\n\nSuppress warning when invalid arguments received."},
         {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
@@ -152,4 +151,12 @@ PyMODINIT_FUNC PyInit_ssrjson(void) {
 #endif
 
     return module;
+}
+
+/* ssrjson_suppress_api_warning */
+int ssrjson_invalid_arg_checked = 0;
+
+PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args) {
+    ssrjson_invalid_arg_checked = 1;
+    Py_RETURN_NONE;
 }

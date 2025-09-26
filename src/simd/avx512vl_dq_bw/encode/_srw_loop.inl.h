@@ -24,7 +24,6 @@
 #    include "simd/avx512vl_dq_bw/checker.h"
 #    include "simd/avx512vl_dq_bw/common.h"
 #    include "simd/avx512vl_dq_bw/cvt.h"
-#    include "simd/avx512vl_dq_bw/trailing.h"
 #    ifndef COMPILE_READ_UCS_LEVEL
 #        define COMPILE_READ_UCS_LEVEL 1
 #    endif
@@ -148,7 +147,7 @@ force_inline void encode_unicode_impl(_dst_t **dst_addr, const _src_t *src, usiz
     encode_trailing_copy_with_cvt(dst_addr, src, len);
 }
 
-static force_noinline void encode_unicode_impl_no_key(_dst_t **dst_addr, const _src_t *src, usize len) {
+internal_simd_noinline void encode_unicode_impl_no_key(_dst_t **dst_addr, const _src_t *src, usize len) {
     encode_unicode_impl(dst_addr, src, len, false);
 }
 
