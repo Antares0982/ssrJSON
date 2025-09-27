@@ -9,3 +9,4 @@ recursive-include cmake *
 recursive-include ssrjson *
 recursive-include test_data *
 recursive-include licenses *
+recursive-include pics *
