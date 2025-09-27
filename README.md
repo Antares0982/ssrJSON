@@ -2,7 +2,7 @@
 
 # **ssrJSON**
 
-[![PyPI - Version](https://img.shields.io/pypi/v/ssrjson)](https://pypi.org/project/ssrjson/) [![PyPI - Wheel](https://img.shields.io/pypi/wheel/ssrjson)](https://pypi.org/project/ssrjson/)
+[![PyPI - Version](https://img.shields.io/pypi/v/ssrjson)](https://pypi.org/project/ssrjson/) [![PyPI - Wheel](https://img.shields.io/pypi/wheel/ssrjson)](https://pypi.org/project/ssrjson/) [![codecov](https://codecov.io/gh/Antares0982/ssrJSON/graph/badge.svg?token=A1T0XTPEXO)](https://codecov.io/gh/Antares0982/ssrJSON)
 
 A SIMD boosted high-performance and correct Python JSON parsing library that fully leverages modern processor capabilities.
 
