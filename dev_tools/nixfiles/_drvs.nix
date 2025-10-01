@@ -55,10 +55,15 @@ let
           packageOverrides = (
             self: super:
             {
-              orjson = curPkgs.callPackage ./orjson_fixed.nix { inherit self pkgs-24-05; };
+              orjson =
+                if !(startsWith "3.13" py.pythonVersion) then
+                  (curPkgs.callPackage ./orjson_fixed.nix { inherit self pkgs-24-05; })
+                else
+                  (curPkgs.callPackage ./orjson-pypi.nix { pypkgs = self; });
+              # orjson = curPkgs.callPackage ./orjson-pypi.nix { pypkgs = self; };
               ssrjson-benchmark = curPkgs.callPackage ./ssrjson_benchmark.nix { inherit self pkgs-24-05; };
             }
-            // (curPkgs.lib.optionalAttrs (py.pythonVersion == "3.14") {
+            // (curPkgs.lib.optionalAttrs (startsWith "3.14" py.pythonVersion) {
               pytest-random-order =
                 (super.pytest-random-order.override {
                   pytest-xdist = null;
