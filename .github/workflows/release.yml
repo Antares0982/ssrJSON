@@ -131,7 +131,7 @@ jobs:
     - name: Upload Wheel To Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: linux-ssrjson-wheel-python3${{ matrix.pyver }}
+        name: linux-x86_64-ssrjson-wheel-python3${{ matrix.pyver }}
         path: ${{ steps.build-wheel.outputs.ARTIFACT_NAME }}
 
   Linux-aarch64-Test-Tarball:
@@ -233,7 +233,7 @@ jobs:
     - name: Upload Wheel To Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: linux-ssrjson-wheel-python3${{ matrix.pyver }}
+        name: linux-aarch64-ssrjson-wheel-python3${{ matrix.pyver }}
         path: ${{ steps.build-wheel.outputs.ARTIFACT_NAME }}
 
   Windows-Test-Tarball:

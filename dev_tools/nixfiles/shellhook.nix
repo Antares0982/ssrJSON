@@ -13,6 +13,7 @@
 }:
 let
   llvmClang = pkgs.llvmPackages.libcxxClang;
+  libcxx = pkgs.llvmPackages.libcxx;
   versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
   versions = versionUtils.versions;
   debugSourceDir = "debug_source";
@@ -138,6 +139,8 @@ in
   ensure_symlink "${nix_pyenv_directory}/bin/valgrind" ${pkgs.valgrind}/bin/valgrind
   export CC=${llvmClang}/bin/clang
   export CXX=${llvmClang}/bin/clang++
+  export LIBRARY_PATH=${libcxx}/lib:$LIBRARY_PATH
+  export LD_LIBRARY_PATH=${libcxx}/lib:$LD_LIBRARY_PATH
   export Python3_ROOT_DIR=${using_python}
   ensure_symlink "${nix_pyenv_directory}/bin/clang" $CC
   ensure_symlink "${nix_pyenv_directory}/bin/clang++" $CXX
