@@ -1,15 +1,15 @@
 {
   pkgs ? import <nixpkgs> { },
-  pkgs-24-05,
+  pkgs-legacy,
   ...
 }:
 let
   lib = pkgs.lib;
-  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
+  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
   curVer = pythonVerConfig.curVer;
   leastVer = pythonVerConfig.minSupportVer;
-  drvs = (pkgs.callPackage ./_drvs.nix { inherit pkgs-24-05; });
+  drvs = (pkgs.callPackage ./_drvs.nix { inherit pkgs-legacy; });
   pyenv = builtins.elemAt drvs.pyenvs (curVer - leastVer);
 in
 # this defines the order in PATH.

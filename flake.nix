@@ -3,14 +3,14 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs-24-05.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs-legacy.url = "github:NixOS/nixpkgs/nixos-24.11";
   };
 
   outputs =
     inputs@{
       self,
       nixpkgs,
-      nixpkgs-24-05,
+      nixpkgs-legacy,
       ...
     }:
     let
@@ -37,17 +37,17 @@
       devShells = forAllSystems (
         pkgs:
         let
-          pkgs-24-05 = import nixpkgs-24-05 { inherit (pkgs) system; };
-          versionUtils = pkgs.callPackage ./dev_tools/nixfiles/version_utils.nix { inherit pkgs-24-05; };
+          pkgs-legacy = import nixpkgs-legacy { inherit (pkgs) system; };
+          versionUtils = pkgs.callPackage ./dev_tools/nixfiles/version_utils.nix { inherit pkgs-legacy; };
           defaultShell = pkgs.callPackage ./dev_tools/nixfiles/shell.nix {
-            inherit pkgs-24-05;
+            inherit pkgs-legacy;
             debugLLVM = false;
           };
           debugLLVMInternal = pkgs.callPackage ./dev_tools/nixfiles/shell.nix {
-            inherit pkgs-24-05;
+            inherit pkgs-legacy;
             debugLLVM = true;
           };
-          _drvs = pkgs.callPackage ./dev_tools/nixfiles/_drvs.nix { inherit pkgs-24-05; };
+          _drvs = pkgs.callPackage ./dev_tools/nixfiles/_drvs.nix { inherit pkgs-legacy; };
           pythonVerConfig = versionUtils.pythonVerConfig;
           curVer = pythonVerConfig.curVer;
           leastVer = pythonVerConfig.minSupportVer;
@@ -58,7 +58,7 @@
               (shell.overrideAttrs {
                 shellHook = pkgs.callPackage ./dev_tools/nixfiles/shellhook.nix {
                   parentShell = shell;
-                  inherit pkgs-24-05;
+                  inherit pkgs-legacy;
                   inherit (shell) inputDerivation;
                   inherit (_drvs) pyenvs debuggable_py pyenv_nodebug;
                   nix_pyenv_directory = if shell.debugLLVM then ".nix-pyenv-llvm" else ".nix-pyenv";
@@ -100,8 +100,8 @@
       packages = forAllSystems (
         pkgs:
         let
-          pkgs-24-05 = import nixpkgs-24-05 { inherit (pkgs) system; };
-          versionUtils = pkgs.callPackage ./dev_tools/nixfiles/version_utils.nix { inherit pkgs-24-05; };
+          pkgs-legacy = import nixpkgs-legacy { inherit (pkgs) system; };
+          versionUtils = pkgs.callPackage ./dev_tools/nixfiles/version_utils.nix { inherit pkgs-legacy; };
           pythonVerConfig = versionUtils.pythonVerConfig;
           stablePython = versionUtils.stablePython;
           verToPackageDef = ver: {

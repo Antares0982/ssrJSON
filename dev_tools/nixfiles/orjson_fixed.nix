@@ -4,7 +4,7 @@
 {
   self,
   pkgs,
-  pkgs-24-05,
+  pkgs-legacy,
   lib,
   fetchFromGitHub,
   stdenv,
@@ -13,13 +13,13 @@
 }:
 let
   minorVer = lib.strings.toInt self.python.sourceVersion.minor;
-  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
+  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
   useNixpkgsUnstable = (minorVer >= pythonVerConfig.latestStableVer);
 in
 self.buildPythonPackage rec {
   pname = "orjson";
-  version = if useNixpkgsUnstable then "3.10.16" else "3.10.13";
+  version = if useNixpkgsUnstable then "3.11.3" else "3.10.13";
   pyproject = true;
 
   disabled = self.pythonOlder "3.8";
@@ -30,7 +30,7 @@ self.buildPythonPackage rec {
     rev = version;
     hash =
       if useNixpkgsUnstable then
-        "sha256-hgyW3bff70yByxPFqw8pwPMPMAh9FxL1U+LQoJI6INo="
+        "sha256-oTrmDYmUHXMKxgxzBIStw7nnWXcyH9ir0ohnbX4bdjU="
       else
         "sha256-7i4vrVSXJvwqmOsH9OWdeg/VoJeXnzacqhVAcf2Dex8=";
   };
@@ -42,7 +42,7 @@ self.buildPythonPackage rec {
         name = "${pname}-${version}";
         hash =
           if useNixpkgsUnstable then
-            "sha256-mOHOIKmcXjPwZ8uPth+yvreHG4IpiS6SFhWY+IZS69E="
+            "sha256-y6FmK1RR1DAswVoTlnl19CmoYXAco1dY7lpV/KTypzE="
           else
             "sha256-2YCXJLJ101OaW74okRYtmFazoS4o0n7psXBWJXRaFh4=";
       };

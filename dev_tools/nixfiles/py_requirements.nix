@@ -1,10 +1,10 @@
-{ pkgs, pkgs-24-05, ... }:
+{ pkgs, pkgs-legacy, ... }:
 pypkgs:
 let
   pkgs = pypkgs.pkgs;
   lib = pkgs.lib;
   minorVer = lib.strings.toInt pypkgs.python.sourceVersion.minor;
-  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
+  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
   useNixpkgsUnstable = (minorVer >= pythonVerConfig.latestStableVer);
 in

@@ -1,7 +1,7 @@
 {
   self,
   pkgs,
-  pkgs-24-05,
+  pkgs-legacy,
   lib,
   fetchPypi,
   cmake,
@@ -9,7 +9,7 @@
 }:
 let
   minorVer = lib.strings.toInt self.python.sourceVersion.minor;
-  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
+  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
   useNixpkgsUnstable = (minorVer >= pythonVerConfig.latestStableVer);
 in

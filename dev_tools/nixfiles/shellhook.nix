@@ -7,14 +7,14 @@
   pyenv_nodebug,
   using_python,
   pkgs,
-  pkgs-24-05,
+  pkgs-legacy,
   inputDerivation,
   lib,
 }:
 let
   llvmClang = pkgs.llvmPackages.libcxxClang;
   libcxx = pkgs.llvmPackages.libcxx;
-  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
+  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   versions = versionUtils.versions;
   debugSourceDir = "debug_source";
   minSupportVer = versionUtils.pythonVerConfig.minSupportVer;
@@ -72,7 +72,7 @@ let
   orjsonSource =
     lib.optionalString (using_python.sourceVersion.minor != "14")
       (builtins.elemAt (builtins.filter (x: x.pname == "orjson") (
-        (pkgs.callPackage ./py_requirements.nix { inherit pkgs-24-05; }) using_python.pkgs
+        (pkgs.callPackage ./py_requirements.nix { inherit pkgs-legacy; }) using_python.pkgs
       )) 0).src;
   pythonpathEnvLiteral = "\${" + "PYTHONPATH+x}";
   sde = pkgs.callPackage ./sde.nix { };

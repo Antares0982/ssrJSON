@@ -1,16 +1,17 @@
 {
   pkgs ? import <nixpkgs> { },
-  pkgs-24-05,
+  pkgs-legacy,
   fetchFromGitHub,
   ...
 }:
 let
   lib = pkgs.lib;
-  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-24-05; };
+  versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
   maxSupportVer = pythonVerConfig.maxSupportVer;
   minSupportVer = pythonVerConfig.minSupportVer;
   latestStableVer = pythonVerConfig.latestStableVer;
+  curVer = pythonVerConfig.latestStableVer;
   supportedVers = builtins.genList (x: minSupportVer + x) (maxSupportVer - minSupportVer + 1);
   py315ForTest =
     (pkgs.python314.override (
@@ -57,11 +58,11 @@ let
             {
               orjson =
                 if !(startsWith "3.13" py.pythonVersion) then
-                  (curPkgs.callPackage ./orjson_fixed.nix { inherit self pkgs-24-05; })
+                  (curPkgs.callPackage ./orjson_fixed.nix { inherit self pkgs-legacy; })
                 else
                   (curPkgs.callPackage ./orjson-pypi.nix { pypkgs = self; });
               # orjson = curPkgs.callPackage ./orjson-pypi.nix { pypkgs = self; };
-              ssrjson-benchmark = curPkgs.callPackage ./ssrjson_benchmark.nix { inherit self pkgs-24-05; };
+              ssrjson-benchmark = curPkgs.callPackage ./ssrjson_benchmark.nix { inherit self pkgs-legacy; };
             }
             // (curPkgs.lib.optionalAttrs (startsWith "3.14" py.pythonVersion) {
               pytest-random-order =
@@ -89,7 +90,7 @@ let
   using_pythons = (
     builtins.map using_pythons_map (
       builtins.map (supportedVer: rec {
-        curPkgs = if (supportedVer >= latestStableVer) then pkgs else pkgs-24-05;
+        curPkgs = if (supportedVer >= latestStableVer) then pkgs else pkgs-legacy;
         py =
           if supportedVer <= 14 then
             (builtins.getAttr ("python3" + (builtins.toString supportedVer)) (curPkgs))
@@ -99,16 +100,16 @@ let
     )
   );
   # import required python packages
-  required_python_packages = pkgs.callPackage ./py_requirements.nix { inherit pkgs-24-05; };
+  required_python_packages = pkgs.callPackage ./py_requirements.nix { inherit pkgs-legacy; };
   pyenvs_map = py: (py.withPackages required_python_packages);
   pyenvs = builtins.map pyenvs_map using_pythons;
   debuggable_py = builtins.map (
     py:
-    (if ((lib.strings.toInt py.sourceVersion.minor) >= latestStableVer) then pkgs else pkgs-24-05)
+    (if ((lib.strings.toInt py.sourceVersion.minor) >= latestStableVer) then pkgs else pkgs-legacy)
     .enableDebugging
       py
   ) using_pythons;
-  pyenv_nodebug = builtins.elemAt pyenvs (latestStableVer - minSupportVer);
+  pyenv_nodebug = builtins.elemAt pyenvs (curVer - minSupportVer);
   sde = pkgs.callPackage ./sde.nix { };
   llvmDbg = pkgs.enableDebugging pkgs.llvmPackages.libllvm;
   verToEnvDef = ver: {
