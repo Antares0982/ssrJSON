@@ -18,7 +18,7 @@ let
   versions = versionUtils.versions;
   debugSourceDir = "debug_source";
   minSupportVer = versionUtils.pythonVerConfig.minSupportVer;
-  latestStableVer = versionUtils.pythonVerConfig.latestStableVer;
+  curVer = versionUtils.pythonVerConfig.curVer;
   link_python_cmd =
     ver:
     let
@@ -128,7 +128,7 @@ in
 + (pkgs.lib.strings.concatStrings (builtins.map link_python_cmd versions))
 + ''
   # add python executable to the bin directory
-  ensure_symlink "${nix_pyenv_directory}/bin/python" python3.${builtins.toString latestStableVer}
+  ensure_symlink "${nix_pyenv_directory}/bin/python" python3.${builtins.toString curVer}
   export PATH=$(pwd)/${nix_pyenv_directory}/bin:$PATH
 
   # prevent gc
