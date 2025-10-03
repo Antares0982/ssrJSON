@@ -166,7 +166,7 @@ jobs:
       run: |
         ARTIFACT_NAME=dist/$(ls dist)
         echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-        nix develop -c python3.${{ matrix.pyver }} -m pip install $ARTIFACT_NAME --prefix build-testing
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python -m pip install $ARTIFACT_NAME --prefix build-testing
 
     - name: Print Location
       run: |

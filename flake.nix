@@ -70,6 +70,24 @@
                 super = shell;
               }
             );
+          verToBuildEnvDef = ver: {
+            name = "buildenv-py3" + (toString ver);
+            value = pkgs.mkShell {
+              buildInputs = [
+                ((builtins.getAttr ("python3" + (toString ver)) pkgs).withPackages (
+                  pypkgs: with pypkgs; [
+                    pip
+                    build
+                  ]
+                ))
+              ]
+              ++ (with pkgs; [
+                cmake
+                clang
+              ]);
+              hardeningDisable = [ "fortify" ];
+            };
+          };
         in
         {
           internal = defaultShell;
@@ -77,6 +95,7 @@
           inherit debugLLVMInternal;
           debugLLVM = mkMyShell { shell = debugLLVMInternal; };
         }
+        // (builtins.listToAttrs (map verToBuildEnvDef versionUtils.versions))
       );
       packages = forAllSystems (
         pkgs:
