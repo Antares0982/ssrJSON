@@ -10,6 +10,7 @@ let
 in
 with pypkgs;
 [
+  build
   objgraph
   psutil
   pytz

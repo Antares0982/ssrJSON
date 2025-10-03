@@ -8,7 +8,79 @@ on:
         default: 'true'
 
 jobs:
-  Linux-Build-And-Test-Wheel:
+  Build-Tarball:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Install nix
+      uses: cachix/install-nix-action@master
+
+    - name: Setup cachix
+      uses: cachix/cachix-action@master
+      with:
+        name: antares0982
+
+    - name: Build Tarball
+      id: build-tarball
+      run: |
+        nix build .#ssrjson-tarball
+        echo "ARTIFACT_NAME=result/$(ls result)" >> $GITHUB_OUTPUT
+
+    - name: Print Tarball Hash
+      run: |
+        sha256sum ${{ steps.build-tarball.outputs.ARTIFACT_NAME }} | awk '{print $1}' > sha256sum.txt
+        cat sha256sum.txt
+
+    - name: Upload Tarball To Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ssrjson-tarball
+        path: ${{ steps.build-tarball.outputs.ARTIFACT_NAME }}
+
+  Linux-x86_64-Test-Tarball:
+    runs-on: ubuntu-latest
+    needs: Build-Tarball
+    strategy:
+      fail-fast: true
+      matrix:
+        pyver: ["9", "10", "11", "12", "13"]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Set up Python 3.${{ matrix.pyver }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.${{ matrix.pyver }}
+
+    - name: Download Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ssrjson-tarball
+        path: ./dist
+
+    - name: Install Tarball
+      run: |
+        ARTIFACT_NAME=dist/$(ls dist)
+        echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+        python -m pip install $ARTIFACT_NAME
+
+    - name: Print Location
+      run: |
+        python -c "import ssrjson;print(ssrjson.__file__)"
+
+    - name: Run Python Tests
+      run: |
+        python -m pip install -r requirements.txt
+        python -m pytest --random-order python-test
+
+  Linux-x86_64-Build-And-Test-Wheel:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
@@ -62,42 +134,110 @@ jobs:
         name: linux-ssrjson-wheel-python3${{ matrix.pyver }}
         path: ${{ steps.build-wheel.outputs.ARTIFACT_NAME }}
 
-  Build-Tarball:
-    runs-on: ubuntu-latest
+  Linux-aarch64-Test-Tarball:
+    runs-on: [Linux, ARM64, nixos-arm64]
+    needs: Build-Tarball
     strategy:
       fail-fast: true
+      matrix:
+        pyver: ["9", "10", "11", "12", "13"]
 
     steps:
     - name: Checkout
       uses: actions/checkout@main
 
-    - name: Install nix
-      uses: cachix/install-nix-action@master
+    # - name: Set up Python 3.${{ matrix.pyver }}
+    #   uses: actions/setup-python@v5
+    #   with:
+    #     python-version: 3.${{ matrix.pyver }}
+
+    - name: Prepare
+      id: prepare
+      run: |
+        echo "PYTHONPATH=build-testing/lib/python3.${{ matrix.pyver }}/site-packages" >> $GITHUB_OUTPUT
+
+    - name: Download Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ssrjson-tarball
+        path: ./dist
+
+    - name: Install Tarball
+      run: |
+        ARTIFACT_NAME=dist/$(ls dist)
+        echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+        nix develop -c python3.${{ matrix.pyver }} -m pip install $ARTIFACT_NAME --prefix build-testing
+
+    - name: Print Location
+      run: |
+        PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -c "import ssrjson;print(ssrjson.__file__)"
+
+    - name: Run Python Tests
+      run: |
+        PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -m pip install -r requirements.txt --prefix build-testing
+        PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -m pytest --random-order python-test
+
+  Linux-aarch64-Build-And-Test-Wheel:
+    runs-on: [Linux, ARM64, nixos-arm64]
+    strategy:
+      fail-fast: true
+      matrix:
+        pyver: ["9", "10", "11", "12", "13"]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    # - name: Set up Python 3.${{ matrix.pyver }}
+    #   uses: actions/setup-python@v5
+    #   with:
+    #     python-version: 3.${{ matrix.pyver }}
+
+    # - name: Install nix
+    #   uses: cachix/install-nix-action@master
+
+    - name: Prepare
+      id: prepare
+      run: |
+        echo "PYTHONPATH=build-testing/lib/python3.${{ matrix.pyver }}/site-packages" >> $GITHUB_OUTPUT
 
     - name: Setup cachix
       uses: cachix/cachix-action@master
       with:
         name: antares0982
 
-    - name: Build Tarball
-      id: build-tarball
+    - name: Build Wheel
+      id: build-wheel
       run: |
-        nix build .#ssrjson-tarball
+        nix build .#ssrjson-wheel-py3${{ matrix.pyver }}
         echo "ARTIFACT_NAME=result/$(ls result)" >> $GITHUB_OUTPUT
 
-    - name: Print Tarball Hash
+    - name: Print Wheel Hash
       run: |
-        sha256sum ${{ steps.build-tarball.outputs.ARTIFACT_NAME }} | awk '{print $1}' > sha256sum.txt
+        sha256sum ${{ steps.build-wheel.outputs.ARTIFACT_NAME }} | awk '{print $1}' > sha256sum.txt
         cat sha256sum.txt
 
-    - name: Upload Tarball To Artifact
+    - name: Install Wheel
+      run: |
+        nix develop -c python3.${{ matrix.pyver }} -m pip install ${{ steps.build-wheel.outputs.ARTIFACT_NAME }} --prefix build-testing
+
+    - name: Print Location
+      run: |
+        PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -c "import ssrjson;print(ssrjson.__file__)"
+
+    - name: Run Python Tests
+      run: |
+        nix develop -c python3.${{ matrix.pyver }} -m pip install -r requirements.txt --prefix build-testing
+        PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -m pytest --random-order python-test
+
+    - name: Upload Wheel To Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ssrjson-tarball
-        path: ${{ steps.build-tarball.outputs.ARTIFACT_NAME }}
+        name: linux-ssrjson-wheel-python3${{ matrix.pyver }}
+        path: ${{ steps.build-wheel.outputs.ARTIFACT_NAME }}
 
-  Linux-Test-Tarball:
-    runs-on: ubuntu-latest
+  Windows-Test-Tarball:
+    runs-on: windows-latest
     needs: Build-Tarball
     strategy:
       fail-fast: true
@@ -121,9 +261,8 @@ jobs:
 
     - name: Install Tarball
       run: |
-        ARTIFACT_NAME=dist/$(ls dist)
-        echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-        python -m pip install $ARTIFACT_NAME
+        $tar = Get-ChildItem -Path dist -Filter *.tar.gz | Select-Object -First 1 -ExpandProperty Name
+        python -m pip install "dist\$tar"
 
     - name: Print Location
       run: |
@@ -174,49 +313,14 @@ jobs:
         name: windows-ssrjson-wheel-python3${{ matrix.pyver }}
         path: dist/*.whl
 
-  Windows-Test-Tarball:
-    runs-on: windows-latest
-    needs: Build-Tarball
-    strategy:
-      fail-fast: true
-      matrix:
-        pyver: ["9", "10", "11", "12", "13"]
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@main
-
-    - name: Set up Python 3.${{ matrix.pyver }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.${{ matrix.pyver }}
-
-    - name: Download Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: ssrjson-tarball
-        path: ./dist
-
-    - name: Install Tarball
-      run: |
-        $tar = Get-ChildItem -Path dist -Filter *.tar.gz | Select-Object -First 1 -ExpandProperty Name
-        python -m pip install "dist\$tar"
-
-    - name: Print Location
-      run: |
-        python -c "import ssrjson;print(ssrjson.__file__)"
-
-    - name: Run Python Tests
-      run: |
-        python -m pip install -r requirements.txt
-        python -m pytest --random-order python-test
-
   Publish:
     runs-on: ubuntu-latest
     needs:
-      - Linux-Test-Tarball
+      - Linux-x86_64-Test-Tarball
+      - Linux-x86_64-Build-And-Test-Wheel
+      - Linux-aarch64-Test-Tarball
+      - Linux-aarch64-Build-And-Test-Wheel
       - Windows-Test-Tarball
-      - Linux-Build-And-Test-Wheel
       - Windows-Build-And-Test-Wheel
     steps:
     - name: Checkout
