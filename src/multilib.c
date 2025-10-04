@@ -23,9 +23,7 @@
 #include "pythonlib.h"
 #include "ssrjson.h"
 
-
-#if SSRJSON_X86
-
+#define IMPL_MULTILIB_FUNCTION_INTERFACE(_func_name_) SSRJSON_CONCAT2(_func_name_, t) SSRJSON_CONCAT2(_func_name_, interface);
 
 IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_Encode)
 IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_Decode)
@@ -36,6 +34,8 @@ IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u8_u16)
 IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u32_u16)
 IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u32_u8)
 IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u16_u8)
+
+#if SSRJSON_X86
 
 
 int CurrentSIMDFeatureLevel = -1;
@@ -100,6 +100,24 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     }
     return ret;
 }
+#elif SSRJSON_AARCH // SSRJSON_X86
+const char *_update_simd_features(void) {
+    BATCH_SET_INTERFACE(neon);
+    return NULL;
+}
+
+MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_Encode)
+MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_Decode)
+MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_EncodeToBytes)
+
+PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
+    PyObject *ret = PyDict_New();
+    if (!ret) return NULL;
+    PyDict_SetItemString(ret, "MultiLib", PyBool_FromLong(true));
+    PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("NEON"));
+    return ret;
+}
+
 #else // SSRJSON_X86
 static_assert(false, "multilib not supported on this platform");
 #endif

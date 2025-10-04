@@ -9,6 +9,7 @@
   fetchFromGitHub,
   stdenv,
   rustPlatform,
+  isDebug ? false,
   ...
 }:
 let
@@ -16,6 +17,7 @@ let
   versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
   useNixpkgsUnstable = (minorVer >= pythonVerConfig.latestStableVer);
+  oldstdenv = stdenv;
 in
 self.buildPythonPackage rec {
   pname = "orjson";
@@ -47,12 +49,46 @@ self.buildPythonPackage rec {
             "sha256-2YCXJLJ101OaW74okRYtmFazoS4o0n7psXBWJXRaFh4=";
       };
 
-  nativeBuildInputs =
-    [ self.cffi ]
-    ++ (with rustPlatform; [
+  nativeBuildInputs = [
+    self.cffi
+  ]
+  ++ (
+    with rustPlatform;
+    [
       cargoSetupHook
-      maturinBuildHook
-    ]);
+    ]
+    ++ (
+      if useNixpkgsUnstable then
+        (
+          if isDebug then
+            [
+              (pkgs.callPackage (
+                { pkgsHostTarget }:
+                pkgs.makeSetupHook {
+                  name = "maturin-build-hook-debug.sh";
+                  propagatedBuildInputs = [
+                    pkgsHostTarget.maturin
+                    pkgsHostTarget.cargo
+                    pkgsHostTarget.rustc
+                  ];
+                  substitutions = {
+                    inherit (stdenv.targetPlatform.rust) rustcTarget;
+                    inherit (pkgs.rust.envVars) setEnv;
+                  };
+                } ./maturin-build-hook-debug.sh
+              ) { })
+            ]
+          else
+            [
+              maturinBuildHook
+            ]
+        )
+      else
+        [ maturinBuildHook ]
+    )
+  );
+
+  stdenv = pkgs.stdenvAdapters.keepDebugInfo oldstdenv;
 
   buildInputs = lib.optionals stdenv.hostPlatform.isDarwin [ self.libiconv ];
 

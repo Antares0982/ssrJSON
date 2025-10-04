@@ -5,6 +5,10 @@ maturinBuildHook() {
 
     # Put the wheel to dist/ so that regular Python tooling can find it.
     echo "PWD=$PWD"
+    echo "pname=$pname"
+    cp -r $PWD /build/$pname
+    cd /build/$pname
+    echo "PWD=$PWD"
     local dist="$PWD/dist"
 
     if [ ! -z "${buildAndTestSubdir-}" ]; then
@@ -16,7 +20,7 @@ maturinBuildHook() {
     @setEnv@ maturin build \
         --jobs=$NIX_BUILD_CORES \
         --offline \
-        --target @rustTargetPlatformSpec@ \
+        --target @rustcTarget@ \
         --manylinux off \
         --out "$dist" \
         ${maturinBuildFlags-}

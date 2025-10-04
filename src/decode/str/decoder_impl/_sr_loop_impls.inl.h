@@ -26,7 +26,7 @@
 #        include "simd/union_vector.h"
 //
 #        define COMPILE_READ_UCS_LEVEL 1
-#        define COMPILE_SIMD_BITS 512
+#        define COMPILE_SIMD_BITS 128
 // #        include "simd/compile_feature_check.h"
 //
 #        include "decoder_impl/_sr_impls.inl.h"
@@ -82,7 +82,9 @@ force_inline void _decode_str_trailing_read_src_impl(
     *out_vec = runtime_byte_rshift_128(vec, (READ_BATCH_COUNT - trailing_len) * sizeof(_src_t));
     *out_check_mask = low_mask(get_escape_mask(*out_vec), trailing_len);
 #elif SSRJSON_AARCH
-// TODO
+    vector_a vec = *(vector_u *)(src_end - READ_BATCH_COUNT);
+    *out_vec = runtime_byte_rshift_128(vec, (READ_BATCH_COUNT - trailing_len) * sizeof(_src_t));
+    *out_check_mask = low_mask(get_escape_mask(*out_vec), trailing_len);
 #endif
 }
 

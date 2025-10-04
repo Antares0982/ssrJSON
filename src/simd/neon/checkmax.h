@@ -20,23 +20,24 @@
  SOFTWARE.
  *============================================================================*/
 
-#undef SSRJSON_COMPILE_CONTEXT_SRW
+#ifndef SSRJSON_SIMD_NEON_CHECKMAX_H
+#define SSRJSON_SIMD_NEON_CHECKMAX_H
+
+#include "simd/simd_detect.h"
+#include "simd/vector_types.h"
 //
-#include "rw_out.inl.h"
-#include "sr_out.inl.h"
-#include "sw_out.inl.h"
-//
-#undef MAKE_SRW_NAME
-//
-#undef trailing_copy_with_cvt
-#undef encode_trailing_copy_with_cvt
-#undef cvt_to_dst
-#undef cvt_to_dst_blendhigh
-#undef _addr_cvt
-#undef _addr_cvt4
-#undef encode_unicode_loop
-#undef encode_unicode_loop4
-#undef encode_unicode_impl
-#undef encode_unicode_impl_no_key
-#undef long_cvt
-#undef long_back_cvt
+#include "common.h"
+
+force_inline bool checkmax_u32_128(vector_a_u32_128 y, u32 lower_bound_minus_1) {
+    return testz_128(y > broadcast_u32_128(lower_bound_minus_1));
+}
+
+force_inline bool checkmax_u16_128(vector_a_u16_128 y, u16 lower_bound_minus_1) {
+    return testz_128(y > broadcast_u16_128(lower_bound_minus_1));
+}
+
+force_inline bool checkmax_u8_128(vector_a_u8_128 y, u8 lower_bound_minus_1) {
+    return testz_128(y > broadcast_u8_128(lower_bound_minus_1));
+}
+
+#endif // SSRJSON_SIMD_NEON_CHECKMAX_H

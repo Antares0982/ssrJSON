@@ -44,17 +44,17 @@ extern u8 *dragonbox_to_chars_n(double value, u8 *buffer);
  * Convert the u8 buffer to the buffer.
  * The space (32 * sizeof(_dst_t)) must be reserved before calling this function.
  */
+#if COMPILE_WRITE_UCS_LEVEL > 1
 force_inline void _ELEVATE_FROM_U8_NUM_BUFFER(_dst_t **writer_addr, const u8 *buffer, Py_ssize_t len) {
     _dst_t *writer = *writer_addr;
-#if COMPILE_WRITE_UCS_LEVEL == 1
-    SSRJSON_UNREACHABLE();
-#elif COMPILE_WRITE_UCS_LEVEL == 2
+#    if COMPILE_WRITE_UCS_LEVEL == 2
     __partial_cvt_32_u8_u16(&writer, &buffer);
-#else  // COMPILE_WRITE_UCS_LEVEL == 4
+#    else // COMPILE_WRITE_UCS_LEVEL == 4
     __partial_cvt_32_u8_u32(&writer, &buffer);
-#endif // COMPILE_WRITE_UCS_LEVEL != 1
+#    endif
     *writer_addr += len;
 }
+#endif
 
 /*
  * Write a u64 number to the buffer.
@@ -104,5 +104,4 @@ force_inline void f64_to_unicode(_dst_t **writer_addr, u64 val_u64_repr) {
 
 #include "compile_context/sw_out.inl.h"
 
-#undef unicode_buffer_reserve
 #undef _ELEVATE_FROM_U8_NUM_BUFFER

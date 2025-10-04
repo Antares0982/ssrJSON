@@ -719,7 +719,7 @@ ssrjson_dumps_obj(
         goto arr_val_begin;
     }
 
-    SSRJSON_UNREACHABLE();
+    // ---unreachable here---
 #else
     switch (encode_call_flag) {
         case CallFlag_ArrVal: {
@@ -842,7 +842,7 @@ dict_pair_begin:;
         }
     }
 
-    SSRJSON_UNREACHABLE();
+    // ---unreachable here---
 
 arr_val_begin:;
     assert(cur_list_size != 0);

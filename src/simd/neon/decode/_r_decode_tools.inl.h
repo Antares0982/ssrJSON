@@ -20,23 +20,16 @@
  SOFTWARE.
  *============================================================================*/
 
-#undef SSRJSON_COMPILE_CONTEXT_SRW
-//
-#include "rw_out.inl.h"
-#include "sr_out.inl.h"
-#include "sw_out.inl.h"
-//
-#undef MAKE_SRW_NAME
-//
-#undef trailing_copy_with_cvt
-#undef encode_trailing_copy_with_cvt
-#undef cvt_to_dst
-#undef cvt_to_dst_blendhigh
-#undef _addr_cvt
-#undef _addr_cvt4
-#undef encode_unicode_loop
-#undef encode_unicode_loop4
-#undef encode_unicode_impl
-#undef encode_unicode_impl_no_key
-#undef long_cvt
-#undef long_back_cvt
+#ifdef SSRJSON_CLANGD_DUMMY
+#    ifndef COMPILE_READ_UCS_LEVEL
+#        define COMPILE_READ_UCS_LEVEL 1
+#    endif
+#endif
+
+#include "compile_context/r_in.inl.h"
+
+force_inline bool cmpeq_2chars(const _src_t *src, const _src_t *_template, const _src_t *end) {
+    return src + 2 <= end && 0 == memcmp(src, _template, 2 * sizeof(_src_t));
+}
+
+#include "compile_context/r_out.inl.h"

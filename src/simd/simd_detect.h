@@ -71,8 +71,9 @@
 #elif SSRJSON_AARCH
 #    define SIMD_FEATURE_NAME neon
 #    define SSRJSON_HAS_BLENDV 0
-// #        define COMPILE_SIMD_BITS 128
 #    define WRITE_SUPPORT_MASK_WRITE 0
+#    define SUPPORT_SIMD_512BITS 0
+#    define SUPPORT_SIMD_256BITS 0
 // aarch64 TODO
 #else
 #    error "unsupported architecture"
@@ -95,6 +96,7 @@
 #    endif
 #elif SSRJSON_AARCH
 #    include <arm_neon.h>
+#    include <assert.h>
 static_assert(__LITTLE_ENDIAN__, "currently only little endian is supported");
 #endif
 

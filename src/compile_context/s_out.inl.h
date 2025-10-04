@@ -35,6 +35,8 @@
 #undef cvt_u8_to_u32
 #undef rshift_u16
 #undef rshift_u32
+#undef lshift_u16
+#undef lshift_u32
 #undef get_bitmask_from_u8
 #undef testz
 #undef bytes_write_ucs1_trailing

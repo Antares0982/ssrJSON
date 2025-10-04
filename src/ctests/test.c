@@ -52,7 +52,8 @@
 
 int SIMD_NAME_MODIFIER(test_cvt_u8_to_u16)(void) {
 #if SSRJSON_AARCH
-    return INVALID;
+    u8 input[16];
+    u16 dst[8];
 #elif SSRJSON_X86
 #    if COMPILE_SIMD_BITS == 512
     GUARDED_SIMD;
@@ -89,7 +90,8 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u16)(void) {
 
 int SIMD_NAME_MODIFIER(test_cvt_u8_to_u32)(void) {
 #if SSRJSON_AARCH
-    return INVALID;
+    u8 input[16];
+    u32 dst[4];
 #elif SSRJSON_X86
 #    if COMPILE_SIMD_BITS == 512
     GUARDED_SIMD;
@@ -103,30 +105,32 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u32)(void) {
     u8 input[16];
     u32 dst[4];
 #    endif
+
+#endif
     usize loop_count = 16;
     for (usize _ = 0; _ < loop_count; _++) {
         //
         RANDOM_FILL(input);
         GARBAGE_FILL(dst);
         //
-#    if COMPILE_SIMD_BITS == 512
+#if COMPILE_SIMD_BITS == 512
         *(vector_u_u32_512 *)dst = cvt_u8_to_u32(*(vector_u_u8_128 *)input);
-#    elif COMPILE_SIMD_BITS == 256
+#elif COMPILE_SIMD_BITS == 256
         *(vector_u_u32_256 *)dst = cvt_u8_to_u32(*(vector_u_u8_128 *)input);
-#    else
+#else
         *(vector_u_u32_128 *)dst = cvt_u8_to_u32(*(vector_u_u8_128 *)input);
-#    endif
+#endif
         for (usize i = 0; i < COUNT_OF(dst); i++) {
             CHECK(dst[i] == input[i]);
         }
     }
     return PASSED;
-#endif
 }
 
 int SIMD_NAME_MODIFIER(test_cvt_u16_to_u32)(void) {
 #if SSRJSON_AARCH
-    return INVALID;
+    u16 input[8];
+    u32 dst[4];
 #elif SSRJSON_X86
 
 #    if COMPILE_SIMD_BITS == 512
@@ -142,25 +146,26 @@ int SIMD_NAME_MODIFIER(test_cvt_u16_to_u32)(void) {
     u32 dst[4];
 #    endif
 
+#endif
+
     usize loop_count = 16;
     for (usize _ = 0; _ < loop_count; _++) {
         //
         RANDOM_FILL(input);
         GARBAGE_FILL(dst);
         //
-#    if COMPILE_SIMD_BITS == 512
+#if COMPILE_SIMD_BITS == 512
         *(vector_u_u32_512 *)dst = cvt_u16_to_u32(*(vector_u_u16_256 *)input);
-#    elif COMPILE_SIMD_BITS == 256
+#elif COMPILE_SIMD_BITS == 256
         *(vector_u_u32_256 *)dst = cvt_u16_to_u32(*(vector_u_u16_128 *)input);
-#    else
+#else
         *(vector_u_u32_128 *)dst = cvt_u16_to_u32(*(vector_u_u16_128 *)input);
-#    endif
+#endif
         for (usize i = 0; i < COUNT_OF(dst); i++) {
             CHECK(dst[i] == input[i]);
         }
     }
     return PASSED;
-#endif
 }
 
 #if __SSSE3__
@@ -177,7 +182,13 @@ force_inline int _test_ucs2_encode_ssse3(void) {
 
 int SIMD_NAME_MODIFIER(test_ucs2_encode_3bytes_utf8)(void) {
 #if SSRJSON_AARCH
-    return INVALID;
+    u16 input[8];
+    u8 output[24];
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
+        input[i] = get_random_3bytes_u16();
+    }
+    ucs2_encode_3bytes_utf8_neon(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
+    return check_ucs2_3bytes(input, output, COUNT_OF(input));
 #else
 #    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
     GUARDED_SIMD;
@@ -213,7 +224,13 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_3bytes_utf8)(void) {
 
 int SIMD_NAME_MODIFIER(test_ucs2_encode_2bytes_utf8)(void) {
 #if SSRJSON_AARCH
-    return INVALID;
+    u16 input[8];
+    u8 output[16];
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
+        input[i] = get_random_2bytes_u16();
+    }
+    ucs2_encode_2bytes_utf8_neon(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
+    return check_ucs2_2bytes(input, output, COUNT_OF(input));
 #else
 #    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
     GUARDED_SIMD;
@@ -259,7 +276,13 @@ force_inline int _test_ucs4_encode_ssse3(void) {
 
 int SIMD_NAME_MODIFIER(test_ucs4_encode_3bytes_utf8)(void) {
 #if SSRJSON_AARCH
-    return INVALID;
+    u32 input[4];
+    u8 output[12];
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
+        input[i] = get_random_3bytes_u16();
+    }
+    ucs4_encode_3bytes_utf8_neon(output, (vector_a_u32_128) * (vector_u_u32_128 *)input);
+    return check_ucs4_3bytes(input, output, COUNT_OF(input));
 #else
 #    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
     GUARDED_SIMD;
@@ -292,7 +315,13 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_3bytes_utf8)(void) {
 
 int SIMD_NAME_MODIFIER(test_ucs4_encode_2bytes_utf8)(void) {
 #if SSRJSON_AARCH
-    return INVALID;
+    u32 input[4];
+    u8 output[8];
+    for (usize i = 0; i < COUNT_OF(input); ++i) {
+        input[i] = get_random_2bytes_u16();
+    }
+    ucs4_encode_2bytes_utf8_neon(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
+    return check_ucs4_2bytes(input, output, COUNT_OF(input));
 #else
 #    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
     GUARDED_SIMD;

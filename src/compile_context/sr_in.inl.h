@@ -97,7 +97,7 @@
 #define unsigned_max MAKE_SR_NAME(unsigned_max)
 #define unsigned_max4 MAKE_SR_NAME(unsigned_max4)
 //
-#if COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
 #    define anymask_t avx512_bitmask_t
 #    define get_escape_anymask get_escape_bitmask
 #    define testz_escape_mask(_x_) ((_x_) == 0)
@@ -106,12 +106,21 @@
 #    define escape_anymask_to_done_count_track_max escape_bitmask_to_done_count_track_max
 #    define joined4_escape_anymask_to_done_count joined4_escape_bitmask_to_done_count
 #    define joined4_escape_anymask_to_done_count_track_max joined4_escape_bitmask_to_done_count_track_max
-#else
+#elif SSRJSON_X86
 #    define anymask_t vector_a
 #    define get_escape_anymask get_escape_mask
 #    define testz_escape_mask testz
 #    define escape_anymask_to_done_count escape_mask_to_done_count
 #    define escape_anymask_to_done_count_no_eq0 escape_mask_to_done_count_no_eq0
+#    define escape_anymask_to_done_count_track_max escape_mask_to_done_count_track_max
+#    define joined4_escape_anymask_to_done_count joined4_escape_mask_to_done_count
+#    define joined4_escape_anymask_to_done_count_track_max joined4_escape_mask_to_done_count_track_max
+#elif SSRJSON_AARCH
+#    define anymask_t vector_a
+#    define get_escape_anymask get_escape_mask
+#    define testz_escape_mask testz
+#    define escape_anymask_to_done_count escape_mask_to_done_count
+#    define escape_anymask_to_done_count_no_eq0 escape_mask_to_done_count
 #    define escape_anymask_to_done_count_track_max escape_mask_to_done_count_track_max
 #    define joined4_escape_anymask_to_done_count joined4_escape_mask_to_done_count
 #    define joined4_escape_anymask_to_done_count_track_max joined4_escape_mask_to_done_count_track_max

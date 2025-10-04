@@ -57,11 +57,14 @@ let
             self: super:
             {
               orjson =
-                if !(startsWith "3.13" py.pythonVersion) then
-                  (curPkgs.callPackage ./orjson_fixed.nix { inherit self pkgs-legacy; })
+                if !(startsWith ("3." + (builtins.toString curVer)) py.pythonVersion) then
+                  (curPkgs.callPackage ./orjson_fixed.nix {
+                    inherit self pkgs-legacy;
+                    isDebug = false;
+                  })
                 else
                   (curPkgs.callPackage ./orjson-pypi.nix { pypkgs = self; });
-              # orjson = curPkgs.callPackage ./orjson-pypi.nix { pypkgs = self; };
+
               ssrjson-benchmark = curPkgs.callPackage ./ssrjson_benchmark.nix { inherit self pkgs-legacy; };
             }
             // (curPkgs.lib.optionalAttrs (startsWith "3.14" py.pythonVersion) {

@@ -26,7 +26,7 @@ let
         "3.11.3" = {
           urlpart = "a4/b8/2d9eb181a9b6bb71463a78882bcac1027fd29cf62c38a40cc02fc11d3495";
           manyLinux = "manylinux_2_17_aarch64.manylinux2014_aarch64";
-          hash = "";
+          hash = "sha256-Ydza0W2lu0htciejei54nEKTl3k6aVUifO29clLrWic=";
         };
       };
     };

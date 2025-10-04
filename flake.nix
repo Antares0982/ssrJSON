@@ -74,12 +74,16 @@
             name = "buildenv-py3" + (toString ver);
             value = pkgs.mkShell {
               buildInputs = [
-                ((builtins.getAttr ("python3" + (toString ver)) pkgs).withPackages (
-                  pypkgs: with pypkgs; [
-                    pip
-                    build
-                  ]
-                ))
+                (
+                  (builtins.getAttr ("python3" + (toString ver)) (if ver >= 10 then pkgs else pkgs-legacy))
+                  .withPackages
+                  (
+                    pypkgs: with pypkgs; [
+                      pip
+                      build
+                    ]
+                  )
+                )
               ]
               ++ (with pkgs; [
                 cmake

@@ -295,7 +295,7 @@ force_inline PyObject *ssrjson_dumps_single_constant(ssrjson_py_types py_type, P
         }
         default: {
             ret = NULL;
-            Py_UNREACHABLE();
+            SSRJSON_UNREACHABLE();
             break;
         }
     }

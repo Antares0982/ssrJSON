@@ -5,8 +5,13 @@
   forNonNix ? false,
   lib,
   pax-utils,
+  system,
   ...
 }:
+let
+  abiflags = import ./wheel-abiflags.nix;
+  abiflag = abiflags.${system};
+in
 clangStdenv.mkDerivation rec {
   pname = "ssrjson";
   version = builtins.readFile ../../version_file;
@@ -26,7 +31,7 @@ clangStdenv.mkDerivation rec {
     patchelf --set-rpath /lib64 $out/ssrjson.so
   '')
   + ''
-    mv $out/ssrjson.so $out/ssrjson.cpython-3${python.sourceVersion.minor}-x86_64-linux-gnu.so
+    mv $out/ssrjson.so $out/ssrjson.cpython-3${python.sourceVersion.minor}-${abiflag}.so
   '';
   nativeBuildInputs = [
     cmake

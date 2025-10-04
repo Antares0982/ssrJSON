@@ -20,39 +20,48 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifndef SSRJSON_SIMD_IMPL_H
-#define SSRJSON_SIMD_IMPL_H
-
-#include "simd/simd_detect.h"
-#include "ssrjson.h"
-#include "vector_types.h"
-//
-
-#if SSRJSON_X86
-#    if __AVX512VL__ && __AVX512DQ__ && __AVX512BW__
-#        include "avx512vl_dq_bw/full.h"
+#ifdef SSRJSON_CLANGD_DUMMY
+#    include "simd/neon/checker.h"
+#    include "simd/neon/common.h"
+#    ifndef COMPILE_READ_UCS_LEVEL
+#        define COMPILE_READ_UCS_LEVEL 1
 #    endif
-#    if __AVX512F__ && __AVX512CD__
-#        include "avx512f_cd/full.h"
+#    ifndef SSRJSON_SIMD_NEON_DECODE_H
+#        include "_r_decode_tools.inl.h"
 #    endif
-#    if __AVX2__
-#        include "avx2/full.h"
-#    endif
-#    if __AVX__
-#        include "avx/full.h"
-#    endif
-#    if __SSE4_1__
-#        include "sse4.1/full.h"
-#    endif
-#    if __SSSE3__
-#        include "ssse3/full.h"
-#    endif
-#    include "sse2/full.h"
-
-
-#elif SSRJSON_AARCH
-
-#    include "neon/full.h"
-
 #endif
-#endif // SSRJSON_SIMD_IMPL_H
+
+#define COMPILE_SIMD_BITS 128
+#include "compile_context/sr_in.inl.h"
+
+force_inline void fast_skip_spaces(const _src_t **cur_addr, const _src_t *end) {
+    const vector_a template = broadcast(' ');
+    const _src_t *cur = *cur_addr;
+    assert(*cur == ' ');
+    const _src_t *final_batch = end - READ_BATCH_COUNT;
+loop:;
+    if (likely(cur < final_batch)) {
+        vector_a vec = *(const vector_u *)cur;
+        vector_a mask = (vec == template) == setzero();
+        if (testz(mask)) {
+            cur += READ_BATCH_COUNT;
+            goto loop;
+        } else {
+            u16 done_count = escape_mask_to_done_count(mask);
+            cur += done_count;
+        }
+    } else {
+        static _src_t _t[2] = {' ', ' '};
+        while (true) REPEAT_CALL_16({
+            if (cmpeq_2chars(cur, _t, end)) cur += 2;
+            else
+                break;
+        })
+        if (*cur == ' ') cur++;
+    }
+    *cur_addr = cur;
+    assert(*cur != ' ');
+}
+
+#include "compile_context/sr_out.inl.h"
+#undef COMPILE_SIMD_BITS

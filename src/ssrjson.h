@@ -378,61 +378,6 @@ __extension__ typedef unsigned __int128 u128;
 #endif
 
 
-/*
- Correct rounding in double number computations.
- 
- On the x86 architecture, some compilers may use x87 FPU instructions for
- floating-point arithmetic. The x87 FPU loads all floating point number as
- 80-bit double-extended precision internally, then rounds the result to original
- precision, which may produce inaccurate results. For a more detailed
- explanation, see the paper: https://arxiv.org/abs/cs/0701192
- 
- Here are some examples of double precision calculation error:
- 
-     2877.0 / 1e6   == 0.002877,  but x87 returns 0.0028770000000000002
-     43683.0 * 1e21 == 4.3683e25, but x87 returns 4.3683000000000004e25
- 
- Here are some examples of compiler flags to generate x87 instructions on x86:
- 
-     clang -m32 -mno-sse
-     gcc/icc -m32 -mfpmath=387
-     msvc /arch:SSE or /arch:IA32
- 
- If we are sure that there's no similar error described above, we can define the
- SSRJSON_DOUBLE_MATH_CORRECT as 1 to enable the fast path calculation. This is
- not an accurate detection, it's just try to avoid the error at compile-time.
- An accurate detection can be done at run-time:
- 
-     bool is_double_math_correct(void) {
-         volatile double r = 43683.0;
-         r *= 1e21;
-         return r == 4.3683e25;
-     }
- 
- See also: utils.h in https://github.com/google/double-conversion/
- */
-#if !defined(FLT_EVAL_METHOD) && defined(__FLT_EVAL_METHOD__)
-#    define FLT_EVAL_METHOD __FLT_EVAL_METHOD__
-#endif
-
-#if defined(FLT_EVAL_METHOD) && FLT_EVAL_METHOD != 0 && FLT_EVAL_METHOD != 1
-#    define SSRJSON_DOUBLE_MATH_CORRECT 0
-#elif defined(i386) || defined(__i386) || defined(__i386__) ||    \
-        defined(_X86_) || defined(__X86__) || defined(_M_IX86) || \
-        defined(__I86__) || defined(__IA32__) || defined(__THW_INTEL)
-#    if (defined(_MSC_VER) && defined(_M_IX86_FP) && _M_IX86_FP == 2) || \
-            (defined(__SSE2_MATH__) && __SSE2_MATH__)
-#        define SSRJSON_DOUBLE_MATH_CORRECT 1
-#    else
-#        define SSRJSON_DOUBLE_MATH_CORRECT 0
-#    endif
-#elif defined(__mc68000__) || defined(__pnacl__) || defined(__native_client__)
-#    define SSRJSON_DOUBLE_MATH_CORRECT 0
-#else
-#    define SSRJSON_DOUBLE_MATH_CORRECT 1
-#endif
-
-
 /* Helper for quickly write an err handle. */
 #define RETURN_ON_UNLIKELY_ERR(x) \
     do {                          \
@@ -722,7 +667,7 @@ force_inline u32 u32_tz_bits(u32 v) {
 
 /** Returns the number of trailing 0-bits in value (input should not be 0). */
 force_inline u32 u64_tz_bits(u64 v) {
-    assert(v);
+    // assert(v);
 #if GCC_HAS_CTZLL
     return (u32)__builtin_ctzll(v);
 #elif MSC_HAS_BIT_SCAN_64

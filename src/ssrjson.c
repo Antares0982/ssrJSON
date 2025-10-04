@@ -34,7 +34,7 @@ PyObject *ssrjson_EncodeToBytes(PyObject *self, PyObject *args, PyObject *kwargs
 PyObject *ssrjson_Decode(PyObject *self, PyObject *args, PyObject *kwargs);
 PyObject *ssrjson_FileEncode(PyObject *self, PyObject *args, PyObject *kwargs);
 PyObject *ssrjson_DecodeFile(PyObject *self, PyObject *args, PyObject *kwargs);
-PyObject *ssrjson_get_current_features(PyObject *self, PyObject *);
+PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args);
 
 PyObject *JSONDecodeError = NULL;
 PyObject *JSONEncodeError = NULL;

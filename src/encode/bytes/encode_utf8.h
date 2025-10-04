@@ -75,15 +75,8 @@ force_inline void check_ascii_in_ucs1_and_get_done_countx4(unionvector_a_x4 vec,
     m.x[3] = cmpeq_bitmask(vec.x[3], t1) |
              cmpeq_bitmask(vec.x[3], t2) |
              signed_cmpgt_bitmask(t3, vec.x[3]);
-#elif SSRJSON_X86
+#elif SSRJSON_X86 || SSRJSON_AARCH
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
-    unionvector_a_x4 m;
-    vector_a r;
-    m.x[0] = (vec.x[0] == t1) | (vec.x[0] == t2) | signed_cmpgt(t3, vec.x[0]);
-    m.x[1] = (vec.x[1] == t1) | (vec.x[1] == t2) | signed_cmpgt(t3, vec.x[1]);
-    m.x[2] = (vec.x[2] == t1) | (vec.x[2] == t2) | signed_cmpgt(t3, vec.x[2]);
-    m.x[3] = (vec.x[3] == t1) | (vec.x[3] == t2) | signed_cmpgt(t3, vec.x[3]);
-#elif SSRJSON_AARCH
     unionvector_a_x4 m;
     vector_a r;
     m.x[0] = (vec.x[0] == t1) | (vec.x[0] == t2) | signed_cmpgt(t3, vec.x[0]);
@@ -122,11 +115,8 @@ force_inline void check_ascii_in_ucs1_and_get_done_count(vector_a vec, bool *out
     m = cmpeq_bitmask(vec, t1) |
         cmpeq_bitmask(vec, t2) |
         signed_cmpgt_bitmask(t3, vec);
-#elif SSRJSON_X86
+#elif SSRJSON_X86 || SSRJSON_AARCH
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
-    vector_a m;
-    m = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec);
-#else
     vector_a m;
     m = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec);
 #endif
@@ -294,7 +284,7 @@ force_inline void check_ascii_in_ucs2_and_get_done_countx4(unionvector_a_x4 vec,
     m.x[1] = (vec.x[1] == t1) | (vec.x[1] == t2) | signed_cmpgt(t3, vec.x[1]) | signed_cmpgt(vec.x[1], t4);
     m.x[2] = (vec.x[2] == t1) | (vec.x[2] == t2) | signed_cmpgt(t3, vec.x[2]) | signed_cmpgt(vec.x[2], t4);
     m.x[3] = (vec.x[3] == t1) | (vec.x[3] == t2) | signed_cmpgt(t3, vec.x[3]) | signed_cmpgt(vec.x[3], t4);
-#else
+#elif SSRJSON_AARCH
     unionvector_a_x4 m;
     vector_a r;
     m.x[0] = (vec.x[0] == t1) | (vec.x[0] == t2) | (vec.x[0] < t3) | (vec.x[0] > t4);
@@ -336,7 +326,7 @@ force_inline void check_ascii_in_ucs2_and_get_done_count(vector_a vec, bool *out
 #elif SSRJSON_X86
     vector_a m;
     m = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, t4);
-#else
+#elif SSRJSON_AARCH
     vector_a m;
     m = (vec == t1) | (vec == t2) | (vec < t3) | (vec > t4);
 #endif
@@ -463,8 +453,8 @@ force_inline bool _2bytes_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_add
 #    else
     ucs2_encode_2bytes_utf8_sse2(dst, vec);
 #    endif
-#else
-    // TODO
+#elif SSRJSON_AARCH
+    ucs2_encode_2bytes_utf8_neon(dst, vec);
 #endif
 
     // check
@@ -504,7 +494,7 @@ force_inline void check_3bytes_in_ucs2_and_get_done_count(vector_a vec, bool *ou
     vector_a m;
     // use 2 signed_cmpgt to do unsigned range check
     m = unsigned_saturate_minus(t1, vec) | (signed_cmpgt(vec, t2) & signed_cmpgt(t3, vec));
-#else
+#elif SSRJSON_AARCH
     vector_a m;
     m = (vec < t1) | ((vec > t2) & (vec < t3));
 #endif
@@ -528,7 +518,7 @@ force_inline void check_3bytes_in_ucs4_and_get_done_count(vector_a vec, bool *ou
 #elif SSRJSON_X86
     vector_a m;
     m = signed_cmpgt(t1, vec) | (signed_cmpgt(vec, t2) & signed_cmpgt(t3, vec)) | signed_cmpgt(vec, t4);
-#else
+#elif SSRJSON_AARCH
     vector_a m;
     m = (vec < t1) | ((vec > t2) & (vec < t3)) | (vec > t4);
 #endif
@@ -562,7 +552,7 @@ force_inline bool _3bytes_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_add
     SSRJSON_UNREACHABLE();
 #    endif
 #else
-    // TODO
+    ucs2_encode_3bytes_utf8_neon(dst, vec);
 #endif
 
     // check
@@ -694,7 +684,7 @@ force_inline void check_ascii_in_ucs4_and_get_done_countx4(unionvector_a_x4 vec,
     m.x[1] = (vec.x[1] == t1) | (vec.x[1] == t2) | signed_cmpgt(t3, vec.x[1]) | signed_cmpgt(vec.x[1], t4);
     m.x[2] = (vec.x[2] == t1) | (vec.x[2] == t2) | signed_cmpgt(t3, vec.x[2]) | signed_cmpgt(vec.x[2], t4);
     m.x[3] = (vec.x[3] == t1) | (vec.x[3] == t2) | signed_cmpgt(t3, vec.x[3]) | signed_cmpgt(vec.x[3], t4);
-#else
+#elif SSRJSON_AARCH
     unionvector_a_x4 m;
     vector_a r;
     m.x[0] = (vec.x[0] == t1) | (vec.x[0] == t2) | (vec.x[0] < t3) | (vec.x[0] > t4);
@@ -777,7 +767,7 @@ force_inline void check_ascii_in_ucs4_and_get_done_count(vector_a vec, bool *out
 #elif SSRJSON_X86
     vector_a m;
     m = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, t4);
-#else
+#elif SSRJSON_AARCH
     vector_a m;
     m = (vec == t1) | (vec == t2) | (vec < t3) | (vec > t4);
 #endif
@@ -832,7 +822,7 @@ force_inline void check_2bytes_in_ucs4_and_get_done_count(vector_a vec, bool *ou
 #elif SSRJSON_X86
     vector_a m;
     m = signed_cmpgt(t1, vec) | signed_cmpgt(vec, t2);
-#else
+#elif SSRJSON_AARCH
     vector_a m;
     m = (vec < t1) | (vec > t2);
 #endif
@@ -863,8 +853,8 @@ force_inline bool _2bytes_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_add
 #    else
     ucs4_encode_2bytes_utf8_sse2(dst, vec);
 #    endif
-#else
-    // TODO
+#elif SSRJSON_AARCH
+    ucs4_encode_2bytes_utf8_neon(dst, vec);
 #endif
 
     // check
@@ -910,8 +900,8 @@ force_inline bool _3bytes_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_add
 #    else
     SSRJSON_UNREACHABLE();
 #    endif
-#else
-    // TODO
+#elif SSRJSON_AARCH
+    ucs4_encode_3bytes_utf8_neon(dst, vec);
 #endif
 
     // check
