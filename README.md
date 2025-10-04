@@ -71,7 +71,7 @@ Pre-built wheels are available on PyPI.
 pip install ssrjson
 ```
 
-Note: ssrJSON requires at least SSE4.2 on x86-64 ([x86-64-v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels:~:text=their%20encryption%20extensions.-,Microarchitecture%20levels,-%5Bedit%5D)). ssrJSON does not work with Python implementations other than CPython. Currently supported CPython versions are 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15. For Python >= 3.14, you need to build it from source.
+Note: ssrJSON requires at least SSE4.2 on x86-64 ([x86-64-v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels:~:text=their%20encryption%20extensions.-,Microarchitecture%20levels,-%5Bedit%5D)), or aarch64. 32-bit platforms are not supported. ssrJSON does not work with Python implementations other than CPython. Currently supported CPython versions are 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15. For Python >= 3.14, you need to build it from source.
 
 ### Build From Source
 
@@ -238,9 +238,7 @@ The case of `math.nan` is similar.
 
 Please note that ssrJSON is currently in the **beta stage** of development.
 
-Several commonly used features are still under development, including serialization of subclasses of `str`, the `object_hook` functionality, and error location reporting during decoding. Additionally, ssrJSON will not support encoding or decoding of third-party data structures.
-
-The ARM64 architecture is not yet supported but will be supported in the near future.
+Several commonly used features are still under development, including serialization of subclasses of `str`, the `object_hook` functionality, and correct error location reporting during decoding. Additionally, ssrJSON will not support encoding or decoding of third-party data structures.
 
 ## Contributing
 
