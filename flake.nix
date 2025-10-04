@@ -79,7 +79,7 @@
                   .withPackages
                   (
                     pypkgs: with pypkgs; [
-                      pip
+                      (if ver != 14 then pip else pkgs.callPackage ./dev_tools/nixfiles/py314-pip.nix { inherit pypkgs; })
                       build
                     ]
                   )
