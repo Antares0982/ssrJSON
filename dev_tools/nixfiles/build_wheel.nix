@@ -4,12 +4,17 @@
   python,
   cmake,
   system,
+  forNonNix ? true,
   ...
 }:
 let
   dylib = pkgs.callPackage ./build_package.nix {
-    inherit clangStdenv python cmake;
-    forNonNix = true;
+    inherit
+      clangStdenv
+      python
+      cmake
+      forNonNix
+      ;
   };
   pyenv = python.withPackages (
     pypkgs: with pypkgs; [

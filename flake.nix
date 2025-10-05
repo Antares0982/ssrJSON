@@ -120,17 +120,31 @@
               python = versionUtils.pyVerToPyPackage ver;
             };
           };
+          verToPyPackageDef = ver: {
+            name = "ssrjson-pypackage-py3" + (builtins.toString ver);
+            value = pkgs.callPackage ./dev_tools/nixfiles/build_py_package.nix rec {
+              pypkgs = builtins.getAttr ("python3" + (toString pythonVerConfig.curVer) + "Packages") pkgs;
+              buildPythonPackage = pypkgs.buildPythonPackage;
+            };
+          };
           ssrjsonPackages = builtins.listToAttrs (map verToPackageDef versionUtils.versions);
           ssrjsonWheels = builtins.listToAttrs (map verToWheelDef versionUtils.wheelBuildableVersions);
+          ssrjsonPyPackages = builtins.listToAttrs (
+            map verToPyPackageDef versionUtils.wheelBuildableVersions
+          );
+          ssrjsonDefaultPackage = builtins.getAttr (
+            "ssrjson-pypackage-py3" + (builtins.toString pythonVerConfig.curVer)
+          ) ssrjsonPyPackages;
         in
         {
           ssrjson-tarball = pkgs.callPackage ./dev_tools/nixfiles/build_tarball.nix {
             python = stablePython;
           };
-          default = ssrjsonPackages.ssrjson-py313;
+          default = ssrjsonDefaultPackage;
         }
         // ssrjsonPackages
         // ssrjsonWheels
+        // ssrjsonPyPackages
       );
     };
 }
