@@ -118,7 +118,23 @@ force_inline void encode_trailing_copy_with_cvt(_dst_t **dst_addr, const _src_t 
 restart:;
     _dst_t *write_start = dst + len - READ_BATCH_COUNT;
     vector_a real_escape_mask = high_mask(escape_mask, len);
+#if COMPILE_READ_UCS_LEVEL == COMPILE_WRITE_UCS_LEVEL
+    {
+        vector_a_u8_128 s1, s2;
+        const _src_t *t1 = src_end - READ_BATCH_COUNT / 2;
+        const bool t1_before_src = t1 < src;
+        s1 = *(vector_u_u8_128 *)(t1_before_src ? t1 : src);
+        s2 = *(vector_u_u8_128 *)t1;
+        int shl1 = (src - t1) * sizeof(_src_t);
+        int shl2 = (READ_BATCH_COUNT / 2 - (t1 - src)) * sizeof(_src_t);
+        s1 = runtime_byte_rshift_128(s1, (t1_before_src ? shl1 : 0));
+        s2 = runtime_byte_rshift_128(s2, (t1_before_src ? 0 : shl2));
+        *(SSRJSON_CAST(vector_u_u8_128 *, dst) + 0) = s1;
+        *(SSRJSON_CAST(vector_u_u8_128 *, dst) + 1) = s2;
+    }
+#else
     cvt_to_dst_blendhigh(write_start, vec, len);
+#endif
     if (likely(testz(real_escape_mask))) {
         dst += len;
     } else {
