@@ -59,13 +59,17 @@ let
               orjson =
                 if !(startsWith ("3." + (builtins.toString curVer)) py.pythonVersion) then
                   (curPkgs.callPackage ./orjson_fixed.nix {
-                    inherit self pkgs-legacy;
+                    pypkgs = self;
+                    inherit pkgs-legacy;
                     isDebug = false;
                   })
                 else
                   (curPkgs.callPackage ./orjson-pypi.nix { pypkgs = self; });
 
-              ssrjson-benchmark = curPkgs.callPackage ./ssrjson_benchmark.nix { inherit self pkgs-legacy; };
+              ssrjson-benchmark = curPkgs.callPackage ./ssrjson_benchmark.nix {
+                pypkgs = self;
+                inherit pkgs-legacy;
+              };
             }
             // (curPkgs.lib.optionalAttrs (startsWith "3.14" py.pythonVersion) {
               pytest-random-order =

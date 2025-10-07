@@ -1,5 +1,5 @@
 {
-  self,
+  pypkgs,
   pkgs,
   pkgs-legacy,
   lib,
@@ -8,30 +8,37 @@
   ...
 }:
 let
-  minorVer = lib.strings.toInt self.python.sourceVersion.minor;
+  minorVer = lib.strings.toInt pypkgs.python.sourceVersion.minor;
   versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
   useNixpkgsUnstable = (minorVer >= pythonVerConfig.latestStableVer);
 in
-self.buildPythonPackage rec {
+pypkgs.buildPythonPackage rec {
   pname = "ssrjson_benchmark";
-  version = "0.0.3";
+  version = "0.0.4";
   pyproject = true;
 
-  disabled = self.pythonOlder "3.8";
+  disabled = pypkgs.pythonOlder "3.8";
+
+  # src = pkgs.fetchFromGitHub {
+  #   owner = "Nambers";
+  #   repo = "ssrJSON-benchmark";
+  #   rev = "7e2149caa7ac965767eb9fd81364b83487eb817b";
+  #   sha256 = "sha256-QKnu2A2XOulgYZA7WTX1YAV8VVHh3j2XuyBPzHE+FbY=";
+  # };
 
   src = fetchPypi {
     inherit pname version;
-    sha256 = "sha256-jqDkFuT+TFJ9JDSmlfC1HjaoTT2+IY/DtLfJzABiKEg=";
+    sha256 = "sha256-2zG5x+0XNdZaDtpZenYuqdvSIntJOme3AABkEU1nCig=";
   };
 
-  build-system = with self; [ setuptools ];
+  build-system = with pypkgs; [ setuptools ];
 
-  nativeBuildInputs = with self; [
+  nativeBuildInputs = with pypkgs; [
     cmake
   ];
 
-  dependencies = with self; [
+  dependencies = with pypkgs; [
     matplotlib
     orjson
     psutil
