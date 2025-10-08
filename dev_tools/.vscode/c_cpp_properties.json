@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [],
             "defines": [],
-            "compilerPath": ".nix-pyenv/bin/clang",
+            "compilerPath": ".nix-devenv/bin/clang",
             "cStandard": "c17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "clang-x64",

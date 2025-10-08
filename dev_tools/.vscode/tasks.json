@@ -100,7 +100,7 @@
         {
             "label": "CMake: build test.cpp",
             "type": "shell",
-            "command": "${workspaceFolder}/.nix-pyenv/bin/clang++",
+            "command": "${workspaceFolder}/.nix-devenv/bin/clang++",
             "args": [
                 "${workspaceFolder}/test.cpp",
                 "-msse4.1",

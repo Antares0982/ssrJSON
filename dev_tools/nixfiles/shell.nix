@@ -5,7 +5,7 @@
   ...
 }:
 let
-  nix_pyenv_directory = ".nix-pyenv";
+  nix_pyenv_directory = ".nix-devenv";
   # define version
   versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;

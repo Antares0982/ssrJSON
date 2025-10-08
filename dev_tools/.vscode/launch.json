@@ -6,7 +6,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "python": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "python": "${workspaceFolder}/.nix-devenv/bin/python",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "env": {
@@ -17,7 +17,7 @@
             "name": "(gdb) Launch clang",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.nix-pyenv-llvm/debugLLVM/bin/llc",
+            "program": "${workspaceFolder}/.nix-devenv-llvm/debugLLVM/bin/llc",
             "args": [
                 "-O3",
                 "ssrjson.ll"
@@ -48,7 +48,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "program": "${workspaceFolder}/.nix-devenv/bin/python",
             "args": [
                 "${file}"
             ],
@@ -84,7 +84,7 @@
             "name": "(gdb) Launch python",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "program": "${workspaceFolder}/.nix-devenv/bin/python",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -117,7 +117,7 @@
             "name": "(gdb) Launch pytest",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "program": "${workspaceFolder}/.nix-devenv/bin/python",
             "args": [
                 "-m",
                 "pytest",
@@ -156,7 +156,7 @@
             "name": "(gdb) Launch pytest (current file)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.nix-pyenv/bin/python",
+            "program": "${workspaceFolder}/.nix-devenv/bin/python",
             "args": [
                 "-m",
                 "pytest",
@@ -195,7 +195,7 @@
             "name": "(gdb) Launch pytest python315",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.nix-pyenv/bin/python3.15",
+            "program": "${workspaceFolder}/.nix-devenv/bin/python3.15",
             "args": [
                 "-m",
                 "pytest",

@@ -40,21 +40,21 @@ jobs:
     - name: Print Features
       id: "print_features"
       run: |
-        result=$(PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-pyenv/bin/python3.${{ matrix.pyver }} -c "import ssrjson;print(ssrjson.get_current_features()['SIMD'])")
+        result=$(PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-devenv/bin/python3.${{ matrix.pyver }} -c "import ssrjson;print(ssrjson.get_current_features()['SIMD'])")
         echo $result
         echo "result=$result" >> $GITHUB_OUTPUT
     - name: Run Python Tests (SDE, AVX512)
       if: steps.print_features.outputs.result != 'AVX512'
       run: |
-        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-pyenv/bin/run-sde-clx .nix-pyenv/bin/python3.${{ matrix.pyver }} -m pytest --random-order python-test --ignore python-test/test_memory.py
+        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-devenv/bin/run-sde-clx .nix-devenv/bin/python3.${{ matrix.pyver }} -m pytest --random-order python-test --ignore python-test/test_memory.py
     - name: Run Python Tests (SDE, AVX2)
       if: steps.print_features.outputs.result != 'AVX2'
       run: |
-        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-pyenv/bin/run-sde-rpl .nix-pyenv/bin/python3.${{ matrix.pyver }} -m pytest --random-order python-test --ignore python-test/test_memory.py
+        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-devenv/bin/run-sde-rpl .nix-devenv/bin/python3.${{ matrix.pyver }} -m pytest --random-order python-test --ignore python-test/test_memory.py
     - name: Run Python Tests (SDE, SSE2)
       if: steps.print_features.outputs.result != 'SSE2'
       run: |
-        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-pyenv/bin/run-sde-ivb .nix-pyenv/bin/python3.${{ matrix.pyver }} -m pytest --random-order python-test --ignore python-test/test_memory.py
+        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-devenv/bin/run-sde-ivb .nix-devenv/bin/python3.${{ matrix.pyver }} -m pytest --random-order python-test --ignore python-test/test_memory.py
     - name: Run C Tests (SDE, ALL)
       run: |
-        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-pyenv/bin/run-sde-clx ./build-py3.${{ matrix.pyver }}/ssrjson_test
+        PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-devenv/bin/run-sde-clx ./build-py3.${{ matrix.pyver }}/ssrjson_test

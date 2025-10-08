@@ -61,7 +61,7 @@
                   inherit pkgs-legacy;
                   inherit (shell) inputDerivation;
                   inherit (_drvs) pyenvs debuggable_py pyenv_nodebug;
-                  nix_pyenv_directory = if shell.debugLLVM then ".nix-pyenv-llvm" else ".nix-pyenv";
+                  nix_pyenv_directory = if shell.debugLLVM then ".nix-devenv-llvm" else ".nix-devenv";
                   pyenv = builtins.elemAt _drvs.pyenvs verLength;
                   using_python = builtins.elemAt _drvs.using_pythons verLength;
                 };

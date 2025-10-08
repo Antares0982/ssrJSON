@@ -1,5 +1,4 @@
-.nix-pyenv/
-.nix-pyenv*/
+.nix-devenv
 /.vscode
 /.envrc
 /test.py
