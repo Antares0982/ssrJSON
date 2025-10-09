@@ -4,8 +4,9 @@ on:
     inputs:
       dry-run:
         description: 'Set to true to only print files without making changes'
-        required: false
-        default: 'true'
+        required: true
+        default: true
+        type: boolean
 
 jobs:
   Build-Tarball:
@@ -48,7 +49,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["9", "10", "11", "12", "13"]
+        pyver: ["10", "11", "12", "13", "14"]
 
     steps:
     - name: Checkout
@@ -58,6 +59,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: 3.${{ matrix.pyver }}
+        allow-prereleases: true
 
     - name: Download Artifact
       uses: actions/download-artifact@v4
@@ -85,7 +87,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["9", "10", "11", "12", "13"]
+        pyver: ["10", "11", "12", "13", "14"]
 
     steps:
     - name: Checkout
@@ -95,6 +97,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: 3.${{ matrix.pyver }}
+        allow-prereleases: true
 
     - name: Install nix
       uses: cachix/install-nix-action@master
@@ -140,16 +143,11 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["9", "10", "11", "12", "13"]
+        pyver: ["10", "11", "12", "13", "14"]
 
     steps:
     - name: Checkout
       uses: actions/checkout@main
-
-    # - name: Set up Python 3.${{ matrix.pyver }}
-    #   uses: actions/setup-python@v5
-    #   with:
-    #     python-version: 3.${{ matrix.pyver }}
 
     - name: Prepare
       id: prepare
@@ -174,7 +172,7 @@ jobs:
 
     - name: Run Python Tests
       run: |
-        PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -m pip install -r requirements.txt --prefix build-testing
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python -m pip install -r requirements.txt --prefix build-testing
         PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -m pytest --random-order python-test
 
   Linux-aarch64-Build-And-Test-Wheel:
@@ -182,19 +180,11 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["9", "10", "11", "12", "13"]
+        pyver: ["10", "11", "12", "13", "14"]
 
     steps:
     - name: Checkout
       uses: actions/checkout@main
-
-    # - name: Set up Python 3.${{ matrix.pyver }}
-    #   uses: actions/setup-python@v5
-    #   with:
-    #     python-version: 3.${{ matrix.pyver }}
-
-    # - name: Install nix
-    #   uses: cachix/install-nix-action@master
 
     - name: Prepare
       id: prepare
@@ -219,7 +209,7 @@ jobs:
 
     - name: Install Wheel
       run: |
-        nix develop -c python3.${{ matrix.pyver }} -m pip install ${{ steps.build-wheel.outputs.ARTIFACT_NAME }} --prefix build-testing
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python -m pip install ${{ steps.build-wheel.outputs.ARTIFACT_NAME }} --prefix build-testing
 
     - name: Print Location
       run: |
@@ -227,7 +217,7 @@ jobs:
 
     - name: Run Python Tests
       run: |
-        nix develop -c python3.${{ matrix.pyver }} -m pip install -r requirements.txt --prefix build-testing
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python -m pip install -r requirements.txt --prefix build-testing
         PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -m pytest --random-order python-test
 
     - name: Upload Wheel To Artifact
@@ -242,7 +232,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["9", "10", "11", "12", "13"]
+        pyver: ["10", "11", "12", "13", "14"]
 
     steps:
     - name: Checkout
@@ -252,6 +242,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: 3.${{ matrix.pyver }}
+        allow-prereleases: true
 
     - name: Download Artifact
       uses: actions/download-artifact@v4
@@ -278,7 +269,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["9", "10", "11", "12", "13"]
+        pyver: ["10", "11", "12", "13", "14"]
 
     steps:
     - name: Checkout
@@ -288,6 +279,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: 3.${{ matrix.pyver }}
+        allow-prereleases: true
 
     - name: Build Wheel
       run: |
@@ -329,7 +321,9 @@ jobs:
         token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
 
     - name: Read dry-run input
-      run: echo "DRY_RUN=${{ github.event.inputs['dry-run'] }}" >> $GITHUB_ENV
+      run: |
+        echo "DRY_RUN=${{ github.event.inputs['dry-run'] }}" >> $GITHUB_ENV
+        echo "${{ github.event.inputs['dry-run'] }}"
 
     - name: Download Artifacts
       uses: actions/download-artifact@v4
@@ -354,6 +348,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.x'
+        allow-prereleases: true
 
     - name: Dry Run - Skip release steps
       if: env.DRY_RUN == 'true'
@@ -374,7 +369,7 @@ jobs:
 
     # Create and push git tag
     - name: Create and push git tag
-      if: env.DRY_RUN != 'true'
+      if: env.DRY_RUN == 'false'
       env:
         TAG_VERSION: ${{ env.VERSION }}
       run: |
@@ -384,7 +379,7 @@ jobs:
         git push origin $TAG_VERSION
 
     - name: Create GitHub Release and upload artifacts
-      if: env.DRY_RUN != 'true'
+      if: env.DRY_RUN == 'false'
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ env.VERSION }}
@@ -395,7 +390,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.ACTION_GITHUB_TOKEN }}
 
     - name: Publish to PyPI
-      if: env.DRY_RUN != 'true'
+      if: env.DRY_RUN == 'false'
       run: |
         twine upload ./artifacts/*
       env:

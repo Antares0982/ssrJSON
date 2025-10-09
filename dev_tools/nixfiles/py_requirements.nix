@@ -10,25 +10,17 @@ let
 in
 with pypkgs;
 [
-  build
-  objgraph
-  psutil
-  pytz
+
   pytest
   pytest-random-order
+  pytest-xdist
 ]
+++ (lib.optionals (pkgs.system == "x86_64-linux") [ pypkgs.psutil ])
 ++ (
-  with pypkgs; # needed by tests, but cannot be built in python3.14
-  (lib.optionals (minorVer < 14) [
-    arrow
-    orjson
-    pip
-    pytest-xdist
-  ])
-)
-++ (
-  with pypkgs;
+  with pypkgs; # needed by developers
   lib.optionals (minorVer == pythonVerConfig.curVer) [
     ssrjson-benchmark
+    orjson
+    objgraph
   ]
 )

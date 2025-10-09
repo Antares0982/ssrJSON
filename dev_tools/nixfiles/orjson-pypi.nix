@@ -1,4 +1,5 @@
-# Use builds of orjson from PyPI to replace which in Nixpkgs
+# Use builds of orjson from PyPI to replace which in Nixpkgs.
+# The PyPI version does not allow debugging.
 {
   pypkgs,
   pkgs,
@@ -20,6 +21,13 @@ let
           hash = "sha256-uCLK9bl1K8byRusIEkw9Er8hdbZqt0usLvO7+SIc4bI=";
         };
       };
+      "3.14" = {
+        "3.11.3" = {
+          urlpart = "3b/94/11137c9b6adb3779f1b34fd98be51608a14b430dbc02c6d41134fbba484c";
+          manyLinux = "manylinux_2_34_x86_64";
+          hash = "sha256-1hzVQ9aXFdX8CmkMfG+NzDB7wjq++XOJV5gYhfXzgik=";
+        };
+      };
     };
     "aarch64-linux" = {
       "3.13" = {
@@ -27,6 +35,13 @@ let
           urlpart = "a4/b8/2d9eb181a9b6bb71463a78882bcac1027fd29cf62c38a40cc02fc11d3495";
           manyLinux = "manylinux_2_17_aarch64.manylinux2014_aarch64";
           hash = "sha256-Ydza0W2lu0htciejei54nEKTl3k6aVUifO29clLrWic=";
+        };
+      };
+      "3.14" = {
+        "3.11.3" = {
+          urlpart = "67/46/1e2588700d354aacdf9e12cc2d98131fb8ac6f31ca65997bef3863edb8ff";
+          manyLinux = "manylinux_2_34_aarch64";
+          hash = "sha256-iNz8UUz9Gw3gOEQ8ez5ql5f/sbNnTvH9FPcBoTOX+C0=";
         };
       };
     };

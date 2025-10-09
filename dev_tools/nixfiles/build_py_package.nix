@@ -15,7 +15,7 @@ buildPythonPackage rec {
   pname = "ssrjson";
   version = builtins.readFile ../../version_file;
   format = "wheel";
-  disabled = pypkgs.pythonOlder "3.8";
+  disabled = pypkgs.pythonOlder "3.10";
   src = wheel;
   preUnpack = ''
     src=${wheel}/$(ls ${wheel})

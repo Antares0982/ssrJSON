@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: ["9", "10", "11", "12", "13", "14", "15"]
+        pyver: ["10", "11", "12", "13", "14", "15"]
     steps:
     - name: Checkout
       uses: actions/checkout@main

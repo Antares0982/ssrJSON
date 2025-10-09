@@ -18,7 +18,7 @@ pypkgs.buildPythonPackage rec {
   version = "0.0.4";
   pyproject = true;
 
-  disabled = pypkgs.pythonOlder "3.8";
+  disabled = pypkgs.pythonOlder "3.10";
 
   # src = pkgs.fetchFromGitHub {
   #   owner = "Nambers";
@@ -38,14 +38,16 @@ pypkgs.buildPythonPackage rec {
     cmake
   ];
 
-  dependencies = with pypkgs; [
-    matplotlib
-    orjson
-    psutil
-    reportlab
-    svglib
-    ujson
-  ];
+  dependencies =
+    with pypkgs;
+    [
+      matplotlib
+      orjson
+      reportlab
+      svglib
+      ujson
+    ]
+    ++ (lib.optionals (pkgs.system == "x86_64-linux") [ pypkgs.psutil ]);
 
   configurePhase = ":";
 

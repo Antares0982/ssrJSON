@@ -16,9 +16,20 @@ let
       forNonNix
       ;
   };
+  # workaround until `nix build .#ssrjson-wheel-py314` works normally
+  auditwheelSkipTest =
+    pypkgs:
+    pypkgs.auditwheel.overrideAttrs {
+      pytestCheckPhase = ":";
+    };
   pyenv = python.withPackages (
     pypkgs: with pypkgs; [
-      auditwheel
+      (
+        if (pkgs.lib.strings.toInt python.sourceVersion.minor) < 14 then
+          auditwheel
+        else
+          (auditwheelSkipTest pypkgs)
+      )
       build
       setuptools
       wheel

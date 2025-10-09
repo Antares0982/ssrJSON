@@ -129,7 +129,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--build-type", help="CMake Build type", default="Debug")
-    parser.add_argument("--pyver", help="Specify Python version, default to 13", default="13")
+    parser.add_argument("--pyver", help="Specify Python version, default to 14", default="14")
     parser.add_argument("--all-ver", help="Test with all versions", action="store_true")
     parser.add_argument("--build-only", help="Build without running tests", action="store_true")
     parser.add_argument("--asan", help="Run asan check", action="store_true")

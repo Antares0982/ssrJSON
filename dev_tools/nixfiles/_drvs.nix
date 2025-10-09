@@ -41,6 +41,7 @@ let
   using_pythons_map =
     { py, curPkgs, ... }:
     let
+      verInt = lib.strings.toInt py.sourceVersion.minor;
       startsWith =
         prefix: str:
         let
@@ -53,43 +54,14 @@ let
       x = (
         py.override {
           self = x;
-          packageOverrides = (
-            self: super:
-            {
-              orjson =
-                if !(startsWith ("3." + (builtins.toString curVer)) py.pythonVersion) then
-                  (curPkgs.callPackage ./orjson_fixed.nix {
-                    pypkgs = self;
-                    inherit pkgs-legacy;
-                    isDebug = false;
-                  })
-                else
-                  (curPkgs.callPackage ./orjson-pypi.nix { pypkgs = self; });
-
-              ssrjson-benchmark = curPkgs.callPackage ./ssrjson_benchmark.nix {
-                pypkgs = self;
-                inherit pkgs-legacy;
-              };
-            }
-            // (curPkgs.lib.optionalAttrs (startsWith "3.14" py.pythonVersion) {
-              pytest-random-order =
-                (super.pytest-random-order.override {
-                  pytest-xdist = null;
-                }).overrideAttrs
-                  {
-                    pytestCheckPhase = ":";
-                  };
-            })
-            // (curPkgs.lib.optionalAttrs (startsWith "3.15" py.pythonVersion) {
-              pytest-random-order =
-                (super.pytest-random-order.override {
-                  pytest-xdist = null;
-                }).overrideAttrs
-                  {
-                    pytestCheckPhase = ":";
-                  };
-            })
-          );
+          packageOverrides = curPkgs.callPackage ./py_overrides.nix {
+            inherit
+              verInt
+              curVer
+              curPkgs
+              pkgs-legacy
+              ;
+          };
         }
       );
     in
