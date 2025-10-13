@@ -45,13 +45,9 @@ else:
             subprocess.run(cmd, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as e:
             print(f"command failed: `{' '.join(cmd)}`")
-            if e.stdout:
-                print(f"stdout: {e.stdout}")
-            print(f"stderr: {e.stderr}")
             raise
         except Exception as e:
             print(f"command failed: `{' '.join(cmd)}`")
-            print(f"error: {e}")
             raise
 
     class CMakeBuild(build_ext):
