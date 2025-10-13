@@ -124,7 +124,7 @@
           verToPyPackageDef = ver: {
             name = "ssrjson-pypackage-py3" + (builtins.toString ver);
             value = pkgs.callPackage ./dev_tools/nixfiles/build_py_package.nix rec {
-              pypkgs = builtins.getAttr ("python3" + (toString pythonVerConfig.curVer) + "Packages") pkgs;
+              pypkgs = builtins.getAttr ("python3" + (toString ver) + "Packages") pkgs;
               buildPythonPackage = pypkgs.buildPythonPackage;
             };
           };

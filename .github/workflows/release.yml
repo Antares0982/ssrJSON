@@ -340,7 +340,7 @@ jobs:
     - name: Read version from file
       id: get_version
       run: |
-        VERSION=$(cat version_file)
+        VERSION=$(grep 'version =' pyproject.toml | grep -oP '"\K[^"]+')
         echo "Version is $VERSION"
         echo "VERSION=$VERSION" >> $GITHUB_ENV
 

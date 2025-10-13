@@ -8,9 +8,19 @@ from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 use_nix_prebuilt = bool(os.environ.get("SSRJSON_USE_NIX_PREBUILT"))
 
 
-with open("./version_file", "r", encoding="utf-8") as f:
-    version_string = f.read().strip()
+def get_version_from_pyproject_toml():
+    with open("./pyproject.toml", "r", encoding="utf-8") as f:
+        content = f.read()
+    prefix = 'version = "'
+    for line in content.splitlines():
+        if line.startswith(prefix):
+            version_line = line[len(prefix) :]
+            version_string = version_line[: version_line.find('"')]
+            return version_string
+    raise RuntimeError("Invalid pyproject.toml, expected version into inside")
 
+
+VERSION_STRING = get_version_from_pyproject_toml()
 
 if use_nix_prebuilt:
 
@@ -25,7 +35,7 @@ if use_nix_prebuilt:
 
     setup(
         name="ssrjson",
-        version=version_string,
+        version=VERSION_STRING,
         packages=["ssrjson"],
         ext_modules=[
             Extension(
@@ -52,7 +62,7 @@ else:
                     "-T",
                     "ClangCL",
                     "-DCMAKE_BUILD_TYPE=Release",
-                    f"-DPREDEFINED_VERSION={version_string}",
+                    f"-DPREDEFINED_VERSION={VERSION_STRING}",
                     "-DBUILD_TEST=OFF",
                     ".",
                     "-B",
@@ -64,7 +74,7 @@ else:
                     "-DCMAKE_C_COMPILER=clang",
                     "-DCMAKE_CXX_COMPILER=clang++",
                     "-DCMAKE_BUILD_TYPE=Release",
-                    f"-DPREDEFINED_VERSION={version_string}",
+                    f"-DPREDEFINED_VERSION={VERSION_STRING}",
                     "-DBUILD_TEST=OFF",
                     ".",
                     "-B",
@@ -100,7 +110,7 @@ else:
 
     setup(
         name="ssrjson",
-        version=version_string,
+        version=VERSION_STRING,
         packages=["ssrjson"],
         ext_modules=[
             Extension(

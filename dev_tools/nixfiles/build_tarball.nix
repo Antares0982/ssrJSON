@@ -2,6 +2,7 @@
   clangStdenv,
   python,
   cmake,
+  callPackage,
   ...
 }:
 let
@@ -12,10 +13,11 @@ let
       wheel
     ]
   );
+  ssrJSONVersion = callPackage ./ssrjson_version.nix { };
 in
 clangStdenv.mkDerivation {
   pname = "ssrjson-tarball";
-  version = builtins.readFile ../../version_file;
+  version = ssrJSONVersion;
   src = ./.;
   unpackPhase = ''
     cp -r ${./../..}/* .

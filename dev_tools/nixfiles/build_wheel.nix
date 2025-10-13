@@ -43,10 +43,11 @@ let
   auditWheelPlat = auditWheelPlats.${system};
   abiflags = import ./wheel-abiflags.nix;
   abiflag = abiflags.${system};
+  ssrJSONVersion = pkgs.callPackage ./ssrjson_version.nix { };
 in
 clangStdenv.mkDerivation {
   pname = "ssrjson-wheel";
-  version = builtins.readFile ../../version_file;
+  version = ssrJSONVersion;
   src = ./.;
   unpackPhase = ''
     cp -r ${./../..}/* .

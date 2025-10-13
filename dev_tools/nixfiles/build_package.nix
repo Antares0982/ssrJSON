@@ -6,15 +6,17 @@
   lib,
   pax-utils,
   system,
+  callPackage,
   ...
 }:
 let
   abiflags = import ./wheel-abiflags.nix;
   abiflag = abiflags.${system};
+  ssrJSONVersion = callPackage ./ssrjson_version.nix { };
 in
 clangStdenv.mkDerivation rec {
   pname = "ssrjson";
-  version = builtins.readFile ../../version_file;
+  version = ssrJSONVersion;
   src = ./.;
   unpackPhase = ''
     cp -r ${./../..}/* .
