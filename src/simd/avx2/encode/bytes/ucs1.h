@@ -52,7 +52,7 @@ force_inline void bytes_write_ucs1_trailing_256(u8 **writer_addr, const u8 *src,
     u8 *writer = *writer_addr;
 restart:;
     vector_a m = high_mask(m0, len);
-    cvt_to_dst_blendhigh(writer + len - READ_BATCH_COUNT, vec, len);
+    avx2_trailing_cvt(src, src_end, writer);
     if (likely(testz(m))) {
         writer += len;
     } else {

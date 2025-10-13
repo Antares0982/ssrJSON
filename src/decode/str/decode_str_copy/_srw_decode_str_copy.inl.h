@@ -74,9 +74,7 @@ force_inline int decode_str_copy_trailing(_dst_t **dst_addr, const _src_t **src_
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 256
-    // write with blend
-    usize trailing_count = src_end - *src_addr;
-    cvt_to_dst_blendhigh((*dst_addr) + trailing_count - READ_BATCH_COUNT, vec, trailing_count);
+    avx2_trailing_cvt(*src_addr, src_end, *dst_addr);
 #else
     cvt_to_dst(*dst_addr, vec);
 #endif

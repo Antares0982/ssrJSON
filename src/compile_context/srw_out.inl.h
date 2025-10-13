@@ -31,7 +31,6 @@
 #undef trailing_copy_with_cvt
 #undef encode_trailing_copy_with_cvt
 #undef cvt_to_dst
-#undef cvt_to_dst_blendhigh
 #undef _addr_cvt
 #undef _addr_cvt4
 #undef encode_unicode_loop

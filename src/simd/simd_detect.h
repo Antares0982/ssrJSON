@@ -56,12 +56,6 @@
 #        define SIMD_256_IU __m256i_u
 #    endif
 #    define SIMD_512 __m512i
-// x86: SSRJSON_HAS_BLENDV
-#    if __SSE4_1__
-#        define SSRJSON_HAS_BLENDV 1
-#    else
-#        define SSRJSON_HAS_BLENDV 0
-#    endif
 // x86: WRITE_SUPPORT_MASK_WRITE
 #    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
 #        define WRITE_SUPPORT_MASK_WRITE 1
@@ -70,7 +64,6 @@
 #    endif
 #elif SSRJSON_AARCH
 #    define SIMD_FEATURE_NAME neon
-#    define SSRJSON_HAS_BLENDV 0
 #    define WRITE_SUPPORT_MASK_WRITE 0
 #    define SUPPORT_SIMD_512BITS 0
 #    define SUPPORT_SIMD_256BITS 0

@@ -102,97 +102,144 @@ force_inline void cvt_to_dst_u32_u16_256(u16 *dst, vector_a_u32_256 y) {
     *(vector_u_u16_128 *)dst = cvt_u32_to_u16_256(y);
 }
 
-// cvt same size (blend high)
-force_inline void cvt_to_dst_blendhigh_u8_u8_256(u8 *dst, vector_a_u8_256 y, usize len) {
-#if __AVX512VL__ && __AVX512DQ__ && __AVX512BW__
-    _mm256_mask_storeu_epi8(dst, get_high_bitmask_256(len), y);
-#else
-    vector_u_u8_256 *uvec = (vector_u_u8_256 *)dst;
-    *uvec = blendv_256(*uvec, y, get_high_mask_u8_256(len));
-#endif
+/*==============================================================================
+ * `avx2_trailing_cvt` Series.
+ * Copy `[src, src_end)` to `dst` with conversion. 
+ * Assuming that 15 bytes before `src` are readable,
+ * and `32 * sizeof(_dst_t) / sizeof(_src_t)`
+ * bytes after `dst` are writable.
+ *============================================================================*/
+
+force_inline void __avx2_trailing_cvt_same_size(const void *__src, const void *__src_end, void *__dst) {
+    const size_t half = 32 / 2;
+    const u8 *const src = SSRJSON_CAST(u8 *, __src);
+    const u8 *t1 = SSRJSON_CAST(u8 *, __src_end) - half;
+    const bool t1_before_src = t1 < src;
+    //
+    vector_a_u8_128 s1, s2;
+    s1 = *(vector_u_u8_128 *)(t1_before_src ? t1 : src);
+    s2 = *(vector_u_u8_128 *)t1;
+    const int shl1 = (src - t1);
+    const int shl2 = (half - (t1 - src));
+    s1 = runtime_byte_rshift_128(s1, (t1_before_src ? shl1 : 0));
+    s2 = runtime_byte_rshift_128(s2, (t1_before_src ? 0 : shl2));
+    //
+    *(SSRJSON_CAST(vector_u_u8_128 *, __dst) + 0) = s1;
+    *(SSRJSON_CAST(vector_u_u8_128 *, __dst) + 1) = s2;
 }
 
-force_inline void cvt_to_dst_blendhigh_u16_u16_256(u16 *dst, vector_a_u16_256 y, usize len) {
-#if __AVX512VL__ && __AVX512DQ__ && __AVX512BW__
-    _mm256_mask_storeu_epi16(dst, (u16)get_high_bitmask_256(len), y);
-#else
-    vector_u_u16_256 *uvec = (vector_u_u16_256 *)dst;
-    *uvec = blendv_256(*uvec, y, get_high_mask_u16_256(len));
-#endif
+force_inline void avx2_trailing_cvt_u8_u8(const u8 *src, const u8 *src_end, u8 *dst) {
+    __avx2_trailing_cvt_same_size(src, src_end, dst);
 }
 
-force_inline void cvt_to_dst_blendhigh_u32_u32_256(u32 *dst, vector_a_u32_256 y, usize len) {
-#if __AVX512VL__ && __AVX512DQ__ && __AVX512BW__
-    _mm256_mask_storeu_epi32(dst, (u8)get_high_bitmask_256(len), y);
-#else
-    vector_u_u32_256 *uvec = (vector_u_u32_256 *)dst;
-    *uvec = blendv_256(*uvec, y, get_high_mask_u32_256(len));
-#endif
+force_inline void avx2_trailing_cvt_u16_u16(const u16 *src, const u16 *src_end, u16 *dst) {
+    __avx2_trailing_cvt_same_size(src, src_end, dst);
 }
 
-// cvt up (blend high)
-
-force_inline void cvt_to_dst_blendhigh_u8_u16_256(u16 *dst, vector_a_u8_256 y, usize len) {
-#if __AVX512VL__ && __AVX512DQ__ && __AVX512BW__
-    vector_a_u16_512 w = cvt_u8_to_u16_512(y);
-    _mm512_mask_storeu_epi16(dst, get_high_bitmask_512(len), w);
-#else
-    vector_a_u8_128 x1, x2;
-    x1 = extract_128_from_256(y, 0);
-    x2 = extract_128_from_256(y, 1);
-    BLEND_HIGH_WRITER_2PARTS(dst, vector_u_u16_256, 256 / 8 / sizeof(u8), len, blendv_256, get_high_mask_u16_256, cvt_u8_to_u16_256(x1), cvt_u8_to_u16_256(x2));
-#endif
+force_inline void avx2_trailing_cvt_u32_u32(const u32 *src, const u32 *src_end, u32 *dst) {
+    __avx2_trailing_cvt_same_size(src, src_end, dst);
 }
 
-force_inline void cvt_to_dst_blendhigh_u8_u32_256(u32 *dst, vector_a_u8_256 y, usize len) {
-    vector_a_u8_128 x1, x2;
-    x1 = extract_128_from_256(y, 0);
-    x2 = extract_128_from_256(y, 1);
-#if __AVX512F__ && __AVX512CD__
-    usize part1, part2;
-    split_tail_len_two_parts(len, 256 / 8 / sizeof(u8), &part1, &part2);
-    _mm512_mask_storeu_epi32(dst + 0, get_high_bitmask_512(part1), cvt_u8_to_u32_512(x1));
-    _mm512_mask_storeu_epi32(dst + 16, get_high_bitmask_512(part2), cvt_u8_to_u32_512(x2));
-#else
-#    define _EXPR0_ cvt_u8_to_u32_256(x1)
-#    define _EXPR1_ cvt_u8_to_u32_256(byte_rshift_128(x1, 8))
-#    define _EXPR2_ cvt_u8_to_u32_256(x2)
-#    define _EXPR3_ cvt_u8_to_u32_256(byte_rshift_128(x2, 8))
-    BLEND_HIGH_WRITER_4PARTS(dst, vector_u_u32_256, 256 / 8 / sizeof(u8), len, blendv_256, get_high_mask_u32_256, _EXPR0_, _EXPR1_, _EXPR2_, _EXPR3_);
-#    undef _EXPR0_
-#    undef _EXPR1_
-#    undef _EXPR2_
-#    undef _EXPR3_
-#endif
+// trailing cvt (up)
+
+force_inline void avx2_trailing_cvt_u8_u16(const u8 *src, const u8 *src_end, u16 *dst) {
+    const size_t half = 32 / 2 / sizeof(u8);
+    const u8 *t1 = src_end - half;
+    const bool t1_before_src = t1 < src;
+    //
+    vector_a_u8_128 s1, s2;
+    s1 = *(vector_u_u8_128 *)(t1_before_src ? t1 : src);
+    s2 = *(vector_u_u8_128 *)t1;
+    //
+    int __shl1 = (src - t1);
+    int __shl2 = (half - (t1 - src));
+    int shl1 = t1_before_src ? __shl1 : 0;
+    int shl2 = t1_before_src ? 0 : __shl2;
+    s1 = runtime_byte_rshift_128(s1, shl1);
+    s2 = runtime_byte_rshift_128(s2, shl2);
+    *(SSRJSON_CAST(vector_u_u16_256 *, dst) + 0) = cvt_u8_to_u16_256(s1);
+    *(SSRJSON_CAST(vector_u_u16_256 *, dst) + 1) = cvt_u8_to_u16_256(s2);
 }
 
-force_inline void cvt_to_dst_blendhigh_u16_u32_256(u32 *dst, vector_a_u16_256 y, usize len) {
-#if __AVX512VL__ && __AVX512DQ__ && __AVX512BW__
-    vector_a_u32_512 w = cvt_u16_to_u32_512(y);
-    _mm512_mask_storeu_epi32(dst, (u16)get_high_bitmask_512(len), w);
-#else
-    vector_a_u16_128 x1, x2;
-    x1 = extract_128_from_256(y, 0);
-    x2 = extract_128_from_256(y, 1);
-    BLEND_HIGH_WRITER_2PARTS(dst, vector_u_u32_256, 256 / 8 / sizeof(u16), len, blendv_256, get_high_mask_u32_256, cvt_u16_to_u32_256(x1), cvt_u16_to_u32_256(x2));
-#endif
+force_inline void avx2_trailing_cvt_u8_u32(const u8 *src, const u8 *src_end, u32 *dst) {
+    const size_t half = 32 / 2 / sizeof(u8);
+    const u8 *t1 = src_end - half;
+    const bool t1_before_src = t1 < src;
+    //
+    vector_a_u8_128 s1, s2;
+    s1 = *(vector_u_u8_128 *)(t1_before_src ? t1 : src);
+    s2 = *(vector_u_u8_128 *)t1;
+    int __shl1 = (src - t1);
+    int __shl2 = (half - (t1 - src));
+    int shl1 = t1_before_src ? __shl1 : 0;
+    int shl2 = t1_before_src ? 0 : __shl2;
+    vector_a_u8_128 x1, x2, x3, x4;
+    x1 = runtime_byte_rshift_128(s1, shl1);
+    x3 = runtime_byte_rshift_128(s2, shl2);
+    x2 = byte_rshift_128(x1, 8);
+    x4 = byte_rshift_128(x3, 8);
+    *(vector_u_u32_256 *)(dst + 0) = cvt_u8_to_u32_256(x1);
+    *(vector_u_u32_256 *)(dst + 16) = cvt_u8_to_u32_256(x3);
+    *(vector_u_u32_256 *)(dst + 8) = cvt_u8_to_u32_256(x2);
+    *(vector_u_u32_256 *)(dst + 24) = cvt_u8_to_u32_256(x4);
 }
 
-// cvt down (blend high)
-force_inline void cvt_to_dst_blendhigh_u16_u8_256(u8 *dst, vector_a_u16_256 y, usize len) {
-    vector_u_u8_128 *uvec = (vector_u_u8_128 *)dst;
-    *uvec = blendv_128(*uvec, cvt_u16_to_u8_256(y), get_high_mask_u8_128(len));
+force_inline void avx2_trailing_cvt_u16_u32(const u16 *src, const u16 *src_end, u32 *dst) {
+    const size_t half = 32 / 2 / sizeof(u16);
+    const u16 *t1 = src_end - half;
+    const bool t1_before_src = t1 < src;
+    //
+    vector_a_u8_128 s1, s2;
+    s1 = *(vector_u_u8_128 *)(t1_before_src ? t1 : src);
+    s2 = *(vector_u_u8_128 *)t1;
+    //
+    int __shl1 = (src - t1) * 2;
+    int __shl2 = (half - (t1 - src)) * 2;
+    int shl1 = t1_before_src ? __shl1 : 0;
+    int shl2 = t1_before_src ? 0 : __shl2;
+    s1 = runtime_byte_rshift_128(s1, shl1);
+    s2 = runtime_byte_rshift_128(s2, shl2);
+    *(SSRJSON_CAST(vector_u_u32_256 *, dst) + 0) = cvt_u16_to_u32_256(s1);
+    *(SSRJSON_CAST(vector_u_u32_256 *, dst) + 1) = cvt_u16_to_u32_256(s2);
 }
 
-force_inline void cvt_to_dst_blendhigh_u32_u8_256(u8 *dst, vector_a_u32_256 y, usize len) {
-    vector_a_u8_64 x = cvt_u32_to_u8_256(y);
-    u64 w, w0;
-    memcpy(&w, &x, sizeof(w));
-    memcpy(&w0, dst, sizeof(w0));
-    u64 mask = (1ULL << ((256 / 8 / sizeof(u32) - len) * 8)) - 1;
-    w0 = w0 & mask;
-    w = w & ~mask;
-    w = w | w0;
-    memcpy(dst, &w, sizeof(w));
+// trailing cvt (down)
+force_inline void avx2_trailing_cvt_u16_u8(const u16 *src, const u16 *src_end, u8 *dst) {
+    const size_t half = 32 / 2 / sizeof(u16);
+    const u16 *t1 = src_end - half;
+    const bool t1_before_src = t1 < src;
+    //
+    vector_a_u8_128 s1, s2;
+    s1 = *(vector_u_u8_128 *)(t1_before_src ? t1 : src);
+    s2 = *(vector_u_u8_128 *)t1;
+    //
+    int __shl1 = (src - t1) * 2;
+    int __shl2 = (half - (t1 - src)) * 2;
+    int shl1 = t1_before_src ? __shl1 : 0;
+    int shl2 = t1_before_src ? 0 : __shl2;
+    s1 = runtime_byte_rshift_128(s1, shl1);
+    s2 = runtime_byte_rshift_128(s2, shl2);
+    *SSRJSON_CAST(vector_u_u8_128 *, dst) = _mm_packus_epi16(s1, s2);
 }
+
+force_inline void avx2_trailing_cvt_u32_u8(const u32 *src, const u32 *src_end, u8 *dst) {
+    const size_t half = 32 / 2 / sizeof(u32);
+    const u32 *t1 = src_end - half;
+    const bool t1_before_src = t1 < src;
+    //
+    vector_a_u8_128 s1, s2;
+    s1 = *(vector_u_u8_128 *)(t1_before_src ? t1 : src);
+    s2 = *(vector_u_u8_128 *)t1;
+    int __shl1 = (src - t1);
+    int __shl2 = (half - (t1 - src));
+    int shl1 = t1_before_src ? __shl1 : 0;
+    int shl2 = t1_before_src ? 0 : __shl2;
+    s1 = _mm_shuffle_epi8(s1, *SSRJSON_CAST(vector_a_u8_128 *, &_AVX2TrailingCvtRShiftMaskTable32to8[shl1][0]));
+    s2 = _mm_shuffle_epi8(s2, *SSRJSON_CAST(vector_a_u8_128 *, &_AVX2TrailingCvtRShiftMaskTable32to8[shl2][0]));
+    // vmovd
+    memcpy(dst, &s1, 4);
+    // vmovd
+    memcpy(dst + 4, &s2, 4);
+}
+
 #endif // SSRJSON_SIMD_AVX2_CVT_H

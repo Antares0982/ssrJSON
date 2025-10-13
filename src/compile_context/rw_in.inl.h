@@ -31,6 +31,8 @@
 // Name creation macro.
 #define MAKE_RW_NAME(_x_) SSRJSON_CONCAT3(_x_, _src_t, _dst_t)
 
+#define avx2_trailing_cvt MAKE_RW_NAME(avx2_trailing_cvt)
+
 #ifdef COMPILE_UCS_LEVEL
 #    define MAKE_UCS_W_NAME(_x_) MAKE_W_NAME(MAKE_UCS_NAME(_x_))
 // some decoder impls

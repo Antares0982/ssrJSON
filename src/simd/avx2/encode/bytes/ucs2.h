@@ -73,9 +73,27 @@ force_inline void ucs2_encode_2bytes_utf8_avx2(u8 *writer, vector_a y) {
     *(vector_u *)writer = __ucs2_encode_2bytes_utf8_avx2_impl(y);
 }
 
-force_inline void ucs2_encode_2bytes_utf8_avx2_blendhigh(u8 *dst, vector_a y, usize len) {
-    vector_u *uvec = (vector_u *)dst;
-    *uvec = blendv_256(*uvec, __ucs2_encode_2bytes_utf8_avx2_impl(y), get_high_mask(len));
+force_inline vector_a __ucs2_encode_bytes_avx2_trailing(const u16 *src, const u16 *src_end) {
+    const size_t half = 32 / 2 / sizeof(u16);
+    const u16 *t1 = src_end - half;
+    const bool t1_before_src = t1 < src;
+    //
+    vector_a_u8_128 s1, s2;
+    s1 = *(vector_u_u8_128 *)(t1_before_src ? t1 : src);
+    s2 = *(vector_u_u8_128 *)t1;
+    //
+    int __shl1 = (src - t1) * 2;
+    int __shl2 = (half - (t1 - src)) * 2;
+    int shl1 = t1_before_src ? __shl1 : 0;
+    int shl2 = t1_before_src ? 0 : __shl2;
+    s1 = runtime_byte_rshift_128(s1, shl1);
+    s2 = runtime_byte_rshift_128(s2, shl2);
+    return _mm256_set_m128i(s2, s1);
+}
+
+force_inline void ucs2_encode_2bytes_utf8_avx2_trailing(const u16 *src, const u16 *src_end, u8 *dst) {
+    vector_a y = __ucs2_encode_bytes_avx2_trailing(src, src_end);
+    *SSRJSON_CAST(vector_u_u16_256 *, dst) = __ucs2_encode_2bytes_utf8_avx2_impl(y);
 }
 
 force_inline void __ucs2_encode_3bytes_utf8_avx2_impl(vector_a y, vector_a_u8_128 *out_x1, vector_a_u8_128 *out_x2, vector_a_u8_128 *out_x3, vector_a_u8_128 *out_x4) {
@@ -190,78 +208,18 @@ force_inline void ucs2_encode_3bytes_utf8_avx2(u8 *writer, vector_a y) {
     memcpy(writer + 40, &x4, 8);
 }
 
-force_inline void ucs2_encode_3bytes_utf8_avx2_blendhigh(u8 *writer, vector_a y, usize len) {
-    assert(len > 0);
-    //
+force_inline void ucs2_encode_3bytes_utf8_avx2_trailing(const u16 *src, const u16 *src_end, u8 *writer) {
+    vector_a y = __ucs2_encode_bytes_avx2_trailing(src, src_end);
     vector_a_u8_128 x1, x2, x3, x4;
     __ucs2_encode_3bytes_utf8_avx2_impl(y, &x1, &x2, &x3, &x4);
-    //
-    usize parts = (len * 3 - 1) / 8;
-    switch (parts) {
-        case 0: {
-            // len is 1 or 2
-            assert(len == 1 || len == 2);
-
-            union {
-                u8 _xbuf[16];
-                vector_a_u8_128 _x;
-            } tmp;
-
-            tmp._x = x4;
-            if (len & 1) {
-                // len == 1
-                memcpy(writer + 40 + 5, tmp._xbuf + 5, 3);
-            } else {
-                memcpy(writer + 40 + 2, tmp._xbuf + 2, 6);
-            }
-            break;
-        }
-        case 1:
-        case 2: {
-            // len in [3, 9)
-            memcpy(writer + 40, &x4, 8);
-            //
-            usize high_blend_bytes = len * 3 - 8;
-            vector_u_u8_128 *uvec = (vector_u_u8_128 *)(writer + 24);
-            *uvec = blendv_128(*uvec, x3, get_high_mask_u8_128(high_blend_bytes));
-            break;
-        }
-        case 3: {
-            // len is 9 or 10
-            assert(len == 9 || len == 10);
-            memcpy(writer + 40, &x4, 8);
-            *(vector_u_u8_128 *)(writer + 24) = x3;
-
-            // high_blend_bytes is 3 or 6
-            union {
-                u8 _xbuf[16];
-                vector_a_u8_128 _x;
-            } tmp;
-
-            tmp._x = x2;
-            if (len & 1) {
-                // len == 1
-                memcpy(writer + 16 + 5, tmp._xbuf + 5, 3);
-            } else {
-                memcpy(writer + 16 + 2, tmp._xbuf + 2, 6);
-            }
-            break;
-        }
-        case 4:
-        case 5: {
-            memcpy(writer + 40, &x4, 8);
-            *(vector_u_u8_128 *)(writer + 24) = x3;
-            memcpy(writer + 16, &x2, 8);
-            //
-            usize high_blend_bytes = len * 3 - 32;
-            vector_u_u8_128 *uvec = (vector_u_u8_128 *)(writer + 0);
-            *uvec = blendv_128(*uvec, x1, get_high_mask_u8_128(high_blend_bytes));
-            break;
-        }
-        default: {
-            SSRJSON_UNREACHABLE();
-        }
-    }
+    // [0, 16)
+    *(vector_u_u8_128 *)(writer + 0) = x1;
+    // [16, 24) optimized to vpshufd + vmovq
+    memcpy(writer + 16, &x2, 8);
+    // [24, 40)
+    *(vector_u_u8_128 *)(writer + 24) = x3;
+    // [40, 48) optimized to vpshufd + vmovq
+    memcpy(writer + 40, &x4, 8);
 }
 
 /* 
@@ -314,7 +272,7 @@ ascii:;
     {
         const vector_a m_not_ascii = (vec == broadcast(_Quote)) | (vec == broadcast(_Slash)) | signed_cmpgt(broadcast(ControlMax), vec) | signed_cmpgt(vec, broadcast(0x7f));
         vector_a m = high_mask(m_not_ascii, len);
-        cvt_to_dst_blendhigh(writer + len - READ_BATCH_COUNT, vec, len);
+        avx2_trailing_cvt(src, src_end, writer);
         if (likely(testz(m))) {
             writer += len;
             goto finished;
@@ -340,7 +298,7 @@ _2bytes:;
     {
         const vector_a m_not_2bytes = signed_cmpgt(broadcast(0x80), vec) | signed_cmpgt(vec, broadcast(0x7ff));
         vector_a m = high_mask(m_not_2bytes, len);
-        ucs2_encode_2bytes_utf8_avx2_blendhigh(writer + len * 2 - READ_BATCH_COUNT * 2, vec, len);
+        ucs2_encode_2bytes_utf8_avx2_trailing(src, src_end, writer);
         if (likely(testz(m))) {
             writer += len * 2;
             goto finished;
@@ -366,7 +324,7 @@ _3bytes:;
     {
         const vector_a m_not_3bytes = unsigned_saturate_minus(broadcast(0x800), vec) | (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec));
         vector_a m = high_mask(m_not_3bytes, len);
-        ucs2_encode_3bytes_utf8_avx2_blendhigh(writer + len * 3 - READ_BATCH_COUNT * 3, vec, len);
+        ucs2_encode_3bytes_utf8_avx2_trailing(src, src_end, writer);
         if (likely(testz(m))) {
             writer += len * 3;
             goto finished;

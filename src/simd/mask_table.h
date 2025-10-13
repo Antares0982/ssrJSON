@@ -28,8 +28,8 @@
 
 extern ssrjson_align(64) const u8 _TailmaskTable_8[65][64];
 extern ssrjson_align(64) const u8 _HeadmaskTable_8[65][64];
-// extern ssrjson_align(64) const u8 _TailmaskReversedTable_8[65][64];
-extern ssrjson_align(64) const u8 _RShiftMaskTable[16][16];
+extern ssrjson_align(64) const u8 _RShiftMaskTable[17][16];
+extern ssrjson_align(16) const u8 _AVX2TrailingCvtRShiftMaskTable32to8[4][16];
 
 /*==============================================================================
  * Read mask from tail mask table.

@@ -204,9 +204,7 @@ force_inline int decode_str_copy_trailing_ascii_u8(u8 **dst_addr, const _src_t *
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 256
-    // write with blend
-    usize trailing_count = src_end - *src_addr;
-    cvt_to_dst_blendhigh_u8_u8_256((*dst_addr) + trailing_count - READ_BATCH_COUNT, vec, trailing_count);
+    avx2_trailing_cvt_u8_u8(*src_addr, src_end, *dst_addr);
 #else
     *(vector_u *)(*dst_addr) = vec;
 #endif
@@ -225,9 +223,7 @@ force_inline int decode_str_copy_trailing_ascii_u16(u16 **dst_addr, const _src_t
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 256
-    // write with blend
-    usize trailing_count = src_end - *src_addr;
-    cvt_to_dst_blendhigh_u8_u16_256((*dst_addr) + trailing_count - READ_BATCH_COUNT, vec, trailing_count);
+    avx2_trailing_cvt_u8_u16(*src_addr, src_end, *dst_addr);
 #else
     MAKE_S_NAME(cvt_to_dst_u8_u16)(*dst_addr, vec);
 #endif
@@ -248,9 +244,7 @@ force_inline int decode_str_copy_trailing_ascii_u32(u32 **dst_addr,
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 256
-    // write with blend
-    usize trailing_count = src_end - *src_addr;
-    cvt_to_dst_blendhigh_u8_u32_256((*dst_addr) + trailing_count - READ_BATCH_COUNT, vec, trailing_count);
+    avx2_trailing_cvt_u8_u32(*src_addr, src_end, *dst_addr);
 #else
     MAKE_S_NAME(cvt_to_dst_u8_u32)(*dst_addr, vec);
 #endif

@@ -26,10 +26,9 @@
 #        include "simd/union_vector.h"
 //
 #        define COMPILE_READ_UCS_LEVEL 1
-#        define COMPILE_SIMD_BITS 128
-// #        include "simd/compile_feature_check.h"
+#        include "simd/compile_feature_check.h"
 //
-#        include "decoder_impl/_sr_impls.inl.h"
+#        include "_sr_impls.inl.h"
 #    endif
 #endif
 
@@ -194,9 +193,9 @@ force_inline usize _decode_str_trailing_decoder_impl(
         vector_a src_vec,
         EscapeInfo *escapeval_addr) {
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 256
-#    define BLEND 1
+#    define BACK_LOAD 1
 #else
-#    define BLEND 0
+#    define BACK_LOAD 0
 #endif
     usize done_count;
     const _src_t *src = *src_addr;
@@ -212,7 +211,7 @@ force_inline usize _decode_str_trailing_decoder_impl(
         if (track_max) { // compile time determined
             *track_max = unsigned_max(*track_max, low_mask(src_vec, done_count));
         }
-        if (BLEND) { // compile time determined
+        if (BACK_LOAD) { // compile time determined
             done_count -= READ_BATCH_COUNT - trailing_len;
         }
         src += done_count;
@@ -236,7 +235,7 @@ force_inline usize _decode_str_trailing_decoder_impl(
     }
     *src_addr = src;
     return done_count;
-#undef BLEND
+#undef BACK_LOAD
 }
 
 #include "compile_context/sr_out.inl.h"

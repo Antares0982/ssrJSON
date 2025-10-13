@@ -739,52 +739,6 @@ force_inline usize get_tail_len_parts_by_index(usize tail_len, usize batch_count
     return ret;
 }
 
-#define BLEND_HIGH_WRITER_2PARTS(_dst_, _u_vec_t_, _batch_size_, _len_, _blendv_func_, _get_high_mask_func_, _expr0_, _expr1_)             \
-    _u_vec_t_ *uvec = SSRJSON_CAST(_u_vec_t_ *, _dst_);                                                                                    \
-    assert(_len_ > 0);                                                                                                                     \
-    usize batch_half = (_batch_size_) / 2;                                                                                                 \
-    usize batch_index = (_len_ - 1) / batch_half;                                                                                          \
-    if (batch_index == 0) {                                                                                                                \
-        *(uvec + 1) = _blendv_func_(*(uvec + 1), (_expr1_), _get_high_mask_func_(get_tail_len_parts_by_index(_len_, _batch_size_, 2, 0))); \
-    } else {                                                                                                                               \
-        assert(batch_index == 1);                                                                                                          \
-        *(uvec + 0) = _blendv_func_(*(uvec + 0), (_expr0_), _get_high_mask_func_(get_tail_len_parts_by_index(_len_, _batch_size_, 2, 1))); \
-        *(uvec + 1) = (_expr1_);                                                                                                           \
-    }
-
-#define BLEND_HIGH_WRITER_4PARTS(_dst_, _u_vec_t_, _batch_size_, _len_, _blendv_func_, _get_high_mask_func_, _expr0_, _expr1_, _expr2_, _expr3_) \
-    _u_vec_t_ *uvec = SSRJSON_CAST(_u_vec_t_ *, _dst_);                                                                                          \
-    assert(_len_ > 0);                                                                                                                           \
-    usize batch_quarter = (_batch_size_) / 4;                                                                                                    \
-    usize batch_index = (_len_ - 1) / batch_quarter;                                                                                             \
-    switch (batch_index) {                                                                                                                       \
-        case 0: {                                                                                                                                \
-            *(uvec + 3) = _blendv_func_(*(uvec + 3), (_expr3_), _get_high_mask_func_(get_tail_len_parts_by_index(_len_, _batch_size_, 4, 0)));   \
-            break;                                                                                                                               \
-        }                                                                                                                                        \
-        case 1: {                                                                                                                                \
-            *(uvec + 2) = _blendv_func_(*(uvec + 2), (_expr2_), _get_high_mask_func_(get_tail_len_parts_by_index(_len_, _batch_size_, 4, 1)));   \
-            *(uvec + 3) = (_expr3_);                                                                                                             \
-            break;                                                                                                                               \
-        }                                                                                                                                        \
-        case 2: {                                                                                                                                \
-            *(uvec + 1) = _blendv_func_(*(uvec + 1), (_expr1_), _get_high_mask_func_(get_tail_len_parts_by_index(_len_, _batch_size_, 4, 2)));   \
-            *(uvec + 2) = (_expr2_);                                                                                                             \
-            *(uvec + 3) = (_expr3_);                                                                                                             \
-            break;                                                                                                                               \
-        }                                                                                                                                        \
-        case 3: {                                                                                                                                \
-            *(uvec + 0) = _blendv_func_(*(uvec + 0), (_expr0_), _get_high_mask_func_(get_tail_len_parts_by_index(_len_, _batch_size_, 4, 3)));   \
-            *(uvec + 1) = (_expr1_);                                                                                                             \
-            *(uvec + 2) = (_expr2_);                                                                                                             \
-            *(uvec + 3) = (_expr3_);                                                                                                             \
-            break;                                                                                                                               \
-        }                                                                                                                                        \
-        default: {                                                                                                                               \
-            SSRJSON_UNREACHABLE();                                                                                                               \
-        }                                                                                                                                        \
-    }
-
 /* typedefs */
 typedef struct {
     PyObject *key;

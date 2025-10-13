@@ -27,6 +27,8 @@
 //
 #undef MAKE_RW_NAME
 //
+#undef avx2_trailing_cvt
+//
 #undef MAKE_UCS_W_NAME
 //
 #undef decode_str_copy_loop4

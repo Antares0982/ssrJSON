@@ -32,12 +32,6 @@
 
 #define extract_128_from_256 _mm256_extracti128_si256
 #define shuffle_256 _mm256_shuffle_epi8
-/*
- * Blend two vector. 
- * In each 8-bit element, if the highest bit of mask is 1, 
- * copy the corresponding value from y2, otherwise y1.
- */
-#define blendv_256 _mm256_blendv_epi8
 
 #define cmpeq_u8_256 _mm256_cmpeq_epi8
 #define cmpeq_u16_256 _mm256_cmpeq_epi16
