@@ -49,6 +49,16 @@ if use_nix_prebuilt:
 else:
     import shutil
     import subprocess
+    
+    def run_check(cmd):
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            print(f"command failed: `{' '.join(cmd)}`")
+            raise
+        except Exception as e:
+            print(f"command failed: `{' '.join(cmd)}`")
+            raise
 
     class CMakeBuild(build_ext):
         def run(self):
@@ -80,14 +90,15 @@ else:
                     "-B",
                     "build",
                 ]
-            subprocess.check_call(cmake_cmd)
+            run_check(cmake_cmd)
             # Build
             if os.name == "nt":
                 build_cmd = ["cmake", "--build", "build", "--config", "Release"]
             else:
-                nproc = subprocess.check_output("nproc").strip()
-                build_cmd = ["cmake", "--build", "build", "--", "-j", nproc]
-            subprocess.check_call(build_cmd)
+                # nproc = subprocess.check_output("nproc").strip()
+                # use `-j` default job count
+                build_cmd = ["cmake", "--build", "build", "-j"]
+            run_check(build_cmd)
             # Copy file
             if os.name == "nt":
                 built_filename = "Release/ssrjson.dll"
