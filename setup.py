@@ -1,4 +1,5 @@
 import os
+import sys
 
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
@@ -49,15 +50,15 @@ if use_nix_prebuilt:
 else:
     import shutil
     import subprocess
-    
+
     def run_check(cmd):
         try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
-        except subprocess.CalledProcessError as e:
-            print(f"command failed: `{' '.join(cmd)}`")
+            subprocess.run(cmd, check=True)
+        except subprocess.CalledProcessError:
+            print(f"command failed: {cmd}", file=sys.stderr)
             raise
-        except Exception as e:
-            print(f"command failed: `{' '.join(cmd)}`")
+        except Exception:
+            print(f"command failed: {cmd}", file=sys.stderr)
             raise
 
     class CMakeBuild(build_ext):
@@ -95,7 +96,6 @@ else:
             if os.name == "nt":
                 build_cmd = ["cmake", "--build", "build", "--config", "Release"]
             else:
-                # nproc = subprocess.check_output("nproc").strip()
                 # use `-j` default job count
                 build_cmd = ["cmake", "--build", "build", "-j"]
             run_check(build_cmd)
