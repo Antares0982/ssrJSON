@@ -287,16 +287,14 @@ typedef struct EncodeUnicodeBufferInfo {
     void *end;
 } EncodeUnicodeBufferInfo;
 
-typedef union {
-    u8 *writer_u8;
-    u16 *writer_u16;
-    u32 *writer_u32;
-    void *writer_void;
-} EncodeUnicodeWriter;
+typedef void *EncodeUnicodeWriter;
 
-#define U8_WRITER(_writer_addr_) ((_writer_addr_)->writer_u8)
-#define U16_WRITER(_writer_addr_) ((_writer_addr_)->writer_u16)
-#define U32_WRITER(_writer_addr_) ((_writer_addr_)->writer_u32)
+#define WRITER_AS_U8(_writer_) (*SSRJSON_CAST(u8 **, &(_writer_)))
+#define WRITER_AS_U16(_writer_) (*SSRJSON_CAST(u16 **, &(_writer_)))
+#define WRITER_AS_U32(_writer_) (*SSRJSON_CAST(u32 **, &(_writer_)))
+#define WRITER_ADDR_AS_U8(_writer_addr_) (*SSRJSON_CAST(u8 **, (_writer_addr_)))
+#define WRITER_ADDR_AS_U16(_writer_addr_) (*SSRJSON_CAST(u16 **, (_writer_addr_)))
+#define WRITER_ADDR_AS_U32(_writer_addr_) (*SSRJSON_CAST(u32 **, (_writer_addr_)))
 
 #define GET_VEC_ASCII_START(_unicode_buffer_info_) (SSRJSON_CAST(PyASCIIObject *, (_unicode_buffer_info_)->head) + 1)
 #define GET_VEC_COMPACT_START(_unicode_buffer_info_) (SSRJSON_CAST(PyCompactUnicodeObject *, (_unicode_buffer_info_)->head) + 1)
@@ -514,26 +512,19 @@ force_inline u8 *write_u64(u64 val, u8 *buf) {
 }
 
 force_inline Py_ssize_t get_unicode_buffer_final_len_ascii(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-#if COMPILE_UCS_LEVEL == 0
-    return writer.writer_u8 - (u8 *)GET_VEC_ASCII_START(unicode_buffer_info);
-#elif COMPILE_UCS_LEVEL == 1
-#elif COMPILE_UCS_LEVEL == 2
-    return unicode_buffer_info->writer.writer_u16 - (u16 *)GET_VEC_COMPACT_START(unicode_buffer_info);
-#elif COMPILE_UCS_LEVEL == 4
-    return unicode_buffer_info->writer.writer_u32 - (u32 *)GET_VEC_COMPACT_START(unicode_buffer_info);
-#endif
+    return WRITER_AS_U8(writer) - (u8 *)GET_VEC_ASCII_START(unicode_buffer_info);
 }
 
 force_inline Py_ssize_t get_unicode_buffer_final_len_ucs1(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return writer.writer_u8 - (u8 *)GET_VEC_COMPACT_START(unicode_buffer_info);
+    return WRITER_AS_U8(writer) - (u8 *)GET_VEC_COMPACT_START(unicode_buffer_info);
 }
 
 force_inline Py_ssize_t get_unicode_buffer_final_len_ucs2(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return writer.writer_u16 - (u16 *)GET_VEC_COMPACT_START(unicode_buffer_info);
+    return WRITER_AS_U16(writer) - (u16 *)GET_VEC_COMPACT_START(unicode_buffer_info);
 }
 
 force_inline Py_ssize_t get_unicode_buffer_final_len_ucs4(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return writer.writer_u32 - (u32 *)GET_VEC_COMPACT_START(unicode_buffer_info);
+    return WRITER_AS_U32(writer) - (u32 *)GET_VEC_COMPACT_START(unicode_buffer_info);
 }
 
 typedef enum EncodeValJumpFlag {
@@ -575,7 +566,7 @@ force_inline bool _init_encode_buffer(EncodeUnicodeWriter *writer_addr, EncodeUn
 #ifndef NDEBUG
         memset(unicode_buffer_info->head, 0, SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
 #endif
-        writer_addr->writer_void = SSRJSON_CAST(u8 *, unicode_buffer_info->head) + u8_start_offset;
+        WRITER_ADDR_AS_U8(writer_addr) = SSRJSON_CAST(u8 *, unicode_buffer_info->head) + u8_start_offset;
         unicode_buffer_info->end = SSRJSON_CAST(u8 *, unicode_buffer_info->head) + SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE;
     } else {
         PyErr_NoMemory();
@@ -588,8 +579,8 @@ force_inline bool init_unicode_buffer(EncodeUnicodeWriter *writer_addr, EncodeUn
     return _init_encode_buffer(writer_addr, unicode_buffer_info, sizeof(PyASCIIObject));
 }
 
-force_inline bool init_bytes_buffer(EncodeUnicodeWriter *writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return _init_encode_buffer(writer_addr, unicode_buffer_info, PYBYTES_START_OFFSET);
+force_inline bool init_bytes_buffer(u8 **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info) {
+    return _init_encode_buffer(SSRJSON_CAST(EncodeUnicodeWriter *, writer_addr), unicode_buffer_info, PYBYTES_START_OFFSET);
 }
 
 force_inline usize get_bytes_buffer_final_len(u8 *writer, void *head) {

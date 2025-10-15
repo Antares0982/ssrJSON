@@ -36,13 +36,13 @@
  */
 #if COMPILE_WRITE_UCS_LEVEL == 4
 #    define WRITE_BIT_SIZE 32
-#    define _WRITER U32_WRITER
+#    define _CAST_WRITER WRITER_ADDR_AS_U32
 #elif COMPILE_WRITE_UCS_LEVEL == 2
 #    define WRITE_BIT_SIZE 16
-#    define _WRITER U16_WRITER
+#    define _CAST_WRITER WRITER_ADDR_AS_U16
 #elif COMPILE_WRITE_UCS_LEVEL == 1
 #    define WRITE_BIT_SIZE 8
-#    define _WRITER U8_WRITER
+#    define _CAST_WRITER WRITER_ADDR_AS_U8
 #else
 #    error "COMPILE_WRITE_UCS_LEVEL must be 1, 2 or 4"
 #endif

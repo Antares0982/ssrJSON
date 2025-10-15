@@ -23,7 +23,7 @@
 #undef SSRJSON_COMPILE_CONTEXT_W
 //
 #undef WRITE_BIT_SIZE
-#undef _WRITER
+#undef _CAST_WRITER
 //
 #undef _dst_t
 //

@@ -63,7 +63,7 @@ force_inline void _ELEVATE_FROM_U8_NUM_BUFFER(_dst_t **writer_addr, const u8 *bu
 force_inline void u64_to_unicode(_dst_t **writer_addr, u64 val, usize sign) {
     assert(sign <= 1);
 #if COMPILE_WRITE_UCS_LEVEL == 1
-    u8 *buffer = *writer_addr; //_WRITER(unicode_buffer_info);
+    u8 *buffer = *writer_addr; //_CAST_WRITER(unicode_buffer_info);
 #else
     u8 _buffer[64];
     u8 *buffer = _buffer;
@@ -86,7 +86,7 @@ force_inline void u64_to_unicode(_dst_t **writer_addr, u64 val, usize sign) {
  */
 force_inline void f64_to_unicode(_dst_t **writer_addr, u64 val_u64_repr) {
 #if COMPILE_WRITE_UCS_LEVEL == 1
-    u8 *buffer = *writer_addr; //_WRITER(unicode_buffer_info);
+    u8 *buffer = *writer_addr; //_CAST_WRITER(unicode_buffer_info);
 #else
     u8 _buffer[32];
     u8 *buffer = _buffer;

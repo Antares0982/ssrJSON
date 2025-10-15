@@ -576,6 +576,7 @@ force_inline bool _3bytes_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_add
     return checked;
 }
 
+/* Return false when src contains invalid character. */
 _IMPL_INLINE_SPECIFIER bool bytes_write_ucs2(u8 **writer_addr, const u16 *src, usize len) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
@@ -925,6 +926,7 @@ force_inline bool _3bytes_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_add
     return checked;
 }
 
+/* Return false when src contains invalid character. */
 _IMPL_INLINE_SPECIFIER bool bytes_write_ucs4(u8 **writer_addr, const u32 *src, usize len) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)

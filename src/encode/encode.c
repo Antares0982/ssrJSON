@@ -94,32 +94,36 @@ force_inline PyObject *ssrjson_dumps_single_unicode(PyObject *unicode, bool to_b
             write_offset = sizeof(PyCompactUnicodeObject);
         }
     }
-    writer.writer_u8 = SSRJSON_CAST(u8 *, _unicode_buffer_info.head) + write_offset;
+    WRITER_AS_U8(writer) = SSRJSON_CAST(u8 *, _unicode_buffer_info.head) + write_offset;
     _unicode_buffer_info.end = SSRJSON_CAST(u8 *, _unicode_buffer_info.head) + SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE;
     //
     bool success;
     if (to_bytes_obj) {
-        success = bytes_buffer_append_str_indent0(unicode, &writer, &_unicode_buffer_info, 0, true);
-        writer.writer_u8--;
+        success = bytes_buffer_append_str_indent0(unicode, &WRITER_AS_U8(writer), &_unicode_buffer_info, 0, true);
+        WRITER_AS_U8(writer)
+        --;
     } else {
         switch (unicode_kind) {
             // pass `is_in_obj = true` to avoid unwanted indent check
             case 1: {
                 const u8 *src = is_ascii ? PYUNICODE_ASCII_START(unicode) : PYUNICODE_UCS1_START(unicode);
-                success = STR_WRITER_NOINDENT_IMPL(u8, u8)(src, len, &writer.writer_u8, &_unicode_buffer_info, 0, true);
-                writer.writer_u8--;
+                success = STR_WRITER_NOINDENT_IMPL(u8, u8)(src, len, &WRITER_AS_U8(writer), &_unicode_buffer_info, 0, true);
+                WRITER_AS_U8(writer)
+                --;
                 break;
             }
             case 2: {
                 const u16 *src = PYUNICODE_UCS2_START(unicode);
-                success = STR_WRITER_NOINDENT_IMPL(u16, u16)(src, len, &writer.writer_u16, &_unicode_buffer_info, 0, true);
-                writer.writer_u16--;
+                success = STR_WRITER_NOINDENT_IMPL(u16, u16)(src, len, &WRITER_AS_U16(writer), &_unicode_buffer_info, 0, true);
+                WRITER_AS_U16(writer)
+                --;
                 break;
             }
             case 4: {
                 const u32 *src = PYUNICODE_UCS4_START(unicode);
-                success = STR_WRITER_NOINDENT_IMPL(u32, u32)(src, len, &writer.writer_u32, &_unicode_buffer_info, 0, true);
-                writer.writer_u32--;
+                success = STR_WRITER_NOINDENT_IMPL(u32, u32)(src, len, &WRITER_AS_U32(writer), &_unicode_buffer_info, 0, true);
+                WRITER_AS_U32(writer)
+                --;
                 break;
             }
             default: {
@@ -132,7 +136,7 @@ force_inline PyObject *ssrjson_dumps_single_unicode(PyObject *unicode, bool to_b
         PyObject_Free(_unicode_buffer_info.head);
         return NULL;
     }
-    usize written_len = (uintptr_t)writer.writer_u8 - (uintptr_t)_unicode_buffer_info.head - write_offset;
+    usize written_len = (uintptr_t)writer - (uintptr_t)_unicode_buffer_info.head - write_offset;
     if (!to_bytes_obj) {
         written_len /= unicode_kind;
     }
