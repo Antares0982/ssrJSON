@@ -34,10 +34,10 @@
 #define maskz_loadu_u8_512 _mm512_maskz_loadu_epi8
 #define maskz_loadu_u16_512 _mm512_maskz_loadu_epi16
 
-#define cmpeq_bitmask_u8_512(_a_, _b_) ((u64)_mm512_cmpeq_epi8_mask((_a_), (_b_)))
-#define cmpeq_bitmask_u16_512(_a_, _b_) ((u32)_mm512_cmpeq_epi16_mask((_a_), (_b_)))
-#define cmpneq_bitmask_u8_512(_a_, _b_) ((u64)_mm512_cmpneq_epi8_mask((_a_), (_b_)))
-#define cmpneq_bitmask_u16_512(_a_, _b_) ((u32)_mm512_cmpneq_epi16_mask((_a_), (_b_)))
+#define cmpeq_bitmask_u8_512(_a_, _b_) ((u64)_mm512_cmpeq_epu8_mask((_a_), (_b_)))
+#define cmpeq_bitmask_u16_512(_a_, _b_) ((u32)_mm512_cmpeq_epu16_mask((_a_), (_b_)))
+#define cmpneq_bitmask_u8_512(_a_, _b_) ((u64)_mm512_cmpneq_epu8_mask((_a_), (_b_)))
+#define cmpneq_bitmask_u16_512(_a_, _b_) ((u32)_mm512_cmpneq_epu16_mask((_a_), (_b_)))
 
 #define unsigned_cmple_bitmask_u8_512(_a_, _b_) ((u64)_mm512_cmple_epu8_mask((_a_), (_b_)))
 #define unsigned_cmple_bitmask_u16_512(_a_, _b_) ((u32)_mm512_cmple_epu16_mask((_a_), (_b_)))
