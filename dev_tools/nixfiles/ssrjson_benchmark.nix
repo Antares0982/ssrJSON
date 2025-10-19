@@ -15,7 +15,7 @@ let
 in
 pypkgs.buildPythonPackage rec {
   pname = "ssrjson_benchmark";
-  version = "0.0.5";
+  version = "0.0.6";
   pyproject = true;
 
   disabled = pypkgs.pythonOlder "3.10";
@@ -23,13 +23,13 @@ pypkgs.buildPythonPackage rec {
   # src = pkgs.fetchFromGitHub {
   #   owner = "Nambers";
   #   repo = "ssrJSON-benchmark";
-  #   rev = "14b7ef1ee694b27af42df76dbfdd7d6c08fbc818";
-  #   sha256 = "sha256-2jsbit0G7UEIUrCEaQbI6O8gURRmX/APmFsWNCjiJQo=";
+  #   rev = "aadba2eaaed1fb53c2330d18b8ee03b715c10214";
+  #   sha256 = "sha256-yRnD88aPiq60z7/DTupk11DBHR11OAHdIspsmxIVgP8=";
   # };
 
   src = fetchPypi {
     inherit pname version;
-    sha256 = "sha256-EdNUXcbZk8P6U15I2vPRzDuzqZVuddKJ3q4oBtglRHo=";
+    sha256 = "sha256-OkZfxvJGVuWE1/GyyAQ6JzyD4EbCHcvFNDEgSyL42T4=";
   };
 
   build-system = with pypkgs; [ setuptools ];
