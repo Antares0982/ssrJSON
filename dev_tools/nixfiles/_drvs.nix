@@ -24,7 +24,7 @@ let
           major = "3";
           minor = "15";
           patch = "0";
-          suffix = "a0";
+          suffix = "a1";
         };
         noldconfigPatch = "${pkgs.path}/pkgs/development/interpreters/python/cpython/3.14/no-ldconfig.patch";
         pkgsBuildHost = newpkgs;
@@ -34,8 +34,8 @@ let
         src = pkgs.fetchFromGitHub {
           owner = "python";
           repo = "cpython";
-          rev = "2a54acf3c3d9f388c3d878a17ea804a801affca9";
-          sha256 = "sha256-ET5cTBbcJk4Nf2vET+kLF3n5wcB6JBa0/UL+nyfoTKk=";
+          rev = "v3.15.0a1";
+          sha256 = "sha256-CdbOeob3ZCIlNVK1gWr1mWeoeOC1iT0bRDC+i1Lt0ys=";
         };
       });
   using_pythons_map =
