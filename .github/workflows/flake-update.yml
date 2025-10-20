@@ -73,3 +73,25 @@ jobs:
         git config --global pull.rebase false
         git pull
         git push
+
+  darwin-check:
+    runs-on: macos-latest
+    needs:
+      - check
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+      with:
+        token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
+    - name: Install nix
+      uses: cachix/install-nix-action@master
+      with:
+        github_access_token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
+    - name: Setup cachix
+      uses: cachix/cachix-action@master
+      with:
+        name: antares0982
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    - name: Test Nix Develop
+      run: |
+        nix develop --command echo DONE
