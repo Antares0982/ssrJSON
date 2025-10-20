@@ -1,40 +1,23 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-import dataclasses
-import datetime
 import gc
-import random
 import sys
-from typing import List
 
 import pytest
 import ssrjson
-
-try:
-    import pytz
-except ImportError:
-    pytz = None  # type: ignore
 
 try:
     import psutil
 except ImportError:
     psutil = None  # type: ignore
 
-try:
-    import numpy
-except ImportError:
-    numpy = None  # type: ignore
-
-try:
-    import pandas
-except ImportError:
-    pandas = None  # type: ignore
 
 def is_libasan_loaded():
     if sys.platform == "win32":
         try:
             import ctypes
             from ctypes import wintypes
+
             # load needed DLL
             psapi = ctypes.WinDLL("Psapi.dll")
             kernel32 = ctypes.WinDLL("kernel32.dll")
@@ -48,10 +31,10 @@ def is_libasan_loaded():
             EnumProcessModules = psapi.EnumProcessModules
             EnumProcessModules.restype = wintypes.BOOL
             EnumProcessModules.argtypes = [
-                wintypes.HANDLE,                  # hProcess
-                ctypes.POINTER(wintypes.HMODULE), # lphModule
-                wintypes.DWORD,                   # cb
-                ctypes.POINTER(wintypes.DWORD)    # lpcbNeeded
+                wintypes.HANDLE,  # hProcess
+                ctypes.POINTER(wintypes.HMODULE),  # lphModule
+                wintypes.DWORD,  # cb
+                ctypes.POINTER(wintypes.DWORD),  # lpcbNeeded
             ]
 
             # setup param and return type for GetModuleFileNameExA
@@ -59,9 +42,9 @@ def is_libasan_loaded():
             GetModuleFileNameExA.restype = wintypes.DWORD
             GetModuleFileNameExA.argtypes = [
                 wintypes.HANDLE,  # hProcess
-                wintypes.HMODULE, # hModule
-                wintypes.LPSTR,   # lpFilename
-                wintypes.DWORD    # nSize
+                wintypes.HMODULE,  # hModule
+                wintypes.LPSTR,  # lpFilename
+                wintypes.DWORD,  # nSize
             ]
 
             # Allocate array for module handles
@@ -83,7 +66,9 @@ def is_libasan_loaded():
                 module_filename = ctypes.create_string_buffer(buffer_len)
                 if GetModuleFileNameExA(hProcess, hModule, module_filename, buffer_len):
                     # Convert to Python string (ignore encoding error)
-                    path_str = module_filename.value.decode('utf-8', errors='ignore').lower()
+                    path_str = module_filename.value.decode(
+                        "utf-8", errors="ignore"
+                    ).lower()
                     if "asan" in path_str:
                         return True
         except Exception:  # pylint: disable=broad-except
@@ -103,35 +88,6 @@ asan_loaded = is_libasan_loaded()
 
 FIXTURE = '{"a":[81891289, 8919812.190129012], "b": false, "c": null, "d": "東京"}'
 
-
-def default(obj):
-    return str(obj)
-
-
-@dataclasses.dataclass
-class Member:
-    id: int
-    active: bool
-
-
-@dataclasses.dataclass
-class Object:
-    id: int
-    updated_at: datetime.datetime
-    name: str
-    members: List[Member]
-
-
-DATACLASS_FIXTURE = [
-    Object(
-        i,
-        datetime.datetime.now(datetime.timezone.utc)
-        + datetime.timedelta(seconds=random.randint(0, 10000)),
-        str(i) * 3,
-        [Member(j, True) for j in range(0, 10)],
-    )
-    for i in range(100000, 101000)
-]
 
 MAX_INCREASE = 1024 * 1024 * 4  # 4MiB.
 
@@ -158,23 +114,6 @@ class TestMemory:
         gc.collect()
         leak = proc.memory_info().rss - mem
         assert leak <= MAX_INCREASE
-
-    # @pytest.mark.skipif(psutil is None, reason="psutil not installed")
-    # def test_memory_loads_memoryview(self):
-    #     """
-    #     loads() memory leak using memoryview
-    #     """
-    #     proc = psutil.Process()
-    #     gc.collect()
-    #     fixture = FIXTURE.encode("utf-8")
-    #     val = ssrjson.loads(fixture)
-    #     assert val
-    #     mem = proc.memory_info().rss
-    #     for _ in range(10000):
-    #         val = ssrjson.loads(memoryview(fixture))
-    #         assert val
-    #     gc.collect()
-    #     assert proc.memory_info().rss - mem <= + MAX_INCREASE
 
     @pytest.mark.skipif(psutil is None, reason="psutil not installed")
     @pytest.mark.skipif(asan_loaded, reason="libasan loaded")
@@ -273,31 +212,6 @@ class TestMemory:
         assert n == i
         assert proc.memory_info().rss - mem <= MAX_INCREASE
         gc.enable()
-
-    # @pytest.mark.skipif(psutil is None, reason="psutil not installed")
-    # def test_memory_dumps_default(self):
-    #     """
-    #     dumps() default memory leak
-    #     """
-    #     proc = psutil.Process()
-    #     gc.collect()
-    #     fixture = ssrjson.loads(FIXTURE)
-
-    #     class Custom:
-    #         def __init__(self, name):
-    #             self.name = name
-
-    #         def __str__(self):
-    #             return f"{self.__class__.__name__}({self.name})"
-
-    #     fixture["custom"] = Custom("ssrjson")
-    #     val = ssrjson.dumps(fixture, default=default)
-    #     mem = proc.memory_info().rss
-    #     for _ in range(10000):
-    #         val = ssrjson.dumps(fixture, default=default)
-    #         assert val
-    #     gc.collect()
-    #     assert proc.memory_info().rss - mem <= MAX_INCREASE
 
     @pytest.mark.skipif(psutil is None, reason="psutil not installed")
     @pytest.mark.skipif(asan_loaded, reason="libasan loaded")

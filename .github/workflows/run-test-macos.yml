@@ -1,4 +1,4 @@
-name: "Run Test On MacOS"
+name: "Run Test (aarch64 MacOS)"
 on:
   workflow_dispatch:
   push:
@@ -38,5 +38,10 @@ jobs:
       - name: Run Tests
         id: tests
         run: |
-          python -m pip install pytest
-          python dev_tools/automated_test.py
+          python -m pip install pytest pytest-xdist pytest-random-order setuptools wheel
+          cp -r pysrc/ ssrjson/
+          python -m pip install . --prefix build-py
+          rm -rf ssrjson/
+          minor=$(python -c "import sys;print(sys.version_info.minor)")
+          export PYTHONPATH="$PWD/build-py/lib/python3.$minor/site-packages:$PYTHONPATH"
+          python -m pytest --random-order python-test

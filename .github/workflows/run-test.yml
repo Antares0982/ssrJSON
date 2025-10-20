@@ -1,4 +1,4 @@
-name: "Run Test"
+name: "Run Test (x86_64 Linux, SDE, with Nix)"
 on:
   workflow_dispatch:
   push:

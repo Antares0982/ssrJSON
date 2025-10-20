@@ -1,4 +1,4 @@
-name: clang-format Check
+name: Clang-format Check
 on:
   workflow_dispatch:
   push:

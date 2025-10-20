@@ -45,6 +45,15 @@ let
         };
       };
     };
+    "aarch64-darwin" = {
+      "3.14" = {
+        "3.11.3" = {
+          urlpart = "e4/6d/468d21d49bb12f900052edcfbf52c292022d0a323d7828dc6376e6319703";
+          manyLinux = "macosx_15_0_arm64";
+          hash = "sha256-vIvIW4G2rJ/E2uOTqMFZuBf0wsne5dErdzvds7lfwH4=";
+        };
+      };
+    };
   };
   orjsonPypiSource =
     let

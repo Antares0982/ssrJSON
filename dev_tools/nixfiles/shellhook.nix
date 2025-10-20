@@ -61,7 +61,7 @@ in
   if [ "$IN_FLAKE" = "true" ] && [ ! -f "flake.nix" ]; then
     echo "Not creating pyenv because not in the root directory"
   else
-    ${pkgs.nix}/bin/nix-store --add-root ${nix_pyenv_directory} --realise ${nixPyEnv}
+    ${pkgs.nix}/bin/nix-store --add-root ${nix_pyenv_directory} --realise ${nixPyEnv} &>/dev/null
   fi
 
   export PATH=${nixPyEnv}/bin:$PATH

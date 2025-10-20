@@ -47,4 +47,7 @@
     "numpy"
     "virtualenv"
   ]))
+  // (lib.optionalAttrs (verInt >= 14 && system == "aarch64-darwin") (noCheckPackages [
+    "mypy"
+  ]))
 )

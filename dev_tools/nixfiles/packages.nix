@@ -12,18 +12,24 @@ let
   drvs = (pkgs.callPackage ./_drvs.nix { inherit pkgs-legacy; });
   pyenv = builtins.elemAt drvs.pyenvs (curVer - leastVer);
 in
-# this defines the order in PATH.
-# make sure pyenv selected by curVer is the first one
 [ pyenv ]
+++ drvs.pyenvs
 ++ (with drvs; [
-  bloaty
   cmake
   gdb
-  pax-utils
-  triton-llvm
-  valgrind
 ])
-++ drvs.pyenvs
-++ lib.optionals (pkgs.system == "x86_64-linux") [
-  drvs.sde
-]
+++ lib.optionals (pkgs.system == "x86_64-linux") (
+  with drvs;
+  [
+    sde
+  ]
+)
+++ lib.optionals (pkgs.system != "aarch64-darwin") (
+  with drvs;
+  [
+    bloaty
+    pax-utils
+    triton-llvm
+    valgrind
+  ]
+)

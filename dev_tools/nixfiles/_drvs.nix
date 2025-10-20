@@ -103,15 +103,19 @@ in
   inherit using_pythons; # list
   inherit llvmDbg;
   inherit (pkgs)
-    bloaty
     cmake
     gdb
-    pax-utils
-    triton-llvm
-    valgrind
-    ; # packages
+    ;
 }
 // (builtins.listToAttrs (map verToEnvDef versionUtils.versions))
 // lib.optionalAttrs (pkgs.system == "x86_64-linux") {
   inherit sde;
+}
+// lib.optionalAttrs (pkgs.system != "aarch64-darwin") {
+  inherit (pkgs)
+    bloaty # binary size profiler
+    pax-utils # lddtree
+    triton-llvm # needed by coverage
+    valgrind # memory profiler
+    ;
 }

@@ -3,14 +3,15 @@
   pkgs,
   cmake,
   buildPythonPackage,
+  callPackage,
   ...
 }:
 let
-  wheel = pkgs.callPackage ./build_wheel.nix {
+  wheel = callPackage ./build_wheel.nix {
     inherit (pypkgs) python;
     forNonNix = false;
   };
-  ssrJSONVersion = pkgs.callPackage ./ssrjson_version.nix { };
+  ssrJSONVersion = callPackage ./ssrjson_version.nix { };
 in
 buildPythonPackage rec {
   pname = "ssrjson";

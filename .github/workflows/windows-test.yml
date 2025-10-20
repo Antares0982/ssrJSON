@@ -1,4 +1,4 @@
-name: "Run test on Windows"
+name: "Run Test (x86_64 Windows)"
 
 on:
   workflow_dispatch:

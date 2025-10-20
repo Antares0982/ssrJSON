@@ -22,7 +22,6 @@ clangStdenv.mkDerivation rec {
     cp -r ${./../..}/* .
     chmod -R 700 .
   '';
-  # TODO aarch64?
   postInstall = ''
     PATH=${pax-utils}/bin:$PATH ${python}/bin/python ../dev_tools/symbol_analyze.py $out/ssrjson.so --find-needless | xargs -n 1 basename | while read tmplib; do
       patchelf $out/ssrjson.so --remove-needed $tmplib

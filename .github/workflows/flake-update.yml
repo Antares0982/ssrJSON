@@ -1,6 +1,12 @@
-name: "Flake Automated Update"
+name: "Cache Nix Flake Result (cachix)"
 on:
   workflow_dispatch:
+    inputs:
+      do-update:
+        description: 'Set to true to update and commit flake.lock'
+        required: true
+        default: true
+        type: boolean
   push:
     branches:
       - "dev_flake"
@@ -9,7 +15,15 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+    - name: Set flag
+      run: |
+        if [ "${{ github.event_name }}" = "push" ]; then
+            echo "DO_UPDATE=false" >> $GITHUB_ENV
+          else
+            echo "DO_UPDATE=${{ github.event.inputs.do-update }}" >> $GITHUB_ENV
+          fi
     - name: Maximize build space
+      if: env.DO_UPDATE == 'true'
       uses: easimon/maximize-build-space@master
       with:
         build-mount-path: '/nix'
@@ -27,6 +41,7 @@ jobs:
       with:
         github_access_token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
     - name: Set nix daemon tmp path
+      if: env.DO_UPDATE == 'true'
       run: |
         sudo mkdir --parents /nix/tmp
         sudo chmod 777 /nix/tmp
@@ -40,6 +55,7 @@ jobs:
         sudo systemctl daemon-reload
         sudo systemctl restart nix-daemon
     - name: Import GPG key
+      if: env.DO_UPDATE == 'true'
       id: import-gpg
       uses: crazy-max/ghaction-import-gpg@master
       with:
@@ -48,6 +64,7 @@ jobs:
         git_user_signingkey: true
         git_commit_gpgsign: true
     - name: Configure git credentials
+      if: env.DO_UPDATE == 'true'
       run: |
         git config --global user.email "${{ steps.import-gpg.outputs.email }}"
         git config --global user.name "${{ steps.import-gpg.outputs.name }}"
@@ -57,18 +74,22 @@ jobs:
         name: antares0982
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - name: Nix flake update
+      if: env.DO_UPDATE == 'true'
       run: |
         nix flake update --commit-lock-file
     - name: Test Nix Develop
       run: |
         nix develop --command echo DONE
-        if [ -z $(git status --porcelain) ]; then
-          echo "clean, skip..."
-        else
-          git add --all
-          git commit --message "Flake Update"
+        if [ "$DO_UPDATE" = "true" ]; then
+          if [ -z $(git status --porcelain) ]; then
+            echo "clean, skip..."
+          else
+            git add --all
+            git commit --message "Flake Update"
+          fi
         fi
     - name: Git push
+      if: env.DO_UPDATE == 'true'
       run: |
         git config --global pull.rebase false
         git pull

@@ -10,7 +10,6 @@
   sitePackagesString,
   inputDerivation,
   cmake,
-  valgrind,
   llvmPackages,
   clang-tools,
   pyenv_nodebug,
@@ -106,7 +105,6 @@ stdenvNoCC.mkDerivation {
   + ''
     # bin
     ln -s "${pyenv_nodebug}/bin/python" "$out/bin/python_nodebug"
-    ln -s "${valgrind}/bin/valgrind" "$out/bin/valgrind"
     ln -s "${llvmClang}/bin/clang" "$out/bin/clang"
     ln -s "${llvmClang}/bin/clang++" "$out/bin/clang++"
     ln -s "${cmake}/bin/cmake" "$out/bin/cmake"

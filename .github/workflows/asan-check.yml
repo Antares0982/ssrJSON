@@ -1,11 +1,6 @@
-name: "ASAN Check"
+name: "Address Sanitizer Check"
 on:
   workflow_dispatch:
-  # pull_request:
-  #   paths:
-  #     - "src/**"
-  #     - "test/**"
-  #     - "CMakeLists.txt"
 
 jobs:
   ASAN-CHECK:
