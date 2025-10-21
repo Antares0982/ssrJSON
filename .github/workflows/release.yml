@@ -160,20 +160,11 @@ jobs:
         name: ssrjson-tarball
         path: ./dist
 
-    - name: Install Tarball
+    - name: Install Tarball & Run Tests
       run: |
         ARTIFACT_NAME=dist/$(ls dist)
         echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c python -m pip install $ARTIFACT_NAME --prefix build-testing
-
-    - name: Print Location
-      run: |
-        PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -c "import ssrjson;print(ssrjson.__file__)"
-
-    - name: Run Python Tests
-      run: |
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c python -m pip install -r requirements.txt --prefix build-testing
-        PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -m pytest --random-order python-test
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c bash dev_tools/release-test.sh "$ARTIFACT_NAME" "${{ steps.prepare.outputs.PYTHONPATH }}"
 
   Linux-aarch64-Build-And-Test-Wheel:
     runs-on: [Linux, ARM64, nixos-arm64]
@@ -207,18 +198,9 @@ jobs:
         sha256sum ${{ steps.build-wheel.outputs.ARTIFACT_NAME }} | awk '{print $1}' > sha256sum.txt
         cat sha256sum.txt
 
-    - name: Install Wheel
+    - name: Install Wheel & Run Tests
       run: |
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c python -m pip install ${{ steps.build-wheel.outputs.ARTIFACT_NAME }} --prefix build-testing
-
-    - name: Print Location
-      run: |
-        PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -c "import ssrjson;print(ssrjson.__file__)"
-
-    - name: Run Python Tests
-      run: |
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c python -m pip install -r requirements.txt --prefix build-testing
-        PYTHONPATH=${{ steps.prepare.outputs.PYTHONPATH }} nix develop -c python3.${{ matrix.pyver }} -m pytest --random-order python-test
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c bash dev_tools/release-test.sh "${{ steps.build-wheel.outputs.ARTIFACT_NAME }}" "${{ steps.prepare.outputs.PYTHONPATH }}"
 
     - name: Upload Wheel To Artifact
       uses: actions/upload-artifact@v4
