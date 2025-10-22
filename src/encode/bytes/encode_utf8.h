@@ -47,7 +47,7 @@ force_inline void bytes_write_ascii(u8 **writer_addr, const u8 *src, usize len, 
     encode_trailing_copy_with_cvt(writer_addr, src, len);
 }
 
-internal_simd_noinline void bytes_write_ascii_not_key(u8 **writer_addr, const u8 *src, usize len) {
+force_inline void bytes_write_ascii_not_key(u8 **writer_addr, const u8 *src, usize len) {
     bytes_write_ascii(writer_addr, src, len, false);
 }
 

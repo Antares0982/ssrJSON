@@ -51,7 +51,7 @@ force_inline bool bytes_buffer_append_key(PyObject *key, u8 **writer_addr, Encod
     u8 *writer = *writer_addr;
     write_unicode_indent(&writer, cur_nested_depth);
     *writer++ = '"';
-    if (is_ascii) {
+    if (likely(is_ascii)) {
         bytes_write_ascii(&writer, src_voidp, len, true);
     } else {
         switch (read_kind_val) {
@@ -99,7 +99,7 @@ force_inline bool bytes_buffer_append_str(PyObject *str, u8 **writer_addr, Encod
         write_unicode_indent(&writer, cur_nested_depth);
     }
     *writer++ = '"';
-    if (is_ascii) {
+    if (likely(is_ascii)) {
         bytes_write_ascii_not_key(&writer, src_voidp, len);
     } else {
         switch (read_kind_val) {
