@@ -69,9 +69,9 @@ const char *_update_simd_features(void) {
     return err;
 }
 
-MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_Encode)
-MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_Decode)
-MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_EncodeToBytes)
+MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Encode)
+MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Decode)
+MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_EncodeToBytes)
 
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     PyObject *ret = PyDict_New();
@@ -106,9 +106,9 @@ const char *_update_simd_features(void) {
     return NULL;
 }
 
-MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_Encode)
-MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_Decode)
-MAKE_FORWARD_PYFUNCTION_IMPL(ssrjson_EncodeToBytes)
+MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Encode)
+MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Decode)
+MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_EncodeToBytes)
 
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     PyObject *ret = PyDict_New();

@@ -29,134 +29,229 @@
 
 extern decode_cache_t DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
 
-PyObject *ssrjson_Encode(PyObject *self, PyObject *args, PyObject *kwargs);
-PyObject *ssrjson_EncodeToBytes(PyObject *self, PyObject *args, PyObject *kwargs);
-PyObject *ssrjson_Decode(PyObject *self, PyObject *args, PyObject *kwargs);
-PyObject *ssrjson_FileEncode(PyObject *self, PyObject *args, PyObject *kwargs);
-PyObject *ssrjson_DecodeFile(PyObject *self, PyObject *args, PyObject *kwargs);
+PyObject *ssrjson_Encode(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);
+PyObject *ssrjson_EncodeToBytes(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);
+PyObject *ssrjson_Decode(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);
 PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args);
+PyObject *ssrjson_strict_argparse(PyObject *self, PyObject *arg);
 
 PyObject *JSONDecodeError = NULL;
 PyObject *JSONEncodeError = NULL;
 
-static PyMethodDef ssrjson_Methods[] = {
-        {"dumps", (PyCFunction)ssrjson_Encode, METH_VARARGS | METH_KEYWORDS, "dumps(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."},
-        {"dumps_to_bytes", (PyCFunction)ssrjson_EncodeToBytes, METH_VARARGS | METH_KEYWORDS, "dumps_to_bytes(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."},
-        {"loads", (PyCFunction)ssrjson_Decode, METH_VARARGS | METH_KEYWORDS, "loads(s)\n--\n\nConverts JSON as string to dict object structure."},
-        {"get_current_features", ssrjson_get_current_features, METH_NOARGS, "get_current_features()\n--\n\nGet current features."},
-        {"suppress_api_warning", ssrjson_suppress_api_warning, METH_NOARGS, "suppress_api_warning()\n--\n\nSuppress warning when invalid arguments received."},
-        {NULL, NULL, 0, NULL} /* Sentinel */
-};
-
 static void module_free(void *m);
+
+static int ssrjson_exec(PyObject *module);
+
+static struct PyModuleDef_Slot ssrjson_slots[] = {
+        {Py_mod_exec, (void *)ssrjson_exec}, // stage 2
+#if PY_MINOR_VERSION >= 12
+        {Py_mod_multiple_interpreters, Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED}, // stage 3
+#endif
+        {0, NULL}};
 
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
         "ssrjson",
-        0,               /* m_doc */
-        0,               /* m_size */
-        ssrjson_Methods, /* m_methods */
-        NULL,            /* m_slots */
-        NULL,            /* m_traverse */
-        NULL,            /* m_clear */
-        module_free      /* m_free */
+        0,             /* m_doc */
+        0,             /* m_size */
+        NULL,          /* m_methods */
+        ssrjson_slots, /* m_slots */
+        NULL,          /* m_traverse */
+        NULL,          /* m_clear */
+        module_free    /* m_free */
 };
 
 static void module_free(void *m) {
     for (size_t i = 0; i < SSRJSON_KEY_CACHE_SIZE; i++) {
         Py_XDECREF(DecodeKeyCache[i].key);
+        DecodeKeyCache[i].key = NULL;
+    }
+
+    if (JSONDecodeError) {
+        Py_DECREF(JSONDecodeError);
+        JSONDecodeError = NULL;
+    }
+
+    if (JSONEncodeError) {
+        Py_DECREF(JSONEncodeError);
+        JSONEncodeError = NULL;
     }
 
 #if defined(Py_GIL_DISABLED)
     if (unlikely(!ssrjson_tls_free())) {
-        // critical
         printf("ssrjson: failed to free TLS\n");
     }
 #endif
-
-#if SSRJSON_ENABLE_TRACE
-    size_t cached = 0;
-    for (size_t i = 0; i < SSRJSON_KEY_CACHE_SIZE; i++) {
-        if (DecodeKeyCache[i].key) cached++;
-    }
-    printf("key cache: %zu/%d\n", cached, SSRJSON_KEY_CACHE_SIZE);
-#endif // SSRJSON_ENABLE_TRACE
 }
 
 #if PY_MINOR_VERSION >= 13
 PyTypeObject *PyNone_Type = NULL;
-
-force_inline void _init_PyNone_Type(PyTypeObject *none_type) {
-    PyNone_Type = none_type;
-}
 #endif
 
+PyMethodDef dumps_func_def = {
+        "dumps",
+        (PyCFunction)ssrjson_Encode,
+        METH_FASTCALL | METH_KEYWORDS,
+        "dumps(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."};
 
-PyMODINIT_FUNC PyInit_ssrjson(void) {
-    PyObject *module;
+PyMethodDef dumps_to_bytes_func_def = {
+        "dumps_to_bytes",
+        (PyCFunction)ssrjson_EncodeToBytes,
+        METH_FASTCALL | METH_KEYWORDS,
+        "dumps_to_bytes(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."};
 
-    // This function is not supported in PyPy.
-    if ((module = PyState_FindModule(&moduledef)) != NULL) {
-        Py_INCREF(module);
-        return module;
+PyMethodDef loads_func_def = {
+        "loads",
+        (PyCFunction)ssrjson_Decode,
+        METH_FASTCALL | METH_KEYWORDS,
+        "loads(s)\n--\n\nConverts JSON as string to dict object structure."};
+
+PyMethodDef get_current_features_func_def = {
+        "get_current_features",
+        (PyCFunction)ssrjson_get_current_features,
+        METH_NOARGS,
+        "get_current_features()\n--\n\nGet current features."};
+
+PyMethodDef suppress_api_warning_func_def = {
+        "suppress_api_warning",
+        (PyCFunction)ssrjson_suppress_api_warning,
+        METH_NOARGS,
+        "suppress_api_warning()\n--\n\nSuppress warning when invalid arguments received."};
+
+PyMethodDef strict_argparse_func_def = {
+        "strict_argparse",
+        (PyCFunction)ssrjson_strict_argparse,
+        METH_O,
+        "strict_argparse(value)\n--\n\nSet strict argument parsing mode. Default is False."};
+
+static int ssrjson_exec(PyObject *module) {
+    int err;
+    const char *err_s;
+    PyObject *func;
+
+#define RETURN_WHEN_ERR() \
+    if (err < 0) {        \
+        return -1;        \
     }
 
-    const char *err = _update_simd_features();
-    if (err) {
-        PyErr_SetString(PyExc_ImportError, err);
-        return NULL;
+#define ADD_FUNC_CHECKED(_func_def_)                                   \
+    {                                                                  \
+        func = PyCFunction_NewEx(&_func_def_, NULL, module_string);    \
+        if (!func) {                                                   \
+            Py_DECREF(module_string);                                  \
+            return -1;                                                 \
+        }                                                              \
+        err = PyModule_AddObjectRef(module, _func_def_.ml_name, func); \
+        Py_DECREF(func);                                               \
+        if (err < 0) {                                                 \
+            Py_DECREF(module_string);                                  \
+            return -1;                                                 \
+        }                                                              \
     }
 
-    module = PyModule_Create(&moduledef);
-    if (module == NULL) {
-        return NULL;
+    err_s = _update_simd_features();
+    if (err_s) {
+        PyErr_SetString(PyExc_ImportError, err_s);
+        return -1;
     }
 
-    PyModule_AddStringConstant(module, "__version__", SSRJSON_VERSION);
-
-    JSONDecodeError = PyErr_NewException("ssrjson.JSONDecodeError", PyExc_ValueError, NULL);
-    Py_XINCREF(JSONDecodeError);
-    if (PyModule_AddObject(module, "JSONDecodeError", JSONDecodeError) < 0) {
-        Py_XDECREF(JSONDecodeError);
-        Py_CLEAR(JSONDecodeError);
-        Py_DECREF(module);
-        return NULL;
+    if (PyModule_AddStringConstant(module, "__version__", SSRJSON_VERSION) < 0) {
+        return -1;
     }
 
-    JSONEncodeError = PyErr_NewException("ssrjson.JSONEncodeError", PyExc_ValueError, NULL);
-    Py_XINCREF(JSONEncodeError);
-    if (PyModule_AddObject(module, "JSONEncodeError", JSONEncodeError) < 0) {
-        Py_XDECREF(JSONEncodeError);
-        Py_CLEAR(JSONEncodeError);
-        Py_DECREF(module);
-        return NULL;
+    // Add: JSONDecodeError
+    if (!JSONDecodeError) {
+        JSONDecodeError = PyErr_NewException("ssrjson.JSONDecodeError", PyExc_ValueError, NULL);
+        if (!JSONDecodeError) {
+            return -1;
+        }
+        // global variable needs an additional ref
+        Py_INCREF(JSONDecodeError);
     }
+
+    err = PyModule_AddObjectRef(module, "JSONDecodeError", JSONDecodeError);
+    Py_DECREF(JSONDecodeError);
+    RETURN_WHEN_ERR();
+
+    // Add: JSONEncodeError
+    if (!JSONEncodeError) {
+        JSONEncodeError = PyErr_NewException("ssrjson.JSONEncodeError", PyExc_ValueError, NULL);
+        if (!JSONEncodeError) {
+            return -1;
+        }
+        // global variable needs an additional ref
+        Py_INCREF(JSONEncodeError);
+    }
+
+    err = PyModule_AddObjectRef(module, "JSONEncodeError", JSONEncodeError);
+    Py_DECREF(JSONEncodeError);
+    RETURN_WHEN_ERR();
+
+    PyObject *module_string = PyUnicode_FromString("ssrjson");
+    if (!module_string) return -1;
+
+    ADD_FUNC_CHECKED(dumps_func_def);
+    ADD_FUNC_CHECKED(dumps_to_bytes_func_def);
+    ADD_FUNC_CHECKED(loads_func_def);
+    ADD_FUNC_CHECKED(get_current_features_func_def);
+    ADD_FUNC_CHECKED(suppress_api_warning_func_def);
+    ADD_FUNC_CHECKED(strict_argparse_func_def);
+
+    Py_DECREF(module_string);
 
 #if defined(Py_GIL_DISABLED)
     // TLS init.
     if (unlikely(!ssrjson_tls_init())) {
-        PyErr_SetString(PyExc_RuntimeError, "Failed to initialize TLS");
-        Py_XDECREF(JSONEncodeError);
-        Py_CLEAR(JSONEncodeError);
-        Py_DECREF(module);
-        return NULL;
+        PyErr_SetString(PyExc_ImportError, "Failed to initialize TLS");
+        return -1;
     }
 #endif
 
+    // codes below should not fail.
+
     // do ssrjson internal init.
+
     memset(DecodeKeyCache, 0, sizeof(DecodeKeyCache));
 
 #if PY_MINOR_VERSION >= 13
-    _init_PyNone_Type(Py_TYPE(Py_None));
+    PyNone_Type = Py_TYPE(Py_None);
 #endif
 
-    return module;
+    return 0;
+}
+
+PyMODINIT_FUNC PyInit_ssrjson(void) {
+    return PyModuleDef_Init(&moduledef);
 }
 
 /* ssrjson_suppress_api_warning */
 int ssrjson_invalid_arg_checked = 0;
+int ssrjson_nonstrict_argparse = 1;
 
 PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args) {
     ssrjson_invalid_arg_checked = 1;
     Py_RETURN_NONE;
+}
+
+PyObject *ssrjson_strict_argparse(PyObject *self, PyObject *arg) {
+    bool value_is_true = arg == Py_True;
+    bool value_is_false = arg == Py_False;
+    if (unlikely(!value_is_true && !value_is_false)) {
+        PyErr_SetString(PyExc_TypeError, "strict_argparse() argument must be True or False");
+        return NULL;
+    }
+    ssrjson_nonstrict_argparse = value_is_false ? 1 : 0;
+    Py_RETURN_NONE;
+}
+
+void handle_unexpected_kw(PyObject *kwname) {
+    PyObject *ascii_repr = PyObject_ASCII(kwname);
+    if (ascii_repr) {
+        const char *ascii_repr_str = PyUnicode_AsUTF8(ascii_repr);
+        if (ascii_repr_str) {
+            PyErr_Format(PyExc_TypeError, "dumps() got an unexpected keyword argument '%s'", ascii_repr_str);
+        }
+        Py_DECREF(ascii_repr);
+    }
+    assert(PyErr_Occurred());
 }

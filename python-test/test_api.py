@@ -1,9 +1,7 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
-import datetime
 import inspect
 import json
-import re
 
 import pytest
 
@@ -12,10 +10,6 @@ import ssrjson
 SIMPLE_TYPES = (1, 1.0, -1, None, "str", True, False)
 
 LOADS_RECURSION_LIMIT = 1024
-
-
-def default(obj):
-    return str(obj)
 
 
 class TestApi:
@@ -125,17 +119,67 @@ class TestApi:
         value = b"[\n  " * n + b"]" * n
         pytest.raises(ssrjson.JSONDecodeError, ssrjson.loads, value)
 
-    def test_valueerror(self):
+    def test_value_error(self):
         """
         ssrjson.JSONDecodeError is a subclass of ValueError
         """
         pytest.raises(ssrjson.JSONDecodeError, ssrjson.loads, "{")
         pytest.raises(ValueError, ssrjson.loads, "{")
 
+    def test_all_keywords(self):
+        """
+        all keywords
+        """
+        assert ssrjson.dumps(obj={}) == "{}"
+        assert ssrjson.dumps_to_bytes(obj={}) == b"{}"
+        assert ssrjson.dumps(indent=2, obj={}) == "{}"
+        assert ssrjson.dumps_to_bytes(indent=2, obj={}) == b"{}"
+        assert ssrjson.loads(s="{}") == {}
+
+    def test_redundant_keywords(self):
+        """
+        redundant keywords
+        """
+        with pytest.raises(TypeError):
+            ssrjson.dumps({}, obj={})  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes({}, obj={})  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.loads("{}", s="{}")  # type: ignore
+
+    def test_missing_required_positional(self):
+        """
+        missing required arg
+        """
+        with pytest.raises(TypeError):
+            ssrjson.dumps()  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes()  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.loads()  # type: ignore
+
+    def test_more_than_required_positional(self):
+        """
+        too many positional args
+        """
+        with pytest.raises(TypeError):
+            ssrjson.dumps({}, 2)  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.dumps({}, 2, a=1)  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes({}, 2)  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes({}, 2, a=1)  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.loads("{}", "extra")  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.loads("{}", "extra", a=1)  # type: ignore
+
     def test_default_positional(self):
         """
         dumps() positional arg
         """
+        ssrjson.suppress_api_warning()
         with pytest.raises(TypeError):
             ssrjson.dumps(__obj={})  # type: ignore
         with pytest.raises(TypeError):
@@ -145,16 +189,68 @@ class TestApi:
         with pytest.raises(TypeError):
             ssrjson.dumps_to_bytes(zxc={})  # type: ignore
 
-    def test_default_unknown_kwarg(self):
+    def test_unknown_kwarg(self):
         """
-        dumps() unknown kwarg
+        unknown kwarg
         """
-        with pytest.raises(TypeError):
-            ssrjson.dumps({}, zxc=default)  # type: ignore
-        with pytest.raises(TypeError):
-            ssrjson.dumps_to_bytes({}, zxc=default)  # type: ignore
         ssrjson.suppress_api_warning()
+        #
+        ssrjson.strict_argparse(True)
+        with pytest.raises(TypeError):
+            ssrjson.dumps({}, zxc=1)  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes({}, zxc=1)  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.loads("{}", zxc=1)  # type: ignore
+        #
+        ssrjson.strict_argparse(False)
+        ssrjson.dumps({}, zxc=1)
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes({}, zxc=1)  # type: ignore
+        #
         assert ssrjson.dumps({}, skipkeys="a") == "{}"
+
+    def test_nonascii_unknown_arg(self):
+        """
+        dumps() unknown arg with non-ascii chars
+        """
+        ssrjson.suppress_api_warning()
+        #
+        ssrjson.strict_argparse(True)
+        with pytest.raises(TypeError):
+            ssrjson.dumps({}, неизвестный_аргумент=1)  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes({}, 未知参数=1)  # type: ignore
+        #
+        ssrjson.strict_argparse(False)
+        ssrjson.dumps({}, 不明なパラメータ=1)
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes({}, unknöwn_args=1)  # type: ignore
+
+    def test_strsubclass_unknown_arg(self):
+        """
+        dumps() arg with subclass of str
+        """
+
+        class MyStr(str):
+            pass
+
+        kw = {MyStr("indent"): 2}
+        assert ssrjson.dumps({"a": "b"}, **kw) == '{\n  "a": "b"\n}'
+        assert ssrjson.dumps_to_bytes({"a": "b"}, **kw) == b'{\n  "a": "b"\n}'
+        #
+        kw = {MyStr("unknown_arg"): "value"}
+        #
+        ssrjson.strict_argparse(True)
+        with pytest.raises(TypeError):
+            ssrjson.dumps({}, **kw)  # type: ignore
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes({}, **kw)  # type: ignore
+        #
+        ssrjson.strict_argparse(False)
+        ssrjson.dumps({}, **kw)
+        with pytest.raises(TypeError):
+            ssrjson.dumps_to_bytes({}, **kw)  # type: ignore
 
     def test_default_empty_kwarg(self):
         """

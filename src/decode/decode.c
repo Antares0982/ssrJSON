@@ -249,26 +249,87 @@ force_inline bool decode_nan(decode_obj_stack_ptr_t *decode_obj_writer_addr,
 }
 
 extern int ssrjson_invalid_arg_checked;
+extern int ssrjson_nonstrict_argparse;
 
-PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *args, PyObject *kwargs) {
-    PyObject *obj;
+force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **s_out) {
+    assert(kwnames);
+    PyObject *s;
+    //
+    const bool nonstrict_argparse = ssrjson_nonstrict_argparse;
+    bool invalid_arg_checked = ssrjson_invalid_arg_checked;
+    //
+    usize nkwargs = PyTuple_GET_SIZE(kwnames);
+    usize nargs = npargs + nkwargs;
+    assert(nkwargs <= nargs);
+    //
+    s = npargs ? args[0] : NULL;
+    //
+    if (unlikely(npargs > 1)) {
+        PyErr_Format(PyExc_TypeError, "loads() takes 1 positional argument but %d were given", (int)npargs);
+        return false;
+    }
+    for (usize i = 0; i < nkwargs; i++) {
+        PyObject *kwname = PyTuple_GET_ITEM(kwnames, i);
+        assert(PyUnicode_Check(kwname));
+        bool is_ascii;
+        const u8 *char_data;
+        usize char_count;
+        parse_ascii(kwname, &is_ascii, &char_data, &char_count);
+        if (likely(is_ascii)) {
+            if (char_count == 1 && *char_data == 's') {
+                if (unlikely(s)) {
+                    // repeated arg
+                    PyErr_SetString(PyExc_TypeError, "loads() got multiple values for argument 's'");
+                    return false;
+                }
+                s = args[npargs + i];
+                continue;
+            }
+        }
+        // unknown argument
+        if (!nonstrict_argparse) {
+            handle_unexpected_kw(kwname);
+            return false;
+        }
+        if (!invalid_arg_checked) {
+            fprintf(stderr, "Warning: some options are not supported in this version of ssrjson\n");
+            ssrjson_invalid_arg_checked = 1;
+            invalid_arg_checked = true;
+        }
+    }
+    //
+    if (unlikely(!s)) {
+        PyErr_SetString(PyExc_TypeError, "loads() missing 1 required positional argument: 's'");
+        return false;
+    }
+    *s_out = s;
+    return true;
+}
+
+PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames) {
     PyObject *ret;
+    PyObject *s;
     //
-    PyObject *cls = NULL, *object_hook = NULL, *parse_float = NULL, *parse_int = NULL, *parse_constant = NULL, *object_pairs_hook = NULL;
-    static const char *kwlist[] = {"s", "cls", "object_hook", "parse_float", "parse_int", "parse_constant", "object_pairs_hook", NULL};
+    usize npargs = PyVectorcall_NARGS(nargsf);
     //
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OOOOOO", (char **)kwlist, &obj, &cls, &object_hook, &parse_float, &parse_int, &parse_constant, &object_pairs_hook)) {
+    if (!kwnames) {
+        // positional-only args except `s' are not allowed even in nonstrict mode
+        if (unlikely(npargs != 1)) {
+            if (npargs > 1) {
+                PyErr_Format(PyExc_TypeError, "loads() takes 1 positional argument but %d were given", (int)npargs);
+            } else {
+                PyErr_SetString(PyExc_TypeError, "loads() missing 1 required positional argument: 's'");
+            }
+            return NULL;
+        }
+        s = args[0];
+    } else if (!decode_argparse_with_kw(args, npargs, kwnames, &s)) {
         return NULL;
     }
-
-    if (!ssrjson_invalid_arg_checked && (cls || object_hook || parse_float || parse_int || parse_constant || object_pairs_hook)) {
-        fprintf(stderr, "Warning: some options are not supported in this version of ssrjson\n");
-        ssrjson_invalid_arg_checked = 1;
-    }
-
-    if (PyUnicode_Check(obj)) {
-        PyASCIIObject *ascii_head = SSRJSON_CAST(PyASCIIObject *, obj);
-        PyUnicodeObject *in_unicode = SSRJSON_CAST(PyUnicodeObject *, obj);
+    //
+    if (PyUnicode_Check(s)) {
+        PyASCIIObject *ascii_head = SSRJSON_CAST(PyASCIIObject *, s);
+        PyUnicodeObject *in_unicode = SSRJSON_CAST(PyUnicodeObject *, s);
         int pyunicode_kind = ascii_head->state.ascii ? 0 : ascii_head->state.kind;
         switch (pyunicode_kind) {
             case SSRJSON_STRING_TYPE_ASCII: {
@@ -294,21 +355,21 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *args, PyO
         }
         goto done;
     }
-
-    if (PyBytes_Check(obj)) {
+    //
+    if (PyBytes_Check(s)) {
         char *buffer;
         Py_ssize_t length;
-        if (unlikely(0 != PyBytes_AsStringAndSize(obj, &buffer, &length))) {
+        if (unlikely(0 != PyBytes_AsStringAndSize(s, &buffer, &length))) {
             ret = NULL;
             goto done;
         }
         ret = ssrjson_decode_bytes(buffer, length);
         goto done;
     }
-
-    if (PyByteArray_Check(obj)) {
-        char *buffer = PyByteArray_AS_STRING(obj);
-        Py_ssize_t length = PyByteArray_GET_SIZE(obj);
+    //
+    if (PyByteArray_Check(s)) {
+        char *buffer = PyByteArray_AS_STRING(s);
+        Py_ssize_t length = PyByteArray_GET_SIZE(s);
         ret = ssrjson_decode_bytes(buffer, length);
         goto done;
     }

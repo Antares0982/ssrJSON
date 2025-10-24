@@ -21,8 +21,8 @@ export LLVM_PROFILE_FILE="$COV_DIR/python-%p.profraw"
 rm -f $COV_DIR/python-*.profraw
 
 PYTHONPATH=$BUILD_DIR pytest python-test
-PYTHONPATH=$BUILD_DIR run-sde-clx pytest python-test
-PYTHONPATH=$BUILD_DIR run-sde-ivb pytest python-test
+PYTHONPATH=$BUILD_DIR run-sde-clx pytest python-test --ignore python-test/test_memory.py
+PYTHONPATH=$BUILD_DIR run-sde-ivb pytest python-test --ignore python-test/test_memory.py
 PYTHONPATH=$BUILD_DIR $BUILD_DIR/ssrjson_test
 PYTHONPATH=$BUILD_DIR run-sde-clx $BUILD_DIR/ssrjson_test
 PYTHONPATH=$BUILD_DIR run-sde-ivb $BUILD_DIR/ssrjson_test

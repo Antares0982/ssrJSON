@@ -483,7 +483,7 @@ class TestType:
             assert ssrjson.loads(ref) == obj
         # cover all paths
         for k in ("a", "ÿ", "好", "🐈"):
-            for indent in (0, 2, 4):
+            for indent in (None, 2, 4):
                 full_cover_dumps({k: True}, indent)
                 full_cover_dumps({k: False}, indent)
 
@@ -519,7 +519,7 @@ class TestType:
         assert ssrjson.loads(ref.encode("utf-8")) == obj
         # cover all paths
         for k in ("a", "ÿ", "好", "🐈"):
-            for indent in (0, 2, 4):
+            for indent in (None, 2, 4):
                 d = {k: None}
                 full_cover_dumps(d, indent)
 
@@ -534,7 +534,7 @@ class TestType:
         assert ssrjson.loads(ref) == obj
         # cover all paths
         for k in ("a", "ÿ", "好", "🐈"):
-            for indent in (0, 2, 4):
+            for indent in (None, 2, 4):
                 full_cover_dumps({k: 0}, indent)
                 full_cover_dumps({k: 1000}, indent)
 
@@ -731,7 +731,7 @@ class TestType:
 
         # cover all paths
         for k in ("a", "ÿ", "好", "🐈"):
-            for indent in (0, 2, 4):
+            for indent in (None, 2, 4):
                 full_cover_dumps({k: 1.3}, indent)
 
     def test_float_precision_loads(self):
@@ -813,7 +813,7 @@ class TestType:
         assert ssrjson.loads(ref) == obj
         # cover all paths
         for k in ("a", "ÿ", "好", "🐈"):
-            for indent in (0, 2, 4):
+            for indent in (None, 2, 4):
                 d = {k: ["a", "b", True, {"b": 1.1}, 2, {}, (1, "a"), [1, "a"]]}
                 full_cover_dumps(d, indent=indent)
                 d = {k: []}
@@ -831,7 +831,7 @@ class TestType:
 
         # cover all paths
         for k in ("a", "ÿ", "好", "🐈"):
-            for indent in (0, 2, 4):
+            for indent in (None, 2, 4):
                 tp = tuple()
                 d = {k: tp}
                 full_cover_dumps(d, indent)

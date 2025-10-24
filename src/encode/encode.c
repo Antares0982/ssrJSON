@@ -307,39 +307,114 @@ force_inline PyObject *ssrjson_dumps_single_constant(ssrjson_py_types py_type, P
 }
 
 extern int ssrjson_invalid_arg_checked;
+extern int ssrjson_nonstrict_argparse;
+
+force_inline void invalid_arg_warning(void) {
+    fprintf(stderr, "Warning: some options are not supported in this version of ssrjson\n");
+    ssrjson_invalid_arg_checked = 1;
+}
+
+force_inline bool encode_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **obj_out, PyObject **indent_out) {
+    assert(kwnames);
+    PyObject *obj, *indent;
+    //
+    const bool nonstrict_argparse = ssrjson_nonstrict_argparse;
+    bool invalid_arg_checked = ssrjson_invalid_arg_checked;
+    //
+    usize nkwargs = PyTuple_GET_SIZE(kwnames);
+    usize nargs = npargs + nkwargs;
+    assert(nkwargs <= nargs);
+    //
+    obj = npargs ? args[0] : NULL;
+    indent = NULL;
+    //
+    if (unlikely(npargs > 1)) {
+        PyErr_Format(PyExc_TypeError, "dumps() takes 1 positional argument but %d were given", (int)npargs);
+        return false;
+    }
+    for (usize i = 0; i < nkwargs; i++) {
+        PyObject *kwname = PyTuple_GET_ITEM(kwnames, i);
+        assert(PyUnicode_Check(kwname));
+        bool is_ascii;
+        const u8 *char_data;
+        usize char_count;
+        parse_ascii(kwname, &is_ascii, &char_data, &char_count);
+        if (likely(is_ascii)) {
+            if (char_count == 6 && memcmp(char_data, "indent", 6) == 0) {
+                assert(!indent);
+                indent = args[npargs + i];
+                continue;
+            } else if (char_count == 3 && memcmp(char_data, "obj", 3) == 0) {
+                if (unlikely(obj)) {
+                    // repeated arg
+                    PyErr_SetString(PyExc_TypeError, "dumps() got multiple values for argument 'obj'");
+                    return false;
+                }
+                obj = args[npargs + i];
+                continue;
+            }
+        }
+        // unknown argument
+        if (!nonstrict_argparse) {
+            handle_unexpected_kw(kwname);
+            return false;
+        }
+        if (!invalid_arg_checked) {
+            invalid_arg_warning();
+            invalid_arg_checked = true;
+        }
+    }
+    //
+    if (unlikely(!obj)) {
+        PyErr_SetString(PyExc_TypeError, "dumps() missing 1 required positional argument: 'obj'");
+        return false;
+    }
+    *obj_out = obj;
+    *indent_out = indent;
+    return true;
+}
 
 /* Entrance for python code. */
-PyObject *SIMD_NAME_MODIFIER(ssrjson_Encode)(PyObject *self, PyObject *args, PyObject *kwargs) {
-    PyObject *obj;
+// PyObject *SIMD_NAME_MODIFIER(ssrjson_Encode)(PyObject *self, PyObject *args, PyObject *kwargs) {
+PyObject *SIMD_NAME_MODIFIER(ssrjson_Encode)(PyObject *self,
+                                             PyObject *const *args,
+                                             Py_ssize_t nargsf,
+                                             PyObject *kwnames) {
     PyObject *ret;
     //
-    PyObject *indent = NULL, *skipkeys = NULL, *ensure_ascii = NULL, *check_circular = NULL, *allow_nan = NULL, *cls = NULL, *separators = NULL, *default_ = NULL, *sort_keys = NULL;
-    static const char *kwlist[] = {"obj", "indent", "skipkeys", "ensure_ascii", "check_circular", "allow_nan", "cls", "separators", "default", "sort_keys", NULL};
+    usize npargs = PyVectorcall_NARGS(nargsf);
+    //
+    PyObject *obj, *indent;
+    if (!kwnames) {
+        // positional args except `obj' are not allowed even in nonstrict mode
+        indent = NULL;
+        if (unlikely(npargs != 1)) {
+            if (npargs > 1) {
+                PyErr_Format(PyExc_TypeError, "dumps() takes 1 positional argument but %d were given", (int)npargs);
+            } else {
+                PyErr_SetString(PyExc_TypeError, "dumps() missing 1 required positional argument: 'obj'");
+            }
+            return NULL;
+        }
+        obj = args[0];
+    } else if (!encode_argparse_with_kw(args, npargs, kwnames, &obj, &indent)) {
+        return NULL;
+    }
     //
     int indent_int = 0;
     //
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OOOOOOOOO", (char **)kwlist, &obj, &indent, &skipkeys, &ensure_ascii, &check_circular, &allow_nan, &cls, &separators, &default_, &sort_keys)) {
-        goto fail;
-    }
 
-    if (!ssrjson_invalid_arg_checked && (skipkeys || ensure_ascii || check_circular || allow_nan || cls || separators || default_ || sort_keys)) {
-        fprintf(stderr, "Warning: some options are not supported in this version of ssrjson\n");
-        ssrjson_invalid_arg_checked = 1;
-    }
-
-    if (indent) {
-        if (indent != Py_None && !PyLong_Check(indent)) {
-            PyErr_SetString(PyExc_TypeError, "indent must be an integer");
-            goto fail;
+    if (indent && indent != Py_None) {
+        if (!PyLong_Check(indent)) {
+            PyErr_SetString(PyExc_TypeError, "indent must be an integer or None");
+            return NULL;
         }
-        if (indent != Py_None) {
-            int _indent = PyLong_AsLong(indent);
-            if (_indent != 0 && _indent != 2 && _indent != 4) {
-                PyErr_SetString(PyExc_ValueError, "indent must be 0, 2, or 4");
-                goto fail;
-            }
-            indent_int = _indent;
+        int _indent = PyLong_AsLong(indent);
+        if (_indent != 2 && _indent != 4) {
+            PyErr_SetString(PyExc_ValueError, "integer indent must be 2 or 4");
+            return NULL;
         }
+        indent_int = _indent;
     }
 
     assert(obj);
@@ -367,7 +442,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Encode)(PyObject *self, PyObject *args, PyO
         }
         default: {
             PyErr_SetString(JSONEncodeError, "Unsupported type to encode");
-            goto fail;
+            return NULL;
         }
     }
 
@@ -411,36 +486,96 @@ dumps_float:;
     return ssrjson_dumps_single_float(obj, false);
 success:;
     return ret;
-fail:;
-    return NULL;
 }
 
-PyObject *SIMD_NAME_MODIFIER(ssrjson_EncodeToBytes)(PyObject *self, PyObject *args, PyObject *kwargs) {
-    PyObject *obj;
+force_inline bool encode_to_bytes_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **obj_out, PyObject **indent_out) {
+    assert(kwnames);
+    PyObject *obj, *indent;
+    //
+    usize nkwargs = PyTuple_GET_SIZE(kwnames);
+    usize nargs = npargs + nkwargs;
+    assert(nkwargs <= nargs);
+    //
+    obj = npargs ? args[0] : NULL;
+    indent = NULL;
+    //
+    if (unlikely(npargs > 1)) {
+        PyErr_Format(PyExc_TypeError, "dumps_to_bytes() takes 1 positional argument but %d were given", (int)npargs);
+        return false;
+    }
+    for (usize i = 0; i < nkwargs; i++) {
+        PyObject *kwname = PyTuple_GET_ITEM(kwnames, i);
+        assert(PyUnicode_Check(kwname));
+        bool is_ascii;
+        const u8 *char_data;
+        usize char_count;
+        parse_ascii(kwname, &is_ascii, &char_data, &char_count);
+        if (likely(is_ascii)) {
+            if (char_count == 6 && memcmp(char_data, "indent", 6) == 0) {
+                assert(!indent);
+                indent = args[npargs + i];
+                continue;
+            } else if (char_count == 3 && memcmp(char_data, "obj", 3) == 0) {
+                if (unlikely(obj)) {
+                    // repeated arg
+                    PyErr_SetString(PyExc_TypeError, "dumps_to_bytes() got multiple values for argument 'obj'");
+                    return false;
+                }
+                obj = args[npargs + i];
+                continue;
+            }
+        }
+        // unknown argument
+        handle_unexpected_kw(kwname);
+        return false;
+    }
+    //
+    if (unlikely(!obj)) {
+        PyErr_SetString(PyExc_TypeError, "dumps_to_bytes() missing 1 required positional argument: 'obj'");
+        return false;
+    }
+    *obj_out = obj;
+    *indent_out = indent;
+    return true;
+}
+
+PyObject *SIMD_NAME_MODIFIER(ssrjson_EncodeToBytes)(PyObject *self,
+                                                    PyObject *const *args,
+                                                    Py_ssize_t nargsf,
+                                                    PyObject *kwnames) {
     PyObject *ret;
     //
-    PyObject *indent = NULL;
-    static const char *kwlist[] = {"obj", "indent", NULL};
+    usize npargs = PyVectorcall_NARGS(nargsf);
+    //
+    PyObject *obj, *indent;
+    if (!kwnames) {
+        indent = NULL;
+        if (unlikely(npargs != 1)) {
+            if (npargs > 1) {
+                PyErr_Format(PyExc_TypeError, "dumps_to_bytes() takes 1 positional argument but %d were given", (int)npargs);
+            } else {
+                PyErr_SetString(PyExc_TypeError, "dumps_to_bytes() missing 1 required positional argument: 'obj'");
+            }
+            return NULL;
+        }
+        obj = npargs > 0 ? args[0] : NULL;
+    } else if (!encode_to_bytes_argparse_with_kw(args, npargs, kwnames, &obj, &indent)) {
+        return NULL;
+    }
     //
     int indent_int = 0;
-    //
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O", (char **)kwlist, &obj, &indent)) {
-        goto fail;
-    }
 
-    if (indent) {
-        if (indent != Py_None && !PyLong_Check(indent)) {
-            PyErr_SetString(PyExc_TypeError, "indent must be an integer");
-            goto fail;
+    if (indent && indent != Py_None) {
+        if (!PyLong_Check(indent)) {
+            PyErr_SetString(PyExc_TypeError, "indent must be an integer or None");
+            return NULL;
         }
-        if (indent != Py_None) {
-            int _indent = PyLong_AsLong(indent);
-            if (_indent < 0 || _indent > 4 || (_indent / 2) * 2 != _indent) {
-                PyErr_SetString(PyExc_ValueError, "indent must be 0, 2, or 4");
-                goto fail;
-            }
-            indent_int = _indent;
+        int _indent = PyLong_AsLong(indent);
+        if (_indent != 2 && _indent != 4) {
+            PyErr_SetString(PyExc_ValueError, "integer indent must be 2 or 4");
+            return NULL;
         }
+        indent_int = _indent;
     }
 
     assert(obj);
@@ -468,7 +603,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_EncodeToBytes)(PyObject *self, PyObject *ar
         }
         default: {
             PyErr_SetString(JSONEncodeError, "Unsupported type to encode");
-            goto fail;
+            return NULL;
         }
     }
 
@@ -512,6 +647,4 @@ dumps_float:;
     return ssrjson_dumps_single_float(obj, true);
 success:;
     return ret;
-fail:;
-    return NULL;
 }

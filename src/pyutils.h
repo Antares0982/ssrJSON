@@ -24,6 +24,7 @@
 #define SSRJSON_PYUTILS_H
 
 #include "ssrjson.h"
+#include "utils/unicode.h"
 
 #define ASCII_OFFSET sizeof(PyASCIIObject)
 #define UNICODE_OFFSET sizeof(PyCompactUnicodeObject)
@@ -135,4 +136,32 @@ PyObject *make_unicode_from_raw_ascii(void *raw_buffer, usize size, bool do_hash
 PyObject *make_unicode_down_ucs2_u8(void *raw_buffer, usize size, bool do_hash, bool is_ascii);
 PyObject *make_unicode_down_ucs4_u8(void *raw_buffer, usize size, bool do_hash, bool is_ascii);
 PyObject *make_unicode_down_ucs4_ucs2(void *raw_buffer, usize size, bool do_hash);
+
+void handle_unexpected_kw(PyObject *kwname);
+
+/* Parse an ASCII PyUnicodeObject. 
+ * If the object is not ASCII, `char_data_out` and `char_count_out` are undefined.
+ * Otherwise, `char_data_out` points to the character data, and `char_count_out` is the length of the string.
+ */
+force_inline void parse_ascii(PyObject *unicode, bool *is_ascii_out, const u8 **char_data_out, usize *char_count_out) {
+    assert(PyUnicode_Check(unicode));
+    bool is_ascii, is_compact;
+    const u8 *char_data;
+    usize char_count;
+    is_ascii = PyUnicode_IS_ASCII(unicode);
+    if (likely(is_ascii)) {
+        is_compact = SSRJSON_CAST(PyASCIIObject *, unicode)->state.compact;
+        char_count = (usize)PyUnicode_GET_LENGTH(unicode);
+        if (likely(is_compact)) {
+            char_data = PYUNICODE_ASCII_START(unicode);
+        } else {
+            char_data = SSRJSON_CAST(PyUnicodeObject *, unicode)->data.any;
+        }
+    }
+
+    *is_ascii_out = is_ascii;
+    *char_data_out = char_data;
+    *char_count_out = char_count;
+}
+
 #endif // SSRJSON_PYUTILS_H
