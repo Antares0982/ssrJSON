@@ -37,6 +37,8 @@
 #define COMPILE_SIMD_BITS 512
 #include "compile_context/srw_in.inl.h"
 
+#define __reserve_ucs4_encode_2bytes_utf8_avx512 (32)
+
 force_inline void ucs4_encode_2bytes_utf8_avx512(u8 *writer, vector_a z) {
     /* abcdefgh|12300000|00000000|00000000 -> gh123[mmm]|abcdef[mm] */
     vector_a_u8_256 t1 = {
@@ -68,6 +70,8 @@ force_inline void ucs4_encode_2bytes_utf8_avx512(u8 *writer, vector_a z) {
     vector_a_u8_256 y3 = ((y1 | y2) & m1) | m2;
     *(vector_u_u8_256 *)writer = y3;
 }
+
+#define __reserve_ucs4_encode_3bytes_utf8_avx512 (48)
 
 force_inline void ucs4_encode_3bytes_utf8_avx512(u8 *writer, vector_a z) {
     /* abcdefgh|12345678|00000000|00000000 -> 5678[mmmm]|gh1234[mm]|abcdef[mm] */
@@ -205,6 +209,10 @@ force_inline void ucs4_encode_3bytes_utf8_avx512(u8 *writer, vector_a z) {
     _mm512_mask_storeu_epi8(writer - 4, 0xffffff0, z6);
     _mm512_mask_storeu_epi8(writer - 12, 0xffffff000000000, z6);
 }
+
+/* See AVX2 code for more details. */
+#define __readbefore_bytes_write_ucs4_trailing_512 (0)
+#define __excess_bytes_write_ucs4_trailing_512 (48 - max_json_bytes_per_unicode)
 
 /* 
  * Encode UCS4 trailing to utf-8.
@@ -371,6 +379,152 @@ _3bytes:;
             }
             goto finished;
         }
+    }
+finished:;
+    *writer_addr = writer;
+    return true;
+}
+
+/* See AVX2 code for more details. */
+#define __readbefore_bytes_write_ucs4_raw_utf8_trailing_512 (0)
+#define __excess_bytes_write_ucs4_raw_utf8_trailing_512 (48 - max_utf8_bytes_per_ucs4)
+
+force_inline bool bytes_write_ucs4_raw_utf8_trailing_512(u8 **writer_addr, const u32 *src, usize len) {
+    assert(len && len < READ_BATCH_COUNT);
+    //
+    u8 *writer = *writer_addr;
+    //
+    u16 maskz = len_to_maskz(len);
+    vector_a vec = maskz_loadu(maskz, src);
+    if (len == 1) {
+    one_left:;
+        if (unlikely(!encode_one_ucs4_noescape(&writer, *src))) return false;
+        goto finished;
+    }
+    u32 cur_unicode = *src;
+    bool is_escaped_unused;
+restart:;
+    int unicode_type = ucs4_get_type(cur_unicode, &is_escaped_unused);
+    switch (unicode_type) {
+        case 1: {
+            goto ascii;
+        }
+        case 2: {
+            goto _2bytes;
+        }
+        case 3: {
+            goto _3bytes;
+        }
+        case 4: {
+            if (unlikely(!encode_one_ucs4_noescape(&writer, cur_unicode))) return false;
+            src++;
+            len--;
+            if (len) {
+                if (len == 1) goto one_left;
+                maskz = maskz >> 1;
+                vec = maskz_loadu(maskz, src);
+                cur_unicode = *src;
+                goto restart;
+            }
+            goto finished;
+        }
+        default: {
+            SSRJSON_UNREACHABLE();
+        }
+    }
+    // ---unreachable here---
+ascii:;
+    {
+        avx512_bitmask_t m_not_ascii = unsigned_cmpgt_bitmask(broadcast(0), vec) | unsigned_cmpgt_bitmask(vec, broadcast(0x7f));
+        m_not_ascii = m_not_ascii & maskz;
+    __ascii:;
+        cvt_to_dst(writer, vec);
+        if (likely(m_not_ascii == 0)) {
+            writer += len;
+            goto finished;
+        } else {
+            usize done_count = escape_bitmask_to_done_count(m_not_ascii);
+            u32 escape_unicode = src[done_count];
+            src += done_count + 1;
+            len -= done_count + 1;
+            writer += done_count;
+            assume(escape_unicode >= 128);
+            if (unlikely(!encode_one_ucs4_noescape(&writer, escape_unicode))) return false;
+            if (len) {
+                maskz = maskz >> (done_count + 1);
+                cur_unicode = *src;
+                vec = maskz_loadu(maskz, src);
+                if (escape_unicode < 128) {
+                    m_not_ascii = m_not_ascii >> (done_count + 1);
+                    goto __ascii;
+                }
+                goto restart;
+            }
+            goto finished;
+        }
+        // ---unreachable here---
+    }
+_2bytes:;
+    {
+        avx512_bitmask_t m_not_2bytes = unsigned_cmpgt_bitmask(broadcast(0x80), vec) | unsigned_cmpgt_bitmask(vec, broadcast(0x7ff));
+        m_not_2bytes = m_not_2bytes & maskz;
+    __2bytes:;
+        ucs4_encode_2bytes_utf8_avx512(writer, vec);
+        if (likely(m_not_2bytes == 0)) {
+            writer += len * 2;
+            goto finished;
+        } else {
+            usize done_count = escape_bitmask_to_done_count(m_not_2bytes);
+            u32 escape_unicode = src[done_count];
+            src += done_count + 1;
+            len -= done_count + 1;
+            writer += done_count * 2;
+            assume(!(escape_unicode >= 0x80 && escape_unicode <= 0x7ff));
+            if (unlikely(!encode_one_ucs4_noescape(&writer, escape_unicode))) return false;
+            if (len) {
+                maskz = maskz >> (done_count + 1);
+                cur_unicode = *src;
+                vec = maskz_loadu(maskz, src);
+                if (cur_unicode >= 0x80 && cur_unicode <= 0x7ff) {
+                    m_not_2bytes = m_not_2bytes >> (done_count + 1);
+                    goto __2bytes;
+                }
+                goto restart;
+            }
+            goto finished;
+        }
+        // ---unreachable here---
+    }
+_3bytes:;
+    {
+        avx512_bitmask_t m_not_3bytes = unsigned_cmpgt_bitmask(broadcast(0x800), vec) | (unsigned_cmpgt_bitmask(vec, broadcast(0xd7ff)) & unsigned_cmpgt_bitmask(broadcast(0xe000), vec)) | unsigned_cmpgt_bitmask(vec, broadcast(0xffff));
+        m_not_3bytes = m_not_3bytes & maskz;
+    __3bytes:;
+        ucs4_encode_3bytes_utf8_avx512(writer, vec);
+        if (likely(m_not_3bytes == 0)) {
+            writer += len * 3;
+            goto finished;
+        } else {
+            usize done_count = escape_bitmask_to_done_count(m_not_3bytes);
+            u32 escape_unicode = src[done_count];
+            src += done_count + 1;
+            len -= done_count + 1;
+            writer += done_count * 3;
+            assume(!(escape_unicode >= 0x800 && escape_unicode <= 0xffff && (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)));
+            if (unlikely(!encode_one_ucs4_noescape(&writer, escape_unicode))) return false;
+            if (len) {
+                maskz = maskz >> (done_count + 1);
+                cur_unicode = *src;
+                vec = maskz_loadu(maskz, src);
+                if (cur_unicode >= 0x800 && cur_unicode <= 0xffff && (cur_unicode <= 0xd7ff || cur_unicode >= 0xe000)) {
+                    m_not_3bytes = m_not_3bytes >> (done_count + 1);
+                    goto __3bytes;
+                }
+                goto restart;
+            }
+            goto finished;
+        }
+        // ---unreachable here---
     }
 finished:;
     *writer_addr = writer;

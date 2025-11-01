@@ -105,7 +105,7 @@ force_inline void cvt_to_dst_u32_u16_256(u16 *dst, vector_a_u32_256 y) {
 /*==============================================================================
  * `avx2_trailing_cvt` Series.
  * Copy `[src, src_end)` to `dst` with conversion. 
- * Assuming that 15 bytes before `src` are readable,
+ * Assuming that 16 bytes before `src_end` are readable,
  * and `32 * sizeof(_dst_t) / sizeof(_src_t)`
  * bytes after `dst` are writable.
  *============================================================================*/
@@ -113,6 +113,7 @@ force_inline void cvt_to_dst_u32_u16_256(u16 *dst, vector_a_u32_256 y) {
 force_inline void __avx2_trailing_cvt_same_size(const void *__src, const void *__src_end, void *__dst) {
     const size_t half = 32 / 2;
     const u8 *const src = SSRJSON_CAST(u8 *, __src);
+    // 16 bytes before src_end
     const u8 *t1 = SSRJSON_CAST(u8 *, __src_end) - half;
     const bool t1_before_src = t1 < src;
     //
@@ -144,6 +145,7 @@ force_inline void avx2_trailing_cvt_u32_u32(const u32 *src, const u32 *src_end, 
 
 force_inline void avx2_trailing_cvt_u8_u16(const u8 *src, const u8 *src_end, u16 *dst) {
     const size_t half = 32 / 2 / sizeof(u8);
+    // 16 bytes before src_end
     const u8 *t1 = src_end - half;
     const bool t1_before_src = t1 < src;
     //
@@ -163,6 +165,7 @@ force_inline void avx2_trailing_cvt_u8_u16(const u8 *src, const u8 *src_end, u16
 
 force_inline void avx2_trailing_cvt_u8_u32(const u8 *src, const u8 *src_end, u32 *dst) {
     const size_t half = 32 / 2 / sizeof(u8);
+    // 16 bytes before src_end
     const u8 *t1 = src_end - half;
     const bool t1_before_src = t1 < src;
     //
@@ -186,6 +189,7 @@ force_inline void avx2_trailing_cvt_u8_u32(const u8 *src, const u8 *src_end, u32
 
 force_inline void avx2_trailing_cvt_u16_u32(const u16 *src, const u16 *src_end, u32 *dst) {
     const size_t half = 32 / 2 / sizeof(u16);
+    // 16 bytes before src_end
     const u16 *t1 = src_end - half;
     const bool t1_before_src = t1 < src;
     //
@@ -206,6 +210,7 @@ force_inline void avx2_trailing_cvt_u16_u32(const u16 *src, const u16 *src_end, 
 // trailing cvt (down)
 force_inline void avx2_trailing_cvt_u16_u8(const u16 *src, const u16 *src_end, u8 *dst) {
     const size_t half = 32 / 2 / sizeof(u16);
+    // 16 bytes before src_end
     const u16 *t1 = src_end - half;
     const bool t1_before_src = t1 < src;
     //
@@ -224,6 +229,7 @@ force_inline void avx2_trailing_cvt_u16_u8(const u16 *src, const u16 *src_end, u
 
 force_inline void avx2_trailing_cvt_u32_u8(const u32 *src, const u32 *src_end, u8 *dst) {
     const size_t half = 32 / 2 / sizeof(u32);
+    // 16 bytes before src_end
     const u32 *t1 = src_end - half;
     const bool t1_before_src = t1 < src;
     //
@@ -234,6 +240,8 @@ force_inline void avx2_trailing_cvt_u32_u8(const u32 *src, const u32 *src_end, u
     int __shl2 = (half - (t1 - src));
     int shl1 = t1_before_src ? __shl1 : 0;
     int shl2 = t1_before_src ? 0 : __shl2;
+    assert(shl1 >= 0 && shl1 < 4);
+    assert(shl2 >= 0 && shl2 <= 4);
     s1 = _mm_shuffle_epi8(s1, *SSRJSON_CAST(vector_a_u8_128 *, &_AVX2TrailingCvtRShiftMaskTable32to8[shl1][0]));
     s2 = _mm_shuffle_epi8(s2, *SSRJSON_CAST(vector_a_u8_128 *, &_AVX2TrailingCvtRShiftMaskTable32to8[shl2][0]));
     // vmovd

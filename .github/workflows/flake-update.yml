@@ -76,7 +76,7 @@ jobs:
     - name: Nix flake update
       if: env.DO_UPDATE == 'true'
       run: |
-        nix flake update --commit-lock-file
+        nix --option commit-lockfile-summary "flake.lock: Update [skip ci]" flake update --commit-lock-file
     - name: Test Nix Develop
       run: |
         nix develop --command echo DONE

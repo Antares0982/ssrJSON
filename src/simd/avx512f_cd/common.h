@@ -26,6 +26,7 @@
 #    error "AVX512F and AVX512CD is required for this file"
 #endif
 
+#include "simd/mask_table.h"
 #include "simd/simd_detect.h"
 #include "simd/vector_types.h"
 
@@ -60,7 +61,7 @@
 #define setzero_512 _mm512_setzero_si512
 
 force_inline u64 len_to_maskz(usize len) {
-    return (1ULL << len) - 1;
+    return _LenToMaskZTable[len];
 }
 
 force_inline vector_a_u32_512 cvt_u16_to_u32_512(vector_a_u16_256 y) {

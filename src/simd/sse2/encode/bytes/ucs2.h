@@ -39,6 +39,8 @@
 #if __SSSE3__
 #    include "simd/ssse3/common.h"
 
+#    define __reserve_ucs2_encode_3bytes_utf8_ssse3 (24)
+
 force_inline void ucs2_encode_3bytes_utf8_ssse3(u8 *writer, vector_a x) {
     static const vector_a_u8_128 t1 = {
             0x80, 0x80, 0,
@@ -83,6 +85,8 @@ force_inline void ucs2_encode_3bytes_utf8_ssse3(u8 *writer, vector_a x) {
 }
 #endif
 
+#define __reserve_ucs2_encode_2bytes_utf8_sse2 (16)
+
 force_inline void ucs2_encode_2bytes_utf8_sse2(u8 *writer, vector_a x) {
     /* abcdefgh|12300000 -> gh123[mmm]|abcdef[mm] */
     /* x1 = gh123000|00000000 */
@@ -97,6 +101,10 @@ force_inline void ucs2_encode_2bytes_utf8_sse2(u8 *writer, vector_a x) {
     x = x | broadcast(0x80c0);
     *(vector_u *)writer = x;
 }
+
+/* See AVX2 code for more details. */
+#define __readbefore_bytes_write_ucs2_trailing_128 (16)
+#define __excess_bytes_write_ucs2_trailing_128 (24 - max_json_bytes_per_unicode)
 
 /* 
  * Encode UCS2 trailing to utf-8.
@@ -239,6 +247,134 @@ _3bytes:;
             goto finished;
         }
         SSRJSON_UNREACHABLE();
+    }
+#endif
+finished:;
+    *writer_addr = writer;
+    return true;
+}
+
+/* See AVX2 code for more details. */
+#define __readbefore_bytes_write_ucs2_raw_utf8_trailing_128 (16)
+#define __excess_bytes_write_ucs2_raw_utf8_trailing_128 (24 - max_utf8_bytes_per_ucs2)
+
+force_inline bool bytes_write_ucs2_raw_utf8_trailing_128(u8 **writer_addr, const u16 *src, usize len) {
+    assert(len && len < READ_BATCH_COUNT);
+    const u16 *const src_end = src + len;
+    const u16 *const last_batch_start = src_end - READ_BATCH_COUNT;
+    const vector_a vec = *(const vector_u *)last_batch_start;
+    u8 *writer = *writer_addr;
+    //
+    vector_a m, tail_vec;
+    usize shift;
+
+restart:;
+    if (len == 1) {
+        if (unlikely(!encode_one_ucs2_noescape(&writer, *src))) return false;
+        goto finished;
+    }
+    u16 cur_unicode = *src;
+    bool is_escaped_unused;
+    int unicode_type = ucs2_get_type(cur_unicode, &is_escaped_unused);
+    switch (unicode_type) {
+        case 1: {
+            goto ascii;
+        }
+        case 2: {
+            goto _2bytes;
+        }
+        case 3: {
+#if __SSSE3__
+            goto _3bytes;
+#else
+            if (unlikely(!encode_one_ucs2_noescape(&writer, cur_unicode))) return false;
+            src++;
+            len--;
+            if (len) goto restart;
+            goto finished;
+#endif
+        }
+        default: {
+            SSRJSON_UNREACHABLE();
+        }
+    }
+    // ---unreachable here---
+ascii:;
+    {
+        const vector_a m_not_ascii = unsigned_saturate_minus(broadcast(0), vec) | unsigned_saturate_minus(vec, broadcast(0x7f));
+        m = high_mask(m_not_ascii, len);
+        shift = sizeof(u16) * (READ_BATCH_COUNT - len);
+        tail_vec = runtime_byte_rshift_128(vec, shift);
+        cvt_to_dst(writer, tail_vec);
+        if (likely(testz(m))) {
+            writer += len;
+            goto finished;
+        } else {
+            usize done_count = escape_mask_to_done_count(m);
+            usize real_done_count = done_count - (READ_BATCH_COUNT - len);
+            assert(real_done_count < len);
+            u16 escape_unicode = last_batch_start[done_count];
+            src = last_batch_start + done_count + 1;
+            writer += real_done_count;
+            len = READ_BATCH_COUNT - done_count - 1;
+            assume(escape_unicode >= 128);
+            if (unlikely(!encode_one_ucs2_noescape(&writer, escape_unicode))) return false;
+            if (len) goto restart;
+            goto finished;
+        }
+        // ---unreachable here---
+    }
+_2bytes:;
+    {
+        const vector_a m_not_2bytes = unsigned_saturate_minus(broadcast(0x80), vec) | unsigned_saturate_minus(vec, broadcast(0x7ff));
+        m = high_mask(m_not_2bytes, len);
+        shift = sizeof(u16) * (READ_BATCH_COUNT - len);
+        tail_vec = runtime_byte_rshift_128(vec, shift);
+        ucs2_encode_2bytes_utf8_sse2(writer, tail_vec);
+        if (likely(testz(m))) {
+            writer += len * 2;
+            goto finished;
+        } else {
+            usize done_count = escape_mask_to_done_count(m);
+            usize real_done_count = done_count - (READ_BATCH_COUNT - len);
+            assert(real_done_count < len);
+            u16 escape_unicode = last_batch_start[done_count];
+            src = last_batch_start + done_count + 1;
+            writer += real_done_count * 2;
+            len = READ_BATCH_COUNT - done_count - 1;
+            assume(!(escape_unicode >= 0x80 && escape_unicode <= 0x7ff));
+            if (unlikely(!encode_one_ucs2_noescape(&writer, escape_unicode))) return false;
+            if (len) goto restart;
+            goto finished;
+        }
+        // ---unreachable here---
+    }
+#if __SSSE3__
+_3bytes:;
+    {
+        const vector_a m_not_3bytes = unsigned_saturate_minus(broadcast(0x800), vec) | (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec));
+        m = high_mask(m_not_3bytes, len);
+        shift = sizeof(u16) * (READ_BATCH_COUNT - len);
+        tail_vec = runtime_byte_rshift_128(vec, shift);
+        ucs2_encode_3bytes_utf8_ssse3(writer, tail_vec);
+        if (likely(testz(m))) {
+            writer += len * 3;
+            goto finished;
+        } else {
+            // cannot use no_eq0 version
+            usize done_count = escape_mask_to_done_count(m);
+            usize real_done_count = done_count - (READ_BATCH_COUNT - len);
+            assert(real_done_count < len);
+            u16 escape_unicode = last_batch_start[done_count];
+            src = last_batch_start + done_count + 1;
+            writer += real_done_count * 3;
+            len = READ_BATCH_COUNT - done_count - 1;
+            assume(!(escape_unicode >= 0x800 && (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)));
+            if (unlikely(!encode_one_ucs2_noescape(&writer, escape_unicode))) return false;
+            if (len) goto restart;
+            goto finished;
+        }
+        // ---unreachable here---
     }
 #endif
 finished:;

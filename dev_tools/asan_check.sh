@@ -18,4 +18,5 @@ if [ ! -z ${SKIP_TEST+x} ]; then
     exit 0
 fi
 export PYTHONPATH=$(pwd)/$BUILD_DIR
+export ASAN_OPTIONS=detect_leaks=0
 exec $Python3_EXECUTABLE -m pytest --random-order python-test

@@ -69,7 +69,7 @@
 #include "compile_context/s_in.inl.h"
 
 /* Encodes non-container types. */
-force_inline PyObject *ssrjson_dumps_single_unicode(PyObject *unicode, bool to_bytes_obj) {
+force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, bool to_bytes_obj, bool is_write_cache) {
     EncodeUnicodeWriter writer;
     EncodeUnicodeBufferInfo _unicode_buffer_info; //, new_unicode_buffer_info;
     _unicode_buffer_info.head = PyObject_Malloc(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
@@ -99,7 +99,7 @@ force_inline PyObject *ssrjson_dumps_single_unicode(PyObject *unicode, bool to_b
     //
     bool success;
     if (to_bytes_obj) {
-        success = bytes_buffer_append_str_indent0(unicode, &WRITER_AS_U8(writer), &_unicode_buffer_info, 0, true);
+        success = bytes_buffer_append_str_indent0(unicode, &WRITER_AS_U8(writer), &_unicode_buffer_info, 0, true, is_write_cache);
         WRITER_AS_U8(writer)
         --;
     } else {
@@ -157,6 +157,14 @@ force_inline PyObject *ssrjson_dumps_single_unicode(PyObject *unicode, bool to_b
         init_pyunicode_noinline(_unicode_buffer_info.head, written_len, is_ascii ? 0 : unicode_kind);
     }
     return (PyObject *)_unicode_buffer_info.head;
+}
+
+static force_noinline PyObject *ssrjson_dumps_single_unicode_to_str(PyObject *unicode) {
+    return _ssrjson_dumps_single_unicode(unicode, false, false);
+}
+
+static force_noinline PyObject *ssrjson_dumps_single_unicode_to_bytes(PyObject *unicode, bool is_write_cache) {
+    return _ssrjson_dumps_single_unicode(unicode, true, is_write_cache);
 }
 
 #include "compile_context/s_out.inl.h"
@@ -308,6 +316,7 @@ force_inline PyObject *ssrjson_dumps_single_constant(ssrjson_py_types py_type, P
 
 extern int ssrjson_invalid_arg_checked;
 extern int ssrjson_nonstrict_argparse;
+extern int ssrjson_write_utf8_cache_value;
 
 force_inline void invalid_arg_warning(void) {
     fprintf(stderr, "Warning: some options are not supported in this version of ssrjson\n");
@@ -474,23 +483,22 @@ dumps_container:;
 
     assert(!ret || ret->ob_refcnt == 1);
 
-    goto success;
+    return ret;
 
 dumps_unicode:;
-    return ssrjson_dumps_single_unicode(obj, false);
+    return ssrjson_dumps_single_unicode_to_str(obj);
 dumps_long:;
     return ssrjson_dumps_single_long(obj, false);
 dumps_constant:;
     return ssrjson_dumps_single_constant(obj_type, obj, false);
 dumps_float:;
     return ssrjson_dumps_single_float(obj, false);
-success:;
-    return ret;
 }
 
-force_inline bool encode_to_bytes_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **obj_out, PyObject **indent_out) {
+force_inline bool encode_to_bytes_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **obj_out, PyObject **indent_out, bool *write_cache_out) {
     assert(kwnames);
     PyObject *obj, *indent;
+    bool is_write_cache = *write_cache_out;
     //
     usize nkwargs = PyTuple_GET_SIZE(kwnames);
     usize nargs = npargs + nkwargs;
@@ -515,6 +523,16 @@ force_inline bool encode_to_bytes_argparse_with_kw(PyObject *const *args, usize 
                 assert(!indent);
                 indent = args[npargs + i];
                 continue;
+            } else if (char_count == 11 && memcmp(char_data, "is_write_cache", 11) == 0) {
+                PyObject *arg = args[npargs + i];
+                bool value_is_true = arg == Py_True;
+                bool value_is_false = arg == Py_False;
+                if (unlikely(!value_is_true && !value_is_false)) {
+                    PyErr_SetString(PyExc_TypeError, "is_write_cache argument must be True or False");
+                    return false;
+                }
+                is_write_cache = value_is_true;
+                continue;
             } else if (char_count == 3 && memcmp(char_data, "obj", 3) == 0) {
                 if (unlikely(obj)) {
                     // repeated arg
@@ -536,6 +554,7 @@ force_inline bool encode_to_bytes_argparse_with_kw(PyObject *const *args, usize 
     }
     *obj_out = obj;
     *indent_out = indent;
+    *write_cache_out = is_write_cache;
     return true;
 }
 
@@ -548,8 +567,8 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_EncodeToBytes)(PyObject *self,
     usize npargs = PyVectorcall_NARGS(nargsf);
     //
     PyObject *obj, *indent;
+    bool is_write_cache = ssrjson_write_utf8_cache_value;
     if (!kwnames) {
-        indent = NULL;
         if (unlikely(npargs != 1)) {
             if (npargs > 1) {
                 PyErr_Format(PyExc_TypeError, "dumps_to_bytes() takes 1 positional argument but %d were given", (int)npargs);
@@ -559,7 +578,8 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_EncodeToBytes)(PyObject *self,
             return NULL;
         }
         obj = npargs > 0 ? args[0] : NULL;
-    } else if (!encode_to_bytes_argparse_with_kw(args, npargs, kwnames, &obj, &indent)) {
+        indent = NULL;
+    } else if (!encode_to_bytes_argparse_with_kw(args, npargs, kwnames, &obj, &indent, &is_write_cache)) {
         return NULL;
     }
     //
@@ -611,15 +631,15 @@ dumps_container:;
 
     switch (indent_int) {
         case 0: {
-            ret = ssrjson_dumps_to_bytes_obj_indent0(obj);
+            ret = ssrjson_dumps_to_bytes_obj_indent0(obj, is_write_cache);
             break;
         }
         case 2: {
-            ret = ssrjson_dumps_to_bytes_obj_indent2(obj);
+            ret = ssrjson_dumps_to_bytes_obj_indent2(obj, is_write_cache);
             break;
         }
         case 4: {
-            ret = ssrjson_dumps_to_bytes_obj_indent4(obj);
+            ret = ssrjson_dumps_to_bytes_obj_indent4(obj, is_write_cache);
             break;
         }
         default: {
@@ -635,16 +655,14 @@ dumps_container:;
 
     assert(!ret || ret->ob_refcnt == 1);
 
-    goto success;
+    return ret;
 
 dumps_unicode:;
-    return ssrjson_dumps_single_unicode(obj, true);
+    return ssrjson_dumps_single_unicode_to_bytes(obj, is_write_cache);
 dumps_long:;
     return ssrjson_dumps_single_long(obj, true);
 dumps_constant:;
     return ssrjson_dumps_single_constant(obj_type, obj, true);
 dumps_float:;
     return ssrjson_dumps_single_float(obj, true);
-success:;
-    return ret;
 }

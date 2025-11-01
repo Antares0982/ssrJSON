@@ -35,6 +35,10 @@
 #define COMPILE_SIMD_BITS 128
 #include "compile_context/srw_in.inl.h"
 
+/* See AVX2 code for more details. */
+#define __readbefore_bytes_write_ucs1_trailing_128 (16)
+#define __excess_bytes_write_ucs1_trailing_128 (16 - max_json_bytes_per_unicode)
+
 /* 
  * Encode UCS1 trailing to utf-8.
  * Only consider vector in ASCII range,
@@ -66,6 +70,44 @@ restart:;
         src += done_count;
         u8 unicode = *src++;
         encode_one_special_ucs1(&writer, unicode);
+        if (len) goto restart;
+    }
+    *writer_addr = writer;
+}
+
+/* See AVX2 code for more details. */
+#define __readbefore_bytes_write_ucs1_raw_utf8_trailing_128 (16)
+#define __excess_bytes_write_ucs1_raw_utf8_trailing_128 (16 - max_utf8_bytes_per_ucs1)
+
+force_inline void bytes_write_ucs1_raw_utf8_trailing_128(u8 **writer_addr, const u8 *src, usize len) {
+    assert(len && len < READ_BATCH_COUNT);
+    // constants
+    const u8 *src_end = src + len;
+    const u8 *last_batch_start = src_end - READ_BATCH_COUNT;
+    const vector_a vec = *(const vector_u *)last_batch_start;
+    const vector_a m0 = signed_cmpgt(broadcast(0), vec);
+    //
+    u8 *writer = *writer_addr;
+restart:;
+    vector_a x, m;
+    int shift;
+    shift = SSRJSON_CAST(int, READ_BATCH_COUNT - len);
+    x = runtime_byte_rshift_128(vec, shift);
+    m = runtime_byte_rshift_128(m0, shift);
+    *(vector_u *)writer = x;
+    if (likely(testz(m))) {
+        writer += len;
+    } else {
+        usize done_count = escape_anymask_to_done_count_no_eq0(m);
+        assert(done_count < len);
+        len -= done_count + 1;
+        writer += done_count;
+        src += done_count;
+        u8 unicode = *src++;
+
+        *writer++ = (unicode >> 6) | 0xc0;
+        *writer++ = (unicode & 0x3f) | 0x80;
+
         if (len) goto restart;
     }
     *writer_addr = writer;

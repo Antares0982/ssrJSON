@@ -102,6 +102,15 @@
 #    define SSRJSON_ENCODE_UCS4_TO_BYTES_IMPL_INLINE 0
 #endif
 
+/* 
+ * Whether to write UTF-8 cache when calling dumps_to_bytes().
+ * This behavior can also be controlled by the `is_write_cache` argument,
+ * or disabled/enabled globally by calling `ssrjson.write_utf8_cache()`.
+ */
+#ifndef SSRJSON_WRITE_UTF8_CACHE
+#    define SSRJSON_WRITE_UTF8_CACHE 1
+#endif
+
 /** Type definition for primitive types. */
 typedef float f32;
 typedef double f64;

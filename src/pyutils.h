@@ -25,6 +25,9 @@
 
 #include "ssrjson.h"
 #include "utils/unicode.h"
+#if defined(Py_GIL_DISABLED)
+#    include <stdatomic.h>
+#endif
 
 #define ASCII_OFFSET sizeof(PyASCIIObject)
 #define UNICODE_OFFSET sizeof(PyCompactUnicodeObject)
@@ -128,6 +131,56 @@ force_inline void make_hash(PyASCIIObject *ascii, const void *unicode_str, size_
 
 force_noinline void init_pyunicode_noinline(void *head, Py_ssize_t size, int kind);
 
+force_inline const u8 *pyunicode_get_utf8_cache(PyObject *unicode) {
+#if defined(Py_GIL_DISABLED)
+    return __c11_atomic_load((const _Atomic(void *) *)&SSRJSON_CAST(PyCompactUnicodeObject *, unicode)->utf8, memory_order_acquire);
+#else
+    return (const u8 *)SSRJSON_PYCOMPACTUNICODE_CAST(unicode)->utf8;
+#endif
+}
+
+force_inline void get_utf8_cache(PyObject *unicode, const u8 **utf8_cache_out, usize *utf8_length_out) {
+    assert(SSRJSON_CAST(PyASCIIObject *, unicode)->state.compact);
+    assert(!SSRJSON_CAST(PyASCIIObject *, unicode)->state.ascii);
+    *utf8_cache_out = (const u8 *)pyunicode_get_utf8_cache(unicode);
+    *utf8_length_out = (usize)SSRJSON_PYCOMPACTUNICODE_CAST(unicode)->utf8_length;
+}
+
+force_inline void set_cache(PyObject *str, const u8 **utf8_cache_addr, usize *utf8_length_addr) {
+#if defined(Py_GIL_DISABLED)
+    // TODO
+    const u8 *expected = NULL;
+    if (!atomic_compare_exchange_strong(&SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8, &expected, *utf8_cache_addr)) {
+        // already has an utf8 cache, free the allocated one
+        PyMem_Free((void *)*utf8_cache_addr);
+        *utf8_cache_addr = expected;
+        assert(*utf8_length_addr == (usize)SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8_length);
+    }
+#else
+    SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8 = (void *)*utf8_cache_addr;
+    SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8_length = (Py_ssize_t)*utf8_length_addr;
+#endif
+}
+
+force_inline void *pymem_malloc_wrapped(usize size) {
+    void *ptr = PyMem_Malloc(size);
+    if (unlikely(!ptr)) {
+        PyErr_NoMemory();
+    }
+    return ptr;
+}
+
+force_inline void pymem_free_wrapped(void *ptr) {
+    PyMem_Free(ptr);
+}
+
+force_inline void *pymem_realloc_wrapped(void *ptr, usize size) {
+    void *new_ptr = PyMem_Realloc(ptr, size);
+    if (unlikely(!new_ptr)) {
+        PyErr_NoMemory();
+    }
+    return new_ptr;
+}
 
 PyObject *make_unicode_from_raw_ucs4(void *raw_buffer, usize u8size, usize u16size, usize totalsize, bool do_hash);
 PyObject *make_unicode_from_raw_ucs2(void *raw_buffer, usize u8size, usize totalsize, bool do_hash);

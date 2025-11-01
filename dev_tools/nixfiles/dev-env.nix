@@ -78,9 +78,9 @@ let
   runSdeIvbPath = "$out/bin/run-sde-ivb";
   sdeScript = ''
     if [ -z ${pythonpathEnvLiteral} ]; then
-        PYTHONPATH=$(pwd)/build @sde64@ @cpuid@ -- "$@"
+        PYTHONPATH=$(pwd)/build exec @sde64@ @cpuid@ -- "$@"
     else
-        @sde64@ @cpuid@ -- "$@"
+        exec @sde64@ @cpuid@ -- "$@"
     fi
   '';
   sde = pkgs.callPackage ./sde.nix { };
@@ -115,8 +115,10 @@ stdenvNoCC.mkDerivation {
     ln -s "$(readlink -f $(${pkgs.gcc}/bin/gcc -print-file-name=libasan.so))" "$out/lib/libasan.so"
     # nix-support
     ln -s "${inputDerivation}" "$out/nix-support/nix-shell-inputs"
+    LIBSTDCXX=$(dirname $(readlink -f $(${pkgs.gcc}/bin/gcc -print-file-name=libstdc++.so)))
     echo "export CC=${llvmClang}/bin/clang" > "$out/nix-support/shell-env"
     echo "export CXX=${llvmClang}/bin/clang++" >> "$out/nix-support/shell-env"
+    echo "export LD_LIBRARY_PATH=$LIBSTDCXX:\$LD_LIBRARY_PATH" >> "$out/nix-support/shell-env"
     echo "export LIBRARY_PATH=${libcxx}/lib:\$LIBRARY_PATH" >> "$out/nix-support/shell-env"
     echo "export Python3_ROOT_DIR=${using_python}" >> "$out/nix-support/shell-env"
   ''

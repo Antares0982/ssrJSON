@@ -23,19 +23,30 @@
 #ifndef SSRJSON_SIMD_DETECT_H
 #define SSRJSON_SIMD_DETECT_H
 
+#define HAS_AVX512 0
+#define HAS_AVX2 0
+#define HAS_SSE4_2 0
+#define HAS_NEON 0
+
 
 #if SSRJSON_X86
 #    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
 #        define SIMD_FEATURE_NAME avx512
 #        define SUPPORT_SIMD_512BITS 1
 #        define SUPPORT_SIMD_256BITS 1
+#        undef HAS_AVX512
+#        define HAS_AVX512 1
 #    elif __AVX2__
 #        define SIMD_FEATURE_NAME avx2
 #        define SUPPORT_SIMD_512BITS 0
 #        define SUPPORT_SIMD_256BITS 1
+#        undef HAS_AVX2
+#        define HAS_AVX2 1
 #    else
 #        if __SSE4_2__
 #            define SIMD_FEATURE_NAME sse4_2
+#            undef HAS_SSE4_2
+#            define HAS_SSE4_2 1
 #        else
 #            define SIMD_FEATURE_NAME sse2
 #        endif
@@ -67,7 +78,8 @@
 #    define WRITE_SUPPORT_MASK_WRITE 0
 #    define SUPPORT_SIMD_512BITS 0
 #    define SUPPORT_SIMD_256BITS 0
-// aarch64 TODO
+#    undef HAS_NEON
+#    define HAS_NEON 1
 #else
 #    error "unsupported architecture"
 #endif

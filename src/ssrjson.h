@@ -266,12 +266,16 @@ force_inline int get_cpuid_max(void) {
 #define REPEAT_32(x) REPEAT_16(x) REPEAT_16(x)
 #define REPEAT_64(x) REPEAT_32(x) REPEAT_32(x)
 
-#define SSRJSON_CAST(type, expr) ((type)(expr))
 #if defined(SSRJSON_COVERAGE) || defined(NDEBUG)
 #    define SSRJSON_UNREACHABLE() __builtin_unreachable()
 #else
 #    define SSRJSON_UNREACHABLE() assert(false)
 #endif
+
+#define SSRJSON_CAST(type, expr) ((type)(expr))
+#define SSRJSON_PYASCII_CAST(expr) SSRJSON_CAST(PyASCIIObject *, (expr))
+#define SSRJSON_PYCOMPACTUNICODE_CAST(expr) SSRJSON_CAST(PyCompactUnicodeObject *, (expr))
+#define SSRJSON_PYUNICODE_CAST(expr) SSRJSON_CAST(PyUnicodeObject *, (expr))
 /*==============================================================================
  * Macros
  *============================================================================*/
@@ -394,6 +398,12 @@ __extension__ typedef unsigned __int128 u128;
 
 /* Default padding. */
 #define TAIL_PADDING (512 / 8)
+
+/* Tool macros for calculating how long the buffer should be reserved to. */
+#define max_json_bytes_per_unicode (6) // per unicode can be JSON encoded to at most 6 bytes
+#define max_utf8_bytes_per_ucs1 (2)    // per UCS1 can be UTF-8 encoded to at most 2 bytes
+#define max_utf8_bytes_per_ucs2 (3)    // per UCS2 can be UTF-8 encoded to at most 3 bytes
+#define max_utf8_bytes_per_ucs4 (4)    // per UCS4 can be UTF-8 encoded to at most 4 bytes
 
 /*==============================================================================
  * 128-bit Integer Utils

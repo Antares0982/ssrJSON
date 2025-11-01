@@ -767,143 +767,286 @@ const u8 hex_conv_table[256] = {
 #define CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT8 CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT4, CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT4
 #define CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT16 CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT8, CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT8
 #define CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT32 CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT16, CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT16
+#define CONTROL_SEQ_PLAIN(_x_) (_x_), '\0', CONTROL_SEQ_ESCAPE_SUFFIX, CONTROL_SEQ_ESCAPE_MIDDLE
 
+#define CONTROL_TABLE_DEF {                                               \
+        CONTROL_SEQ_ESCAPE_PREFIX, '0', '0', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '0', '1', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '0', '2', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '0', '3', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '0', '4', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '0', '5', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '0', '6', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '0', '7', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        '\\', 'b', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX,  \
+        '\\', 't', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX,  \
+        '\\', 'n', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX,  \
+        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'b', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        '\\', 'f', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX,  \
+        '\\', 'r', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX,  \
+        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'e', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'f', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', '0', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', '1', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', '2', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', '3', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', '4', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', '5', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', '6', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', '7', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', '8', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', '9', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'a', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'b', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'c', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'd', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'e', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'f', CONTROL_SEQ_ESCAPE_SUFFIX,   \
+        CONTROL_SEQ_PLAIN(32), CONTROL_SEQ_PLAIN(33),                     \
+        '\\', '"', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX,  \
+        CONTROL_SEQ_PLAIN(35),                                            \
+        CONTROL_SEQ_PLAIN(36),                                            \
+        CONTROL_SEQ_PLAIN(37),                                            \
+        CONTROL_SEQ_PLAIN(38),                                            \
+        CONTROL_SEQ_PLAIN(39),                                            \
+        CONTROL_SEQ_PLAIN(40),                                            \
+        CONTROL_SEQ_PLAIN(41),                                            \
+        CONTROL_SEQ_PLAIN(42),                                            \
+        CONTROL_SEQ_PLAIN(43),                                            \
+        CONTROL_SEQ_PLAIN(44),                                            \
+        CONTROL_SEQ_PLAIN(45),                                            \
+        CONTROL_SEQ_PLAIN(46),                                            \
+        CONTROL_SEQ_PLAIN(47),                                            \
+        CONTROL_SEQ_PLAIN(48),                                            \
+        CONTROL_SEQ_PLAIN(49),                                            \
+        CONTROL_SEQ_PLAIN(50),                                            \
+        CONTROL_SEQ_PLAIN(51),                                            \
+        CONTROL_SEQ_PLAIN(52),                                            \
+        CONTROL_SEQ_PLAIN(53),                                            \
+        CONTROL_SEQ_PLAIN(54),                                            \
+        CONTROL_SEQ_PLAIN(55),                                            \
+        CONTROL_SEQ_PLAIN(56),                                            \
+        CONTROL_SEQ_PLAIN(57),                                            \
+        CONTROL_SEQ_PLAIN(58),                                            \
+        CONTROL_SEQ_PLAIN(59),                                            \
+        CONTROL_SEQ_PLAIN(60),                                            \
+        CONTROL_SEQ_PLAIN(61),                                            \
+        CONTROL_SEQ_PLAIN(62),                                            \
+        CONTROL_SEQ_PLAIN(63),                                            \
+        CONTROL_SEQ_PLAIN(64),                                            \
+        CONTROL_SEQ_PLAIN(65),                                            \
+        CONTROL_SEQ_PLAIN(66),                                            \
+        CONTROL_SEQ_PLAIN(67),                                            \
+        CONTROL_SEQ_PLAIN(68),                                            \
+        CONTROL_SEQ_PLAIN(69),                                            \
+        CONTROL_SEQ_PLAIN(70),                                            \
+        CONTROL_SEQ_PLAIN(71),                                            \
+        CONTROL_SEQ_PLAIN(72),                                            \
+        CONTROL_SEQ_PLAIN(73),                                            \
+        CONTROL_SEQ_PLAIN(74),                                            \
+        CONTROL_SEQ_PLAIN(75),                                            \
+        CONTROL_SEQ_PLAIN(76),                                            \
+        CONTROL_SEQ_PLAIN(77),                                            \
+        CONTROL_SEQ_PLAIN(78),                                            \
+        CONTROL_SEQ_PLAIN(79),                                            \
+        CONTROL_SEQ_PLAIN(80),                                            \
+        CONTROL_SEQ_PLAIN(81),                                            \
+        CONTROL_SEQ_PLAIN(82),                                            \
+        CONTROL_SEQ_PLAIN(83),                                            \
+        CONTROL_SEQ_PLAIN(84),                                            \
+        CONTROL_SEQ_PLAIN(85),                                            \
+        CONTROL_SEQ_PLAIN(86),                                            \
+        CONTROL_SEQ_PLAIN(87),                                            \
+        CONTROL_SEQ_PLAIN(88),                                            \
+        CONTROL_SEQ_PLAIN(89),                                            \
+        CONTROL_SEQ_PLAIN(90),                                            \
+        CONTROL_SEQ_PLAIN(91),                                            \
+        '\\', '\\', CONTROL_SEQ_ESCAPE_SUFFIX, CONTROL_SEQ_ESCAPE_MIDDLE, \
+        CONTROL_SEQ_PLAIN(93),                                            \
+        CONTROL_SEQ_PLAIN(94),                                            \
+        CONTROL_SEQ_PLAIN(95),                                            \
+        CONTROL_SEQ_PLAIN(96),                                            \
+        CONTROL_SEQ_PLAIN(97),                                            \
+        CONTROL_SEQ_PLAIN(98),                                            \
+        CONTROL_SEQ_PLAIN(99),                                            \
+        CONTROL_SEQ_PLAIN(100),                                           \
+        CONTROL_SEQ_PLAIN(101),                                           \
+        CONTROL_SEQ_PLAIN(102),                                           \
+        CONTROL_SEQ_PLAIN(103),                                           \
+        CONTROL_SEQ_PLAIN(104),                                           \
+        CONTROL_SEQ_PLAIN(105),                                           \
+        CONTROL_SEQ_PLAIN(106),                                           \
+        CONTROL_SEQ_PLAIN(107),                                           \
+        CONTROL_SEQ_PLAIN(108),                                           \
+        CONTROL_SEQ_PLAIN(109),                                           \
+        CONTROL_SEQ_PLAIN(110),                                           \
+        CONTROL_SEQ_PLAIN(111),                                           \
+        CONTROL_SEQ_PLAIN(112),                                           \
+        CONTROL_SEQ_PLAIN(113),                                           \
+        CONTROL_SEQ_PLAIN(114),                                           \
+        CONTROL_SEQ_PLAIN(115),                                           \
+        CONTROL_SEQ_PLAIN(116),                                           \
+        CONTROL_SEQ_PLAIN(117),                                           \
+        CONTROL_SEQ_PLAIN(118),                                           \
+        CONTROL_SEQ_PLAIN(119),                                           \
+        CONTROL_SEQ_PLAIN(120),                                           \
+        CONTROL_SEQ_PLAIN(121),                                           \
+        CONTROL_SEQ_PLAIN(122),                                           \
+        CONTROL_SEQ_PLAIN(123),                                           \
+        CONTROL_SEQ_PLAIN(124),                                           \
+        CONTROL_SEQ_PLAIN(125),                                           \
+        CONTROL_SEQ_PLAIN(126),                                           \
+        CONTROL_SEQ_PLAIN(127),                                           \
+        CONTROL_SEQ_PLAIN(128),                                           \
+        CONTROL_SEQ_PLAIN(129),                                           \
+        CONTROL_SEQ_PLAIN(130),                                           \
+        CONTROL_SEQ_PLAIN(131),                                           \
+        CONTROL_SEQ_PLAIN(132),                                           \
+        CONTROL_SEQ_PLAIN(133),                                           \
+        CONTROL_SEQ_PLAIN(134),                                           \
+        CONTROL_SEQ_PLAIN(135),                                           \
+        CONTROL_SEQ_PLAIN(136),                                           \
+        CONTROL_SEQ_PLAIN(137),                                           \
+        CONTROL_SEQ_PLAIN(138),                                           \
+        CONTROL_SEQ_PLAIN(139),                                           \
+        CONTROL_SEQ_PLAIN(140),                                           \
+        CONTROL_SEQ_PLAIN(141),                                           \
+        CONTROL_SEQ_PLAIN(142),                                           \
+        CONTROL_SEQ_PLAIN(143),                                           \
+        CONTROL_SEQ_PLAIN(144),                                           \
+        CONTROL_SEQ_PLAIN(145),                                           \
+        CONTROL_SEQ_PLAIN(146),                                           \
+        CONTROL_SEQ_PLAIN(147),                                           \
+        CONTROL_SEQ_PLAIN(148),                                           \
+        CONTROL_SEQ_PLAIN(149),                                           \
+        CONTROL_SEQ_PLAIN(150),                                           \
+        CONTROL_SEQ_PLAIN(151),                                           \
+        CONTROL_SEQ_PLAIN(152),                                           \
+        CONTROL_SEQ_PLAIN(153),                                           \
+        CONTROL_SEQ_PLAIN(154),                                           \
+        CONTROL_SEQ_PLAIN(155),                                           \
+        CONTROL_SEQ_PLAIN(156),                                           \
+        CONTROL_SEQ_PLAIN(157),                                           \
+        CONTROL_SEQ_PLAIN(158),                                           \
+        CONTROL_SEQ_PLAIN(159),                                           \
+        CONTROL_SEQ_PLAIN(160),                                           \
+        CONTROL_SEQ_PLAIN(161),                                           \
+        CONTROL_SEQ_PLAIN(162),                                           \
+        CONTROL_SEQ_PLAIN(163),                                           \
+        CONTROL_SEQ_PLAIN(164),                                           \
+        CONTROL_SEQ_PLAIN(165),                                           \
+        CONTROL_SEQ_PLAIN(166),                                           \
+        CONTROL_SEQ_PLAIN(167),                                           \
+        CONTROL_SEQ_PLAIN(168),                                           \
+        CONTROL_SEQ_PLAIN(169),                                           \
+        CONTROL_SEQ_PLAIN(170),                                           \
+        CONTROL_SEQ_PLAIN(171),                                           \
+        CONTROL_SEQ_PLAIN(172),                                           \
+        CONTROL_SEQ_PLAIN(173),                                           \
+        CONTROL_SEQ_PLAIN(174),                                           \
+        CONTROL_SEQ_PLAIN(175),                                           \
+        CONTROL_SEQ_PLAIN(176),                                           \
+        CONTROL_SEQ_PLAIN(177),                                           \
+        CONTROL_SEQ_PLAIN(178),                                           \
+        CONTROL_SEQ_PLAIN(179),                                           \
+        CONTROL_SEQ_PLAIN(180),                                           \
+        CONTROL_SEQ_PLAIN(181),                                           \
+        CONTROL_SEQ_PLAIN(182),                                           \
+        CONTROL_SEQ_PLAIN(183),                                           \
+        CONTROL_SEQ_PLAIN(184),                                           \
+        CONTROL_SEQ_PLAIN(185),                                           \
+        CONTROL_SEQ_PLAIN(186),                                           \
+        CONTROL_SEQ_PLAIN(187),                                           \
+        CONTROL_SEQ_PLAIN(188),                                           \
+        CONTROL_SEQ_PLAIN(189),                                           \
+        CONTROL_SEQ_PLAIN(190),                                           \
+        CONTROL_SEQ_PLAIN(191),                                           \
+        CONTROL_SEQ_PLAIN(192),                                           \
+        CONTROL_SEQ_PLAIN(193),                                           \
+        CONTROL_SEQ_PLAIN(194),                                           \
+        CONTROL_SEQ_PLAIN(195),                                           \
+        CONTROL_SEQ_PLAIN(196),                                           \
+        CONTROL_SEQ_PLAIN(197),                                           \
+        CONTROL_SEQ_PLAIN(198),                                           \
+        CONTROL_SEQ_PLAIN(199),                                           \
+        CONTROL_SEQ_PLAIN(200),                                           \
+        CONTROL_SEQ_PLAIN(201),                                           \
+        CONTROL_SEQ_PLAIN(202),                                           \
+        CONTROL_SEQ_PLAIN(203),                                           \
+        CONTROL_SEQ_PLAIN(204),                                           \
+        CONTROL_SEQ_PLAIN(205),                                           \
+        CONTROL_SEQ_PLAIN(206),                                           \
+        CONTROL_SEQ_PLAIN(207),                                           \
+        CONTROL_SEQ_PLAIN(208),                                           \
+        CONTROL_SEQ_PLAIN(209),                                           \
+        CONTROL_SEQ_PLAIN(210),                                           \
+        CONTROL_SEQ_PLAIN(211),                                           \
+        CONTROL_SEQ_PLAIN(212),                                           \
+        CONTROL_SEQ_PLAIN(213),                                           \
+        CONTROL_SEQ_PLAIN(214),                                           \
+        CONTROL_SEQ_PLAIN(215),                                           \
+        CONTROL_SEQ_PLAIN(216),                                           \
+        CONTROL_SEQ_PLAIN(217),                                           \
+        CONTROL_SEQ_PLAIN(218),                                           \
+        CONTROL_SEQ_PLAIN(219),                                           \
+        CONTROL_SEQ_PLAIN(220),                                           \
+        CONTROL_SEQ_PLAIN(221),                                           \
+        CONTROL_SEQ_PLAIN(222),                                           \
+        CONTROL_SEQ_PLAIN(223),                                           \
+        CONTROL_SEQ_PLAIN(224),                                           \
+        CONTROL_SEQ_PLAIN(225),                                           \
+        CONTROL_SEQ_PLAIN(226),                                           \
+        CONTROL_SEQ_PLAIN(227),                                           \
+        CONTROL_SEQ_PLAIN(228),                                           \
+        CONTROL_SEQ_PLAIN(229),                                           \
+        CONTROL_SEQ_PLAIN(230),                                           \
+        CONTROL_SEQ_PLAIN(231),                                           \
+        CONTROL_SEQ_PLAIN(232),                                           \
+        CONTROL_SEQ_PLAIN(233),                                           \
+        CONTROL_SEQ_PLAIN(234),                                           \
+        CONTROL_SEQ_PLAIN(235),                                           \
+        CONTROL_SEQ_PLAIN(236),                                           \
+        CONTROL_SEQ_PLAIN(237),                                           \
+        CONTROL_SEQ_PLAIN(238),                                           \
+        CONTROL_SEQ_PLAIN(239),                                           \
+        CONTROL_SEQ_PLAIN(240),                                           \
+        CONTROL_SEQ_PLAIN(241),                                           \
+        CONTROL_SEQ_PLAIN(242),                                           \
+        CONTROL_SEQ_PLAIN(243),                                           \
+        CONTROL_SEQ_PLAIN(244),                                           \
+        CONTROL_SEQ_PLAIN(245),                                           \
+        CONTROL_SEQ_PLAIN(246),                                           \
+        CONTROL_SEQ_PLAIN(247),                                           \
+        CONTROL_SEQ_PLAIN(248),                                           \
+        CONTROL_SEQ_PLAIN(249),                                           \
+        CONTROL_SEQ_PLAIN(250),                                           \
+        CONTROL_SEQ_PLAIN(251),                                           \
+        CONTROL_SEQ_PLAIN(252),                                           \
+        CONTROL_SEQ_PLAIN(253),                                           \
+        CONTROL_SEQ_PLAIN(254),                                           \
+        CONTROL_SEQ_PLAIN(255)}
 
-const u8 ControlEscapeTable_u8[(_Slash + 1) * 8] = {
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '0', CONTROL_SEQ_ESCAPE_SUFFIX,  // 0
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '1', CONTROL_SEQ_ESCAPE_SUFFIX,  // 1
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '2', CONTROL_SEQ_ESCAPE_SUFFIX,  // 2
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '3', CONTROL_SEQ_ESCAPE_SUFFIX,  // 3
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '4', CONTROL_SEQ_ESCAPE_SUFFIX,  // 4
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '5', CONTROL_SEQ_ESCAPE_SUFFIX,  // 5
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '6', CONTROL_SEQ_ESCAPE_SUFFIX,  // 6
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '7', CONTROL_SEQ_ESCAPE_SUFFIX,  // 7
-        '\\', 'b', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 8
-        '\\', 't', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 9
-        '\\', 'n', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 10
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'b', CONTROL_SEQ_ESCAPE_SUFFIX,  // 11
-        '\\', 'f', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 12
-        '\\', 'r', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 13
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'e', CONTROL_SEQ_ESCAPE_SUFFIX,  // 14
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'f', CONTROL_SEQ_ESCAPE_SUFFIX,  // 15
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '0', CONTROL_SEQ_ESCAPE_SUFFIX,  // 16
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '1', CONTROL_SEQ_ESCAPE_SUFFIX,  // 17
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '2', CONTROL_SEQ_ESCAPE_SUFFIX,  // 18
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '3', CONTROL_SEQ_ESCAPE_SUFFIX,  // 19
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '4', CONTROL_SEQ_ESCAPE_SUFFIX,  // 20
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '5', CONTROL_SEQ_ESCAPE_SUFFIX,  // 21
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '6', CONTROL_SEQ_ESCAPE_SUFFIX,  // 22
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '7', CONTROL_SEQ_ESCAPE_SUFFIX,  // 23
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '8', CONTROL_SEQ_ESCAPE_SUFFIX,  // 24
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '9', CONTROL_SEQ_ESCAPE_SUFFIX,  // 25
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'a', CONTROL_SEQ_ESCAPE_SUFFIX,  // 26
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'b', CONTROL_SEQ_ESCAPE_SUFFIX,  // 27
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'c', CONTROL_SEQ_ESCAPE_SUFFIX,  // 28
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'd', CONTROL_SEQ_ESCAPE_SUFFIX,  // 29
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'e', CONTROL_SEQ_ESCAPE_SUFFIX,  // 30
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'f', CONTROL_SEQ_ESCAPE_SUFFIX,  // 31
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT2,                            // 32 ~ 33
-        '\\', '"', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 34
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT32,                           // 35 ~ 66
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT16,                           // 67 ~ 82
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT8,                            // 83 ~ 90
-        CONTROL_SEQ_ESCAPE_FULL_ZERO,                                    // 91
-        '\\', '\\'                                                       // 92
-};
+const u8 ControlEscapeTable_u8[256 * 8] = CONTROL_TABLE_DEF;
+const u16 ControlEscapeTable_u16[256 * 8] = CONTROL_TABLE_DEF;
+const u32 ControlEscapeTable_u32[256 * 8] = CONTROL_TABLE_DEF;
 
-
-const u16 ControlEscapeTable_u16[(_Slash + 1) * 8] = {
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '0', CONTROL_SEQ_ESCAPE_SUFFIX,  // 0
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '1', CONTROL_SEQ_ESCAPE_SUFFIX,  // 1
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '2', CONTROL_SEQ_ESCAPE_SUFFIX,  // 2
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '3', CONTROL_SEQ_ESCAPE_SUFFIX,  // 3
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '4', CONTROL_SEQ_ESCAPE_SUFFIX,  // 4
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '5', CONTROL_SEQ_ESCAPE_SUFFIX,  // 5
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '6', CONTROL_SEQ_ESCAPE_SUFFIX,  // 6
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '7', CONTROL_SEQ_ESCAPE_SUFFIX,  // 7
-        '\\', 'b', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 8
-        '\\', 't', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 9
-        '\\', 'n', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 10
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'b', CONTROL_SEQ_ESCAPE_SUFFIX,  // 11
-        '\\', 'f', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 12
-        '\\', 'r', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 13
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'e', CONTROL_SEQ_ESCAPE_SUFFIX,  // 14
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'f', CONTROL_SEQ_ESCAPE_SUFFIX,  // 15
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '0', CONTROL_SEQ_ESCAPE_SUFFIX,  // 16
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '1', CONTROL_SEQ_ESCAPE_SUFFIX,  // 17
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '2', CONTROL_SEQ_ESCAPE_SUFFIX,  // 18
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '3', CONTROL_SEQ_ESCAPE_SUFFIX,  // 19
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '4', CONTROL_SEQ_ESCAPE_SUFFIX,  // 20
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '5', CONTROL_SEQ_ESCAPE_SUFFIX,  // 21
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '6', CONTROL_SEQ_ESCAPE_SUFFIX,  // 22
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '7', CONTROL_SEQ_ESCAPE_SUFFIX,  // 23
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '8', CONTROL_SEQ_ESCAPE_SUFFIX,  // 24
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '9', CONTROL_SEQ_ESCAPE_SUFFIX,  // 25
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'a', CONTROL_SEQ_ESCAPE_SUFFIX,  // 26
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'b', CONTROL_SEQ_ESCAPE_SUFFIX,  // 27
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'c', CONTROL_SEQ_ESCAPE_SUFFIX,  // 28
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'd', CONTROL_SEQ_ESCAPE_SUFFIX,  // 29
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'e', CONTROL_SEQ_ESCAPE_SUFFIX,  // 30
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'f', CONTROL_SEQ_ESCAPE_SUFFIX,  // 31
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT2,                            // 32 ~ 33
-        '\\', '"', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 34
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT32,                           // 35 ~ 66
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT16,                           // 67 ~ 82
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT8,                            // 83 ~ 90
-        CONTROL_SEQ_ESCAPE_FULL_ZERO,                                    // 91
-        '\\', '\\'                                                       // 92
-};
-
-
-const u32 ControlEscapeTable_u32[(_Slash + 1) * 8] = {
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '0', CONTROL_SEQ_ESCAPE_SUFFIX,  // 0
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '1', CONTROL_SEQ_ESCAPE_SUFFIX,  // 1
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '2', CONTROL_SEQ_ESCAPE_SUFFIX,  // 2
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '3', CONTROL_SEQ_ESCAPE_SUFFIX,  // 3
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '4', CONTROL_SEQ_ESCAPE_SUFFIX,  // 4
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '5', CONTROL_SEQ_ESCAPE_SUFFIX,  // 5
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '6', CONTROL_SEQ_ESCAPE_SUFFIX,  // 6
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', '7', CONTROL_SEQ_ESCAPE_SUFFIX,  // 7
-        '\\', 'b', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 8
-        '\\', 't', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 9
-        '\\', 'n', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 10
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'b', CONTROL_SEQ_ESCAPE_SUFFIX,  // 11
-        '\\', 'f', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 12
-        '\\', 'r', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 13
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'e', CONTROL_SEQ_ESCAPE_SUFFIX,  // 14
-        CONTROL_SEQ_ESCAPE_PREFIX, '0', 'f', CONTROL_SEQ_ESCAPE_SUFFIX,  // 15
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '0', CONTROL_SEQ_ESCAPE_SUFFIX,  // 16
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '1', CONTROL_SEQ_ESCAPE_SUFFIX,  // 17
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '2', CONTROL_SEQ_ESCAPE_SUFFIX,  // 18
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '3', CONTROL_SEQ_ESCAPE_SUFFIX,  // 19
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '4', CONTROL_SEQ_ESCAPE_SUFFIX,  // 20
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '5', CONTROL_SEQ_ESCAPE_SUFFIX,  // 21
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '6', CONTROL_SEQ_ESCAPE_SUFFIX,  // 22
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '7', CONTROL_SEQ_ESCAPE_SUFFIX,  // 23
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '8', CONTROL_SEQ_ESCAPE_SUFFIX,  // 24
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', '9', CONTROL_SEQ_ESCAPE_SUFFIX,  // 25
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'a', CONTROL_SEQ_ESCAPE_SUFFIX,  // 26
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'b', CONTROL_SEQ_ESCAPE_SUFFIX,  // 27
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'c', CONTROL_SEQ_ESCAPE_SUFFIX,  // 28
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'd', CONTROL_SEQ_ESCAPE_SUFFIX,  // 29
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'e', CONTROL_SEQ_ESCAPE_SUFFIX,  // 30
-        CONTROL_SEQ_ESCAPE_PREFIX, '1', 'f', CONTROL_SEQ_ESCAPE_SUFFIX,  // 31
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT2,                            // 32 ~ 33
-        '\\', '"', CONTROL_SEQ_ESCAPE_MIDDLE, CONTROL_SEQ_ESCAPE_SUFFIX, // 34
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT32,                           // 35 ~ 66
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT16,                           // 67 ~ 82
-        CONTROL_SEQ_ESCAPE_FULL_ZERO_REPEAT8,                            // 83 ~ 90
-        CONTROL_SEQ_ESCAPE_FULL_ZERO,                                    // 91
-        '\\', '\\'                                                       // 92
-};
-
-const Py_ssize_t _ControlJump[_Slash + 1] = {
+const Py_ssize_t _ControlJump[256] = {
         6, 6, 6, 6, 6, 6, 6, 6, 2, 2, 2, 6, 2, 2, 6, 6, // 0-15
         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, // 16-31
-        0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 32-47
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 48-63
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 64-79
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2           // 80-92
+        1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 32-47
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 48-63
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 64-79
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, // 80-95
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 96-111
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 112-127
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 128-143
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 144-159
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 160-175
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 176-191
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 192-207
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 208-223
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 224-239
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1  // 240-255
 };
 
 

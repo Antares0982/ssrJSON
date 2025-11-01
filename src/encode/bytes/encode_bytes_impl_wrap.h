@@ -25,11 +25,11 @@
 
 #include "encode/encode_impl_wrap.h"
 #include "encode/encode_shared.h"
-#include "encode_utf8.h"
+#include "non_ascii.h"
+#include "pyutils.h"
 #include "ssrjson.h"
 #include "tls.h"
 #include "utils/unicode.h"
-
 
 #define COMPILE_INDENT_LEVEL 0
 #include "_encode_bytes_impl.inl.h"

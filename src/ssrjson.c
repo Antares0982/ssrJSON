@@ -34,6 +34,7 @@ PyObject *ssrjson_EncodeToBytes(PyObject *self, PyObject *const *args, Py_ssize_
 PyObject *ssrjson_Decode(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);
 PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args);
 PyObject *ssrjson_strict_argparse(PyObject *self, PyObject *arg);
+PyObject *ssrjson_write_utf8_cache(PyObject *self, PyObject *arg);
 
 PyObject *JSONDecodeError = NULL;
 PyObject *JSONEncodeError = NULL;
@@ -124,6 +125,12 @@ PyMethodDef strict_argparse_func_def = {
         METH_O,
         "strict_argparse(value)\n--\n\nSet strict argument parsing mode. Default is False."};
 
+PyMethodDef write_utf8_cache_func_def = {
+        "write_utf8_cache",
+        (PyCFunction)ssrjson_write_utf8_cache,
+        METH_O,
+        "write_utf8_cache(value)\n--\n\nSet whether to write UTF-8 cache when calling dumps_to_bytes()."};
+
 static int ssrjson_exec(PyObject *module) {
     int err;
     const char *err_s;
@@ -196,6 +203,7 @@ static int ssrjson_exec(PyObject *module) {
     ADD_FUNC_CHECKED(get_current_features_func_def);
     ADD_FUNC_CHECKED(suppress_api_warning_func_def);
     ADD_FUNC_CHECKED(strict_argparse_func_def);
+    ADD_FUNC_CHECKED(write_utf8_cache_func_def);
 
     Py_DECREF(module_string);
 
@@ -227,6 +235,7 @@ PyMODINIT_FUNC PyInit_ssrjson(void) {
 /* ssrjson_suppress_api_warning */
 int ssrjson_invalid_arg_checked = 0;
 int ssrjson_nonstrict_argparse = 1;
+int ssrjson_write_utf8_cache_value = SSRJSON_WRITE_UTF8_CACHE;
 
 PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args) {
     ssrjson_invalid_arg_checked = 1;
@@ -241,6 +250,17 @@ PyObject *ssrjson_strict_argparse(PyObject *self, PyObject *arg) {
         return NULL;
     }
     ssrjson_nonstrict_argparse = value_is_false ? 1 : 0;
+    Py_RETURN_NONE;
+}
+
+PyObject *ssrjson_write_utf8_cache(PyObject *self, PyObject *arg) {
+    bool value_is_true = arg == Py_True;
+    bool value_is_false = arg == Py_False;
+    if (unlikely(!value_is_true && !value_is_false)) {
+        PyErr_SetString(PyExc_TypeError, "write_utf8_cache() argument must be True or False");
+        return NULL;
+    }
+    ssrjson_write_utf8_cache_value = value_is_false ? 1 : 0;
     Py_RETURN_NONE;
 }
 
