@@ -28,8 +28,6 @@
 #undef READ_BIT_SIZEx8
 #undef AVX512BITMASK_SIZE
 //
-#undef _IMPL_INLINE_SPECIFIER
-//
 #undef _src_t
 #undef avx512_bitmask_t
 #undef MAKE_R_NAME

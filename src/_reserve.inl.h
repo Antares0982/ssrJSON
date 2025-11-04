@@ -28,7 +28,7 @@
 #include "compile_context/w_in.inl.h"
 
 force_inline bool unicode_buffer_reserve(_dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, usize size) {
-    _dst_t *target_ptr = *writer_addr + size;
+    _dst_t *target_ptr = (*writer_addr) + size;
     if (unlikely(target_ptr > SSRJSON_CAST(_dst_t *, unicode_buffer_info->end))) {
         u8 *old_head = (u8 *)unicode_buffer_info->head;
         _dst_t *cur_writer = *writer_addr;

@@ -39,42 +39,26 @@
 #include "compile_context/srw_in.inl.h"
 
 /* UTF-8 src. */
-
-force_inline void encode_trivial_copy_with_cvt_u8_u8(u8 **writer_addr, const u8 *src, usize len) {
-    u8 *writer = *writer_addr;
-
-    assume(len < 16);
-    while (len) {
-        len--;
-        u8 unicode = *src++;
-        memcpy(writer, &ControlEscapeTable_u8[unicode * 8], 8);
-        writer += _ControlJump[unicode];
-    }
-
-    *writer_addr = writer;
-}
+// forward declaration
+force_inline void bytes_write_ascii(u8 **writer_addr, const u8 *src, usize len, bool is_key);
 
 force_inline void bytes_write_utf8(u8 **writer_addr, const u8 *src, usize len, bool is_key) {
-    usize original_len = len;
-    // reuse the unicode encode loop.
-    if (!is_key) encode_unicode_loop4(writer_addr, &src, &len);
-    encode_unicode_loop(writer_addr, &src, &len);
-    if (!len) return;
-    // For trailing case this is a little different,
-    // because the 32 bytes before src are not readable in general.
+    // UTF-8 trailing source case is a little different,
+    // because the 16 bytes before `src_end` are not readable in general.
+    // This function only impls the fast path that we can reuse the unicode encode loop,
+    // so a check is needed.
     // AVX512 case: impl of encode_trailing_copy_with_cvt uses mask load, which is safe;
     // AVX2 case: avx2_trailing_cvt series require 16 bytes before src_end are readable;
-    // Other cases: SIMD length is 16 bytes (SSE, NEON).
-    if (HAS_AVX512 || original_len * sizeof(u8) >= 16) {
-        encode_trailing_copy_with_cvt(writer_addr, src, len);
-    } else {
-        encode_trivial_copy_with_cvt_u8_u8(writer_addr, src, len);
-    }
+    // Other cases: SIMD register size is 16 bytes (SSE, NEON).
+    assert(USING_AVX512 || len >= 16);
+    // reuse the ascii encode loop.
+    bytes_write_ascii(writer_addr, src, len, is_key);
 }
 
 /* ASCII src. */
 force_inline void bytes_write_ascii(u8 **writer_addr, const u8 *src, usize len, bool is_key) {
     // reuse the unicode encode loop.
+    // excess written bytes = SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode >= 2
     if (!is_key) encode_unicode_loop4(writer_addr, &src, &len);
     encode_unicode_loop(writer_addr, &src, &len);
     if (!len) return;
@@ -368,7 +352,7 @@ force_inline bool ascii_in_ucs1_encode_loop_raw_utf8(u8 **dst_addr, const u8 **s
     return checked;
 }
 
-_IMPL_INLINE_SPECIFIER void bytes_write_ucs1(u8 **writer_addr, const u8 *src, usize len) {
+force_inline void bytes_write_ucs1(u8 **writer_addr, const u8 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -376,13 +360,15 @@ _IMPL_INLINE_SPECIFIER void bytes_write_ucs1(u8 **writer_addr, const u8 *src, us
         unicode = *src;
         if (unicode < 128 && unicode >= ControlMax && unicode != _Quote && unicode != _Slash) {
             bool continuous;
-            while (CAN_LOOP4) {
-                continuous = ascii_in_ucs1_encode_loop4(writer_addr, &src, &len);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
+            if (!is_key) {
+                while (CAN_LOOP4) {
+                    continuous = ascii_in_ucs1_encode_loop4(writer_addr, &src, &len);
+                    if (unlikely(!continuous)) {
+                        goto encode_one;
+                    }
                 }
+                assert(!CAN_LOOP4);
             }
-            assert(!CAN_LOOP4);
             while (CAN_LOOP) {
                 continuous = ascii_in_ucs1_encode_loop(writer_addr, &src, &len);
                 if (unlikely(!continuous)) {
@@ -407,7 +393,7 @@ _IMPL_INLINE_SPECIFIER void bytes_write_ucs1(u8 **writer_addr, const u8 *src, us
 #undef CAN_LOOP4
 }
 
-force_inline void bytes_write_ucs1_raw_utf8(u8 **writer_addr, const u8 *src, usize len) {
+force_inline void bytes_write_ucs1_raw_utf8(u8 **writer_addr, const u8 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -415,13 +401,15 @@ force_inline void bytes_write_ucs1_raw_utf8(u8 **writer_addr, const u8 *src, usi
         unicode = *src;
         if (unicode < 128) {
             bool continuous;
-            while (CAN_LOOP4) {
-                continuous = ascii_in_ucs1_encode_loop4_raw_utf8(writer_addr, &src, &len);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
+            if (!is_key) {
+                while (CAN_LOOP4) {
+                    continuous = ascii_in_ucs1_encode_loop4_raw_utf8(writer_addr, &src, &len);
+                    if (unlikely(!continuous)) {
+                        goto encode_one;
+                    }
                 }
+                assert(!CAN_LOOP4);
             }
-            assert(!CAN_LOOP4);
             while (CAN_LOOP) {
                 continuous = ascii_in_ucs1_encode_loop_raw_utf8(writer_addr, &src, &len);
                 if (unlikely(!continuous)) {
@@ -903,9 +891,9 @@ force_inline bool _3bytes_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_add
 
     // write
 #if SSRJSON_X86
-#    if SUPPORT_SIMD_512BITS
+#    if USING_AVX512
     ucs2_encode_3bytes_utf8_avx512(dst, vec);
-#    elif SUPPORT_SIMD_256BITS
+#    elif USING_AVX2
     ucs2_encode_3bytes_utf8_avx2(dst, vec);
 #    elif __SSSE3__
     ucs2_encode_3bytes_utf8_ssse3(dst, vec);
@@ -938,7 +926,7 @@ force_inline bool _3bytes_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_add
 }
 
 /* Return false when src contains invalid character. */
-_IMPL_INLINE_SPECIFIER bool bytes_write_ucs2(u8 **writer_addr, const u16 *src, usize len) {
+force_inline bool bytes_write_ucs2(u8 **writer_addr, const u16 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -947,13 +935,15 @@ _IMPL_INLINE_SPECIFIER bool bytes_write_ucs2(u8 **writer_addr, const u16 *src, u
         if (unicode < 128) {
             // ascii range
             bool continuous;
-            while (CAN_LOOP4) {
-                continuous = ascii_in_ucs2_encode_loop4(writer_addr, &src, &len);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
+            if (!is_key) {
+                while (CAN_LOOP4) {
+                    continuous = ascii_in_ucs2_encode_loop4(writer_addr, &src, &len);
+                    if (unlikely(!continuous)) {
+                        goto encode_one;
+                    }
                 }
+                assert(!CAN_LOOP4);
             }
-            assert(!CAN_LOOP4);
             while (CAN_LOOP) {
                 continuous = ascii_in_ucs2_encode_loop(writer_addr, &src, &len);
                 if (unlikely(!continuous)) {
@@ -1002,7 +992,7 @@ _IMPL_INLINE_SPECIFIER bool bytes_write_ucs2(u8 **writer_addr, const u16 *src, u
 #undef CAN_LOOP4
 }
 
-force_inline bool bytes_write_ucs2_raw_utf8(u8 **writer_addr, const u16 *src, usize len) {
+force_inline bool bytes_write_ucs2_raw_utf8(u8 **writer_addr, const u16 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -1011,13 +1001,15 @@ force_inline bool bytes_write_ucs2_raw_utf8(u8 **writer_addr, const u16 *src, us
         if (unicode < 128) {
             // ascii range
             bool continuous;
-            while (CAN_LOOP4) {
-                continuous = ascii_in_ucs2_encode_loop4_raw_utf8(writer_addr, &src, &len);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
+            if (!is_key) {
+                while (CAN_LOOP4) {
+                    continuous = ascii_in_ucs2_encode_loop4_raw_utf8(writer_addr, &src, &len);
+                    if (unlikely(!continuous)) {
+                        goto encode_one;
+                    }
                 }
+                assert(!CAN_LOOP4);
             }
-            assert(!CAN_LOOP4);
             while (CAN_LOOP) {
                 continuous = ascii_in_ucs2_encode_loop_raw_utf8(writer_addr, &src, &len);
                 if (unlikely(!continuous)) {
@@ -1471,9 +1463,9 @@ force_inline bool _3bytes_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_add
 
     // write
 #if SSRJSON_X86
-#    if SUPPORT_SIMD_512BITS
+#    if USING_AVX512
     ucs4_encode_3bytes_utf8_avx512(dst, vec);
-#    elif SUPPORT_SIMD_256BITS
+#    elif USING_AVX2
     ucs4_encode_3bytes_utf8_avx2(dst, vec);
 #    elif __SSSE3__
     ucs4_encode_3bytes_utf8_ssse3(dst, vec);
@@ -1506,7 +1498,7 @@ force_inline bool _3bytes_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_add
 }
 
 /* Return false when src contains invalid character. */
-_IMPL_INLINE_SPECIFIER bool bytes_write_ucs4(u8 **writer_addr, const u32 *src, usize len) {
+force_inline bool bytes_write_ucs4(u8 **writer_addr, const u32 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -1515,13 +1507,15 @@ _IMPL_INLINE_SPECIFIER bool bytes_write_ucs4(u8 **writer_addr, const u32 *src, u
         if (unicode < 128) {
             // ascii range
             bool continuous;
-            while (CAN_LOOP4) {
-                continuous = ascii_in_ucs4_encode_loop4(writer_addr, &src, &len);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
+            if (!is_key) {
+                while (CAN_LOOP4) {
+                    continuous = ascii_in_ucs4_encode_loop4(writer_addr, &src, &len);
+                    if (unlikely(!continuous)) {
+                        goto encode_one;
+                    }
                 }
+                assert(!CAN_LOOP4);
             }
-            assert(!CAN_LOOP4);
             while (CAN_LOOP) {
                 continuous = ascii_in_ucs4_encode_loop(writer_addr, &src, &len);
                 if (unlikely(!continuous)) {
@@ -1572,7 +1566,7 @@ _IMPL_INLINE_SPECIFIER bool bytes_write_ucs4(u8 **writer_addr, const u32 *src, u
 #undef CAN_LOOP4
 }
 
-force_inline bool bytes_write_ucs4_raw_utf8(u8 **writer_addr, const u32 *src, usize len) {
+force_inline bool bytes_write_ucs4_raw_utf8(u8 **writer_addr, const u32 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -1581,13 +1575,15 @@ force_inline bool bytes_write_ucs4_raw_utf8(u8 **writer_addr, const u32 *src, us
         if (unicode < 128) {
             // ascii range
             bool continuous;
-            while (CAN_LOOP4) {
-                continuous = ascii_in_ucs4_encode_loop4_raw_utf8(writer_addr, &src, &len);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
+            if (!is_key) {
+                while (CAN_LOOP4) {
+                    continuous = ascii_in_ucs4_encode_loop4_raw_utf8(writer_addr, &src, &len);
+                    if (unlikely(!continuous)) {
+                        goto encode_one;
+                    }
                 }
+                assert(!CAN_LOOP4);
             }
-            assert(!CAN_LOOP4);
             while (CAN_LOOP) {
                 continuous = ascii_in_ucs4_encode_loop_raw_utf8(writer_addr, &src, &len);
                 if (unlikely(!continuous)) {

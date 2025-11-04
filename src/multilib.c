@@ -23,6 +23,8 @@
 #include "pythonlib.h"
 #include "ssrjson.h"
 
+extern int ssrjson_write_utf8_cache_value;
+
 #define IMPL_MULTILIB_FUNCTION_INTERFACE(_func_name_) SSRJSON_CONCAT2(_func_name_, t) SSRJSON_CONCAT2(_func_name_, interface);
 
 IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_Encode)
@@ -74,31 +76,48 @@ MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Decode)
 MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_EncodeToBytes)
 
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
+    int err;
     PyObject *ret = PyDict_New();
-    PyDict_SetItemString(ret, "MultiLib", PyBool_FromLong(true));
+    if (!ret) return NULL;
+    err = PyDict_SetItemString(ret, "MultiLib", Py_True);
+    if (err) goto fail;
+    PyObject *write_cache_bool = ssrjson_write_utf8_cache_value ? Py_True : Py_False;
+    err = PyDict_SetItemString(ret, "WriteUTF8Cache", write_cache_bool);
+    if (err) goto fail;
+#    define DICT_SET_STRING_ITEM(_k_, _v_)               \
+        do {                                             \
+            PyObject *val = PyUnicode_FromString((_v_)); \
+            if (!val) goto fail;                         \
+            err = PyDict_SetItemString(ret, (_k_), val); \
+            Py_DECREF(val);                              \
+            if (err) goto fail;                          \
+        } while (0)
     switch (CurrentSIMDFeatureLevel) {
         case X86SIMDFeatureLevelSSE2: {
-            PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("SSE2"));
+            DICT_SET_STRING_ITEM("SIMD", "SSE2");
             break;
         }
         case X86SIMDFeatureLevelSSE4_2: {
-            PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("SSE4.2"));
+            DICT_SET_STRING_ITEM("SIMD", "SSE4.2");
             break;
         }
         case X86SIMDFeatureLevelAVX2: {
-            PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("AVX2"));
+            DICT_SET_STRING_ITEM("SIMD", "AVX2");
             break;
         }
         case X86SIMDFeatureLevelAVX512: {
-            PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("AVX512"));
+            DICT_SET_STRING_ITEM("SIMD", "AVX512");
             break;
         }
         default: {
-            PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("Unknown"));
+            DICT_SET_STRING_ITEM("SIMD", "Unknown");
             break;
         }
     }
     return ret;
+fail:;
+    Py_DECREF(ret);
+    return NULL;
 }
 #elif SSRJSON_AARCH // SSRJSON_X86
 const char *_update_simd_features(void) {
@@ -111,11 +130,23 @@ MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Decode)
 MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_EncodeToBytes)
 
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
+    int err;
     PyObject *ret = PyDict_New();
     if (!ret) return NULL;
-    PyDict_SetItemString(ret, "MultiLib", PyBool_FromLong(true));
-    PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("NEON"));
+    err = PyDict_SetItemString(ret, "MultiLib", Py_True);
+    if (err) goto fail;
+    PyObject *write_cache_bool = ssrjson_write_utf8_cache_value ? Py_True : Py_False;
+    err = PyDict_SetItemString(ret, "WriteUTF8Cache", write_cache_bool);
+    if (err) goto fail;
+    PyObject *neon = PyUnicode_FromString("NEON");
+    if (!neon) goto fail;
+    err = PyDict_SetItemString(ret, "SIMD", neon);
+    Py_DECREF(neon);
+    if (err) goto fail;
     return ret;
+fail:;
+    Py_DECREF(ret);
+    return NULL;
 }
 
 #else // SSRJSON_X86

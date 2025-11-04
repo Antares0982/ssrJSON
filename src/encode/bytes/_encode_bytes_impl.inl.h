@@ -21,6 +21,7 @@
  *============================================================================*/
 
 #ifdef SSRJSON_CLANGD_DUMMY
+#    include "encode/bytes/encode_utf8.h"
 #    include "encode/encode_impl_wrap.h"
 #    include "encode/encode_shared.h"
 #    include "non_ascii.h"
@@ -42,26 +43,56 @@
 //
 #include "compile_context/sirw_in.inl.h"
 
-static force_noinline bool bytes_buffer_append_nonascii_key_write_cache(u8 **writer_addr, int src_pykind, const void *src_voidp, usize len, PyObject *key) {
+force_inline bool bytes_buffer_append_nonascii_key_write_cache(u8 **writer_addr, int src_pykind, const void *src_voidp, usize len, PyObject *key) {
     assert(SSRJSON_PYASCII_CAST(key)->state.compact);
     const u8 *utf8_cache;
     usize utf8_length;
     get_utf8_cache(key, &utf8_cache, &utf8_length);
     if (!utf8_cache) {
-        if (unlikely(!write_cache_impl(src_voidp, src_pykind, len, &utf8_cache, &utf8_length))) return false;
+        if (unlikely(!write_key_cache_impl(src_voidp, src_pykind, len, &utf8_cache, &utf8_length))) return false;
         set_cache(key, &utf8_cache, &utf8_length);
     }
     assert(utf8_cache);
-    bytes_write_utf8(writer_addr, utf8_cache, utf8_length, false);
-    u8 *writer = *writer_addr;
-    *writer++ = '"';
-    *writer++ = ':';
+    // Also see comment in bytes_write_utf8
+    if (USING_AVX512 || utf8_length >= 16) {
+        bytes_write_utf8(writer_addr, utf8_cache, utf8_length, true);
+        u8 *writer = *writer_addr;
+        *writer++ = '"';
+        *writer++ = ':';
 #if COMPILE_INDENT_LEVEL > 0
-    *writer++ = ' ';
-    *writer = 0;
+        *writer++ = ' ';
+        *writer = 0;
 #endif // COMPILE_INDENT_LEVEL > 0
-    *writer_addr = writer;
-    return true;
+        *writer_addr = writer;
+        return true;
+    } else {
+        switch (src_pykind) {
+            case 1: {
+                bytes_write_ucs1(writer_addr, src_voidp, len, true);
+                break;
+            }
+            case 2: {
+                if (unlikely(!bytes_write_ucs2(writer_addr, src_voidp, len, true))) return false;
+                break;
+            }
+            case 4: {
+                if (unlikely(!bytes_write_ucs4(writer_addr, src_voidp, len, true))) return false;
+                break;
+            }
+            default: {
+                SSRJSON_UNREACHABLE();
+            }
+        }
+        u8 *writer = *writer_addr;
+        *writer++ = '"';
+        *writer++ = ':';
+#if COMPILE_INDENT_LEVEL > 0
+        *writer++ = ' ';
+        *writer = 0;
+#endif // COMPILE_INDENT_LEVEL > 0
+        *writer_addr = writer;
+        return true;
+    }
 }
 
 static force_noinline bool bytes_buffer_append_nonascii_key_no_write_cache(u8 **writer_addr, int src_pykind, const void *src_voidp, usize len, PyObject *str) {
@@ -69,20 +100,21 @@ static force_noinline bool bytes_buffer_append_nonascii_key_no_write_cache(u8 **
     const u8 *utf8_cache;
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
-    if (utf8_cache) {
-        bytes_write_utf8(writer_addr, utf8_cache, utf8_length, false);
+    // Also see comment in bytes_write_utf8
+    if (utf8_cache && (USING_AVX512 || utf8_length >= 16)) {
+        bytes_write_utf8(writer_addr, utf8_cache, utf8_length, true);
     } else {
         switch (src_pykind) {
             case 1: {
-                bytes_write_ucs1(writer_addr, src_voidp, len);
+                bytes_write_ucs1(writer_addr, src_voidp, len, true);
                 break;
             }
             case 2: {
-                if (unlikely(!bytes_write_ucs2(writer_addr, src_voidp, len))) return false;
+                if (unlikely(!bytes_write_ucs2(writer_addr, src_voidp, len, true))) return false;
                 break;
             }
             case 4: {
-                if (unlikely(!bytes_write_ucs4(writer_addr, src_voidp, len))) return false;
+                if (unlikely(!bytes_write_ucs4(writer_addr, src_voidp, len, true))) return false;
                 break;
             }
             default: {
@@ -106,8 +138,20 @@ force_inline bool bytes_buffer_append_key(PyObject *key, u8 **writer_addr, Encod
     bool is_ascii = PyUnicode_IS_ASCII(key);
     usize len = PyUnicode_GET_LENGTH(key);
     const void *src_voidp = is_ascii ? PYUNICODE_ASCII_START(key) : PYUNICODE_UCS1_START(key);
-    //
-    RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 5 + 6 * len + TAIL_PADDING));
+    // write_unicode_indent and '"' writes `get_indent_char_count() + 1` bytes
+    // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
+    // excess `16 - max_json_bytes_per_unicode` bytes written in bytes_write_utf8 or bytes_write_ascii (see comments in AVX2 impl of encode_unicode_impl)
+    // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
+    // when indent level > 0, more 4 unicodes are written, else 2 unicodes
+    const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
+    const usize reserve_bytes_in_encoding = max_json_bytes_per_unicode * len;
+    usize excess_bytes_in_encoding = 16 - max_json_bytes_per_unicode;                                     // ascii
+    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs1_trailing); // ucs1
+    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs2_trailing); // ucs2
+    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs4_trailing); // ucs4
+    assert(excess_bytes_in_encoding >= 4);
+    const usize excess_bytes_after = excess_bytes_in_encoding;
+    RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after));
     u8 *writer = *writer_addr;
     write_unicode_indent(&writer, cur_nested_depth);
     *writer++ = '"';
@@ -142,11 +186,33 @@ force_inline bool bytes_buffer_append_str(PyObject *str,
     const void *src_voidp = is_ascii ? PYUNICODE_ASCII_START(str) : PYUNICODE_UCS1_START(str);
     //
     u8 *writer;
+    //
+    const usize reserve_bytes_in_encoding = max_json_bytes_per_unicode * len;
+    usize excess_bytes_in_encoding = 16 - max_json_bytes_per_unicode;                                     // ascii
+    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs1_trailing); // ucs1
+    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs2_trailing); // ucs2
+    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs4_trailing); // ucs4
+    assert(excess_bytes_in_encoding >= 4);
+    const usize excess_bytes_after = excess_bytes_in_encoding;
     if (is_in_obj) {
-        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, 3 + 6 * len + TAIL_PADDING));
+        // '"' writes 1 byte
+        // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
+        // excess `16 - max_json_bytes_per_unicode` bytes written in bytes_write_utf8 or bytes_write_ascii (see comments in AVX2 impl of encode_unicode_impl)
+        // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
+        // '"' and ',': 2 bytes
+        const usize excess_bytes_before = 1;
+        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after));
+        // RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, 3 + 6 * len + TAIL_PADDING));
         writer = *writer_addr;
     } else {
-        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 3 + 6 * len + TAIL_PADDING));
+        // write_unicode_indent and '"' writes `get_indent_char_count() + 1` bytes
+        // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
+        // excess `16 - max_json_bytes_per_unicode` bytes written in bytes_write_utf8 or bytes_write_ascii (see comments in AVX2 impl of encode_unicode_impl)
+        // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
+        // '"' and ',': 2 bytes
+        const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
+        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after));
+        // RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 3 + 6 * len + TAIL_PADDING));
         writer = *writer_addr;
         write_unicode_indent(&writer, cur_nested_depth);
     }

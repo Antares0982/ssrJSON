@@ -20,9 +20,9 @@
  SOFTWARE.
  *============================================================================*/
 
-#if SUPPORT_SIMD_512BITS
+#if USING_AVX512
 #    define COMPILE_SIMD_BITS 512
-#elif SUPPORT_SIMD_256BITS
+#elif USING_AVX2
 #    define COMPILE_SIMD_BITS 256
 #else
 #    define COMPILE_SIMD_BITS 128

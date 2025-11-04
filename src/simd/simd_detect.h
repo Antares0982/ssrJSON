@@ -26,32 +26,39 @@
 #define HAS_AVX512 0
 #define HAS_AVX2 0
 #define HAS_SSE4_2 0
-#define HAS_NEON 0
-
+#define USING_AVX512 0
+#define USING_AVX2 0
+#define USING_SSE4_2 0
 
 #if SSRJSON_X86
 #    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
 #        define SIMD_FEATURE_NAME avx512
-#        define SUPPORT_SIMD_512BITS 1
-#        define SUPPORT_SIMD_256BITS 1
+#        undef USING_AVX512
+#        define USING_AVX512 1
 #        undef HAS_AVX512
 #        define HAS_AVX512 1
-#    elif __AVX2__
-#        define SIMD_FEATURE_NAME avx2
-#        define SUPPORT_SIMD_512BITS 0
-#        define SUPPORT_SIMD_256BITS 1
 #        undef HAS_AVX2
 #        define HAS_AVX2 1
+#        undef HAS_SSE4_2
+#        define HAS_SSE4_2 1
+#    elif __AVX2__
+#        define SIMD_FEATURE_NAME avx2
+#        undef USING_AVX2
+#        define USING_AVX2 1
+#        undef HAS_AVX2
+#        define HAS_AVX2 1
+#        undef HAS_SSE4_2
+#        define HAS_SSE4_2 1
 #    else
 #        if __SSE4_2__
 #            define SIMD_FEATURE_NAME sse4_2
+#            undef USING_SSE4_2
+#            define USING_SSE4_2 1
 #            undef HAS_SSE4_2
 #            define HAS_SSE4_2 1
 #        else
 #            define SIMD_FEATURE_NAME sse2
 #        endif
-#        define SUPPORT_SIMD_512BITS 0
-#        define SUPPORT_SIMD_256BITS 0
 #    endif
 
 #    define SIMD_128 __m128i
@@ -76,10 +83,8 @@
 #elif SSRJSON_AARCH
 #    define SIMD_FEATURE_NAME neon
 #    define WRITE_SUPPORT_MASK_WRITE 0
-#    define SUPPORT_SIMD_512BITS 0
-#    define SUPPORT_SIMD_256BITS 0
-#    undef HAS_NEON
-#    define HAS_NEON 1
+#    define USING_AVX512 0
+#    define USING_AVX2 0
 #else
 #    error "unsupported architecture"
 #endif

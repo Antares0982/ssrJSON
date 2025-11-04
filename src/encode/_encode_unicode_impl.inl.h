@@ -42,7 +42,18 @@
 
 force_inline bool unicode_buffer_append_key_internal(const _src_t *str_data, usize len, _dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth) {
     static_assert(COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL, "COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL");
-    RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 5 + 6 * len + TAIL_PADDING));
+    {
+        // write_unicode_indent and '"' writes `get_indent_char_count() + 1` unicodes
+        // max_json_bytes_per_unicode * len is the written count when every character needs to be escaped
+        // excess `SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode` unicodes written in encode_unicode_impl (see comments in AVX2 impl of encode_unicode_impl)
+        // when indent level > 0, more 4 unicodes are written, else 2 unicodes
+        const usize excess_count_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
+        const usize reserve_count_in_encoding = max_json_bytes_per_unicode * len;
+        const usize excess_count_in_encoding = SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode;
+        usize excess_count_after = (COMPILE_INDENT_LEVEL > 0) ? 4 : 2;
+        excess_count_after = SSRJSON_MAX(excess_count_after, excess_count_in_encoding);
+        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, excess_count_before + reserve_count_in_encoding + excess_count_after));
+    }
     _dst_t *writer = *writer_addr;
     write_unicode_indent(&writer, cur_nested_depth);
     *writer++ = '"';
@@ -64,11 +75,26 @@ force_inline bool unicode_buffer_append_str_internal(const _src_t *str_data, usi
                                                      EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     static_assert(COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL, "COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL");
     _dst_t *writer;
+    //
+    const usize reserve_count_in_encoding = max_json_bytes_per_unicode * len;
+    const usize excess_count_in_encoding = SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode;
+    usize excess_count_after = 2;
+    excess_count_after = SSRJSON_MAX(excess_count_after, excess_count_in_encoding);
     if (is_in_obj) {
-        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, 3 + 6 * len + TAIL_PADDING));
+        // '"' writes 1 unicode
+        // max_json_bytes_per_unicode * len is the written count when every character needs to be escaped
+        // excess `SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode` unicodes written in encode_unicode_impl_no_key (see comments in AVX2 impl of encode_unicode_impl)
+        // '"' and ',': 2 unicodes
+        const usize excess_count_before = 1;
+        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, excess_count_before + reserve_count_in_encoding + excess_count_after));
         writer = *writer_addr;
     } else {
-        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 3 + 6 * len + TAIL_PADDING));
+        // write_unicode_indent and '"' writes `get_indent_char_count() + 1` unicodes
+        // max_json_bytes_per_unicode * len is the written count when every character needs to be escaped
+        // excess `SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode` unicodes written in encode_unicode_impl_no_key (see comments in AVX2 impl of encode_unicode_impl)
+        // '"' and ',': 2 unicodes
+        const usize excess_count_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
+        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, excess_count_before + reserve_count_in_encoding + excess_count_after));
         writer = *writer_addr;
         write_unicode_indent(&writer, cur_nested_depth);
     }

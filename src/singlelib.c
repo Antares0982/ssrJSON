@@ -24,25 +24,45 @@
 #include "simd/simd_detect.h"
 #include "ssrjson.h"
 
+extern int ssrjson_write_utf8_cache_value;
+
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
+    int err;
     PyObject *ret = PyDict_New();
+    if (!ret) return NULL;
+    PyObject *write_cache_bool = ssrjson_write_utf8_cache_value ? Py_True : Py_False;
+    err = PyDict_SetItemString(ret, "WriteUTF8Cache", write_cache_bool);
+    if (err) goto fail;
+
+#define DICT_SET_STRING_ITEM(_k_, _v_)               \
+    do {                                             \
+        PyObject *val = PyUnicode_FromString((_v_)); \
+        if (!val) goto fail;                         \
+        err = PyDict_SetItemString(ret, (_k_), val); \
+        Py_DECREF(val);                              \
+        if (err) goto fail;                          \
+    } while (0)
 
 #if SSRJSON_X86
-    PyDict_SetItemString(ret, "MultiLib", PyBool_FromLong(false));
+    err = PyDict_SetItemString(ret, "MultiLib", Py_False);
+    if (err) goto fail;
 
-#    if COMPILE_SIMD_BITS == 512
-    PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("AVX512"));
-#    elif COMPILE_SIMD_BITS == 256
-    PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("AVX2"));
-// #    elif __SSE4_2__
-//     PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("SSE4.2"));
+#    if HAS_AVX512
+    DICT_SET_STRING_ITEM("SIMD", "AVX512");
+#    elif HAS_AVX2
+    DICT_SET_STRING_ITEM("SIMD", "AVX2");
+#    elif HAS_SSE4_2
+    DICT_SET_STRING_ITEM("SIMD", "SSE4.2");
 #    else
-    PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("SSE2"));
+    DICT_SET_STRING_ITEM("SIMD", "SSE2");
 #    endif
 #elif SSRJSON_AARCH
-    PyDict_SetItemString(ret, "SIMD", PyUnicode_FromString("NEON"));
+    DICT_SET_STRING_ITEM("SIMD", "NEON");
 #endif
     return ret;
+fail:;
+    Py_DECREF(ret);
+    return NULL;
 }
 
 const char *_update_simd_features(void) {
@@ -53,19 +73,19 @@ const char *_update_simd_features(void) {
 
     PLATFORM_SIMD_LEVEL simd_feature = get_simd_feature();
 #    if SSRJSON_X86
-#        if SUPPORT_SIMD_512BITS
+#        if HAS_AVX512
     // compile support 512 bits
     if (simd_feature < X86SIMDFeatureLevelAVX512) {
         return "AVX512 is not supported by the current CPU, but the library was compiled with AVX512 support.";
     }
     return NULL;
-#        elif SUPPORT_SIMD_256BITS
+#        elif HAS_AVX2
     // compile support 256 bits
     if (simd_feature < X86SIMDFeatureLevelAVX2) {
         return "AVX2 is not supported by the current CPU, but the library was compiled with AVX2 support.";
     }
     return NULL;
-#        elif __SSE4_2__
+#        elif HAS_SSE4_2
     if (simd_feature < X86SIMDFeatureLevelSSE4_2) {
         return "SSE4.2 is not supported by the current CPU, but the library was compiled with SSE4.2 support.";
     }
@@ -73,9 +93,11 @@ const char *_update_simd_features(void) {
 #        else
     return NULL;
 #        endif
-
+#    elif SSRJSON_AARCH
+    return NULL;
 #    else
-
+    // unknown platform
+    return NULL;
 #    endif
 #endif
 }

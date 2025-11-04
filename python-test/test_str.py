@@ -188,14 +188,27 @@ class TestStr:
         return d
 
     def _test_dumps_bytes(self, s):
-        b = ssrjson.dumps_to_bytes(s)
-        assert b == json.dumps(s, ensure_ascii=False).replace(" ", "").encode("utf-8")
-        assert ssrjson.dumps_to_bytes(s, indent=2) == json.dumps(
-            s, indent=2, ensure_ascii=False
-        ).encode("utf-8")
-        assert ssrjson.dumps_to_bytes(s, indent=4) == json.dumps(
-            s, indent=4, ensure_ascii=False
-        ).encode("utf-8")
+        old_write_cache = ssrjson.get_current_features()["WriteUTF8Cache"]
+
+        def _do_test():
+            b = ssrjson.dumps_to_bytes(s)
+            assert b == json.dumps(s, ensure_ascii=False).replace(" ", "").encode(
+                "utf-8"
+            )
+            assert ssrjson.dumps_to_bytes(s, indent=2) == json.dumps(
+                s, indent=2, ensure_ascii=False
+            ).encode("utf-8")
+            assert ssrjson.dumps_to_bytes(s, indent=4) == json.dumps(
+                s, indent=4, ensure_ascii=False
+            ).encode("utf-8")
+            return b
+
+        ssrjson.write_utf8_cache(False)
+        a = _do_test()
+        ssrjson.write_utf8_cache(True)
+        b = _do_test()
+        ssrjson.write_utf8_cache(old_write_cache)
+        assert a == b
         return b
 
     def test_ascii_from_dumps(self):
@@ -336,3 +349,18 @@ class TestStr:
                 obj = [a, b]
                 self._test_dumps_str(obj)
                 self._test_dumps_bytes(obj)
+
+        def _test_1(repeat: int):
+            for c in ("ÿ", "好", "🐈"):
+                a = "a" * repeat + c + "a" * repeat
+                b = "a" * repeat + c * 2 + "a" * repeat
+                obj = {a: b}
+                self._test_dumps_bytes(obj)
+                a = "a" * repeat + c + "a" * repeat
+                b = "a" * repeat + c * 2 + "a" * repeat
+                obj = {a: b}
+                self._test_dumps_str(obj)
+
+        for repeat in (1, 2, 4, 8, 16, 32, 64, 128, 256):
+            _test_1(repeat)
+            _test_1(repeat + 4096)

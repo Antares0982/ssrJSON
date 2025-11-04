@@ -247,8 +247,7 @@ force_inline bool unicode_buffer_append_str(PyObject *val, EncodeUnicodeWriter *
 
 force_inline bool unicode_buffer_append_long(_dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
     assert(PyLong_CheckExact(val));
-    // 32 < TAIL_PADDING == 64 so this is enough
-    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, TAIL_PADDING);
+    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, 64);
     _dst_t *writer = *writer_addr;
 
     if (pylong_is_zero(val)) {
@@ -283,9 +282,11 @@ force_inline bool unicode_buffer_append_long(_dst_t **writer_addr, EncodeUnicode
 
 force_inline void write_unicode_false(_dst_t **writer_addr) {
     _dst_t *writer = *writer_addr;
-    //   6,12,24
-    //-> 8,16,24/32 (64)
-    //-> 8,12,24 (32)
+    // ucs case       -> 1, 2, 4
+    // expected bytes -> 6,12,24
+    // written bytes  -> 8,16,24/32
+    // written count  -> 8, 8,6/8
+    // reserve count = 8
     *writer++ = 'f';
     *writer++ = 'a';
     *writer++ = 'l';
@@ -293,15 +294,10 @@ force_inline void write_unicode_false(_dst_t **writer_addr) {
     *writer++ = 'e';
     *writer++ = ',';
     _dst_t *writer2 = writer;
-#if COMPILE_UCS_LEVEL == 1
+#if COMPILE_UCS_LEVEL < 4
     *writer2++ = 0;
     *writer2++ = 0;
-#elif COMPILE_UCS_LEVEL == 2
-#    if SIZEOF_VOID_P == 8
-    *writer2++ = 0;
-    *writer2++ = 0;
-#    endif // SIZEOF_VOID_P
-#else      // COMPILE_UCS_LEVEL == 4
+#else // COMPILE_UCS_LEVEL == 4
 #    if __AVX__
     *writer2++ = 0;
     *writer2++ = 0;
@@ -311,7 +307,7 @@ force_inline void write_unicode_false(_dst_t **writer_addr) {
 }
 
 force_inline bool unicode_buffer_append_false(_dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
-    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, TAIL_PADDING);
+    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, 8);
     write_unicode_false(writer_addr);
     return true;
 }
@@ -319,38 +315,32 @@ force_inline bool unicode_buffer_append_false(_dst_t **writer_addr, EncodeUnicod
 force_inline void write_unicode_true(_dst_t **writer_addr) {
     _dst_t *writer = *writer_addr;
     _dst_t *writer2 = writer;
-    //   5,10,20
-    //-> 8,16,24/32 (64)
-    //-> 8,12,20 (32)
+    // ucs case       -> 1, 2, 4
+    // expected bytes -> 5,10,20
+    // written bytes  -> 8,16,24/32
+    // written count  -> 8, 8,6/8
+    // reserve count = 8
     *writer++ = 't';
     *writer++ = 'r';
     *writer++ = 'u';
     *writer++ = 'e';
     *writer++ = ',';
-#if COMPILE_UCS_LEVEL == 1
+#if COMPILE_UCS_LEVEL < 4
     *writer++ = 0;
     *writer++ = 0;
     *writer++ = 0;
-#elif COMPILE_UCS_LEVEL == 2
+#else // COMPILE_UCS_LEVEL == 4
     *writer++ = 0;
-#    if SIZEOF_VOID_P == 8
-    *writer++ = 0;
-    *writer++ = 0;
-#    endif // SIZEOF_VOID_P == 8
-#else      // COMPILE_UCS_LEVEL == 4
-#    if SIZEOF_VOID_P == 8
-    *writer++ = 0;
-#        if __AVX__
+#    if __AVX__
     *writer++ = 0;
     *writer++ = 0;
-#        endif // __AVX__
-#    endif
-#endif // COMPILE_UCS_LEVEL
+#    endif // __AVX__
+#endif     // COMPILE_UCS_LEVEL
     *writer_addr = writer2 + 5;
 }
 
 force_inline bool unicode_buffer_append_true(_dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
-    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, TAIL_PADDING);
+    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, 8);
     write_unicode_true(writer_addr);
     return true;
 }
@@ -358,46 +348,40 @@ force_inline bool unicode_buffer_append_true(_dst_t **writer_addr, EncodeUnicode
 force_inline void write_unicode_null(_dst_t **writer_addr) {
     _dst_t *writer = *writer_addr;
     _dst_t *writer2 = writer;
-    //   5,10,20
-    //-> 8,16,24/32 (64)
-    //-> 8,12,20 (32)
+    // ucs case       -> 1, 2, 4
+    // expected bytes -> 5,10,20
+    // written bytes  -> 8,16,24/32
+    // written count  -> 8, 8,6/8
+    // reserve count = 8
     *writer++ = 'n';
     *writer++ = 'u';
     *writer++ = 'l';
     *writer++ = 'l';
     *writer++ = ',';
-#if COMPILE_UCS_LEVEL == 1
+#if COMPILE_UCS_LEVEL < 4
     *writer++ = 0;
     *writer++ = 0;
     *writer++ = 0;
-#elif COMPILE_UCS_LEVEL == 2
+#else // COMPILE_UCS_LEVEL == 4
     *writer++ = 0;
-#    if SIZEOF_VOID_P == 8
-    *writer++ = 0;
-    *writer++ = 0;
-#    endif // SIZEOF_VOID_P == 8
-#else      // COMPILE_UCS_LEVEL == 4
-#    if SIZEOF_VOID_P == 8
-    *writer++ = 0;
-#        if __AVX__
+#    if __AVX__
     *writer++ = 0;
     *writer++ = 0;
-#        endif // __AVX__
-#    endif
-#endif // COMPILE_UCS_LEVEL
+#    endif // __AVX__
+#endif     // COMPILE_UCS_LEVEL
     *writer_addr = writer2 + 5;
 }
 
 force_inline bool unicode_buffer_append_null(_dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
-    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, TAIL_PADDING);
+    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, 8);
     write_unicode_null(writer_addr);
     return true;
 }
 
 force_inline bool unicode_buffer_append_float(_dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
-    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, TAIL_PADDING);
+    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, 32);
     double v = PyFloat_AS_DOUBLE(val);
-    u64 raw = *SSRJSON_CAST(u64 *, &v); //(u64 *)&v;
+    u64 raw = *SSRJSON_CAST(u64 *, &v);
     _dst_t *writer = *writer_addr;
     f64_to_unicode(&writer, raw);
     *writer++ = ',';
@@ -407,9 +391,7 @@ force_inline bool unicode_buffer_append_float(_dst_t **writer_addr, EncodeUnicod
 
 force_inline void write_unicode_empty_arr(_dst_t **writer_addr) {
     _dst_t *writer = *writer_addr;
-    //   3,6,12
-    //-> 4,8,16 (64)
-    //-> 4,8,12 (32)
+    // reserve count = 4
     *writer++ = '[';
     *writer++ = ']';
     *writer++ = ',';
@@ -420,26 +402,25 @@ force_inline void write_unicode_empty_arr(_dst_t **writer_addr) {
 }
 
 force_inline bool unicode_buffer_append_empty_arr(_dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
-    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, TAIL_PADDING);
+    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, 4);
     write_unicode_empty_arr(writer_addr);
     return true;
 }
 
 force_inline void write_unicode_arr_begin(_dst_t **writer_addr) {
+    // reserve count = 1
     *(*writer_addr)++ = '[';
 }
 
 force_inline bool unicode_buffer_append_arr_begin(_dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
-    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, TAIL_PADDING);
+    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, 1);
     write_unicode_arr_begin(writer_addr);
     return true;
 }
 
 force_inline void write_unicode_empty_obj(_dst_t **writer_addr) {
     _dst_t *writer = *writer_addr;
-    //   3,6,12
-    //-> 4,8,16 (64)
-    //-> 4,8,12 (32)
+    // reserve count = 4
     *writer++ = '{';
     *writer++ = '}';
     *writer++ = ',';
@@ -450,23 +431,25 @@ force_inline void write_unicode_empty_obj(_dst_t **writer_addr) {
 }
 
 force_inline bool unicode_buffer_append_empty_obj(_dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
-    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, TAIL_PADDING);
+    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, 4);
     write_unicode_empty_obj(writer_addr);
     return true;
 }
 
 force_inline void write_unicode_obj_begin(_dst_t **writer_addr) {
+    // reserve count = 1
     *(*writer_addr)++ = '{';
 }
 
 force_inline bool unicode_buffer_append_obj_begin(_dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
-    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, TAIL_PADDING);
+    WRITE_INDENT_RETURN_IF_FAIL(writer_addr, unicode_buffer_info, cur_nested_depth, is_in_obj, 1);
     write_unicode_obj_begin(writer_addr);
     return true;
 }
 
 force_inline void write_unicode_obj_end(_dst_t **writer_addr) {
     _dst_t *writer = *writer_addr;
+    // reserve count = 2
     *writer++ = '}';
     *writer++ = ',';
     *writer_addr = writer;
@@ -477,7 +460,7 @@ force_inline bool unicode_buffer_append_obj_end(_dst_t **writer_addr, EncodeUnic
     // remove last comma
     writer--;
     // this is not a *value*, the indent is always needed. i.e. `is_in_obj` should always pass false
-    WRITE_INDENT_RETURN_IF_FAIL(&writer, unicode_buffer_info, cur_nested_depth, false, TAIL_PADDING);
+    WRITE_INDENT_RETURN_IF_FAIL(&writer, unicode_buffer_info, cur_nested_depth, false, 2);
     write_unicode_obj_end(&writer);
     *writer_addr = writer;
     return true;
@@ -485,6 +468,7 @@ force_inline bool unicode_buffer_append_obj_end(_dst_t **writer_addr, EncodeUnic
 
 force_inline void write_unicode_arr_end(_dst_t **writer_addr) {
     _dst_t *writer = *writer_addr;
+    // reserve count = 2
     *writer++ = ']';
     *writer++ = ',';
     *writer_addr = writer;
@@ -495,7 +479,7 @@ force_inline bool unicode_buffer_append_arr_end(_dst_t **writer_addr, EncodeUnic
     // remove last comma
     writer--;
     // this is not a *value*, the indent is always needed. i.e. `is_in_obj` should always pass false
-    WRITE_INDENT_RETURN_IF_FAIL(&writer, unicode_buffer_info, cur_nested_depth, false, TAIL_PADDING);
+    WRITE_INDENT_RETURN_IF_FAIL(&writer, unicode_buffer_info, cur_nested_depth, false, 2);
     write_unicode_arr_end(&writer);
     *writer_addr = writer;
     return true;

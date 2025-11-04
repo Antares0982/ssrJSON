@@ -89,12 +89,12 @@ force_inline vector_a_u8_128 cvt_u16_to_u8_256(vector_a_u16_256 y) {
     return _mm_packus_epi16(x_low, x_high);
 }
 
-force_inline u32 get_low_bitmask_256(usize len) {
-    return (SSRJSON_CAST(u32, 1) << len) - 1;
-}
+// force_inline u32 get_low_bitmask_256(usize len) {
+//     return (SSRJSON_CAST(u32, 1) << len) - 1;
+// }
 
-force_inline u64 get_high_bitmask_256(usize len) {
-    return ~get_low_bitmask_256(32 - len);
-}
+// force_inline u64 get_high_bitmask_256(usize len) {
+//     return ~get_low_bitmask_256(32 - len);
+// }
 
 #endif // SSRJSON_SIMD_AVX2_COMMON_H

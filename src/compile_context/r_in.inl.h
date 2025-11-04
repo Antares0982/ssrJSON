@@ -56,27 +56,6 @@
 #    error "COMPILE_READ_UCS_LEVEL must be 1, 2 or 4"
 #endif
 
-// Encode inline specifier.
-#if COMPILE_READ_UCS_LEVEL == 1
-#    if SSRJSON_ENCODE_UCS1_TO_BYTES_IMPL_INLINE
-#        define _IMPL_INLINE_SPECIFIER force_inline
-#    else
-#        define _IMPL_INLINE_SPECIFIER internal_simd_noinline
-#    endif
-#elif COMPILE_READ_UCS_LEVEL == 2
-#    if SSRJSON_ENCODE_UCS2_TO_BYTES_IMPL_INLINE
-#        define _IMPL_INLINE_SPECIFIER force_inline
-#    else
-#        define _IMPL_INLINE_SPECIFIER internal_simd_noinline
-#    endif
-#elif COMPILE_READ_UCS_LEVEL == 4
-#    if SSRJSON_ENCODE_UCS4_TO_BYTES_IMPL_INLINE
-#        define _IMPL_INLINE_SPECIFIER force_inline
-#    else
-#        define _IMPL_INLINE_SPECIFIER internal_simd_noinline
-#    endif
-#endif
-
 // The source type.
 #define _src_t SSRJSON_SIMPLE_CONCAT2(u, READ_BIT_SIZE)
 

@@ -260,7 +260,7 @@ PyObject *ssrjson_write_utf8_cache(PyObject *self, PyObject *arg) {
         PyErr_SetString(PyExc_TypeError, "write_utf8_cache() argument must be True or False");
         return NULL;
     }
-    ssrjson_write_utf8_cache_value = value_is_false ? 1 : 0;
+    ssrjson_write_utf8_cache_value = value_is_true ? 1 : 0;
     Py_RETURN_NONE;
 }
 
