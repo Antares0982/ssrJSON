@@ -3,11 +3,11 @@
   clangStdenv,
   python,
   cmake,
-  system,
   forNonNix ? true,
   ...
 }:
 let
+  system = clangStdenv.hostPlatform.system;
   dylib = pkgs.callPackage ./build_package.nix {
     inherit
       clangStdenv

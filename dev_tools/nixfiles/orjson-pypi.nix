@@ -6,10 +6,10 @@
   lib,
   fetchurl,
   version ? "3.11.3",
-  system,
   ...
 }:
 let
+  system = pkgs.stdenv.hostPlatform.system;
   pythonVersionString = pypkgs.python.sourceVersion.major + "." + pypkgs.python.sourceVersion.minor;
   pythonAbiString = "cp" + pypkgs.python.sourceVersion.major + pypkgs.python.sourceVersion.minor;
   sourceUrl = {

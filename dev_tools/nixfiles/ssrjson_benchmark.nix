@@ -8,6 +8,7 @@
   ...
 }:
 let
+  system = pkgs.stdenv.hostPlatform.system;
   minorVer = lib.strings.toInt pypkgs.python.sourceVersion.minor;
   versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
@@ -47,7 +48,7 @@ pypkgs.buildPythonPackage rec {
       svglib
       ujson
     ]
-    ++ (lib.optionals (pkgs.system == "x86_64-linux") [ pypkgs.psutil ]);
+    ++ (lib.optionals (system == "x86_64-linux") [ pypkgs.psutil ]);
 
   configurePhase = ":";
 

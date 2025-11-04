@@ -5,11 +5,11 @@
   forNonNix ? false,
   lib,
   pax-utils,
-  system,
   callPackage,
   ...
 }:
 let
+  system = clangStdenv.hostPlatform.system;
   abiflags = import ./wheel-abiflags.nix;
   abiflag = abiflags.${system};
   ssrJSONVersion = callPackage ./ssrjson_version.nix { };

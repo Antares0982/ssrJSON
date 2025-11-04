@@ -4,6 +4,7 @@
   ...
 }:
 let
+  system = pkgs.stdenv.hostPlatform.system;
   lib = pkgs.lib;
   versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
@@ -18,13 +19,13 @@ in
   cmake
   gdb
 ])
-++ lib.optionals (pkgs.system == "x86_64-linux") (
+++ lib.optionals (system == "x86_64-linux") (
   with drvs;
   [
     sde
   ]
 )
-++ lib.optionals (pkgs.system != "aarch64-darwin") (
+++ lib.optionals (system != "aarch64-darwin") (
   with drvs;
   [
     bloaty

@@ -36,7 +36,7 @@
       devShells = forAllSystems (
         pkgs:
         let
-          pkgs-legacy = import nixpkgs-legacy { inherit (pkgs) system; };
+          pkgs-legacy = import nixpkgs-legacy { inherit (pkgs.stdenv.hostPlatform) system; };
           versionUtils = pkgs.callPackage ./dev_tools/nixfiles/version_utils.nix { inherit pkgs-legacy; };
           defaultShell = pkgs.callPackage ./dev_tools/nixfiles/shell.nix {
             inherit pkgs-legacy;
@@ -104,7 +104,7 @@
       packages = forAllSystems (
         pkgs:
         let
-          pkgs-legacy = import nixpkgs-legacy { inherit (pkgs) system; };
+          pkgs-legacy = import nixpkgs-legacy { inherit (pkgs.stdenv.hostPlatform) system; };
           versionUtils = pkgs.callPackage ./dev_tools/nixfiles/version_utils.nix { inherit pkgs-legacy; };
           pythonVerConfig = versionUtils.pythonVerConfig;
           stablePython = versionUtils.stablePython;

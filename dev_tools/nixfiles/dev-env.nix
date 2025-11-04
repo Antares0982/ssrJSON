@@ -17,6 +17,7 @@
   ...
 }:
 let
+  system = pkgs.stdenv.hostPlatform.system;
   llvmClang = llvmPackages.libcxxClang;
   libcxx = llvmPackages.libcxx;
   debugSourceDir = "debug_source";
@@ -84,7 +85,7 @@ let
     fi
   '';
   sde = pkgs.callPackage ./sde.nix { };
-  sde64Path = pkgs.lib.optionalString (pkgs.system == "x86_64-linux") "${sde}/bin/sde64";
+  sde64Path = pkgs.lib.optionalString (system == "x86_64-linux") "${sde}/bin/sde64";
   sdeClxScript = builtins.replaceStrings [ "@cpuid@" "@sde64@" ] [ "-clx" sde64Path ] sdeScript;
   sdeRplScript = builtins.replaceStrings [ "@cpuid@" "@sde64@" ] [ "-rpl" sde64Path ] sdeScript;
   sdeIvbScript = builtins.replaceStrings [ "@cpuid@" "@sde64@" ] [ "-ivb" sde64Path ] sdeScript;
@@ -123,7 +124,7 @@ stdenvNoCC.mkDerivation {
     echo "export Python3_ROOT_DIR=${using_python}" >> "$out/nix-support/shell-env"
   ''
   # SDE (x86_64)
-  + pkgs.lib.optionalString (pkgs.system == "x86_64-linux") ''
+  + pkgs.lib.optionalString (system == "x86_64-linux") ''
     # sde wrapper script
     cat > "${runSdeClxPath}" << 'EOF'
     ${sdeClxScript}

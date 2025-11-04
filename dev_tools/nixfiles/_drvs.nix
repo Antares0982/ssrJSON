@@ -5,6 +5,7 @@
   ...
 }:
 let
+  system = pkgs.stdenv.hostPlatform.system;
   lib = pkgs.lib;
   versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
@@ -108,10 +109,10 @@ in
     ;
 }
 // (builtins.listToAttrs (map verToEnvDef versionUtils.versions))
-// lib.optionalAttrs (pkgs.system == "x86_64-linux") {
+// lib.optionalAttrs (system == "x86_64-linux") {
   inherit sde;
 }
-// lib.optionalAttrs (pkgs.system != "aarch64-darwin") {
+// lib.optionalAttrs (system != "aarch64-darwin") {
   inherit (pkgs)
     bloaty # binary size profiler
     pax-utils # lddtree
