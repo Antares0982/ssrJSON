@@ -416,18 +416,13 @@ force_inline void Py_Immortal_IncRef(PyObject *op) {
     // Non-limited C API and limited C API for Python 3.9 and older access
     // directly PyObject.ob_refcnt.
 #if PY_MINOR_VERSION >= 12
-#    if SIZEOF_VOID_P > 4
     // Portable saturated add, branching on the carry flag and set low bits
-#        if !defined(NDEBUG) && PY_MINOR_VERSION < 14
+#    if !defined(NDEBUG) && PY_MINOR_VERSION < 14
     assert(0 > (int32_t)op->ob_refcnt_split[PY_BIG_ENDIAN]);
-#        endif // NDEBUG
-#    else      // SIZEOF_VOID_P > 4
-    // Explicitly check immortality against the immortal value
-    assert(_Py_IsImmortal(op));
-#    endif     // SIZEOF_VOID_P > 4
-#else          // PY_MINOR_VERSION >= 12
+#    endif // NDEBUG
+#else      // PY_MINOR_VERSION >= 12
     op->ob_refcnt++;
-#endif         // PY_MINOR_VERSION >= 12
+#endif     // PY_MINOR_VERSION >= 12
     SSRJSON_PY_INCREF_DEBUG();
 }
 

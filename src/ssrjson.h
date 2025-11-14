@@ -369,6 +369,7 @@ force_inline int get_cpuid_max(void) {
 #    endif
 #endif
 
+static_assert(SSRJSON_HAS_IEEE_754, "Current platform does not support IEEE 754");
 
 /* int128 type */
 #if defined(__SIZEOF_INT128__) && (__SIZEOF_INT128__ == 16) && \

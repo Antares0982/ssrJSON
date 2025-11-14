@@ -62,9 +62,9 @@ force_inline bool unicode_buffer_append_key_internal(const _src_t *str_data, usi
     *writer++ = ':';
 #if COMPILE_INDENT_LEVEL > 0
     *writer++ = ' ';
-#    if SIZEOF_VOID_P == 8 || COMPILE_WRITE_UCS_LEVEL != 4
+#    if COMPILE_WRITE_UCS_LEVEL < 4
     *writer = 0;
-#    endif // SIZEOF_VOID_P == 8 || COMPILE_WRITE_UCS_LEVEL != 4
+#    endif // COMPILE_WRITE_UCS_LEVEL < 4
 #endif     // COMPILE_INDENT_LEVEL > 0
     *writer_addr = writer;
     assert(check_unicode_writer_valid(writer, unicode_buffer_info));

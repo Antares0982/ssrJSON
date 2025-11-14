@@ -395,7 +395,7 @@ force_inline void write_unicode_empty_arr(_dst_t **writer_addr) {
     *writer++ = '[';
     *writer++ = ']';
     *writer++ = ',';
-#if SIZEOF_VOID_P == 8 || COMPILE_UCS_LEVEL != 4
+#if COMPILE_UCS_LEVEL != 4
     *writer = 0;
 #endif
     *writer_addr = writer;
@@ -424,7 +424,7 @@ force_inline void write_unicode_empty_obj(_dst_t **writer_addr) {
     *writer++ = '{';
     *writer++ = '}';
     *writer++ = ',';
-#if SIZEOF_VOID_P == 8 || COMPILE_UCS_LEVEL != 4
+#if COMPILE_UCS_LEVEL != 4
     *writer = 0;
 #endif
     *writer_addr = writer;

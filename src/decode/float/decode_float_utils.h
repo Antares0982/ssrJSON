@@ -24,15 +24,14 @@
 #define DECODE_FLOAT_UTILS_H
 #include "decode/decode_shared.h"
 
-#if SSRJSON_HAS_IEEE_754
 /** Maximum exponent of exact pow10 */
-#    define U64_POW10_MAX_EXP 19
+#define U64_POW10_MAX_EXP 19
 
 /** Maximum numbers of chunks used by a bigint (58 is enough here). */
-#    define BIGINT_MAX_CHUNKS 64
+#define BIGINT_MAX_CHUNKS 64
 
 /** Maximum exact pow10 exponent for double value. */
-#    define F64_POW10_EXP_MAX_EXACT 22
+#define F64_POW10_EXP_MAX_EXACT 22
 
 /** Cached pow10 table. */
 static const f64 f64_pow10_table[] = {
@@ -233,11 +232,5 @@ force_inline u64 diy_fp_to_ieee_raw(diy_fp fp) {
         return 0;
     }
 }
-
-#else
-
-
-#endif
-
 
 #endif // DECODE_FLOAT_UTILS_H

@@ -51,8 +51,7 @@ force_inline bool digi_is_fp(_src_t d) {
     return d <= U8MAX && _digi_is_fp((u8)d);
 }
 
-#if SSRJSON_HAS_IEEE_754
-#    define DIGI_IS_NONZERO MAKE_R_NAME(digi_is_nonzero)
+#define DIGI_IS_NONZERO MAKE_R_NAME(digi_is_nonzero)
 
 ////////////////
 force_inline bool DIGI_IS_NONZERO(_src_t d) {
@@ -72,49 +71,49 @@ force_inline bool DIGI_IS_NONZERO(_src_t d) {
  3. This function (with inline attribute) may generate a lot of instructions.
  */
 internal_simd_noinline PyObject *read_number(const _src_t **ptr, const _src_t *buffer_end) {
-#    define return_err(_end, _msg)                                                  \
-        do {                                                                        \
-            PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, _end - hdr); \
-            return NULL;                                                            \
-        } while (0)
+#define return_err(_end, _msg)                                                  \
+    do {                                                                        \
+        PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, _end - hdr); \
+        return NULL;                                                            \
+    } while (0)
 
-#    define return_0()                     \
-        do {                               \
-            *end = cur;                    \
-            return PyLong_FromLongLong(0); \
-        } while (false)
+#define return_0()                     \
+    do {                               \
+        *end = cur;                    \
+        return PyLong_FromLongLong(0); \
+    } while (false)
 
-#    define return_i64(_v)                                                                                \
-        do {                                                                                              \
-            *end = cur;                                                                                   \
-            u64 temp = (sign ? (u64)(~(_v) + 1) : (u64)(_v));                                             \
-            if (unlikely(SSRJSON_CAST(i64, temp) < 0 && !sign)) return PyLong_FromUnsignedLongLong(temp); \
-            return PyLong_FromLongLong((i64)temp);                                                        \
-        } while (false)
+#define return_i64(_v)                                                                                \
+    do {                                                                                              \
+        *end = cur;                                                                                   \
+        u64 temp = (sign ? (u64)(~(_v) + 1) : (u64)(_v));                                             \
+        if (unlikely(SSRJSON_CAST(i64, temp) < 0 && !sign)) return PyLong_FromUnsignedLongLong(temp); \
+        return PyLong_FromLongLong((i64)temp);                                                        \
+    } while (false)
 
-#    define return_u64(_v)                                                                  \
-        do {                                                                                \
-            *end = cur;                                                                     \
-            return PyLong_FromUnsignedLongLong((u64)(sign ? (u64)(~(_v) + 1) : (u64)(_v))); \
-        } while (false)
+#define return_u64(_v)                                                                  \
+    do {                                                                                \
+        *end = cur;                                                                     \
+        return PyLong_FromUnsignedLongLong((u64)(sign ? (u64)(~(_v) + 1) : (u64)(_v))); \
+    } while (false)
 
-#    define return_f64(_v)                                            \
-        do {                                                          \
-            *end = cur;                                               \
-            return PyFloat_FromDouble(sign ? -(f64)(_v) : (f64)(_v)); \
-        } while (false)
+#define return_f64(_v)                                            \
+    do {                                                          \
+        *end = cur;                                               \
+        return PyFloat_FromDouble(sign ? -(f64)(_v) : (f64)(_v)); \
+    } while (false)
 
-#    define return_f64_bin(_v)                           \
-        do {                                             \
-            *end = cur;                                  \
-            u64 temp = ((u64)sign << 63) | (u64)(_v);    \
-            return PyFloat_FromDouble(*(double *)&temp); \
-        } while (false)
+#define return_f64_bin(_v)                           \
+    do {                                             \
+        *end = cur;                                  \
+        u64 temp = ((u64)sign << 63) | (u64)(_v);    \
+        return PyFloat_FromDouble(*(double *)&temp); \
+    } while (false)
 
-#    define return_inf()                 \
-        do {                             \
-            return_f64_bin(F64_RAW_INF); \
-        } while (false)
+#define return_inf()                 \
+    do {                             \
+        return_f64_bin(F64_RAW_INF); \
+    } while (false)
 
     const _src_t *sig_cut = NULL; /* significant part cutting position for long number */
     const _src_t *sig_end = NULL; /* significant part ending position */
@@ -190,11 +189,11 @@ internal_simd_noinline PyObject *read_number(const _src_t **ptr, const _src_t *b
             else goto digi_sepr_i;
          }
      */
-#    define expr_intg(i)                                                        \
-        if (likely((num = (u64)(cur[i] - (u8)'0')) <= 9)) sig = num + sig * 10; \
-        else { goto digi_sepr_##i; }
+#define expr_intg(i)                                                        \
+    if (likely((num = (u64)(cur[i] - (u8)'0')) <= 9)) sig = num + sig * 10; \
+    else { goto digi_sepr_##i; }
     REPEAT_INCR_IN_1_18(expr_intg)
-#    undef expr_intg
+#undef expr_intg
 
 
     cur += 19; /* skip continuous 19 digits */
@@ -209,27 +208,27 @@ internal_simd_noinline PyObject *read_number(const _src_t **ptr, const _src_t *b
 
 
     /* process first non-digit character */
-#    define expr_sepr(i)                                   \
-        digi_sepr_##i : if (likely(!digi_is_fp(cur[i]))) { \
-            cur += i;                                      \
-            return_i64(sig);                               \
-        }                                                  \
-        dot_pos = cur + i;                                 \
-        if (likely(cur[i] == '.')) goto digi_frac_##i;     \
-        cur += i;                                          \
-        sig_end = cur;                                     \
-        goto digi_exp_more;
+#define expr_sepr(i)                                   \
+    digi_sepr_##i : if (likely(!digi_is_fp(cur[i]))) { \
+        cur += i;                                      \
+        return_i64(sig);                               \
+    }                                                  \
+    dot_pos = cur + i;                                 \
+    if (likely(cur[i] == '.')) goto digi_frac_##i;     \
+    cur += i;                                          \
+    sig_end = cur;                                     \
+    goto digi_exp_more;
     REPEAT_INCR_IN_1_18(expr_sepr)
-#    undef expr_sepr
+#undef expr_sepr
 
 
     /* read fraction part */
-#    define expr_frac(i)                                                      \
-        digi_frac_##i : if (likely((num = (u64)(cur[i + 1] - (u8)'0')) <= 9)) \
-                                sig = num + sig * 10;                         \
-        else { goto digi_stop_##i; }
+#define expr_frac(i)                                                      \
+    digi_frac_##i : if (likely((num = (u64)(cur[i + 1] - (u8)'0')) <= 9)) \
+                            sig = num + sig * 10;                         \
+    else { goto digi_stop_##i; }
     REPEAT_INCR_IN_1_18(expr_frac)
-#    undef expr_frac
+#undef expr_frac
 
     cur += 20;                                    /* skip 19 digits and 1 decimal point */
     if (!digi_is_digit(*cur)) goto digi_frac_end; /* fraction part end */
@@ -237,11 +236,11 @@ internal_simd_noinline PyObject *read_number(const _src_t **ptr, const _src_t *b
 
 
     /* significant part end */
-#    define expr_stop(i)              \
-        digi_stop_##i : cur += i + 1; \
-        goto digi_frac_end;
+#define expr_stop(i)              \
+    digi_stop_##i : cur += i + 1; \
+    goto digi_frac_end;
     REPEAT_INCR_IN_1_18(expr_stop)
-#    undef expr_stop
+#undef expr_stop
 
 
     /* read more digits in integral part */
@@ -374,7 +373,7 @@ digi_finish:
      We don't check all available inputs here, because that would make the code
      more complicated, and not friendly to branch predictor.
      */
-#    if SSRJSON_DOUBLE_MATH_CORRECT
+#if SSRJSON_DOUBLE_MATH_CORRECT
     if (sig < ((u64)1 << 53) &&
         exp >= -F64_POW10_EXP_MAX_EXACT &&
         exp <= +F64_POW10_EXP_MAX_EXACT) {
@@ -386,7 +385,7 @@ digi_finish:
         }
         return_f64(dbl);
     }
-#    endif
+#endif
 
     /*
      Fast path 2:
@@ -655,246 +654,18 @@ digi_finish:
         return_f64_bin(raw);
     }
 
-#    undef return_err
-#    undef return_inf
-#    undef return_0
-#    undef return_i64
-#    undef return_u64
-#    undef return_f64
-#    undef return_f64_bin
-#    undef return_raw
+#undef return_err
+#undef return_inf
+#undef return_0
+#undef return_i64
+#undef return_u64
+#undef return_f64
+#undef return_f64_bin
+#undef return_raw
 }
 
-#    undef DIGI_IS_NONZERO
+#undef DIGI_IS_NONZERO
 
-#else /* !SSRJSON_HAS_IEEE_754 */
-
-/**
- Read a JSON number.
- This is a fallback function if the custom number reader is disabled.
- This function use libc's strtod() to read floating-point number.
- */
-internal_simd_noinline PyObject *read_number(const _src_t **ptr, const _src_t *buffer_end) {
-
-#    define return_err(_end, _msg)                                                  \
-        do {                                                                        \
-            PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, _end - hdr); \
-            return NULL;                                                            \
-        } while (0)
-
-#    define return_0()                     \
-        do {                               \
-            *end = cur;                    \
-            return PyLong_FromLongLong(0); \
-        } while (false)
-
-#    define return_i64(_v)                                                                                \
-        do {                                                                                              \
-            *end = cur;                                                                                   \
-            u64 temp = (sign ? (u64)(~(_v) + 1) : (u64)(_v));                                             \
-            if (unlikely(SSRJSON_CAST(i64, temp) < 0 && !sign)) return PyLong_FromUnsignedLongLong(temp); \
-            return PyLong_FromLongLong((i64)temp);                                                        \
-        } while (false)
-
-#    define return_u64(_v)                                                                  \
-        do {                                                                                \
-            *end = cur;                                                                     \
-            return PyLong_FromUnsignedLongLong((u64)(sign ? (u64)(~(_v) + 1) : (u64)(_v))); \
-        } while (false)
-
-#    define return_f64(_v)                                            \
-        do {                                                          \
-            *end = cur;                                               \
-            return PyFloat_FromDouble(sign ? -(f64)(_v) : (f64)(_v)); \
-        } while (false)
-
-#    define return_f64_bin(_v)                           \
-        do {                                             \
-            *end = cur;                                  \
-            u64 temp = ((u64)sign << 63) | (u64)(_v);    \
-            return PyFloat_FromDouble(*(double *)&temp); \
-        } while (false)
-
-#    define return_inf()                 \
-        do {                             \
-            return_f64_bin(F64_RAW_INF); \
-        } while (false)
-
-    u64 sig, num;
-    const _src_t *hdr = *ptr;
-    const _src_t *cur = *ptr;
-    const _src_t **end = ptr;
-    const _src_t *dot = NULL;
-    bool sign;
-
-    sign = (*hdr == '-');
-    cur += sign;
-    sig = (u64)(*cur - '0');
-
-    /* read first digit, check leading zero */
-    if (unlikely(!digi_is_digit(*cur))) {
-        PyObject *number_obj = read_inf_or_nan(sign, &cur, buffer_end);
-        if (likely(number_obj)) {
-            *end = cur;
-            return number_obj;
-        }
-        // }
-        if (unlikely(!PyErr_Occurred())) {
-            return_err(cur, "no digit after minus sign");
-        }
-        return NULL;
-    }
-    if (*cur == '0') {
-        cur++;
-        if (unlikely(digi_is_digit(*cur))) {
-            return_err(cur - 1, "number with leading zero is not allowed");
-        }
-        if (!digi_is_fp(*cur)) return_0();
-        goto read_double;
-    }
-
-    /* read continuous digits, up to 19 characters */
-#    define expr_intg(i)                                                        \
-        if (likely((num = (u64)(cur[i] - (u8)'0')) <= 9)) sig = num + sig * 10; \
-        else {                                                                  \
-            cur += i;                                                           \
-            goto intg_end;                                                      \
-        }
-    REPEAT_INCR_IN_1_18(expr_intg)
-#    undef expr_intg
-
-    /* here are 19 continuous digits, skip them */
-    cur += 19;
-    if (digi_is_digit(cur[0]) && !digi_is_digit_or_fp(cur[1])) {
-        /* this number is an integer consisting of 20 digits */
-        num = (u64)(*cur - '0');
-        if ((sig < (U64_MAX / 10)) ||
-            (sig == (U64_MAX / 10) && num <= (U64_MAX % 10))) {
-            sig = num + sig * 10;
-            cur++;
-            if (sign) {
-                return_f64(normalized_u64_to_f64(sig));
-            }
-            return_u64(sig);
-        }
-    }
-
-intg_end:
-    /* continuous digits ended */
-    if (!digi_is_digit_or_fp(*cur)) {
-        /* this number is an integer consisting of 1 to 19 digits */
-        if (sign && (sig > ((u64)1 << 63))) {
-            return_f64(normalized_u64_to_f64(sig));
-        }
-        return_i64(sig);
-    }
-
-read_double:
-    /* this number should be read as double */
-    while (digi_is_digit(*cur)) cur++;
-    if (*cur == '.') {
-        /* skip fraction part */
-        dot = cur;
-        cur++;
-        if (!digi_is_digit(*cur)) {
-            return_err(cur, "no digit after decimal point");
-        }
-        cur++;
-        while (digi_is_digit(*cur)) cur++;
-    }
-    if (digi_is_exp(*cur)) {
-        /* skip exponent part */
-        cur += 1 + digi_is_sign(cur[1]);
-        if (!digi_is_digit(*cur)) {
-            return_err(cur, "no digit after exponent sign");
-        }
-        cur++;
-        while (digi_is_digit(*cur)) cur++;
-    }
-
-/*
-     libc's strtod() is used to parse the floating-point number.
-     
-     Note that the decimal point character used by strtod() is locale-dependent,
-     and the rounding direction may affected by fesetround().
-     
-     For currently known locales, (en, zh, ja, ko, am, he, hi) use '.' as the
-     decimal point, while other locales use ',' as the decimal point.
-     
-     Here strtod() is called twice for different locales, but if another thread
-     happens calls setlocale() between two strtod(), parsing may still fail.
-     */
-#    if COMPILE_READ_UCS_LEVEL > 1
-    // need to copy [hdr, cur) to a new u8 buffer
-    u8 _tmpbuf[256];
-    bool need_dealloc = false;
-    u8 *tmpbuf_ptr = _tmpbuf + TAIL_PADDING;
-    static_assert(256 > 2 * TAIL_PADDING, "256 > 2 * TAIL_PADDING");
-    const usize _valid_length = 256 - 2 * TAIL_PADDING;
-    usize _tmplength = cur - hdr;
-    if (unlikely(_tmplength >= _valid_length)) {
-        tmpbuf_ptr = malloc(_tmplength + 2 * TAIL_PADDING);
-        if (!tmpbuf_ptr) {
-            PyErr_NoMemory();
-            return NULL;
-        }
-        tmpbuf_ptr += TAIL_PADDING;
-    }
-#        define DOWNGRADER SSRJSON_CONCAT3(downgrade_string, COMPILE_READ_UCS_LEVEL, 1)
-    DOWNGRADER(hdr, _tmplength, tmpbuf_ptr);
-#        undef DOWNGRADER
-    tmpbuf_ptr[_tmplength] = 0;
-    const u8 *hdr_for_strtod = tmpbuf_ptr;
-    const u8 *cur_for_strtod = tmpbuf_ptr + _tmplength;
-    const u8 *dot_for_strtod = dot ? tmpbuf_ptr + (dot - hdr) : NULL;
-#    else
-    bool need_dealloc = false;
-    const u8 *hdr_for_strtod = hdr;
-    const u8 *cur_for_strtod = cur;
-    const u8 *dot_for_strtod = dot;
-    // a dumb variable erased at compile time
-    const u8 *const tmpbuf_ptr = (const u8 *)TAIL_PADDING;
-#    endif
-    const u8 *f64_end = NULL;
-    double f = strtod((const char *)hdr_for_strtod, (char **)&f64_end);
-    if (unlikely(f64_end != cur_for_strtod)) {
-        /* replace '.' with ',' for locale */
-        bool cut = (*cur_for_strtod == ',');
-        if (cut) *(u8 *)cur_for_strtod = ' ';
-        if (dot_for_strtod) *(u8 *)dot_for_strtod = ',';
-        f = strtod((const char *)hdr_for_strtod, (char **)&f64_end);
-        if (need_dealloc) {
-            free((void *)(tmpbuf_ptr - TAIL_PADDING));
-            need_dealloc = false;
-        }
-        /* restore ',' to '.' */
-        if (cut) *(u8 *)cur_for_strtod = ',';
-        if (dot_for_strtod) *(u8 *)dot_for_strtod = '.';
-        if (unlikely(f64_end != cur_for_strtod)) {
-            return_err(hdr, "strtod() failed to parse the number");
-        }
-    }
-    if (need_dealloc) {
-        free((void *)(tmpbuf_ptr - TAIL_PADDING));
-        // need_dealloc = false;
-    }
-    if (unlikely(f >= HUGE_VAL || f <= -HUGE_VAL)) {
-        return_inf();
-    }
-
-    *end = cur;
-    return PyFloat_FromDouble(f);
-#    undef return_err
-#    undef return_0
-#    undef return_i64
-#    undef return_u64
-#    undef return_f64
-#    undef return_f64_bin
-#    undef return_inf
-#    undef return_raw
-}
-
-#endif /* !SSRJSON_HAS_IEEE_754 */
 
 #undef digi_is_fp
 #undef digi_is_sign

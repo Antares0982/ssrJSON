@@ -23,7 +23,6 @@
 #include "decode_float_utils.h"
 //
 #include "compile_context/r_in.inl.h"
-#if SSRJSON_HAS_IEEE_754
 
 /** Set a bigint with floating point number string. */
 force_inline void bigint_set_buf(
@@ -81,14 +80,12 @@ force_inline void bigint_set_buf(
 void bigint_set_buf_noinline(
         bigint *big, u64 sig, i32 *exp,
         const _src_t *sig_cut, const _src_t *sig_end, const _src_t *dot_pos)
-#    if BIGINT_IMPL
+#if BIGINT_IMPL
 {
     bigint_set_buf(big, sig, exp, sig_cut, sig_end, dot_pos);
 }
-#    else
+#else
         ;
-#    endif // BIGINT_IMPL
-
-#endif // SSRJSON_HAS_IEEE_754
+#endif // BIGINT_IMPL
 
 #include "compile_context/r_out.inl.h"

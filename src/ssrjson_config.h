@@ -128,9 +128,9 @@ typedef PyObject *pyobj_ptr_t;
 
 /* Some feature checks. */
 
-// avx and above may be enabled.
-static_assert(sizeof(PyASCIIObject) >= 4 * SIZEOF_VOID_P, "sizeof(PyASCIIObject) == ?");
-static_assert(offsetof(PyBytesObject, ob_sval) >= 4 * SIZEOF_VOID_P, "sizeof(PyASCIIObject) == ?");
+static_assert(SIZEOF_VOID_P == 8, "SIZEOF_VOID_P != 8");
+static_assert(sizeof(PyASCIIObject) >= 16, "sizeof(PyASCIIObject) < 16");
+static_assert(offsetof(PyBytesObject, ob_sval) >= 16, "offsetof(PyBytesObject, ob_sval) < 16");
 
 
 #endif

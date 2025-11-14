@@ -202,7 +202,6 @@ force_inline bool bytes_buffer_append_str(PyObject *str,
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = 1;
         RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after));
-        // RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, 3 + 6 * len + TAIL_PADDING));
         writer = *writer_addr;
     } else {
         // write_unicode_indent and '"' writes `get_indent_char_count() + 1` bytes
@@ -212,7 +211,6 @@ force_inline bool bytes_buffer_append_str(PyObject *str,
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
         RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after));
-        // RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 3 + 6 * len + TAIL_PADDING));
         writer = *writer_addr;
         write_unicode_indent(&writer, cur_nested_depth);
     }
