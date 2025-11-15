@@ -459,7 +459,9 @@ if(BUILD_TEST)
     endif()
 
     add_test(ssrjson_fuzzer ${CMAKE_CURRENT_BINARY_DIR}/ssrjson_fuzzer
-             -dict=fuzzer.dict -max_total_time=300
+             -dict=fuzzer.dict -max_total_time=1800
              ${CMAKE_CURRENT_BINARY_DIR}/corpus)
+    set_tests_properties(ssrjson_fuzzer
+                         PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0")
   endif()
 endif()

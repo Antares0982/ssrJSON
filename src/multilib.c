@@ -24,6 +24,7 @@
 #include "ssrjson.h"
 
 extern int ssrjson_write_utf8_cache_value;
+extern int ssrjson_nonstrict_argparse;
 
 #define IMPL_MULTILIB_FUNCTION_INTERFACE(_func_name_) SSRJSON_CONCAT2(_func_name_, t) SSRJSON_CONCAT2(_func_name_, interface);
 
@@ -84,6 +85,10 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     PyObject *write_cache_bool = ssrjson_write_utf8_cache_value ? Py_True : Py_False;
     err = PyDict_SetItemString(ret, "WriteUTF8Cache", write_cache_bool);
     if (err) goto fail;
+    PyObject *strict_argparse_bool = ssrjson_nonstrict_argparse ? Py_False : Py_True;
+    err = PyDict_SetItemString(ret, "StrictArgParse", strict_argparse_bool);
+    if (err) goto fail;
+
 #    define DICT_SET_STRING_ITEM(_k_, _v_)               \
         do {                                             \
             PyObject *val = PyUnicode_FromString((_v_)); \
@@ -137,6 +142,9 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     if (err) goto fail;
     PyObject *write_cache_bool = ssrjson_write_utf8_cache_value ? Py_True : Py_False;
     err = PyDict_SetItemString(ret, "WriteUTF8Cache", write_cache_bool);
+    if (err) goto fail;
+    PyObject *strict_argparse_bool = ssrjson_nonstrict_argparse ? Py_False : Py_True;
+    err = PyDict_SetItemString(ret, "StrictArgParse", strict_argparse_bool);
     if (err) goto fail;
     PyObject *neon = PyUnicode_FromString("NEON");
     if (!neon) goto fail;

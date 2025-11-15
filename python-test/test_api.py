@@ -264,7 +264,7 @@ class TestApi:
         dumps() valid __text_signature__
         """
         assert str(inspect.signature(ssrjson.dumps)) == "(obj, indent=None)"
-        assert str(inspect.signature(ssrjson.dumps_to_bytes)) == "(obj, indent=None)"
+        assert str(inspect.signature(ssrjson.dumps_to_bytes)) == "(obj, indent=None, is_write_cache=None)"
 
     def test_loads_signature(self):
         """

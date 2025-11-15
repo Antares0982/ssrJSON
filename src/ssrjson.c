@@ -99,7 +99,7 @@ PyMethodDef dumps_to_bytes_func_def = {
         "dumps_to_bytes",
         (PyCFunction)ssrjson_EncodeToBytes,
         METH_FASTCALL | METH_KEYWORDS,
-        "dumps_to_bytes(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."};
+        "dumps_to_bytes(obj, indent=None, is_write_cache=None)\n--\n\nConverts arbitrary object recursively into JSON."};
 
 PyMethodDef loads_func_def = {
         "loads",
@@ -129,7 +129,7 @@ PyMethodDef write_utf8_cache_func_def = {
         "write_utf8_cache",
         (PyCFunction)ssrjson_write_utf8_cache,
         METH_O,
-        "write_utf8_cache(value)\n--\n\nSet whether to write UTF-8 cache when calling dumps_to_bytes()."};
+        "write_utf8_cache(value)\n--\n\nSet whether to write UTF-8 cache when calling dumps_to_bytes(). Default is True."};
 
 static int ssrjson_exec(PyObject *module) {
     int err;
@@ -226,15 +226,16 @@ static int ssrjson_exec(PyObject *module) {
 #endif
 
     return 0;
+#undef ADD_FUNC_CHECKED
+#undef RETURN_WHEN_ERR
 }
 
 PyMODINIT_FUNC PyInit_ssrjson(void) {
     return PyModuleDef_Init(&moduledef);
 }
 
-/* ssrjson_suppress_api_warning */
 int ssrjson_invalid_arg_checked = 0;
-int ssrjson_nonstrict_argparse = 1;
+int ssrjson_nonstrict_argparse = SSRJSON_NONSTRICT_ARGPARSE;
 int ssrjson_write_utf8_cache_value = SSRJSON_WRITE_UTF8_CACHE;
 
 PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args) {

@@ -111,6 +111,15 @@
 #    define SSRJSON_WRITE_UTF8_CACHE 1
 #endif
 
+/* 
+ * Whether to force strict argument parsing.
+ * This behavior can also be controlled
+ * globally by calling `ssrjson.strict_argparse()`.
+ */
+#ifndef SSRJSON_NONSTRICT_ARGPARSE
+#    define SSRJSON_NONSTRICT_ARGPARSE 1
+#endif
+
 /** Type definition for primitive types. */
 typedef float f32;
 typedef double f64;
