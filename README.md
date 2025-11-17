@@ -16,7 +16,7 @@ ssrJSON is a Python JSON library that leverages modern hardware capabilities to 
 
 TL;DR: ssrJSON is faster than or nearly as fast as [orjson](https://github.com/ijl/orjson) (which announces itself as the fastest Python library for JSON) on most benchmark cases.
 
-Below is an artificial benchmark case to demonstrate the speed of encoding non-ASCII JSON ([simple_object_zh.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/simple_object_zh.json)). Upon seeing the diagram below, you might wonder: why do the performance results from other libraries appear so poor? If you are interested, please refer to the section [UTF-8 Cache of str Objects](#UTF-8 Cache of `str` Objects).
+Below is an artificial benchmark case to demonstrate the speed of encoding non-ASCII JSON ([simple_object_zh.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/simple_object_zh.json)). Upon seeing the diagram below, you might wonder: why do the performance results from other libraries appear so poor? If you are interested, please refer to the section [UTF-8 Cache of str Objects](#utf-8-cache-of-str-objects).
 
 ![](pics/simple_object_zh.json_0.0.6.svg)
 
