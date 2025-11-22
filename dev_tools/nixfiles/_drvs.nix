@@ -9,10 +9,10 @@ let
   lib = pkgs.lib;
   versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
+  pyVerToPkgs = versionUtils.pyVerToPkgs;
   maxSupportVer = pythonVerConfig.maxSupportVer;
   minSupportVer = pythonVerConfig.minSupportVer;
-  latestStableVer = pythonVerConfig.latestStableVer;
-  curVer = pythonVerConfig.latestStableVer;
+  curVer = pythonVerConfig.curVer;
   supportedVers = builtins.genList (x: minSupportVer + x) (maxSupportVer - minSupportVer + 1);
   py315ForTest =
     (pkgs.python314.override (
@@ -70,7 +70,7 @@ let
   using_pythons = (
     builtins.map using_pythons_map (
       builtins.map (supportedVer: rec {
-        curPkgs = if (supportedVer >= latestStableVer) then pkgs else pkgs-legacy;
+        curPkgs = pyVerToPkgs supportedVer;
         py =
           if supportedVer <= 14 then
             (builtins.getAttr ("python3" + (builtins.toString supportedVer)) (curPkgs))
@@ -84,10 +84,7 @@ let
   pyenvs_map = py: (py.withPackages required_python_packages);
   pyenvs = builtins.map pyenvs_map using_pythons;
   debuggable_py = builtins.map (
-    py:
-    (if ((lib.strings.toInt py.sourceVersion.minor) >= latestStableVer) then pkgs else pkgs-legacy)
-    .enableDebugging
-      py
+    py: (pyVerToPkgs (lib.strings.toInt py.sourceVersion.minor)).enableDebugging py
   ) using_pythons;
   pyenv_nodebug = builtins.elemAt pyenvs (curVer - minSupportVer);
   sde = pkgs.callPackage ./sde.nix { };

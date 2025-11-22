@@ -40,11 +40,6 @@
           versionUtils = pkgs.callPackage ./dev_tools/nixfiles/version_utils.nix { inherit pkgs-legacy; };
           defaultShell = pkgs.callPackage ./dev_tools/nixfiles/shell.nix {
             inherit pkgs-legacy;
-            debugLLVM = false;
-          };
-          debugLLVMInternal = pkgs.callPackage ./dev_tools/nixfiles/shell.nix {
-            inherit pkgs-legacy;
-            debugLLVM = true;
           };
           _drvs = pkgs.callPackage ./dev_tools/nixfiles/_drvs.nix { inherit pkgs-legacy; };
           pythonVerConfig = versionUtils.pythonVerConfig;
@@ -60,7 +55,7 @@
                   inherit pkgs-legacy;
                   inherit (shell) inputDerivation;
                   inherit (_drvs) pyenvs debuggable_py pyenv_nodebug;
-                  nix_pyenv_directory = if shell.debugLLVM then ".nix-devenv-llvm" else ".nix-devenv";
+                  nix_pyenv_directory = ".nix-devenv";
                   pyenv = builtins.elemAt _drvs.pyenvs verLength;
                   using_python = builtins.elemAt _drvs.using_pythons verLength;
                 };
@@ -96,8 +91,6 @@
         {
           internal = defaultShell;
           default = mkMyShell { shell = defaultShell; };
-          inherit debugLLVMInternal;
-          debugLLVM = mkMyShell { shell = debugLLVMInternal; };
         }
         // (builtins.listToAttrs (map verToBuildEnvDef versionUtils.versions))
       );

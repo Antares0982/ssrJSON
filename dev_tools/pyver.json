@@ -2,5 +2,7 @@
     "curVer": 14,
     "minSupportVer": 10,
     "maxSupportVer": 15,
-    "latestStableVer": 14
+    "activeSupportingVer": 14,
+    "latestUseStableNixpkgsVer": 12,
+    "latestWheelBuildableVer": 14
 }

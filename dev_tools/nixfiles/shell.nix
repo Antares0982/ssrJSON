@@ -1,7 +1,6 @@
 {
   pkgs ? import <nixpkgs> { },
   pkgs-legacy,
-  debugLLVM,
   ...
 }:
 let
@@ -18,11 +17,9 @@ let
   pyenv = builtins.elemAt pyenvs (curVer - leastVer);
 in
 (pkgs.mkShell {
-  buildInputs = pkgs.lib.optionals debugLLVM [ drvs.llvmDbg ];
   packages = pkgs.callPackage ./packages.nix { inherit pkgs-legacy; };
   hardeningDisable = [ "fortify" ];
 })
 // {
   __drvs = drvs;
-  inherit debugLLVM;
 }

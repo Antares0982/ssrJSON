@@ -7,7 +7,7 @@ let
   minorVer = lib.strings.toInt pypkgs.python.sourceVersion.minor;
   versionUtils = pkgs.callPackage ./version_utils.nix { inherit pkgs-legacy; };
   pythonVerConfig = versionUtils.pythonVerConfig;
-  useNixpkgsUnstable = (minorVer >= pythonVerConfig.latestStableVer);
+  useNixpkgsUnstable = (minorVer > pythonVerConfig.latestUseStableNixpkgsVer);
 in
 with pypkgs;
 [
