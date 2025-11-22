@@ -36,7 +36,7 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
     void *new_buffer;
     u8 *writer;
     u8 **writer_addr;
-    // write utf8.
+    // write UTF-8.
     switch (src_pykind) {
         case 1: {
             new_buffer = pymem_malloc_wrapped(max_utf8_bytes_per_ucs1 * len + __excess_bytes_write_ucs1_raw_utf8_trailing);

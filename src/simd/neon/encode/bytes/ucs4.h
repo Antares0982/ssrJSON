@@ -103,7 +103,7 @@ force_inline void ucs4_encode_2bytes_utf8_neon(u8 *writer, vector_a x) {
 #define __excess_bytes_write_ucs4_trailing_128 (12 - max_json_bytes_per_unicode)
 
 /* 
- * Encode UCS4 trailing to utf-8.
+ * Encode UCS4 trailing to UTF-8.
  * Consider 3 types of vector:
  *   vector in ASCII range
  *   vector in 2-bytes range

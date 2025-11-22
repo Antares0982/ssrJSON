@@ -151,7 +151,7 @@ force_inline void set_cache(PyObject *str, const u8 **utf8_cache_addr, usize *ut
     // TODO
     const u8 *expected = NULL;
     if (!atomic_compare_exchange_strong(&SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8, &expected, *utf8_cache_addr)) {
-        // already has an utf8 cache, free the allocated one
+        // already has an UTF-8 cache, free the allocated one
         PyMem_Free((void *)*utf8_cache_addr);
         *utf8_cache_addr = expected;
         assert(*utf8_length_addr == (usize)SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8_length);

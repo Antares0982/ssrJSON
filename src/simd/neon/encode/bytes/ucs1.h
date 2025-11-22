@@ -40,9 +40,9 @@
 #define __excess_bytes_write_ucs1_trailing_128 (16 - max_json_bytes_per_unicode)
 
 /* 
- * Encode UCS1 trailing to utf-8.
+ * Encode UCS1 trailing to UTF-8.
  * Only consider vector in ASCII range,
- * because most of 2-bytes utf-8 code points cannot be presented by UCS1.
+ * because most of 2-bytes UTF-8 code points cannot be presented by UCS1.
  */
 force_inline void bytes_write_ucs1_trailing_128(u8 **writer_addr, const u8 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);

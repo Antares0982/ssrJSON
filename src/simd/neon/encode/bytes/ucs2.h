@@ -111,7 +111,7 @@ force_inline void ucs2_encode_2bytes_utf8_neon(u8 *writer, vector_a x) {
 #define __excess_bytes_write_ucs2_trailing_128 (24 - max_json_bytes_per_unicode)
 
 /* 
- * Encode UCS2 trailing to utf-8.
+ * Encode UCS2 trailing to UTF-8.
  * Consider 3 types of vector:
  *   vector in ASCII range
  *   vector in 2-bytes range

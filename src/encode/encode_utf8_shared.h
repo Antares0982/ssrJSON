@@ -86,7 +86,7 @@ force_inline bool encode_one_ucs2(u8 **writer_addr, u16 unicode) {
     } else {
         // 3 bytes
         if (unlikely(unicode >= 0xd800 && unicode <= 0xdfff)) {
-            PyErr_SetString(JSONEncodeError, "Cannot encode unicode character in range [0xd800, 0xdfff] to utf-8");
+            PyErr_SetString(JSONEncodeError, "Cannot encode unicode character in range [0xd800, 0xdfff] to UTF-8");
             return false;
         }
         u8 *writer = *writer_addr;
@@ -110,7 +110,7 @@ force_inline bool encode_one_ucs2_noescape(u8 **writer_addr, u16 unicode) {
     } else {
         // 3 bytes
         if (unlikely(unicode >= 0xd800 && unicode <= 0xdfff)) {
-            PyErr_SetString(JSONEncodeError, "Cannot encode unicode character in range [0xd800, 0xdfff] to utf-8");
+            PyErr_SetString(JSONEncodeError, "Cannot encode unicode character in range [0xd800, 0xdfff] to UTF-8");
             return false;
         }
         u8 *writer = *writer_addr;
@@ -152,7 +152,7 @@ force_inline bool encode_one_ucs4(u8 **writer_addr, u32 unicode) {
     } else if (unicode < 0x10000) {
         // 3 bytes
         if (unlikely(unicode >= 0xd800 && unicode <= 0xdfff)) {
-            PyErr_SetString(JSONEncodeError, "Cannot encode unicode character in range [0xd800, 0xdfff] to utf-8");
+            PyErr_SetString(JSONEncodeError, "Cannot encode unicode character in range [0xd800, 0xdfff] to UTF-8");
             return false;
         }
         u8 *writer = *writer_addr;
@@ -185,7 +185,7 @@ force_inline bool encode_one_ucs4_noescape(u8 **writer_addr, u32 unicode) {
     } else if (unicode < 0x10000) {
         // 3 bytes
         if (unlikely(unicode >= 0xd800 && unicode <= 0xdfff)) {
-            PyErr_SetString(JSONEncodeError, "Cannot encode unicode character in range [0xd800, 0xdfff] to utf-8");
+            PyErr_SetString(JSONEncodeError, "Cannot encode unicode character in range [0xd800, 0xdfff] to UTF-8");
             return false;
         }
         u8 *writer = *writer_addr;
