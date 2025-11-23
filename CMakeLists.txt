@@ -398,6 +398,8 @@ endif()
 # Install
 if(APPLE)
   set_target_properties(ssrjson PROPERTIES SUFFIX ".so")
+elseif(WIN32)
+  set_target_properties(ssrjson PROPERTIES SUFFIX ".pyd")
 endif(APPLE)
 
 install(TARGETS ssrjson LIBRARY DESTINATION .)

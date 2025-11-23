@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(cppvsdbg) Launch pytest",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "python.exe",
+            "args": [
+                "-m",
+                "pytest",
+                "-s",
+                "-rxX",
+                "./python-test"
+            ],
+            "environment": [
+                {
+                    "name": "PYTHONPATH",
+                    "value": "${workspaceFolder}/build"
+                }
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": false
+        }
+    ]
+}

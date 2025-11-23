@@ -101,7 +101,7 @@ else:
             run_check(build_cmd)
             # Copy file
             if os.name == "nt":
-                built_filename = "Release/ssrjson.dll"
+                built_filename = "Release/ssrjson.pyd"
                 target_filename = "ssrjson.pyd"
             else:
                 built_filename = "ssrjson.so"
@@ -132,6 +132,5 @@ else:
         cmdclass={
             "build_ext": CMakeBuild,
         },
-        package_data={"ssrjson": ["ssrjson.so", "ssrjson.dll"]},
         include_package_data=True,
     )

@@ -1,0 +1,115 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMake: build: Release",
+            "type": "shell",
+            "command": "${workspaceFolder}\\dev_tools\\build.cmd",
+            "args": [
+                "Release"
+            ],
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "CMake: build: Debug",
+            "type": "shell",
+            "command": "${workspaceFolder}\\dev_tools\\build.cmd",
+            "args": [
+                "Debug"
+            ],
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "CMake: build: RelWithDebInfo",
+            "type": "shell",
+            "command": "${workspaceFolder}\\dev_tools\\build.cmd",
+            "args": [
+                "RelWithDebInfo"
+            ],
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Run Benchmark",
+            "type": "shell",
+            "command": "${workspaceFolder}\\dev_tools\\benchmark.cmd",
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": [
+                "CMake: build: Release"
+            ]
+        },
+        {
+            "label": "Run Benchmark (Update ssrjson-benchmark)",
+            "type": "shell",
+            "command": "${workspaceFolder}\\dev_tools\\benchmark.cmd --upgrade",
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": [
+                "CMake: build: Release"
+            ]
+        }
+    ]
+}
