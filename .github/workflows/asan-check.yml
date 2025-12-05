@@ -11,7 +11,7 @@ jobs:
         pyver: ["10", "11", "12", "13", "14", "15"]
     steps:
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@v4
     - name: Install nix
       uses: cachix/install-nix-action@master
     - name: Setup cachix

@@ -33,7 +33,7 @@ jobs:
         remove-codeql: 'true'
         remove-docker-images: 'true'
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@v4
       with:
         token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
     - name: Install nix
@@ -101,7 +101,7 @@ jobs:
       - check
     steps:
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@v4
       with:
         token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
     - name: Install nix
