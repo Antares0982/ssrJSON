@@ -264,6 +264,10 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
     //
     s = npargs ? args[0] : NULL;
     //
+    const char *func_name = "loads";
+    const char *_s_str = "s";
+    const usize _s_str_len = strlen(_s_str);
+    //
     if (unlikely(npargs > 1)) {
         PyErr_Format(PyExc_TypeError, "loads() takes 1 positional argument but %d were given", (int)npargs);
         return false;
@@ -276,10 +280,10 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
         usize char_count;
         parse_ascii(kwname, &is_ascii, &char_data, &char_count);
         if (likely(is_ascii)) {
-            if (char_count == 1 && *char_data == 's') {
+            if (char_count == _s_str_len && memcmp(char_data, _s_str, _s_str_len) == 0) {
                 if (unlikely(s)) {
                     // repeated arg
-                    PyErr_SetString(PyExc_TypeError, "loads() got multiple values for argument 's'");
+                    PyErr_Format(PyExc_TypeError, "%s() got multiple values for argument '%s'", func_name, _s_str);
                     return false;
                 }
                 s = args[npargs + i];
@@ -288,7 +292,7 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
         }
         // unknown argument
         if (!nonstrict_argparse) {
-            handle_unexpected_kw(kwname);
+            handle_unexpected_kw(func_name, kwname);
             return false;
         }
         if (!invalid_arg_checked) {
@@ -299,7 +303,7 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
     }
     //
     if (unlikely(!s)) {
-        PyErr_SetString(PyExc_TypeError, "loads() missing 1 required positional argument: 's'");
+        PyErr_Format(PyExc_TypeError, "%s() missing 1 required positional argument: '%s'", func_name, _s_str);
         return false;
     }
     *s_out = s;

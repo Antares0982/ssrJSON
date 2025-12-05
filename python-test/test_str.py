@@ -180,36 +180,53 @@ def get_random_bytes_for_loads():
 
 
 class TestStr:
-    def _test_dumps_str(self, s):
-        d = ssrjson.dumps(s)
-        assert d == json.dumps(s, ensure_ascii=False).replace(" ", "")
-        assert ssrjson.dumps(s, indent=2) == json.dumps(s, indent=2, ensure_ascii=False)
-        assert ssrjson.dumps(s, indent=4) == json.dumps(s, indent=4, ensure_ascii=False)
-        return d
+    def _test_dumps_str(self, d):
+        x = ssrjson.dumps(d)
+        assert x == json.dumps(d, ensure_ascii=False).replace(" ", "")
+        assert ssrjson.dumps(d, indent=2) == json.dumps(d, indent=2, ensure_ascii=False)
+        assert ssrjson.dumps(d, indent=4) == json.dumps(d, indent=4, ensure_ascii=False)
+        return x
 
-    def _test_dumps_bytes(self, s):
-        old_write_cache = ssrjson.get_current_features()["WriteUTF8Cache"]
-
-        def _do_test():
-            b = ssrjson.dumps_to_bytes(s)
-            assert b == json.dumps(s, ensure_ascii=False).replace(" ", "").encode(
+    def _test_dumps_bytes(self, d):
+        def _do_test(is_write_cache: bool):
+            b = ssrjson.dumps_to_bytes(d)
+            assert b == json.dumps(d, ensure_ascii=False).replace(" ", "").encode(
                 "utf-8"
             )
-            assert ssrjson.dumps_to_bytes(s, indent=2) == json.dumps(
-                s, indent=2, ensure_ascii=False
-            ).encode("utf-8")
-            assert ssrjson.dumps_to_bytes(s, indent=4) == json.dumps(
-                s, indent=4, ensure_ascii=False
-            ).encode("utf-8")
+            assert ssrjson.dumps_to_bytes(
+                d, indent=2, is_write_cache=is_write_cache
+            ) == json.dumps(d, indent=2, ensure_ascii=False).encode("utf-8")
+            assert ssrjson.dumps_to_bytes(
+                d, indent=4, is_write_cache=is_write_cache
+            ) == json.dumps(d, indent=4, ensure_ascii=False).encode("utf-8")
             return b
 
-        ssrjson.write_utf8_cache(False)
-        a = _do_test()
-        ssrjson.write_utf8_cache(True)
-        b = _do_test()
-        ssrjson.write_utf8_cache(old_write_cache)
+        a = _do_test(False)
+        b = _do_test(True)
         assert a == b
+        self._test_correct_utf8_cache_recursively(d)
         return b
+
+    def _test_correct_utf8_cache(self, s: str):
+        if not s:
+            return
+        s_copy = s[:-1] + s[-1]  # does not have a cache
+        # compare if UTF-8 bytes encoded by CPython is same as ssrJSON
+        assert s_copy.encode("utf-8") == s.encode("utf-8")
+
+    def _test_correct_utf8_cache_recursively(self, d):
+        if isinstance(d, str):
+            self._test_correct_utf8_cache(d)
+            return
+        elif isinstance(d, list):
+            for _d in d:
+                self._test_correct_utf8_cache_recursively(_d)
+            return
+        elif isinstance(d, dict):
+            for k, v in d.items():
+                self._test_correct_utf8_cache_recursively(k)
+                self._test_correct_utf8_cache_recursively(v)
+            return
 
     def test_ascii_from_dumps(self):
         for _ in range(100):

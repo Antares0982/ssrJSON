@@ -337,8 +337,14 @@ force_inline bool encode_argparse_with_kw(PyObject *const *args, usize npargs, P
     obj = npargs ? args[0] : NULL;
     indent = NULL;
     //
+    const char *func_name = "dumps";
+    const char *_indent_str = "indent";
+    const char *_obj_str = "obj";
+    const usize _indent_str_len = strlen(_indent_str);
+    const usize _obj_str_len = strlen(_obj_str);
+    //
     if (unlikely(npargs > 1)) {
-        PyErr_Format(PyExc_TypeError, "dumps() takes 1 positional argument but %d were given", (int)npargs);
+        PyErr_Format(PyExc_TypeError, "%s() takes 1 positional argument but %d were given", func_name, (int)npargs);
         return false;
     }
     for (usize i = 0; i < nkwargs; i++) {
@@ -349,14 +355,14 @@ force_inline bool encode_argparse_with_kw(PyObject *const *args, usize npargs, P
         usize char_count;
         parse_ascii(kwname, &is_ascii, &char_data, &char_count);
         if (likely(is_ascii)) {
-            if (char_count == 6 && memcmp(char_data, "indent", 6) == 0) {
+            if (char_count == _indent_str_len && memcmp(char_data, _indent_str, _indent_str_len) == 0) {
                 assert(!indent);
                 indent = args[npargs + i];
                 continue;
-            } else if (char_count == 3 && memcmp(char_data, "obj", 3) == 0) {
+            } else if (char_count == _obj_str_len && memcmp(char_data, _obj_str, _obj_str_len) == 0) {
                 if (unlikely(obj)) {
                     // repeated arg
-                    PyErr_SetString(PyExc_TypeError, "dumps() got multiple values for argument 'obj'");
+                    PyErr_Format(PyExc_TypeError, "%s() got multiple values for argument '%s'", func_name, _obj_str);
                     return false;
                 }
                 obj = args[npargs + i];
@@ -365,7 +371,7 @@ force_inline bool encode_argparse_with_kw(PyObject *const *args, usize npargs, P
         }
         // unknown argument
         if (!nonstrict_argparse) {
-            handle_unexpected_kw(kwname);
+            handle_unexpected_kw(func_name, kwname);
             return false;
         }
         if (!invalid_arg_checked) {
@@ -375,7 +381,7 @@ force_inline bool encode_argparse_with_kw(PyObject *const *args, usize npargs, P
     }
     //
     if (unlikely(!obj)) {
-        PyErr_SetString(PyExc_TypeError, "dumps() missing 1 required positional argument: 'obj'");
+        PyErr_Format(PyExc_TypeError, "%s() missing 1 required positional argument: '%s'", func_name, _obj_str);
         return false;
     }
     *obj_out = obj;
@@ -507,8 +513,16 @@ force_inline bool encode_to_bytes_argparse_with_kw(PyObject *const *args, usize 
     obj = npargs ? args[0] : NULL;
     indent = NULL;
     //
+    const char *func_name = "dumps_to_bytes";
+    const char *_indent_str = "indent";
+    const char *_is_write_cache_str = "is_write_cache";
+    const char *_obj_str = "obj";
+    const usize _indent_str_len = strlen(_indent_str);
+    const usize _is_write_cache_str_len = strlen(_is_write_cache_str);
+    const usize _obj_str_len = strlen(_obj_str);
+    //
     if (unlikely(npargs > 1)) {
-        PyErr_Format(PyExc_TypeError, "dumps_to_bytes() takes 1 positional argument but %d were given", (int)npargs);
+        PyErr_Format(PyExc_TypeError, "%s() takes 1 positional argument but %d were given", func_name, (int)npargs);
         return false;
     }
     for (usize i = 0; i < nkwargs; i++) {
@@ -519,24 +533,24 @@ force_inline bool encode_to_bytes_argparse_with_kw(PyObject *const *args, usize 
         usize char_count;
         parse_ascii(kwname, &is_ascii, &char_data, &char_count);
         if (likely(is_ascii)) {
-            if (char_count == 6 && memcmp(char_data, "indent", 6) == 0) {
+            if (char_count == _indent_str_len && memcmp(char_data, _indent_str, _indent_str_len) == 0) {
                 assert(!indent);
                 indent = args[npargs + i];
                 continue;
-            } else if (char_count == 11 && memcmp(char_data, "is_write_cache", 11) == 0) {
+            } else if (char_count == _is_write_cache_str_len && memcmp(char_data, _is_write_cache_str, _is_write_cache_str_len) == 0) {
                 PyObject *arg = args[npargs + i];
                 bool value_is_true = arg == Py_True;
                 bool value_is_false = arg == Py_False;
                 if (unlikely(!value_is_true && !value_is_false)) {
-                    PyErr_SetString(PyExc_TypeError, "is_write_cache argument must be True or False");
+                    PyErr_Format(PyExc_TypeError, "%s argument must be True or False", _is_write_cache_str);
                     return false;
                 }
                 is_write_cache = value_is_true;
                 continue;
-            } else if (char_count == 3 && memcmp(char_data, "obj", 3) == 0) {
+            } else if (char_count == _obj_str_len && memcmp(char_data, _obj_str, _obj_str_len) == 0) {
                 if (unlikely(obj)) {
                     // repeated arg
-                    PyErr_SetString(PyExc_TypeError, "dumps_to_bytes() got multiple values for argument 'obj'");
+                    PyErr_Format(PyExc_TypeError, "%s() got multiple values for argument '%s'", func_name, _obj_str);
                     return false;
                 }
                 obj = args[npargs + i];
@@ -544,12 +558,12 @@ force_inline bool encode_to_bytes_argparse_with_kw(PyObject *const *args, usize 
             }
         }
         // unknown argument
-        handle_unexpected_kw(kwname);
+        handle_unexpected_kw(func_name, kwname);
         return false;
     }
     //
     if (unlikely(!obj)) {
-        PyErr_SetString(PyExc_TypeError, "dumps_to_bytes() missing 1 required positional argument: 'obj'");
+        PyErr_Format(PyExc_TypeError, "%s() missing 1 required positional argument: '%s'", func_name, _obj_str);
         return false;
     }
     *obj_out = obj;

@@ -265,12 +265,12 @@ PyObject *ssrjson_write_utf8_cache(PyObject *self, PyObject *arg) {
     Py_RETURN_NONE;
 }
 
-void handle_unexpected_kw(PyObject *kwname) {
+void handle_unexpected_kw(const char *func_name, PyObject *kwname) {
     PyObject *ascii_repr = PyObject_ASCII(kwname);
     if (ascii_repr) {
         const char *ascii_repr_str = PyUnicode_AsUTF8(ascii_repr);
         if (ascii_repr_str) {
-            PyErr_Format(PyExc_TypeError, "dumps() got an unexpected keyword argument '%s'", ascii_repr_str);
+            PyErr_Format(PyExc_TypeError, "%s() got an unexpected keyword argument '%s'", func_name, ascii_repr_str);
         }
         Py_DECREF(ascii_repr);
     }

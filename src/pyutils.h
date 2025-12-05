@@ -190,7 +190,7 @@ PyObject *make_unicode_down_ucs2_u8(void *raw_buffer, usize size, bool do_hash, 
 PyObject *make_unicode_down_ucs4_u8(void *raw_buffer, usize size, bool do_hash, bool is_ascii);
 PyObject *make_unicode_down_ucs4_ucs2(void *raw_buffer, usize size, bool do_hash);
 
-void handle_unexpected_kw(PyObject *kwname);
+void handle_unexpected_kw(const char *func_name, PyObject *kwname);
 
 /* Parse an ASCII PyUnicodeObject. 
  * If the object is not ASCII, `char_data_out` and `char_count_out` are undefined.

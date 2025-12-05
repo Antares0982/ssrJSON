@@ -132,8 +132,12 @@ class TestApi:
         """
         assert ssrjson.dumps(obj={}) == "{}"
         assert ssrjson.dumps_to_bytes(obj={}) == b"{}"
+        assert ssrjson.dumps_to_bytes(obj={}, is_write_cache=True) == b"{}"
+        assert ssrjson.dumps_to_bytes(obj={}, is_write_cache=False) == b"{}"
         assert ssrjson.dumps(indent=2, obj={}) == "{}"
         assert ssrjson.dumps_to_bytes(indent=2, obj={}) == b"{}"
+        assert ssrjson.dumps_to_bytes(indent=2, obj={}, is_write_cache=True) == b"{}"
+        assert ssrjson.dumps_to_bytes(indent=2, obj={}, is_write_cache=False) == b"{}"
         assert ssrjson.loads(s="{}") == {}
 
     def test_redundant_keywords(self):
@@ -264,7 +268,10 @@ class TestApi:
         dumps() valid __text_signature__
         """
         assert str(inspect.signature(ssrjson.dumps)) == "(obj, indent=None)"
-        assert str(inspect.signature(ssrjson.dumps_to_bytes)) == "(obj, indent=None, is_write_cache=None)"
+        assert (
+            str(inspect.signature(ssrjson.dumps_to_bytes))
+            == "(obj, indent=None, is_write_cache=None)"
+        )
 
     def test_loads_signature(self):
         """
