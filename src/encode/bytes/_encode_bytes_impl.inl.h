@@ -49,6 +49,12 @@ force_inline bool bytes_buffer_append_nonascii_key_write_cache(u8 **writer_addr,
     usize utf8_length;
     get_utf8_cache(key, &utf8_cache, &utf8_length);
     if (!utf8_cache) {
+        if (!USING_AVX512 && len < 6) {
+            // For short strings, directly encode without caching
+            // Why is 6: we assume that each character encodes to 3 bytes in most cases,
+            // and 3 * 6 = 18 >= 16.
+            goto no_cache_encode;
+        }
         if (unlikely(!write_key_cache_impl(src_voidp, src_pykind, len, &utf8_cache, &utf8_length))) return false;
         set_cache(key, &utf8_cache, &utf8_length);
     }
@@ -66,6 +72,7 @@ force_inline bool bytes_buffer_append_nonascii_key_write_cache(u8 **writer_addr,
         *writer_addr = writer;
         return true;
     } else {
+    no_cache_encode:;
         switch (src_pykind) {
             case 1: {
                 bytes_write_ucs1(writer_addr, src_voidp, len, true);
