@@ -467,3 +467,6 @@ if(BUILD_TEST)
                          PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0")
   endif()
 endif()
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_data/templates/info.json"
+               "${CMAKE_CURRENT_BINARY_DIR}/info.json" @ONLY)

@@ -39,4 +39,4 @@ jobs:
         id: tests
         run: |
           python -m pip install pytest
-          python dev_tools\automated_test.py
+          python dev_tools\windows_test.py
