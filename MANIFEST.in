@@ -1,6 +1,5 @@
 include CMakeLists.txt
 include LICENSE
-include dev_tools/automated_test.py
 include dev_tools/scm.py
 recursive-include src *
 recursive-include python-test *

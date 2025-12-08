@@ -31,16 +31,19 @@ jobs:
       uses: cachix/cachix-action@master
       with:
         name: antares0982
-    - name: Test Release Build
+    - name: Nix Develop
       run: |
-        nix develop -c python ./dev_tools/automated_test.py --build-only --pyver ${{ matrix.pyver }} --build-type Release
-    - name: Build and Run Python Tests (DEBUG)
+        nix develop . -c echo "Nix develop environment set up."
+    - name: Release Test (Build Only)
       run: |
-        nix develop -c python ./dev_tools/automated_test.py --build-type Debug --pyver ${{ matrix.pyver }}
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --build-dir build-py3.${{ matrix.pyver }} --build-type Release --build-only
+    - name: DEBUG Tests (Build and Run)
+      run: |
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --build-dir build-py3.${{ matrix.pyver }} --build-type Debug
     - name: Print Features
       id: "print_features"
       run: |
-        result=$(PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-devenv/bin/python3.${{ matrix.pyver }} -c "import ssrjson;print(ssrjson.get_current_features()['SIMD'])")
+        result=$(PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} nix develop .#buildenv-py3${{ matrix.pyver }} -c python -c "import ssrjson;print(ssrjson.get_current_features()['SIMD'])")
         echo $result
         echo "result=$result" >> $GITHUB_OUTPUT
     - name: Run Python Tests (SDE, AVX512)

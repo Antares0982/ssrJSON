@@ -67,10 +67,14 @@ def main() -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description="Run tests on Windows")
-    parser.add_argument("--build-type", help="CMake Build type", default="Debug")
+    parser.add_argument(
+        "--build-type", help="CMake Build type, default to `Debug`", default="Debug"
+    )
     parser.add_argument("--asan", help="Run asan check", action="store_true")
     parser.add_argument(
-        "--build-dir", help="Build directory (relative path)", default="build"
+        "--build-dir",
+        help="Build directory (relative path), default to `build`",
+        default="build",
     )
     args = parser.parse_args()
     build_type: str = args.build_type

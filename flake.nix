@@ -76,6 +76,8 @@
                       # this is needed unless `nix build nixpkgs#python314Packages.pip` can run correctly
                       (if ver < 14 then pip else pkgs.callPackage ./dev_tools/nixfiles/py314-pip.nix { inherit pypkgs; })
                       build
+                      pytest
+                      pytest-random-order
                     ]
                   )
                 )

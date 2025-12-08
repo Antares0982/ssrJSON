@@ -291,6 +291,10 @@ if(BUILD_COVERAGE)
   add_coverage_flags(ssrjson)
 endif()
 
+if(ASAN_ENABLED)
+  target_link_libraries(ssrjson PRIVATE asan)
+endif()
+
 if(ASAN_ENABLED AND MSVC)
   get_filename_component(MSVC_COMPILER_DIR "${CMAKE_C_COMPILER}" PATH)
   set(ASAN_DLL_PATH "${MSVC_COMPILER_DIR}/clang_rt.asan_dynamic-x86_64.dll")

@@ -20,4 +20,4 @@ jobs:
         name: antares0982
     - name: Run asan check
       run: |
-        nix develop -c python ./dev_tools/automated_test.py --pyver ${{ matrix.pyver }} --asan
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --asan
