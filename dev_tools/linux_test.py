@@ -9,6 +9,17 @@ SSRJSON_FILE = "ssrjson.so"
 ASAN_DLL = "clang_rt.asan_dynamic-x86_64.dll"
 
 
+def find_python_cmake_env():
+    # only intended for python3.15
+    from sysconfig import get_config_h_filename, get_config_var
+
+    include_dir = os.path.dirname(get_config_h_filename())
+    lib_dir = get_config_var("LIBDIR")
+    minor = sys.version_info[1]
+    library_file = os.path.join(lib_dir, f"libpython3.{minor}.so")
+    return include_dir, library_file
+
+
 def build(build_dir: str, build_type: str, asan: bool) -> None:
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
@@ -27,6 +38,12 @@ def build(build_dir: str, build_type: str, asan: bool) -> None:
         build_dir,
         "-DCMAKE_BUILD_TYPE=" + build_type,
     ]
+    if sys.version_info >= (3, 15):
+        # currently CMake cannot find Python3.15 properly
+        include_dir, library_file = find_python_cmake_env()
+        new_env["Python3_INCLUDE_DIR"] = include_dir
+        new_env["Python3_LIBRARY"] = library_file
+        configure_cmd += ["-DSEARCH_PYTHON3_USE_ENV=ON"]
 
     if asan:
         configure_cmd += ["-DASAN_ENABLED=ON"]
