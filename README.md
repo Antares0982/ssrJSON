@@ -12,6 +12,8 @@ A SIMD boosted high-performance and correct Python JSON parsing library that ful
 
 ssrJSON is a Python JSON library that leverages modern hardware capabilities to achieve peak performance, implemented primarily in C with some components written in C++. It offers a fully compatible interface to Python’s standard `json` module, making it a seamless drop-in replacement, while providing exceptional performance for JSON encoding and decoding.
 
+If you prefer to skip the technical details below, please proceed directly to the [How To Install](#how-to-install) section.
+
 ### How Fast is ssrJSON?
 
 TL;DR: ssrJSON is faster than or nearly as fast as [orjson](https://github.com/ijl/orjson) (which [announces](https://github.com/ijl/orjson/blob/3.11.4/README.md#:~:text=It%20benchmarks%20as%20the%20fastest) itself as the fastest Python library for JSON) on most benchmark cases.
@@ -111,7 +113,7 @@ Once the essential features are completed and the project has undergone public t
 
 ## How To Install
 
-Pre-built wheels are available on PyPI.
+Pre-built wheels are available on PyPI, you can install it using pip.
 
 ```
 pip install ssrjson
