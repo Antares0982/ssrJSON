@@ -80,6 +80,12 @@ jobs:
     - name: Test Nix Develop
       run: |
         nix develop --command echo DONE
+        json_content=$(cat ./dev_tools/pyver.json)
+        min_ver=$(echo "$json_content" | jq '.minSupportVer')
+        max_ver=$(echo "$json_content" | jq '.maxSupportVer')
+        for ((i=min_ver; i<=max_ver; i++)); do
+          nix develop .#buildenv-py3$i
+        done
         if [ "$DO_UPDATE" = "true" ]; then
           if [ -z $(git status --porcelain) ]; then
             echo "clean, skip..."

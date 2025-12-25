@@ -8,6 +8,7 @@
 /dev_tools/.vscode-aarch64/settings.json
 /build-*
 /test.c
+/test.sh
 bench/*.py
 /*.json
 *.ll

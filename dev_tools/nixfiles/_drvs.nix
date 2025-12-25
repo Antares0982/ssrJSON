@@ -14,31 +14,6 @@ let
   minSupportVer = pythonVerConfig.minSupportVer;
   curVer = pythonVerConfig.curVer;
   supportedVers = builtins.genList (x: minSupportVer + x) (maxSupportVer - minSupportVer + 1);
-  py315ForTest =
-    (pkgs.python314.override (
-      oldAttr:
-      let
-        newpkgs = (pkgs // { "python315" = py315ForTest; });
-      in
-      {
-        sourceVersion = {
-          major = "3";
-          minor = "15";
-          patch = "0";
-          suffix = "a1";
-        };
-        noldconfigPatch = "${pkgs.path}/pkgs/development/interpreters/python/cpython/3.14/no-ldconfig.patch";
-        pkgsBuildHost = newpkgs;
-      }
-    )).overrideAttrs
-      (oldAttrs: {
-        src = pkgs.fetchFromGitHub {
-          owner = "python";
-          repo = "cpython";
-          rev = "v3.15.0a1";
-          sha256 = "sha256-CdbOeob3ZCIlNVK1gWr1mWeoeOC1iT0bRDC+i1Lt0ys=";
-        };
-      });
   using_pythons_map =
     { py, curPkgs, ... }:
     let
@@ -71,11 +46,7 @@ let
     builtins.map using_pythons_map (
       builtins.map (supportedVer: rec {
         curPkgs = pyVerToPkgs supportedVer;
-        py =
-          if supportedVer <= 14 then
-            (builtins.getAttr ("python3" + (builtins.toString supportedVer)) (curPkgs))
-          else
-            py315ForTest;
+        py = (builtins.getAttr ("python3" + (builtins.toString supportedVer)) (curPkgs));
       }) supportedVers
     )
   );

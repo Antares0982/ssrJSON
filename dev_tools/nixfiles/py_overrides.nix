@@ -16,7 +16,8 @@ let
     value:
     builtins.isAttrs value
     && builtins.hasAttr "pname" value
-    && builtins.hasAttr "version" value && builtins.hasAttr "overridePythonAttrs" value;
+    && builtins.hasAttr "version" value
+    && builtins.hasAttr "overridePythonAttrs" value;
 in
 (
   self: super:
@@ -43,6 +44,9 @@ in
       inherit pkgs-legacy;
     };
   }
+  // (lib.optionalAttrs (verInt >= 15) (noCheckPackages [
+    "pytest-xdist"
+  ]))
   # // (lib.optionalAttrs (verInt >= 14) {
   #   pytest-random-order =
   #     (super.pytest-random-order.override {
