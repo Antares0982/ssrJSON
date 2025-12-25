@@ -39,6 +39,11 @@ PyObject *ssrjson_write_utf8_cache(PyObject *self, PyObject *arg);
 PyObject *JSONDecodeError = NULL;
 PyObject *JSONEncodeError = NULL;
 
+int ssrjson_invalid_arg_checked = 0;
+int ssrjson_nonstrict_argparse = SSRJSON_NONSTRICT_ARGPARSE;
+int ssrjson_write_utf8_cache_value = SSRJSON_WRITE_UTF8_CACHE;
+
+
 static void module_free(void *m);
 
 static int ssrjson_exec(PyObject *module);
@@ -131,6 +136,19 @@ PyMethodDef write_utf8_cache_func_def = {
         METH_O,
         "write_utf8_cache(value)\n--\n\nSet whether to write UTF-8 cache when calling dumps_to_bytes(). Default is True."};
 
+const char *_getenv_write_cache(long *out_value) {
+    const char *env = getenv("SSRJSON_WRITE_UTF8_CACHE");
+    if (env == NULL) {
+        *out_value = SSRJSON_WRITE_UTF8_CACHE;
+        return NULL;
+    }
+    if ((env[0] == '1' || env[0] == '0') && env[1] == 0) {
+        *out_value = env[0] - '0';
+        return NULL;
+    }
+    return "Invalid SSRJSON_WRITE_UTF8_CACHE environment variable value";
+}
+
 static int ssrjson_exec(PyObject *module) {
     int err;
     const char *err_s;
@@ -161,6 +179,15 @@ static int ssrjson_exec(PyObject *module) {
         PyErr_SetString(PyExc_ImportError, err_s);
         return -1;
     }
+
+    // Read environment variable SSRJSON_WRITE_UTF8_CACHE
+    long _write_utf8_cache_value;
+    err_s = _getenv_write_cache(&_write_utf8_cache_value);
+    if (err_s) {
+        PyErr_SetString(PyExc_ImportError, err_s);
+        return -1;
+    }
+    ssrjson_write_utf8_cache_value = (int)_write_utf8_cache_value;
 
     if (PyModule_AddStringConstant(module, "__version__", SSRJSON_VERSION) < 0) {
         return -1;
@@ -233,10 +260,6 @@ static int ssrjson_exec(PyObject *module) {
 PyMODINIT_FUNC PyInit_ssrjson(void) {
     return PyModuleDef_Init(&moduledef);
 }
-
-int ssrjson_invalid_arg_checked = 0;
-int ssrjson_nonstrict_argparse = SSRJSON_NONSTRICT_ARGPARSE;
-int ssrjson_write_utf8_cache_value = SSRJSON_WRITE_UTF8_CACHE;
 
 PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args) {
     ssrjson_invalid_arg_checked = 1;
