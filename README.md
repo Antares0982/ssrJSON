@@ -194,6 +194,15 @@ Arguments like `ensure_ascii`, `parse_float` provided by `json` module can be re
 
 The functionality of `object_hook` in `json.loads` will be supported in future.
 
+### Inspect Module Features and Settings
+
+Call `get_current_features` to get current features and settings of ssrJSON.
+
+```python
+>>> ssrjson.get_current_features()
+{'multi_lib': True, 'write_utf8_cache': True, 'strict_arg_parse': False, 'simd': 'AVX2'}
+```
+
 ## Features
 
 Generally, `ssrjson.dumps` behaves like `json.dumps` with `ensure_ascii=False`, and `ssrjson.loads` behaves like `json.loads`. Below we explain some feature details of ssrJSON, which might be different from `json` module or other third-party JSON libraries.

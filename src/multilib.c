@@ -80,13 +80,13 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     int err;
     PyObject *ret = PyDict_New();
     if (!ret) return NULL;
-    err = PyDict_SetItemString(ret, "MultiLib", Py_True);
+    err = PyDict_SetItemString(ret, "multi_lib", Py_True);
     if (err) goto fail;
     PyObject *write_cache_bool = ssrjson_write_utf8_cache_value ? Py_True : Py_False;
-    err = PyDict_SetItemString(ret, "WriteUTF8Cache", write_cache_bool);
+    err = PyDict_SetItemString(ret, "write_utf8_cache", write_cache_bool);
     if (err) goto fail;
     PyObject *strict_argparse_bool = ssrjson_nonstrict_argparse ? Py_False : Py_True;
-    err = PyDict_SetItemString(ret, "StrictArgParse", strict_argparse_bool);
+    err = PyDict_SetItemString(ret, "strict_arg_parse", strict_argparse_bool);
     if (err) goto fail;
 
 #    define DICT_SET_STRING_ITEM(_k_, _v_)               \
@@ -99,23 +99,23 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
         } while (0)
     switch (CurrentSIMDFeatureLevel) {
         case X86SIMDFeatureLevelSSE2: {
-            DICT_SET_STRING_ITEM("SIMD", "SSE2");
+            DICT_SET_STRING_ITEM("simd", "SSE2");
             break;
         }
         case X86SIMDFeatureLevelSSE4_2: {
-            DICT_SET_STRING_ITEM("SIMD", "SSE4.2");
+            DICT_SET_STRING_ITEM("simd", "SSE4.2");
             break;
         }
         case X86SIMDFeatureLevelAVX2: {
-            DICT_SET_STRING_ITEM("SIMD", "AVX2");
+            DICT_SET_STRING_ITEM("simd", "AVX2");
             break;
         }
         case X86SIMDFeatureLevelAVX512: {
-            DICT_SET_STRING_ITEM("SIMD", "AVX512");
+            DICT_SET_STRING_ITEM("simd", "AVX512");
             break;
         }
         default: {
-            DICT_SET_STRING_ITEM("SIMD", "Unknown");
+            DICT_SET_STRING_ITEM("simd", "Unknown");
             break;
         }
     }
@@ -138,17 +138,17 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     int err;
     PyObject *ret = PyDict_New();
     if (!ret) return NULL;
-    err = PyDict_SetItemString(ret, "MultiLib", Py_True);
+    err = PyDict_SetItemString(ret, "multi_lib", Py_True);
     if (err) goto fail;
     PyObject *write_cache_bool = ssrjson_write_utf8_cache_value ? Py_True : Py_False;
-    err = PyDict_SetItemString(ret, "WriteUTF8Cache", write_cache_bool);
+    err = PyDict_SetItemString(ret, "write_utf8_cache", write_cache_bool);
     if (err) goto fail;
     PyObject *strict_argparse_bool = ssrjson_nonstrict_argparse ? Py_False : Py_True;
-    err = PyDict_SetItemString(ret, "StrictArgParse", strict_argparse_bool);
+    err = PyDict_SetItemString(ret, "strict_arg_parse", strict_argparse_bool);
     if (err) goto fail;
     PyObject *neon = PyUnicode_FromString("NEON");
     if (!neon) goto fail;
-    err = PyDict_SetItemString(ret, "SIMD", neon);
+    err = PyDict_SetItemString(ret, "simd", neon);
     Py_DECREF(neon);
     if (err) goto fail;
     return ret;

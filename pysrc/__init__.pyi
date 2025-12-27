@@ -17,6 +17,8 @@ __all__ = [
     "write_utf8_cache",
 ]
 
+__default_value: Any = object()
+
 __version__: str
 
 class JSONDecodeError(ValueError): ...
@@ -26,30 +28,30 @@ def dumps(
     obj,
     *,
     indent: int | None = None,
-    skipkeys: Any = False,
-    ensure_ascii: Any = True,
-    check_circular: Any = True,
-    allow_nan: Any = True,
-    cls: Any = None,
-    separators: Any = None,
-    default: Any = None,
-    sort_keys: Any = False,
+    skipkeys: Any = False,  # invalid
+    ensure_ascii: Any = True,  # invalid
+    check_circular: Any = True,  # invalid
+    allow_nan: Any = True,  # invalid
+    cls: Any = None,  # invalid
+    separators: Any = None,  # invalid
+    default: Any = None,  # invalid
+    sort_keys: Any = False,  # invalid
 ) -> str: ...
 def dumps_to_bytes(
     obj,
     *,
     indent: int | None = None,
-    is_write_cache: bool | None = None,
+    is_write_cache: bool = __default_value,
 ) -> bytes: ...
 def loads(
     s: str | bytes,
     *,
-    cls: Any = None,
-    object_hook: Any = None,
-    parse_float: Any = None,
-    parse_int: Any = None,
-    parse_constant: Any = None,
-    object_pairs_hook: Any = None,
+    cls: Any = None,  # invalid
+    object_hook: Any = None,  # invalid
+    parse_float: Any = None,  # invalid
+    parse_int: Any = None,  # invalid
+    parse_constant: Any = None,  # invalid
+    object_pairs_hook: Any = None,  # invalid
 ): ...
 def get_current_features() -> Dict[str, str]: ...
 def suppress_api_warning() -> None: ...
