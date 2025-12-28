@@ -43,7 +43,7 @@ jobs:
     - name: Print Features
       id: "print_features"
       run: |
-        result=$(PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} nix develop .#buildenv-py3${{ matrix.pyver }} -c python -c "import ssrjson;print(ssrjson.get_current_features()['SIMD'])")
+        result=$(PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} nix develop .#buildenv-py3${{ matrix.pyver }} -c python -c "import ssrjson;print(ssrjson.get_current_features()['simd'])")
         echo $result
         echo "result=$result" >> $GITHUB_OUTPUT
     - name: Run Python Tests (SDE, AVX512)
