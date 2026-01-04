@@ -97,7 +97,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # common definitions
 add_library(commonBuild INTERFACE)
-target_link_libraries(commonBuild INTERFACE ${Python3_LIBRARIES})
+target_link_libraries(commonBuild INTERFACE)
 target_include_directories(
   commonBuild INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 target_include_directories(commonBuild SYSTEM INTERFACE ${Python3_INCLUDE_DIRS})
@@ -243,7 +243,7 @@ if(BUILD_MULTI_LIB)
       $<TARGET_OBJECTS:ssrjson_avx512> $<TARGET_OBJECTS:ssrjson_avx2>
       $<TARGET_OBJECTS:ssrjson_sse4> $<TARGET_OBJECTS:_ssrjson_common>
       $<TARGET_OBJECTS:dragon_box>)
-    target_link_libraries(ssrjson PUBLIC commonBuild ${Python3_LIBRARIES})
+    target_link_libraries(ssrjson PUBLIC commonBuild)
 
     add_avx512_compile_option(ssrjson_avx512)
     add_avx2_compile_option(ssrjson_avx2)
@@ -268,7 +268,7 @@ if(BUILD_MULTI_LIB)
       ssrjson SHARED
       $<TARGET_OBJECTS:ssrjson_neon> $<TARGET_OBJECTS:_ssrjson_common>
       $<TARGET_OBJECTS:_ssrjson_common> $<TARGET_OBJECTS:dragon_box>)
-    target_link_libraries(ssrjson PUBLIC commonBuild ${Python3_LIBRARIES})
+    target_link_libraries(ssrjson PUBLIC commonBuild)
 
     if(BUILD_COVERAGE)
       add_coverage_flags(_ssrjson_common)
@@ -402,8 +402,10 @@ endif()
 # Install
 if(APPLE)
   set_target_properties(ssrjson PROPERTIES SUFFIX ".so")
+  target_link_options(ssrjson PRIVATE "-flat_namespace" "-undefined" "suppress")
 elseif(WIN32)
   set_target_properties(ssrjson PROPERTIES SUFFIX ".pyd")
+  target_link_libraries(ssrjson PRIVATE ${Python3_LIBRARIES})
 endif(APPLE)
 
 install(TARGETS ssrjson LIBRARY DESTINATION .)
@@ -440,7 +442,7 @@ if(BUILD_TEST)
     add_executable(ssrjson_test ${SRC_TEST} ${SRC_TEST_WITH_SIMD})
   endif()
 
-  target_link_libraries(ssrjson_test PUBLIC commonBuild)
+  target_link_libraries(ssrjson_test PUBLIC commonBuild ${Python3_LIBRARIES})
   install(TARGETS ssrjson_test RUNTIME DESTINATION .)
   add_test(ssrjson_test ${CMAKE_CURRENT_BINARY_DIR}/ssrjson_test)
 
@@ -454,7 +456,8 @@ if(BUILD_TEST)
     file(COPY ${TEST_DATA_FILES}
          DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/corpus")
     add_executable(ssrjson_fuzzer ${SRC_FUZZER})
-    target_link_libraries(ssrjson_fuzzer PUBLIC commonBuild)
+    target_link_libraries(ssrjson_fuzzer PUBLIC commonBuild
+                                                ${Python3_LIBRARIES})
 
     add_asan_compile_option(ssrjson_fuzzer)
     target_compile_options(ssrjson_fuzzer PRIVATE -fsanitize=fuzzer -g -O1)

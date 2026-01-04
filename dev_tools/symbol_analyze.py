@@ -222,7 +222,10 @@ def analyze_symbols(target_lib: str, include_weak_symbols: bool):
         if sym in sym_to_lib:
             result[sym] = sym_to_lib[sym]
         else:
-            raise RuntimeError(f"Symbol '{sym}' not found in any dependency libraries")
+            if not sym.startswith("Py") and not sym.startswith("_Py"):
+                raise RuntimeError(
+                    f"Symbol '{sym}' not found in any dependency libraries"
+                )
 
     return deps_tree, result
 

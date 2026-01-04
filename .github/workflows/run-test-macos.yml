@@ -44,4 +44,9 @@ jobs:
           rm -rf ssrjson/
           minor=$(python -c "import sys;print(sys.version_info.minor)")
           export PYTHONPATH="$PWD/build-py/lib/python3.$minor/site-packages:$PYTHONPATH"
+          export SSRJSON_BINARY="$PWD/build-py/lib/python3.$minor/site-packages/ssrjson/ssrjson.so"
+          if otool -L "$SSRJSON_BINARY" 2>/dev/null | grep -q 'Python'; then
+            echo "Error: 'Python' found in otool -L output." >&2
+            exit 1
+          fi
           python -m pytest --random-order python-test
