@@ -33,7 +33,7 @@ jobs:
         name: antares0982
     - name: Nix Develop
       run: |
-        nix develop . -c echo "Nix develop environment set up."
+        nix develop .#devenv-py3${{ matrix.pyver }} -c echo "Nix develop environment set up."
     - name: Release Test (Build Only)
       run: |
         nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --build-dir build-py3.${{ matrix.pyver }} --build-type Release --build-only
@@ -54,8 +54,8 @@ jobs:
       if: steps.print_features.outputs.result != 'AVX2'
       run: |
         PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-devenv/bin/run-sde-rpl .nix-devenv/bin/python3.${{ matrix.pyver }} -m pytest --random-order python-test --ignore python-test/test_memory.py
-    - name: Run Python Tests (SDE, SSE2)
-      if: steps.print_features.outputs.result != 'SSE2'
+    - name: Run Python Tests (SDE, SSE4.2)
+      if: steps.print_features.outputs.result != 'SSE4.2'
       run: |
         PYTHONPATH=$(pwd)/build-py3.${{ matrix.pyver }} .nix-devenv/bin/run-sde-ivb .nix-devenv/bin/python3.${{ matrix.pyver }} -m pytest --random-order python-test --ignore python-test/test_memory.py
     - name: Run C Tests (SDE, ALL)
