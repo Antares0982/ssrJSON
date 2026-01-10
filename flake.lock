@@ -34,8 +34,27 @@
     },
     "root": {
       "inputs": {
+        "ssrjson-nix-dev": "ssrjson-nix-dev"
+      }
+    },
+    "ssrjson-nix-dev": {
+      "inputs": {
         "nixpkgs": "nixpkgs",
         "nixpkgs-legacy": "nixpkgs-legacy"
+      },
+      "locked": {
+        "lastModified": 1768065703,
+        "narHash": "sha256-SDnBlEwTXZkWSJkFOqoPcg4t84mikfa4AGv6aSZYFcc=",
+        "owner": "Antares0982",
+        "repo": "ssrjson-nix-dev",
+        "rev": "4716d588a221820c61b24d5bd976b8d5820b462b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Antares0982",
+        "ref": "main",
+        "repo": "ssrjson-nix-dev",
+        "type": "github"
       }
     }
   },
