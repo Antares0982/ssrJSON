@@ -24,17 +24,14 @@
 #include "simd/simd_detect.h"
 #include "ssrjson.h"
 
-extern int ssrjson_write_utf8_cache_value;
-extern int ssrjson_nonstrict_argparse;
-
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     int err;
     PyObject *ret = PyDict_New();
     if (!ret) return NULL;
-    PyObject *write_cache_bool = ssrjson_write_utf8_cache_value ? Py_True : Py_False;
+    PyObject *write_cache_bool = _WriteUTF8CacheValue ? Py_True : Py_False;
     err = PyDict_SetItemString(ret, "write_utf8_cache", write_cache_bool);
     if (err) goto fail;
-    PyObject *strict_argparse_bool = ssrjson_nonstrict_argparse ? Py_False : Py_True;
+    PyObject *strict_argparse_bool = _NonstrictArgparse ? Py_False : Py_True;
     err = PyDict_SetItemString(ret, "strict_arg_parse", strict_argparse_bool);
     if (err) goto fail;
 

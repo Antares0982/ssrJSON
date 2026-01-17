@@ -41,7 +41,7 @@
  @param msg The error message pointer.
  @return Whether success.
  */
-force_inline PyObject *read_bytes(const u8 **ptr, u8 *write_buffer, bool is_key) {
+force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, bool is_key) {
     /*
      Each unicode code point is encoded as 1 to 4 bytes in UTF-8 encoding,
      we use 4-byte mask and pattern value to validate UTF-8 byte sequence,
@@ -85,22 +85,7 @@ force_inline PyObject *read_bytes(const u8 **ptr, u8 *write_buffer, bool is_key)
      bit pattern   [11110... 10...... 10...... 10......] (F0 80 80 80)
      ---------------------------------------------------
      */
-#if PY_BIG_ENDIAN
-    const u32 b1_mask = 0x80000000UL;
-    const u32 b1_patt = 0x00000000UL;
-    const u32 b2_mask = 0xE0C00000UL;
-    const u32 b2_patt = 0xC0800000UL;
-    const u32 b2_requ = 0x1E000000UL;
-    const u32 b3_mask = 0xF0C0C000UL;
-    const u32 b3_patt = 0xE0808000UL;
-    const u32 b3_requ = 0x0F200000UL;
-    const u32 b3_erro = 0x0D200000UL;
-    const u32 b4_mask = 0xF8C0C0C0UL;
-    const u32 b4_patt = 0xF0808080UL;
-    const u32 b4_requ = 0x07300000UL;
-    const u32 b4_err0 = 0x04000000UL;
-    const u32 b4_err1 = 0x03300000UL;
-#else
+
     const u32 b1_mask = 0x00000080UL;
     const u32 b1_patt = 0x00000000UL;
     const u32 b2_mask = 0x0000C0E0UL;
@@ -115,7 +100,6 @@ force_inline PyObject *read_bytes(const u8 **ptr, u8 *write_buffer, bool is_key)
     const u32 b4_requ = 0x00003007UL;
     const u32 b4_err0 = 0x00000004UL;
     const u32 b4_err1 = 0x00003003UL;
-#endif
 
 #define is_valid_seq_1(uni) ( \
         ((uni & b1_mask) == b1_patt))
@@ -255,7 +239,7 @@ copy_escape_ucs1:
                 src++;
                 break;
             case 'u':
-                if (unlikely(!read_to_hex_u8(++src, &hi))) {
+                if (unlikely(!to_hex_u8(++src, &hi))) {
                     return_err(src - 2, "invalid escaped sequence in string");
                 }
                 src += 4;
@@ -282,7 +266,7 @@ copy_escape_ucs1:
                     if (unlikely(!byte_match_2(src, "\\u"))) {
                         return_err(src, "no low surrogate in string");
                     }
-                    if (unlikely(!read_to_hex_u8(src + 2, &lo))) {
+                    if (unlikely(!to_hex_u8(src + 2, &lo))) {
                         return_err(src, "invalid escaped sequence in string");
                     }
                     if (unlikely((lo & 0xFC00) != 0xDC00)) {
@@ -305,7 +289,7 @@ copy_escape_ucs1:
         }
         goto copy_ascii_ucs1;
     } else if (likely(*src == '"')) {
-        goto read_finalize;
+        goto finalize;
     } else {
         return_err(src, "unexpected control character in string");
     }
@@ -447,13 +431,13 @@ copy_utf8_ucs1:
             len_ucs1 = dst - (u8 *)temp_string_buf;
             dst_ucs2 = ((u16 *)temp_string_buf) + len_ucs1;
             cur_max_ucs_size = 2;
-            *dst_ucs2++ = read_b3_unicode(uni);
+            *dst_ucs2++ = to_b3_unicode(uni);
             src += 3;
             goto copy_utf8_inner_ucs2;
         }
         while (is_valid_seq_2(uni)) {
             assert(cur_max_ucs_size == 1);
-            u16 to_write = read_b2_unicode(uni);
+            u16 to_write = to_b2_unicode(uni);
             if (likely(to_write >= 0x100)) {
                 // ucs1 -> ucs2
                 assert(cur_max_ucs_size == 1);
@@ -479,7 +463,7 @@ copy_utf8_ucs1:
             len_ucs1 = dst - (u8 *)temp_string_buf;
             dst_ucs4 = ((u32 *)temp_string_buf) + len_ucs1;
             cur_max_ucs_size = 4;
-            *dst_ucs4++ = read_b4_unicode(uni);
+            *dst_ucs4++ = to_b4_unicode(uni);
             src += 4;
             goto copy_utf8_inner_ucs4;
         }
@@ -528,7 +512,7 @@ copy_escape_ucs2:
                 src++;
                 break;
             case 'u':
-                if (unlikely(!read_to_hex_u8(++src, &hi))) {
+                if (unlikely(!to_hex_u8(++src, &hi))) {
                     return_err(src - 2, "invalid escaped sequence in string");
                 }
                 src += 4;
@@ -544,7 +528,7 @@ copy_escape_ucs2:
                     if (unlikely(!byte_match_2(src, "\\u"))) {
                         return_err(src, "no low surrogate in string");
                     }
-                    if (unlikely(!read_to_hex_u8(src + 2, &lo))) {
+                    if (unlikely(!to_hex_u8(src + 2, &lo))) {
                         return_err(src, "invalid escaped sequence in string");
                     }
                     if (unlikely((lo & 0xFC00) != 0xDC00)) {
@@ -567,7 +551,7 @@ copy_escape_ucs2:
         }
         goto copy_ascii_ucs2;
     } else if (likely(*src == '"')) {
-        goto read_finalize;
+        goto finalize;
     } else {
         return_err(src, "unexpected control character in string");
     }
@@ -589,14 +573,14 @@ copy_utf8_ucs2:
         while (is_valid_seq_3(uni)) {
             // code point: [U+0800, U+FFFF]
             assert(cur_max_ucs_size == 2);
-            *dst_ucs2++ = read_b3_unicode(uni);
+            *dst_ucs2++ = to_b3_unicode(uni);
             src += 3;
             uni = byte_load_4(src);
         }
         if (is_valid_seq_1(uni)) goto copy_ascii_ucs2;
         while (is_valid_seq_2(uni)) {
             assert(cur_max_ucs_size == 2);
-            u16 to_write = read_b2_unicode(uni);
+            u16 to_write = to_b2_unicode(uni);
             *dst_ucs2++ = to_write;
             src += 2;
             uni = byte_load_4(src);
@@ -609,7 +593,7 @@ copy_utf8_ucs2:
             len_ucs2 = dst_ucs2 - (u16 *)temp_string_buf - len_ucs1;
             dst_ucs4 = ((u32 *)temp_string_buf) + len_ucs1 + len_ucs2;
             cur_max_ucs_size = 4;
-            *dst_ucs4++ = read_b4_unicode(uni);
+            *dst_ucs4++ = to_b4_unicode(uni);
             src += 4;
             goto copy_utf8_inner_ucs4;
         }
@@ -659,7 +643,7 @@ copy_escape_ucs4:
                 src++;
                 break;
             case 'u':
-                if (unlikely(!read_to_hex_u8(++src, &hi))) {
+                if (unlikely(!to_hex_u8(++src, &hi))) {
                     return_err(src - 2, "invalid escaped sequence in string");
                 }
                 src += 4;
@@ -675,7 +659,7 @@ copy_escape_ucs4:
                     if (unlikely(!byte_match_2(src, "\\u"))) {
                         return_err(src, "no low surrogate in string");
                     }
-                    if (unlikely(!read_to_hex_u8(src + 2, &lo))) {
+                    if (unlikely(!to_hex_u8(src + 2, &lo))) {
                         return_err(src, "invalid escaped sequence in string");
                     }
                     if (unlikely((lo & 0xFC00) != 0xDC00)) {
@@ -694,7 +678,7 @@ copy_escape_ucs4:
         }
         goto copy_ascii_ucs4;
     } else if (likely(*src == '"')) {
-        goto read_finalize;
+        goto finalize;
     } else {
         return_err(src, "unexpected control character in string");
     }
@@ -716,21 +700,21 @@ copy_utf8_ucs4:
         while (is_valid_seq_3(uni)) {
             // code point: [U+0800, U+FFFF]
             assert(cur_max_ucs_size == 4);
-            *dst_ucs4++ = read_b3_unicode(uni);
+            *dst_ucs4++ = to_b3_unicode(uni);
             src += 3;
             uni = byte_load_4(src);
         }
         if (is_valid_seq_1(uni)) goto copy_ascii_ucs4;
         while (is_valid_seq_2(uni)) {
             assert(cur_max_ucs_size == 4);
-            *dst_ucs4++ = read_b2_unicode(uni);
+            *dst_ucs4++ = to_b2_unicode(uni);
             src += 2;
             uni = byte_load_4(src);
         }
         while (is_valid_seq_4(uni)) {
             // code point: [U+10000, U+10FFFF]
             // must be ucs4
-            *dst_ucs4++ = read_b4_unicode(uni);
+            *dst_ucs4++ = to_b4_unicode(uni);
             src += 4;
             uni = byte_load_4(src);
         }
@@ -741,7 +725,7 @@ copy_utf8_ucs4:
     }
     goto copy_escape_ucs4;
 
-read_finalize:
+finalize:
     *ptr = src + 1;
     if (unlikely(cur_max_ucs_size == 4)) {
         u32 *start = (u32 *)temp_string_buf + len_ucs1 + len_ucs2 - 1;
@@ -780,12 +764,12 @@ read_finalize:
 #undef is_valid_seq_4
 }
 
-internal_simd_noinline PyObject *read_bytes_not_key(const u8 **ptr, u8 *write_buffer) {
-    return read_bytes(ptr, write_buffer, false);
+internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_buffer) {
+    return loads_bytes(ptr, write_buffer, false);
 }
 
 /** Read single value JSON document. */
-internal_simd_noinline PyObject *read_root_single_bytes(const u8 *dat, usize len) {
+internal_simd_noinline PyObject *loads_root_single_bytes(const u8 *dat, usize len) {
 #define return_err(_pos, _type, _msg)                                                             \
     do {                                                                                          \
         if (_type == JSONDecodeError) {                                                           \
@@ -802,7 +786,7 @@ internal_simd_noinline PyObject *read_root_single_bytes(const u8 *dat, usize len
     PyObject *ret = NULL;
 
     if (char_is_number(*cur)) {
-        ret = read_number_u8(&cur, end);
+        ret = loads_number_u8(&cur, end);
         if (likely(ret)) goto single_end;
         goto fail_number;
     }
@@ -816,7 +800,7 @@ internal_simd_noinline PyObject *read_root_single_bytes(const u8 *dat, usize len
         } else {
             write_buffer = _DecodeTempBuffer;
         }
-        ret = read_bytes_not_key(&cur, write_buffer);
+        ret = loads_bytes_not_key(&cur, write_buffer);
         if (dynamic) free(write_buffer);
         if (likely(ret)) goto single_end;
         goto fail_string;
@@ -850,7 +834,7 @@ internal_simd_noinline PyObject *read_root_single_bytes(const u8 *dat, usize len
         goto fail_literal_null;
     }
     {
-        ret = read_inf_or_nan_u8(false, &cur, end);
+        ret = loads_inf_or_nan_u8(false, &cur, end);
         if (likely(ret)) goto single_end;
     }
     goto fail_character;
@@ -930,7 +914,7 @@ force_inline void _alloc_aligned_bytes_buffer(Py_ssize_t len, bool *dynamic, u8 
     }
 }
 
-force_inline bool should_read_bytes_pretty(const u8 *buffer, Py_ssize_t len) {
+force_inline bool should_loads_bytes_pretty(const u8 *buffer, Py_ssize_t len) {
     if (len > 3) {
         // check if can use pretty read
         u8 second, third;
@@ -981,13 +965,13 @@ internal_simd_noinline PyObject *ssrjson_decode_bytes(char *_buffer, Py_ssize_t 
 
     /* read json document */
     if (likely(char_is_container(*buffer))) {
-        if (should_read_bytes_pretty(buffer, len)) {
-            ret = read_bytes_root_pretty(buffer, len);
+        if (should_loads_bytes_pretty(buffer, len)) {
+            ret = loads_bytes_root_pretty(buffer, len);
         } else {
-            ret = read_bytes_root_minify(buffer, len);
+            ret = loads_bytes_root_minify(buffer, len);
         }
     } else {
-        ret = read_root_single_bytes(buffer, len);
+        ret = loads_root_single_bytes(buffer, len);
     }
 
     if (is_dynamic) SSRJSON_ALIGNED_FREE(_new_buffer);

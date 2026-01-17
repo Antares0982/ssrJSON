@@ -245,8 +245,9 @@ force_inline EncodeValJumpFlag encode_bytes_process_val(
         Py_ssize_t *cur_nested_depth_addr,
         Py_ssize_t *cur_list_size_addr,
         EncodeCtnWithIndex *ctn_stack,
-        // EncodeUnicodeInfo *unicode_info_addr,
-        bool is_in_obj, bool is_in_tuple, bool is_write_cache) {
+        ssrjson_compiletime bool is_in_obj,
+        bool is_in_tuple,
+        bool is_write_cache) {
 #define CTN_SIZE_GROW()                                                         \
     do {                                                                        \
         if (unlikely(*cur_nested_depth_addr == SSRJSON_ENCODE_MAX_RECURSION)) { \
@@ -261,7 +262,7 @@ force_inline EncodeValJumpFlag encode_bytes_process_val(
         }                                        \
     } while (0)
 
-    ssrjson_py_types obj_type = ssrjson_type_check(val);
+    EncodePyTypes obj_type = ssrjson_type_check(val);
 
     switch (obj_type) {
         case T_Unicode: {

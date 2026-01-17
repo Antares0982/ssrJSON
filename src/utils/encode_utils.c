@@ -59,7 +59,7 @@ bool resize_to_fit_pyunicode(EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ss
     return true;
 }
 
-ssrjson_py_types slow_type_check(PyTypeObject *type) {
+EncodePyTypes slow_type_check(PyTypeObject *type) {
     if (PyType_FastSubclass(type, Py_TPFLAGS_DICT_SUBCLASS)) {
         return T_Dict;
     } else if (PyType_FastSubclass(type, Py_TPFLAGS_LIST_SUBCLASS)) {
@@ -76,6 +76,9 @@ ssrjson_py_types slow_type_check(PyTypeObject *type) {
     return T_Unknown;
 }
 
+/*==============================================================================
+ * Global Vars
+ *============================================================================*/
 #if !defined(Py_GIL_DISABLED)
 EncodeCtnWithIndex _EncodeCtnBuffer[SSRJSON_ENCODE_MAX_RECURSION];
 #endif

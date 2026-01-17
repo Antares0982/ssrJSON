@@ -64,7 +64,7 @@ force_inline bool check_and_reserve_str_buffer(Py_ssize_t len, _src_t **buffer_h
 }
 
 /** Read single value JSON document. */
-internal_simd_noinline PyObject *decode_root_single(const _src_t *dat, Py_ssize_t len) {
+internal_simd_noinline PyObject *loads_root_single(const _src_t *dat, Py_ssize_t len) {
 #define return_err(_pos, _type, _msg)                                                             \
     do {                                                                                          \
         if (_type == JSONDecodeError) {                                                           \
@@ -83,7 +83,7 @@ internal_simd_noinline PyObject *decode_root_single(const _src_t *dat, Py_ssize_
     PyObject *ret = NULL;
 
     if (*cur <= U8MAX && char_is_number(*cur)) {
-        ret = read_number(&cur, end);
+        ret = loads_number(&cur, end);
         if (likely(ret)) goto single_end;
         goto fail_number;
     }
@@ -129,7 +129,7 @@ internal_simd_noinline PyObject *decode_root_single(const _src_t *dat, Py_ssize_
         goto fail_literal_null;
     }
     {
-        ret = read_inf_or_nan(false, &cur, end);
+        ret = loads_inf_or_nan(false, &cur, end);
         if (likely(ret)) goto single_end;
     }
     goto fail_character;
@@ -175,7 +175,7 @@ fail_cleanup:
 #undef return_err
 }
 
-force_inline bool should_read_pretty(const _src_t *buffer, const _src_t *end) {
+force_inline bool should_loads_pretty(const _src_t *buffer, const _src_t *end) {
     if (end - buffer > 3) {
         // check if can use pretty read
         _src_t second, third;
@@ -226,13 +226,13 @@ internal_simd_noinline PyObject *decode(PyUnicodeObject *in_unicode) {
 
     /* read json document */
     if (likely(*buffer <= U8MAX && char_is_container(*buffer))) {
-        if (should_read_pretty(buffer, end)) {
-            ret = decode_root_pretty(buffer, end - buffer);
+        if (should_loads_pretty(buffer, end)) {
+            ret = loads_root_pretty(buffer, end - buffer);
         } else {
-            ret = decode_root_minify(buffer, end - buffer);
+            ret = loads_root_minify(buffer, end - buffer);
         }
     } else {
-        ret = decode_root_single(buffer, end - buffer);
+        ret = loads_root_single(buffer, end - buffer);
     }
 
     return ret;

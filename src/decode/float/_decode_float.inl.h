@@ -70,7 +70,7 @@ force_inline bool DIGI_IS_NONZERO(_src_t d) {
     number is infinite, the return value is based on flag.
  3. This function (with inline attribute) may generate a lot of instructions.
  */
-internal_simd_noinline PyObject *read_number(const _src_t **ptr, const _src_t *buffer_end) {
+internal_simd_noinline PyObject *loads_number(const _src_t **ptr, const _src_t *buffer_end) {
 #define return_err(_end, _msg)                                                  \
     do {                                                                        \
         PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, _end - hdr); \
@@ -139,7 +139,7 @@ internal_simd_noinline PyObject *read_number(const _src_t **ptr, const _src_t *b
     /* begin with a leading zero or non-digit */
     if (unlikely(!DIGI_IS_NONZERO(*cur))) { /* 0 or non-digit char */
         if (unlikely(*cur != '0')) {        /* non-digit char */
-            PyObject *number_obj = read_inf_or_nan(sign, &cur, buffer_end);
+            PyObject *number_obj = loads_inf_or_nan(sign, &cur, buffer_end);
             if (likely(number_obj)) {
                 *end = cur;
                 return number_obj;
@@ -401,7 +401,7 @@ digi_finish:
          the exponent part (10^exp) can be converted to (sig2 * 2^exp2).
          
          The sig2 can be an infinite length number, only the highest 128 bits
-         is cached in the pow10_sig_table.
+         is cached in the Pow10SigTable.
          
          Now we have these bits:
          sig1 (normalized 64bit)        : aaaaaaaa
@@ -672,6 +672,6 @@ digi_finish:
 #undef digi_is_exp
 #undef digi_is_digit_or_fp
 #undef digi_is_digit
-#undef read_number
+#undef loads_number
 //
 #include "compile_context/r_out.inl.h"

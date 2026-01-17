@@ -23,14 +23,12 @@
 #include "pythonlib.h"
 #include "ssrjson.h"
 
-extern int ssrjson_write_utf8_cache_value;
-extern int ssrjson_nonstrict_argparse;
 
 #define IMPL_MULTILIB_FUNCTION_INTERFACE(_func_name_) SSRJSON_CONCAT2(_func_name_, t) SSRJSON_CONCAT2(_func_name_, interface);
 
-IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_Encode)
+IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_Dumps)
 IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_Decode)
-IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_EncodeToBytes)
+IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_DumpsToBytes)
 IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u16_u32)
 IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u8_u32)
 IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u8_u16)
@@ -72,9 +70,9 @@ const char *_update_simd_features(void) {
     return err;
 }
 
-MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Encode)
+MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Dumps)
 MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Decode)
-MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_EncodeToBytes)
+MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_DumpsToBytes)
 
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     int err;
@@ -82,10 +80,10 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     if (!ret) return NULL;
     err = PyDict_SetItemString(ret, "multi_lib", Py_True);
     if (err) goto fail;
-    PyObject *write_cache_bool = ssrjson_write_utf8_cache_value ? Py_True : Py_False;
+    PyObject *write_cache_bool = _WriteUTF8CacheValue ? Py_True : Py_False;
     err = PyDict_SetItemString(ret, "write_utf8_cache", write_cache_bool);
     if (err) goto fail;
-    PyObject *strict_argparse_bool = ssrjson_nonstrict_argparse ? Py_False : Py_True;
+    PyObject *strict_argparse_bool = _NonstrictArgparse ? Py_False : Py_True;
     err = PyDict_SetItemString(ret, "strict_arg_parse", strict_argparse_bool);
     if (err) goto fail;
 
@@ -130,9 +128,9 @@ const char *_update_simd_features(void) {
     return NULL;
 }
 
-MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Encode)
+MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Dumps)
 MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Decode)
-MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_EncodeToBytes)
+MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_DumpsToBytes)
 
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     int err;
@@ -140,10 +138,10 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     if (!ret) return NULL;
     err = PyDict_SetItemString(ret, "multi_lib", Py_True);
     if (err) goto fail;
-    PyObject *write_cache_bool = ssrjson_write_utf8_cache_value ? Py_True : Py_False;
+    PyObject *write_cache_bool = _WriteUTF8CacheValue ? Py_True : Py_False;
     err = PyDict_SetItemString(ret, "write_utf8_cache", write_cache_bool);
     if (err) goto fail;
-    PyObject *strict_argparse_bool = ssrjson_nonstrict_argparse ? Py_False : Py_True;
+    PyObject *strict_argparse_bool = _NonstrictArgparse ? Py_False : Py_True;
     err = PyDict_SetItemString(ret, "strict_arg_parse", strict_argparse_bool);
     if (err) goto fail;
     PyObject *neon = PyUnicode_FromString("NEON");

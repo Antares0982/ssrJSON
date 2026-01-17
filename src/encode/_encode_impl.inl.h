@@ -62,8 +62,8 @@
 force_inline void prepare_unicode_write(PyObject *obj, EncodeUnicodeWriter *writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *restrict unicode_info, usize *out_len, unsigned int *read_pykind, unsigned int *write_kind, const void **src_addr) {
     usize out_len_val = (usize)PyUnicode_GET_LENGTH(obj);
     *out_len = out_len_val;
-    unsigned int read_kind_val = PyUnicode_KIND(obj);
-    *read_pykind = read_kind_val;
+    unsigned int r_kind_val = PyUnicode_KIND(obj);
+    *read_pykind = r_kind_val;
     bool is_ascii = PyUnicode_IS_ASCII(obj);
     *src_addr = is_ascii ? PYUNICODE_ASCII_START(obj) : PYUNICODE_UCS1_START(obj);
 
@@ -71,25 +71,25 @@ force_inline void prepare_unicode_write(PyObject *obj, EncodeUnicodeWriter *writ
     *write_kind = 4;
 #elif COMPILE_UCS_LEVEL == 2
     *write_kind = 2;
-    if (unlikely(read_kind_val == 4)) {
+    if (unlikely(r_kind_val == 4)) {
         memorize_ucs2_to_ucs4(writer_addr, unicode_buffer_info, unicode_info);
         *write_kind = 4;
     }
 #elif COMPILE_UCS_LEVEL == 1
     *write_kind = 1;
-    if (unlikely(read_kind_val == 2)) {
+    if (unlikely(r_kind_val == 2)) {
         memorize_ucs1_to_ucs2(writer_addr, unicode_buffer_info, unicode_info);
         *write_kind = 2;
-    } else if (unlikely(read_kind_val == 4)) {
+    } else if (unlikely(r_kind_val == 4)) {
         memorize_ucs1_to_ucs4(writer_addr, unicode_buffer_info, unicode_info);
         *write_kind = 4;
     }
 #elif COMPILE_UCS_LEVEL == 0
     *write_kind = 0;
-    if (unlikely(read_kind_val == 2)) {
+    if (unlikely(r_kind_val == 2)) {
         memorize_ascii_to_ucs2(writer_addr, unicode_buffer_info, unicode_info);
         *write_kind = 2;
-    } else if (unlikely(read_kind_val == 4)) {
+    } else if (unlikely(r_kind_val == 4)) {
         memorize_ascii_to_ucs4(writer_addr, unicode_buffer_info, unicode_info);
         *write_kind = 4;
     } else if (unlikely(!is_ascii)) {
@@ -494,7 +494,8 @@ force_inline EncodeValJumpFlag encode_process_val(
         Py_ssize_t *cur_list_size_addr,
         EncodeCtnWithIndex *ctn_stack,
         EncodeUnicodeInfo *unicode_info_addr,
-        bool is_in_obj, bool is_in_tuple) {
+        ssrjson_compiletime bool is_in_obj,
+        bool is_in_tuple) {
 #define CTN_SIZE_GROW()                                                         \
     do {                                                                        \
         if (unlikely(*cur_nested_depth_addr == SSRJSON_ENCODE_MAX_RECURSION)) { \
@@ -509,7 +510,7 @@ force_inline EncodeValJumpFlag encode_process_val(
         }                                        \
     } while (0)
 
-    ssrjson_py_types obj_type = ssrjson_type_check(val);
+    EncodePyTypes obj_type = ssrjson_type_check(val);
 
     switch (obj_type) {
         case T_Unicode: {

@@ -130,6 +130,11 @@
 #    endif
 #endif
 
+#ifndef ssrjson_compiletime
+#    define ssrjson_compiletime
+#    define ssrjson_consteval(_x_) (_x_)
+#endif
+
 /** compiler version (MSVC) */
 #ifdef _MSC_VER
 #    define SSRJSON_MSC_VER _MSC_VER
@@ -462,25 +467,25 @@ force_inline void u128_mul_add(u64 a, u64 b, u64 c, u64 *hi, u64 *lo) {
  * These data are used by the floating-point number reader and writer.
  *============================================================================*/
 
-/** Minimum decimal exponent in pow10_sig_table. */
+/** Minimum decimal exponent in Pow10SigTable. */
 #define POW10_SIG_TABLE_MIN_EXP -343
 
-/** Maximum decimal exponent in pow10_sig_table. */
+/** Maximum decimal exponent in Pow10SigTable. */
 #define POW10_SIG_TABLE_MAX_EXP 324
 
-/** Minimum exact decimal exponent in pow10_sig_table */
+/** Minimum exact decimal exponent in Pow10SigTable */
 #define POW10_SIG_TABLE_MIN_EXACT_EXP 0
 
-/** Maximum exact decimal exponent in pow10_sig_table */
+/** Maximum exact decimal exponent in Pow10SigTable */
 #define POW10_SIG_TABLE_MAX_EXACT_EXP 55
 
 /** Normalized significant 128 bits of pow10, no rounded up (size: 10.4KB).
     This lookup table is used by both the double number reader and writer.
     (generate with misc/make_tables.c) */
-extern const u64 pow10_sig_table[];
+extern const u64 Pow10SigTable[];
 
 /**
- Get the cached pow10 value from pow10_sig_table.
+ Get the cached pow10 value from Pow10SigTable.
  @param exp10 The exponent of pow(10, e). This value must in range
               POW10_SIG_TABLE_MIN_EXP to POW10_SIG_TABLE_MAX_EXP.
  @param hi    The highest 64 bits of pow(10, e).
@@ -488,12 +493,12 @@ extern const u64 pow10_sig_table[];
  */
 force_inline void pow10_table_get_sig(i32 exp10, u64 *hi, u64 *lo) {
     i32 idx = exp10 - (POW10_SIG_TABLE_MIN_EXP);
-    *hi = pow10_sig_table[idx * 2];
-    *lo = pow10_sig_table[idx * 2 + 1];
+    *hi = Pow10SigTable[idx * 2];
+    *lo = Pow10SigTable[idx * 2 + 1];
 }
 
 /**
- Get the exponent (base 2) for highest 64 bits significand in pow10_sig_table.
+ Get the exponent (base 2) for highest 64 bits significand in Pow10SigTable.
  */
 force_inline void pow10_table_get_exp(i32 exp10, i32 *exp2) {
     /* e2 = floor(log2(pow(10, e))) - 64 + 1 */
@@ -552,11 +557,11 @@ static const u8 CHAR_TYPE_LINE_END = 1 << 6;
 static const u8 CHAR_TYPE_HEX = 1 << 7;
 
 /** Digit type table (generate with misc/make_tables.c) */
-extern const u8 digi_table[256];
+extern const u8 DigiTypeTable[256];
 
 /** Match a character with specified type. */
 force_inline bool digi_is_type(u8 d, u8 type) {
-    return (digi_table[d] & type) != 0;
+    return (DigiTypeTable[d] & type) != 0;
 }
 
 /** Match a sign: '+', '-' */
@@ -750,11 +755,19 @@ force_inline usize get_tail_len_parts_by_index(usize tail_len, usize batch_count
     return ret;
 }
 
-/* typedefs */
+/*==============================================================================
+ * Typedefs
+ *============================================================================*/
 typedef struct {
     PyObject *key;
     u64 key_hint;
 } decode_cache_t;
 
+/*==============================================================================
+ * Global Vars
+ *============================================================================*/
+extern int _WriteUTF8CacheValue;
+extern int _NonstrictArgparse;
+extern int _InvalidArgChecked;
 
 #endif // SSRJSON_H

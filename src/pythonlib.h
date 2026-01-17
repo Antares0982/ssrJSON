@@ -97,9 +97,9 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
 #    define SET_INTERFACE(_func_name_, _feature_name_) SSRJSON_CONCAT2(_func_name_, interface) = SSRJSON_CONCAT2(_func_name_, _feature_name_)
 
 #    define BATCH_SET_INTERFACE(_feature_name_)                   \
-        SET_INTERFACE(ssrjson_Encode, _feature_name_);            \
+        SET_INTERFACE(ssrjson_Dumps, _feature_name_);             \
         SET_INTERFACE(ssrjson_Decode, _feature_name_);            \
-        SET_INTERFACE(ssrjson_EncodeToBytes, _feature_name_);     \
+        SET_INTERFACE(ssrjson_DumpsToBytes, _feature_name_);      \
         SET_INTERFACE(long_cvt_noinline_u16_u32, _feature_name_); \
         SET_INTERFACE(long_cvt_noinline_u8_u32, _feature_name_);  \
         SET_INTERFACE(long_cvt_noinline_u8_u16, _feature_name_);  \
@@ -138,9 +138,9 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
 #    endif // SSRJSON_X86
 
 
-DECLARE_MULTILIB_PYFASTFUNCTION(ssrjson_Encode)
+DECLARE_MULTILIB_PYFASTFUNCTION(ssrjson_Dumps)
 DECLARE_MULTILIB_PYFASTFUNCTION(ssrjson_Decode)
-DECLARE_MULTILIB_PYFASTFUNCTION(ssrjson_EncodeToBytes)
+DECLARE_MULTILIB_PYFASTFUNCTION(ssrjson_DumpsToBytes)
 DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u16_u32, void, u32 *restrict write_start, const u16 *restrict read_start, usize _len)
 DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u8_u32, void, u32 *restrict write_start, const u8 *restrict read_start, usize _len)
 DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u8_u16, void, u16 *restrict write_start, const u8 *restrict read_start, usize _len)

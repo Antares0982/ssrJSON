@@ -36,13 +36,13 @@
 #define COMPILE_UCS_LEVEL 0
 #define COMPILE_READ_UCS_LEVEL 1
 
-#define READ_ROOT_IMPL decode_root_pretty
+#define READ_ROOT_IMPL loads_root_pretty
 #define DECODE_READ_PRETTY 1
 #include "str/_decode_str_root.inl.h"
 #undef DECODE_READ_PRETTY
 #undef READ_ROOT_IMPL
 //
-#define READ_ROOT_IMPL decode_root_minify
+#define READ_ROOT_IMPL loads_root_minify
 #define DECODE_READ_PRETTY 0
 #include "str/_decode_str_root.inl.h"
 #undef DECODE_READ_PRETTY
@@ -55,13 +55,13 @@
 #define COMPILE_UCS_LEVEL 1
 #define COMPILE_READ_UCS_LEVEL 1
 
-#define READ_ROOT_IMPL decode_root_pretty
+#define READ_ROOT_IMPL loads_root_pretty
 #define DECODE_READ_PRETTY 1
 #include "str/_decode_str_root.inl.h"
 #undef DECODE_READ_PRETTY
 #undef READ_ROOT_IMPL
 //
-#define READ_ROOT_IMPL decode_root_minify
+#define READ_ROOT_IMPL loads_root_minify
 #define DECODE_READ_PRETTY 0
 #include "str/_decode_str_root.inl.h"
 #undef DECODE_READ_PRETTY
@@ -74,13 +74,13 @@
 #define COMPILE_UCS_LEVEL 2
 #define COMPILE_READ_UCS_LEVEL 2
 
-#define READ_ROOT_IMPL decode_root_pretty
+#define READ_ROOT_IMPL loads_root_pretty
 #define DECODE_READ_PRETTY 1
 #include "str/_decode_str_root.inl.h"
 #undef DECODE_READ_PRETTY
 #undef READ_ROOT_IMPL
 //
-#define READ_ROOT_IMPL decode_root_minify
+#define READ_ROOT_IMPL loads_root_minify
 #define DECODE_READ_PRETTY 0
 #include "str/_decode_str_root.inl.h"
 #undef DECODE_READ_PRETTY
@@ -93,13 +93,13 @@
 #define COMPILE_UCS_LEVEL 4
 #define COMPILE_READ_UCS_LEVEL 4
 
-#define READ_ROOT_IMPL decode_root_pretty
+#define READ_ROOT_IMPL loads_root_pretty
 #define DECODE_READ_PRETTY 1
 #include "str/_decode_str_root.inl.h"
 #undef DECODE_READ_PRETTY
 #undef READ_ROOT_IMPL
 //
-#define READ_ROOT_IMPL decode_root_minify
+#define READ_ROOT_IMPL loads_root_minify
 #define DECODE_READ_PRETTY 0
 #include "str/_decode_str_root.inl.h"
 #undef DECODE_READ_PRETTY

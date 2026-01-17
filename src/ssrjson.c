@@ -27,10 +27,10 @@
 
 #pragma clang diagnostic ignored "-Wcast-function-type-mismatch"
 
-extern decode_cache_t DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
+extern decode_cache_t _DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
 
-PyObject *ssrjson_Encode(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);
-PyObject *ssrjson_EncodeToBytes(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);
+PyObject *ssrjson_Dumps(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);
+PyObject *ssrjson_DumpsToBytes(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);
 PyObject *ssrjson_Decode(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);
 PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args);
 PyObject *ssrjson_strict_argparse(PyObject *self, PyObject *arg);
@@ -39,9 +39,9 @@ PyObject *ssrjson_write_utf8_cache(PyObject *self, PyObject *arg);
 PyObject *JSONDecodeError = NULL;
 PyObject *JSONEncodeError = NULL;
 
-int ssrjson_invalid_arg_checked = 0;
-int ssrjson_nonstrict_argparse = SSRJSON_NONSTRICT_ARGPARSE;
-int ssrjson_write_utf8_cache_value = SSRJSON_WRITE_UTF8_CACHE;
+int _InvalidArgChecked = !SSRJSON_SHOULD_WARN_API_USAGE;
+int _NonstrictArgparse = SSRJSON_NONSTRICT_ARGPARSE;
+int _WriteUTF8CacheValue = SSRJSON_WRITE_UTF8_CACHE;
 
 
 static void module_free(void *m);
@@ -69,8 +69,8 @@ static struct PyModuleDef moduledef = {
 
 static void module_free(void *m) {
     for (size_t i = 0; i < SSRJSON_KEY_CACHE_SIZE; i++) {
-        Py_XDECREF(DecodeKeyCache[i].key);
-        DecodeKeyCache[i].key = NULL;
+        Py_XDECREF(_DecodeKeyCache[i].key);
+        _DecodeKeyCache[i].key = NULL;
     }
 
     if (JSONDecodeError) {
@@ -96,13 +96,13 @@ PyTypeObject *PyNone_Type = NULL;
 
 PyMethodDef dumps_func_def = {
         "dumps",
-        (PyCFunction)ssrjson_Encode,
+        (PyCFunction)ssrjson_Dumps,
         METH_FASTCALL | METH_KEYWORDS,
         "dumps(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."};
 
 PyMethodDef dumps_to_bytes_func_def = {
         "dumps_to_bytes",
-        (PyCFunction)ssrjson_EncodeToBytes,
+        (PyCFunction)ssrjson_DumpsToBytes,
         METH_FASTCALL | METH_KEYWORDS,
         "dumps_to_bytes(obj, indent=None, is_write_cache=None)\n--\n\nConverts arbitrary object recursively into JSON."};
 
@@ -187,7 +187,7 @@ static int ssrjson_exec(PyObject *module) {
         PyErr_SetString(PyExc_ImportError, err_s);
         return -1;
     }
-    ssrjson_write_utf8_cache_value = (int)_write_utf8_cache_value;
+    _WriteUTF8CacheValue = (int)_write_utf8_cache_value;
 
     if (PyModule_AddStringConstant(module, "__version__", SSRJSON_VERSION) < 0) {
         return -1;
@@ -246,7 +246,7 @@ static int ssrjson_exec(PyObject *module) {
 
     // do ssrjson internal init.
 
-    memset(DecodeKeyCache, 0, sizeof(DecodeKeyCache));
+    memset(_DecodeKeyCache, 0, sizeof(_DecodeKeyCache));
 
 #if PY_MINOR_VERSION >= 13
     PyNone_Type = Py_TYPE(Py_None);
@@ -262,7 +262,7 @@ PyMODINIT_FUNC PyInit_ssrjson(void) {
 }
 
 PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args) {
-    ssrjson_invalid_arg_checked = 1;
+    _InvalidArgChecked = 1;
     Py_RETURN_NONE;
 }
 
@@ -273,7 +273,7 @@ PyObject *ssrjson_strict_argparse(PyObject *self, PyObject *arg) {
         PyErr_SetString(PyExc_TypeError, "strict_argparse() argument must be True or False");
         return NULL;
     }
-    ssrjson_nonstrict_argparse = value_is_false ? 1 : 0;
+    _NonstrictArgparse = value_is_false ? 1 : 0;
     Py_RETURN_NONE;
 }
 
@@ -284,7 +284,7 @@ PyObject *ssrjson_write_utf8_cache(PyObject *self, PyObject *arg) {
         PyErr_SetString(PyExc_TypeError, "write_utf8_cache() argument must be True or False");
         return NULL;
     }
-    ssrjson_write_utf8_cache_value = value_is_true ? 1 : 0;
+    _WriteUTF8CacheValue = value_is_true ? 1 : 0;
     Py_RETURN_NONE;
 }
 

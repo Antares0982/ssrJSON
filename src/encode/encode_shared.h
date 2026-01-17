@@ -28,6 +28,10 @@
 #include "tls.h"
 #include "utils/unicode.h"
 
+/*==============================================================================
+ * Macros
+ *============================================================================*/
+
 /* double number exponent bias */
 #define F64_EXP_BIAS 1023
 
@@ -46,48 +50,89 @@
 /* double number exponent bit mask */
 #define F64_EXP_MASK U64(0x7FF00000, 0x00000000)
 
+#define WRITER_AS_U8(_writer_) (*SSRJSON_CAST(u8 **, &(_writer_)))
+#define WRITER_AS_U16(_writer_) (*SSRJSON_CAST(u16 **, &(_writer_)))
+#define WRITER_AS_U32(_writer_) (*SSRJSON_CAST(u32 **, &(_writer_)))
+#define WRITER_ADDR_AS_U8(_writer_addr_) (*SSRJSON_CAST(u8 **, (_writer_addr_)))
+#define WRITER_ADDR_AS_U16(_writer_addr_) (*SSRJSON_CAST(u16 **, (_writer_addr_)))
+#define WRITER_ADDR_AS_U32(_writer_addr_) (*SSRJSON_CAST(u32 **, (_writer_addr_)))
+
+#define GET_VEC_ASCII_START(_unicode_buffer_info_) (SSRJSON_CAST(PyASCIIObject *, (_unicode_buffer_info_)->head) + 1)
+#define GET_VEC_COMPACT_START(_unicode_buffer_info_) (SSRJSON_CAST(PyCompactUnicodeObject *, (_unicode_buffer_info_)->head) + 1)
 
 /*==============================================================================
- * Buffer
+ * Enums
  *============================================================================*/
-
-static_assert((SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE % 64) == 0, "(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE % 64) == 0");
-
 typedef enum EncodeContainerType {
     EncodeContainerType_Dict = 0,
     EncodeContainerType_List = 1,
     EncodeContainerType_Tuple = 2,
 } EncodeContainerType;
 
-static_assert((EncodeContainerType_List << true) == EncodeContainerType_Tuple, "");
+typedef enum EncodePyTypes {
+    T_Unicode,
+    T_Long,
+    T_Bool,
+    T_None,
+    T_Float,
+    T_List,
+    T_Dict,
+    T_Tuple,
+    T_UnicodeNonCompact,
+    T_Unknown,
+} EncodePyTypes;
 
-// generally, `is_dict` is known at compile time, but `is_tuple` is not
-force_inline EncodeContainerType get_encode_ctn_type(bool is_dict, bool is_tuple) {
-    if (is_dict) {
-        return EncodeContainerType_Dict;
-    }
-    return EncodeContainerType_List << unlikely(is_tuple);
-}
+typedef enum EncodeValJumpFlag {
+    JumpFlag_Default,
+    JumpFlag_ArrValBegin,
+    JumpFlag_DictPairBegin,
+    JumpFlag_TupleValBegin,
+    JumpFlag_Elevate1_ArrVal,
+    JumpFlag_Elevate1_ObjVal,
+    JumpFlag_Elevate1_Key,
+    JumpFlag_Elevate2_ArrVal,
+    JumpFlag_Elevate2_ObjVal,
+    JumpFlag_Elevate2_Key,
+    JumpFlag_Elevate4_ArrVal,
+    JumpFlag_Elevate4_ObjVal,
+    JumpFlag_Elevate4_Key,
+    JumpFlag_Fail,
+} EncodeValJumpFlag;
+
+typedef enum EncodeCallFlag {
+    CallFlag_ObjVal,
+    CallFlag_ArrVal,
+    CallFlag_Key,
+} EncodeCallFlag;
+
+/*==============================================================================
+ * Typedefs
+ *============================================================================*/
 
 typedef struct EncodeCtnWithIndex {
     PyObject *ctn;
     usize index_and_type;
 } EncodeCtnWithIndex;
 
-force_inline void extract_index_and_type(EncodeCtnWithIndex *ctn_with_index, Py_ssize_t *index, EncodeContainerType *type) {
-    *index = SSRJSON_CAST(Py_ssize_t, ctn_with_index->index_and_type >> 2);
-    *type = ctn_with_index->index_and_type & 0x3;
-}
+typedef struct EncodeUnicodeInfo {
+    Py_ssize_t ascii_size;
+    Py_ssize_t u8_size;
+    Py_ssize_t u16_size;
+    Py_ssize_t u32_size;
+    int cur_ucs_type;
+} EncodeUnicodeInfo;
 
-force_inline void set_index_and_type(EncodeCtnWithIndex *ctn_with_index, Py_ssize_t index, EncodeContainerType type) {
-    usize _index = SSRJSON_CAST(usize, index);
-    // not expect index so large that it will overflow after left shift
-    assert((_index & ~(SSRJSON_CAST(usize, -1) >> 2)) == 0);
-    ctn_with_index->index_and_type = (_index << 2) | type;
-}
+typedef struct EncodeUnicodeBufferInfo {
+    void *head;
+    void *end;
+} EncodeUnicodeBufferInfo;
 
+typedef void *EncodeUnicodeWriter;
+
+/*==============================================================================
+ * Global Vars
+ *============================================================================*/
 #if !defined(Py_GIL_DISABLED)
-
 extern EncodeCtnWithIndex _EncodeCtnBuffer[SSRJSON_ENCODE_MAX_RECURSION];
 
 force_inline EncodeCtnWithIndex *get_encode_obj_stack_buffer(void) {
@@ -101,6 +146,26 @@ force_inline EncodeCtnWithIndex *get_encode_obj_stack_buffer(void) {
 
 force_inline Py_ssize_t get_indent_char_count(Py_ssize_t cur_nested_depth, Py_ssize_t indent_level) {
     return indent_level ? (indent_level * cur_nested_depth + 1) : 0;
+}
+
+// `is_dict` is known at compile time, but `is_tuple` is not
+force_inline EncodeContainerType get_encode_ctn_type(ssrjson_compiletime bool is_dict, bool is_tuple) {
+    if (ssrjson_consteval(is_dict)) {
+        return EncodeContainerType_Dict;
+    }
+    return EncodeContainerType_List << unlikely(is_tuple);
+}
+
+force_inline void extract_index_and_type(EncodeCtnWithIndex *ctn_with_index, Py_ssize_t *index, EncodeContainerType *type) {
+    *index = SSRJSON_CAST(Py_ssize_t, ctn_with_index->index_and_type >> 2);
+    *type = ctn_with_index->index_and_type & 0x3;
+}
+
+force_inline void set_index_and_type(EncodeCtnWithIndex *ctn_with_index, Py_ssize_t index, EncodeContainerType type) {
+    usize _index = SSRJSON_CAST(usize, index);
+    // not expect index so large that it will overflow after left shift
+    assert((_index & ~(SSRJSON_CAST(usize, -1) >> 2)) == 0);
+    ctn_with_index->index_and_type = (_index << 2) | type;
 }
 
 /*==============================================================================
@@ -170,18 +235,6 @@ force_inline int pydict_next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
 #endif
 }
 
-typedef enum ssrjson_py_types {
-    T_Unicode,
-    T_Long,
-    T_Bool,
-    T_None,
-    T_Float,
-    T_List,
-    T_Dict,
-    T_Tuple,
-    T_UnicodeNonCompact,
-    T_Unknown,
-} ssrjson_py_types;
 #if PY_MINOR_VERSION >= 13
 // _PyNone_Type is hidden in Python 3.13
 extern PyTypeObject *PyNone_Type;
@@ -192,66 +245,12 @@ extern PyTypeObject *PyNone_Type;
 extern PyTypeObject *PyNone_Type;
 #endif
 
-ssrjson_py_types slow_type_check(PyTypeObject *type);
+EncodePyTypes slow_type_check(PyTypeObject *type);
 
 /* Get the value type as fast as possible. */
-force_inline ssrjson_py_types ssrjson_type_check(PyObject *val) {
+force_inline EncodePyTypes ssrjson_type_check(PyObject *val) {
     PyTypeObject *type = Py_TYPE(val);
     assert(type);
-    // #if SSRJSON_X86 && __AVX2__
-    // #    if PY_MINOR_VERSION >= 13
-    //     static const ssrjson_align(64) PyTypeObject *vector_py_types[8] = {
-    //             &PyUnicode_Type,
-    //             &PyLong_Type,
-    //             &PyBool_Type,
-    //             0,
-    //             &PyFloat_Type,
-    //             &PyList_Type,
-    //             &PyDict_Type,
-    //             &PyTuple_Type,
-    //     };
-    // #    else
-    //     static const ssrjson_align(64) PyTypeObject *vector_py_types[8] = {
-    //             &PyUnicode_Type,
-    //             &PyLong_Type,
-    //             &PyBool_Type,
-    //             PyNone_Type,
-    //             &PyFloat_Type,
-    //             &PyList_Type,
-    //             &PyDict_Type,
-    //             &PyTuple_Type,
-    //     };
-    // #    endif
-    // #    if __AVX512F__
-    //     __m512i vec = _mm512_set1_epi64((i64)(uintptr_t)type);
-    //     u8 mask = (u8)_mm512_cmpeq_epi64_mask(vec, *(__m512i *)vector_py_types);
-    //     if (unlikely(!mask)) {
-    //         if (PY_MINOR_VERSION >= 13 && type == PyNone_Type) {
-    //             return T_None;
-    //         }
-    //         return T_Unknown;
-    //     }
-    //     usize index = u32_tz_bits(mask);
-    //     assert(index < 8);
-    //     return (ssrjson_py_types)index;
-    // #    else
-    //     __m256i vec = _mm256_set1_epi64x((i64)(uintptr_t)type);
-    //     __m256i m1 = _mm256_cmpeq_epi64(vec, *(SSRJSON_CAST(__m256i *, vector_py_types) + 0));
-    //     if (likely(!_mm256_testz_si256(m1, m1))) {
-    //         u32 mask = (u32)_mm256_movemask_epi8(m1);
-    //         return SSRJSON_CAST(ssrjson_py_types, u32_tz_bits(mask) / 8);
-    //     }
-    //     if (PY_MINOR_VERSION >= 13 && type == PyNone_Type) {
-    //         return T_None;
-    //     }
-    //     m1 = _mm256_cmpeq_epi64(vec, *(SSRJSON_CAST(__m256i *, vector_py_types) + 1));
-    //     if (likely(!_mm256_testz_si256(m1, m1))) {
-    //         u32 mask = (u32)_mm256_movemask_epi8(m1);
-    //         return SSRJSON_CAST(ssrjson_py_types, u32_tz_bits(mask) / 8 + 4);
-    //     }
-    //     return T_Unknown;
-    // #    endif
-    // #else
     if (type == &PyUnicode_Type) {
         return T_Unicode;
     } else if (type == &PyLong_Type) {
@@ -271,33 +270,21 @@ force_inline ssrjson_py_types ssrjson_type_check(PyObject *val) {
     } else {
         return slow_type_check(type);
     }
-    // #endif
 }
 
-typedef struct EncodeUnicodeInfo {
-    Py_ssize_t ascii_size;
-    Py_ssize_t u8_size;
-    Py_ssize_t u16_size;
-    Py_ssize_t u32_size;
-    int cur_ucs_type;
-} EncodeUnicodeInfo;
+force_inline void init_pybytes(PyObject *in_new_bytes, usize final_len) {
+    PyBytesObject *new_bytes = SSRJSON_CAST(PyBytesObject *, in_new_bytes);
+    PyObject_Init(in_new_bytes, &PyBytes_Type);
+    new_bytes->ob_base.ob_size = (Py_ssize_t)final_len;
+#if PY_MINOR_VERSION < 11
+    new_bytes->ob_shash = -1;
+#endif
+    new_bytes->ob_sval[final_len] = 0;
+}
 
-typedef struct EncodeUnicodeBufferInfo {
-    void *head;
-    void *end;
-} EncodeUnicodeBufferInfo;
-
-typedef void *EncodeUnicodeWriter;
-
-#define WRITER_AS_U8(_writer_) (*SSRJSON_CAST(u8 **, &(_writer_)))
-#define WRITER_AS_U16(_writer_) (*SSRJSON_CAST(u16 **, &(_writer_)))
-#define WRITER_AS_U32(_writer_) (*SSRJSON_CAST(u32 **, &(_writer_)))
-#define WRITER_ADDR_AS_U8(_writer_addr_) (*SSRJSON_CAST(u8 **, (_writer_addr_)))
-#define WRITER_ADDR_AS_U16(_writer_addr_) (*SSRJSON_CAST(u16 **, (_writer_addr_)))
-#define WRITER_ADDR_AS_U32(_writer_addr_) (*SSRJSON_CAST(u32 **, (_writer_addr_)))
-
-#define GET_VEC_ASCII_START(_unicode_buffer_info_) (SSRJSON_CAST(PyASCIIObject *, (_unicode_buffer_info_)->head) + 1)
-#define GET_VEC_COMPACT_START(_unicode_buffer_info_) (SSRJSON_CAST(PyCompactUnicodeObject *, (_unicode_buffer_info_)->head) + 1)
+/*==============================================================================
+ * Writer
+ *============================================================================*/
 
 
 bool _unicode_buffer_reserve(EncodeUnicodeBufferInfo *unicode_buffer_info, usize target_size);
@@ -318,24 +305,43 @@ force_inline bool check_unicode_writer_valid(void *writer, EncodeUnicodeBufferIn
  */
 bool resize_to_fit_pyunicode(EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t len, int ucs_type);
 
-
-/*==============================================================================
- * Writer
- *============================================================================*/
-
-/* These codes are modified from yyjson. */
-
-
 /** Digit table from 00 to 99. */
-extern ssrjson_align(8) const u8 DIGIT_TABLE[200];
-
-/** Normalized significant 128 bits of pow10, no rounded up (size: 10.4KB).
-    This lookup table is used by both the double number reader and writer.
-    (generate with misc/make_tables.c) */
-extern const u64 pow10_sig_table[];
+extern ssrjson_align(8) const u8 EncodeDigitTable[200];
 
 force_inline void byte_copy_2(void *dst, const void *src) {
     memcpy(dst, src, 2);
+}
+
+force_inline Py_ssize_t get_unicode_buffer_final_len_ascii(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
+    return WRITER_AS_U8(writer) - (u8 *)GET_VEC_ASCII_START(unicode_buffer_info);
+}
+
+force_inline Py_ssize_t get_unicode_buffer_final_len_ucs1(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
+    return WRITER_AS_U8(writer) - (u8 *)GET_VEC_COMPACT_START(unicode_buffer_info);
+}
+
+force_inline Py_ssize_t get_unicode_buffer_final_len_ucs2(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
+    return WRITER_AS_U16(writer) - (u16 *)GET_VEC_COMPACT_START(unicode_buffer_info);
+}
+
+force_inline Py_ssize_t get_unicode_buffer_final_len_ucs4(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
+    return WRITER_AS_U32(writer) - (u32 *)GET_VEC_COMPACT_START(unicode_buffer_info);
+}
+
+force_inline usize get_bytes_buffer_final_len(u8 *writer, void *head) {
+    assert(writer >= SSRJSON_CAST(u8 *, head) + PYBYTES_START_OFFSET);
+    usize ret = writer - SSRJSON_CAST(u8 *, head) - PYBYTES_START_OFFSET;
+    return ret;
+}
+
+force_inline bool resize_to_fit_pybytes(EncodeUnicodeBufferInfo *unicode_buffer_info, usize len) {
+    usize buffer_total_size = PYBYTES_START_OFFSET + len + 1;
+    void *new_ptr = PyObject_Realloc(unicode_buffer_info->head, buffer_total_size);
+    if (unlikely(!new_ptr)) {
+        return false;
+    }
+    unicode_buffer_info->head = new_ptr;
+    return true;
 }
 
 /*==============================================================================
@@ -350,19 +356,6 @@ force_inline f64 f64_from_raw(u64 u) {
     memcpy(&f, &u, 8);
     return f;
 }
-
-// /**
-//  Get the cached pow10 value from pow10_sig_table.
-//  @param exp10 The exponent of pow(10, e). This value must in range
-//               POW10_SIG_TABLE_MIN_EXP to POW10_SIG_TABLE_MAX_EXP.
-//  @param hi    The highest 64 bits of pow(10, e).
-//  @param lo    The lower 64 bits after `hi`.
-//  */
-// force_inline void pow10_table_get_sig(i32 exp10, u64 *hi, u64 *lo) {
-//     i32 idx = exp10 - (POW10_SIG_TABLE_MIN_EXP);
-//     *hi = pow10_sig_table[idx * 2];
-//     *lo = pow10_sig_table[idx * 2 + 1];
-// }
 
 /*==============================================================================
  * Integer Writer
@@ -389,10 +382,10 @@ force_inline u8 *write_u32_len_8(u32 val, u8 *buf) {
     cc = (ccdd * 5243) >> 19;                   /* (ccdd / 100) */
     bb = aabb - aa * 100;                       /* (aabb % 100) */
     dd = ccdd - cc * 100;                       /* (ccdd % 100) */
-    byte_copy_2(buf + 0, DIGIT_TABLE + aa * 2);
-    byte_copy_2(buf + 2, DIGIT_TABLE + bb * 2);
-    byte_copy_2(buf + 4, DIGIT_TABLE + cc * 2);
-    byte_copy_2(buf + 6, DIGIT_TABLE + dd * 2);
+    byte_copy_2(buf + 0, EncodeDigitTable + aa * 2);
+    byte_copy_2(buf + 2, EncodeDigitTable + bb * 2);
+    byte_copy_2(buf + 4, EncodeDigitTable + cc * 2);
+    byte_copy_2(buf + 6, EncodeDigitTable + dd * 2);
     return buf + 8;
 }
 
@@ -400,8 +393,8 @@ force_inline u8 *write_u32_len_4(u32 val, u8 *buf) {
     u32 aa, bb;              /* 4 digits: aabb */
     aa = (val * 5243) >> 19; /* (val / 100) */
     bb = val - aa * 100;     /* (val % 100) */
-    byte_copy_2(buf + 0, DIGIT_TABLE + aa * 2);
-    byte_copy_2(buf + 2, DIGIT_TABLE + bb * 2);
+    byte_copy_2(buf + 0, EncodeDigitTable + aa * 2);
+    byte_copy_2(buf + 2, EncodeDigitTable + bb * 2);
     return buf + 4;
 }
 
@@ -410,7 +403,7 @@ force_inline u8 *write_u32_len_1_8(u32 val, u8 *buf) {
 
     if (val < 100) {   /* 1-2 digits: aa */
         lz = val < 10; /* leading zero: 0 or 1 */
-        byte_copy_2(buf + 0, DIGIT_TABLE + val * 2 + lz);
+        byte_copy_2(buf + 0, EncodeDigitTable + val * 2 + lz);
         buf -= lz;
         return buf + 2;
 
@@ -418,9 +411,9 @@ force_inline u8 *write_u32_len_1_8(u32 val, u8 *buf) {
         aa = (val * 5243) >> 19; /* (val / 100) */
         bb = val - aa * 100;     /* (val % 100) */
         lz = aa < 10;            /* leading zero: 0 or 1 */
-        byte_copy_2(buf + 0, DIGIT_TABLE + aa * 2 + lz);
+        byte_copy_2(buf + 0, EncodeDigitTable + aa * 2 + lz);
         buf -= lz;
-        byte_copy_2(buf + 2, DIGIT_TABLE + bb * 2);
+        byte_copy_2(buf + 2, EncodeDigitTable + bb * 2);
         return buf + 4;
 
     } else if (val < 1000000) {                /* 5-6 digits: aabbcc */
@@ -429,10 +422,10 @@ force_inline u8 *write_u32_len_1_8(u32 val, u8 *buf) {
         bb = (bbcc * 5243) >> 19;              /* (bbcc / 100) */
         cc = bbcc - bb * 100;                  /* (bbcc % 100) */
         lz = aa < 10;                          /* leading zero: 0 or 1 */
-        byte_copy_2(buf + 0, DIGIT_TABLE + aa * 2 + lz);
+        byte_copy_2(buf + 0, EncodeDigitTable + aa * 2 + lz);
         buf -= lz;
-        byte_copy_2(buf + 2, DIGIT_TABLE + bb * 2);
-        byte_copy_2(buf + 4, DIGIT_TABLE + cc * 2);
+        byte_copy_2(buf + 2, EncodeDigitTable + bb * 2);
+        byte_copy_2(buf + 4, EncodeDigitTable + cc * 2);
         return buf + 6;
 
     } else {                                        /* 7-8 digits: aabbccdd */
@@ -443,11 +436,11 @@ force_inline u8 *write_u32_len_1_8(u32 val, u8 *buf) {
         bb = aabb - aa * 100;                       /* (aabb % 100) */
         dd = ccdd - cc * 100;                       /* (ccdd % 100) */
         lz = aa < 10;                               /* leading zero: 0 or 1 */
-        byte_copy_2(buf + 0, DIGIT_TABLE + aa * 2 + lz);
+        byte_copy_2(buf + 0, EncodeDigitTable + aa * 2 + lz);
         buf -= lz;
-        byte_copy_2(buf + 2, DIGIT_TABLE + bb * 2);
-        byte_copy_2(buf + 4, DIGIT_TABLE + cc * 2);
-        byte_copy_2(buf + 6, DIGIT_TABLE + dd * 2);
+        byte_copy_2(buf + 2, EncodeDigitTable + bb * 2);
+        byte_copy_2(buf + 4, EncodeDigitTable + cc * 2);
+        byte_copy_2(buf + 6, EncodeDigitTable + dd * 2);
         return buf + 8;
     }
 }
@@ -461,10 +454,10 @@ force_inline u8 *write_u64_len_5_8(u32 val, u8 *buf) {
         bb = (bbcc * 5243) >> 19;              /* (bbcc / 100) */
         cc = bbcc - bb * 100;                  /* (bbcc % 100) */
         lz = aa < 10;                          /* leading zero: 0 or 1 */
-        byte_copy_2(buf + 0, DIGIT_TABLE + aa * 2 + lz);
+        byte_copy_2(buf + 0, EncodeDigitTable + aa * 2 + lz);
         buf -= lz;
-        byte_copy_2(buf + 2, DIGIT_TABLE + bb * 2);
-        byte_copy_2(buf + 4, DIGIT_TABLE + cc * 2);
+        byte_copy_2(buf + 2, EncodeDigitTable + bb * 2);
+        byte_copy_2(buf + 4, EncodeDigitTable + cc * 2);
         return buf + 6;
 
     } else {                                        /* 7-8 digits: aabbccdd */
@@ -475,11 +468,11 @@ force_inline u8 *write_u64_len_5_8(u32 val, u8 *buf) {
         bb = aabb - aa * 100;                       /* (aabb % 100) */
         dd = ccdd - cc * 100;                       /* (ccdd % 100) */
         lz = aa < 10;                               /* leading zero: 0 or 1 */
-        byte_copy_2(buf + 0, DIGIT_TABLE + aa * 2 + lz);
+        byte_copy_2(buf + 0, EncodeDigitTable + aa * 2 + lz);
         buf -= lz;
-        byte_copy_2(buf + 2, DIGIT_TABLE + bb * 2);
-        byte_copy_2(buf + 4, DIGIT_TABLE + cc * 2);
-        byte_copy_2(buf + 6, DIGIT_TABLE + dd * 2);
+        byte_copy_2(buf + 2, EncodeDigitTable + bb * 2);
+        byte_copy_2(buf + 4, EncodeDigitTable + cc * 2);
+        byte_copy_2(buf + 6, EncodeDigitTable + dd * 2);
         return buf + 8;
     }
 }
@@ -511,44 +504,9 @@ force_inline u8 *write_u64(u64 val, u8 *buf) {
     }
 }
 
-force_inline Py_ssize_t get_unicode_buffer_final_len_ascii(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return WRITER_AS_U8(writer) - (u8 *)GET_VEC_ASCII_START(unicode_buffer_info);
-}
-
-force_inline Py_ssize_t get_unicode_buffer_final_len_ucs1(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return WRITER_AS_U8(writer) - (u8 *)GET_VEC_COMPACT_START(unicode_buffer_info);
-}
-
-force_inline Py_ssize_t get_unicode_buffer_final_len_ucs2(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return WRITER_AS_U16(writer) - (u16 *)GET_VEC_COMPACT_START(unicode_buffer_info);
-}
-
-force_inline Py_ssize_t get_unicode_buffer_final_len_ucs4(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return WRITER_AS_U32(writer) - (u32 *)GET_VEC_COMPACT_START(unicode_buffer_info);
-}
-
-typedef enum EncodeValJumpFlag {
-    JumpFlag_Default,
-    JumpFlag_ArrValBegin,
-    JumpFlag_DictPairBegin,
-    JumpFlag_TupleValBegin,
-    JumpFlag_Elevate1_ArrVal,
-    JumpFlag_Elevate1_ObjVal,
-    JumpFlag_Elevate1_Key,
-    JumpFlag_Elevate2_ArrVal,
-    JumpFlag_Elevate2_ObjVal,
-    JumpFlag_Elevate2_Key,
-    JumpFlag_Elevate4_ArrVal,
-    JumpFlag_Elevate4_ObjVal,
-    JumpFlag_Elevate4_Key,
-    JumpFlag_Fail,
-} EncodeValJumpFlag;
-
-typedef enum EncodeCallFlag {
-    CallFlag_ObjVal,
-    CallFlag_ArrVal,
-    CallFlag_Key,
-} EncodeCallFlag;
+/*==============================================================================
+ * Buffer Init
+ *============================================================================*/
 
 force_inline bool init_encode_ctn_stack(EncodeCtnWithIndex **ctn_stack_addr) {
     EncodeCtnWithIndex *ctn_stack = get_encode_obj_stack_buffer();
@@ -581,32 +539,6 @@ force_inline bool init_unicode_buffer(EncodeUnicodeWriter *writer_addr, EncodeUn
 
 force_inline bool init_bytes_buffer(u8 **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info) {
     return _init_encode_buffer(SSRJSON_CAST(EncodeUnicodeWriter *, writer_addr), unicode_buffer_info, PYBYTES_START_OFFSET);
-}
-
-force_inline usize get_bytes_buffer_final_len(u8 *writer, void *head) {
-    assert(writer >= SSRJSON_CAST(u8 *, head) + PYBYTES_START_OFFSET);
-    usize ret = writer - SSRJSON_CAST(u8 *, head) - PYBYTES_START_OFFSET;
-    return ret;
-}
-
-force_inline bool resize_to_fit_pybytes(EncodeUnicodeBufferInfo *unicode_buffer_info, usize len) {
-    usize buffer_total_size = PYBYTES_START_OFFSET + len + 1;
-    void *new_ptr = PyObject_Realloc(unicode_buffer_info->head, buffer_total_size);
-    if (unlikely(!new_ptr)) {
-        return false;
-    }
-    unicode_buffer_info->head = new_ptr;
-    return true;
-}
-
-force_inline void init_pybytes(PyObject *in_new_bytes, usize final_len) {
-    PyBytesObject *new_bytes = SSRJSON_CAST(PyBytesObject *, in_new_bytes);
-    PyObject_Init(in_new_bytes, &PyBytes_Type);
-    new_bytes->ob_base.ob_size = (Py_ssize_t)final_len;
-#if PY_MINOR_VERSION < 11
-    new_bytes->ob_shash = -1;
-#endif
-    new_bytes->ob_sval[final_len] = 0;
 }
 
 #endif // SSRJSON_ENCODE_SHARED_H

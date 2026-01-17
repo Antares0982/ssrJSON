@@ -29,7 +29,7 @@
 #        include "decode/str/ascii.h"
 //
 #        define DECODE_READ_PRETTY 1
-#        define READ_ROOT_IMPL decode_root_pretty
+#        define READ_ROOT_IMPL loads_root_pretty
 #        define COMPILE_UCS_LEVEL 0
 #        define COMPILE_READ_UCS_LEVEL 1
 #        include "simd/compile_feature_check.h"
@@ -116,8 +116,8 @@ arr_val_begin:
         goto arr_begin;
     }
     if (*cur <= U8MAX && char_is_number(*cur)) {
-        PyObject *number_obj = read_number(&cur, end);
-        if (likely(number_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        PyObject *number_obj = loads_number(&cur, end);
+        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
@@ -131,7 +131,7 @@ arr_val_begin:
 #else
                 decode_str(&cur, end, string_buffer_head, false);
 #endif
-        if (likely(str_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
+        if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
@@ -180,8 +180,8 @@ arr_val_begin:
         goto arr_val_begin;
     }
     if ((*cur == 'i' || *cur == 'I' || *cur == 'N')) {
-        PyObject *number_obj = read_inf_or_nan(false, &cur, end);
-        if (likely(number_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        PyObject *number_obj = loads_inf_or_nan(false, &cur, end);
+        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
@@ -256,7 +256,7 @@ obj_key_begin:
     if (likely(*cur == '"')) {
         cur++;
         PyObject *str_obj = decode_str(&cur, end, string_buffer_head, true);
-        if (likely(str_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
+        if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             goto obj_key_end;
         }
         goto fail_string;
@@ -306,15 +306,15 @@ obj_val_begin:
 #else
                 decode_str(&cur, end, string_buffer_head, false);
 #endif
-        if (likely(str_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
+        if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
         goto fail_string;
     }
     if (char_is_number(*cur)) {
-        PyObject *number_obj = read_number(&cur, end);
-        if (likely(number_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        PyObject *number_obj = loads_number(&cur, end);
+        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
@@ -369,8 +369,8 @@ obj_val_begin:
         goto obj_val_begin;
     }
     if ((*cur == 'i' || *cur == 'I' || *cur == 'N')) {
-        PyObject *number_obj = read_inf_or_nan(false, &cur, end);
-        if (likely(number_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        PyObject *number_obj = loads_inf_or_nan(false, &cur, end);
+        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }

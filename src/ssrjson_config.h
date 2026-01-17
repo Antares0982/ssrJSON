@@ -121,6 +121,15 @@
 #    define SSRJSON_NONSTRICT_ARGPARSE 1
 #endif
 
+/* 
+ * Whether to warn user if API usage is not recommended.
+ * This warning can also be suppressed
+ * by calling `ssrjson.suppress_api_warning()`.
+ */
+#ifndef SSRJSON_SHOULD_WARN_API_USAGE
+#    define SSRJSON_SHOULD_WARN_API_USAGE 1
+#endif
+
 /** Type definition for primitive types. */
 typedef float f32;
 typedef double f64;
@@ -141,6 +150,8 @@ typedef PyObject *pyobj_ptr_t;
 static_assert(SIZEOF_VOID_P == 8, "SIZEOF_VOID_P != 8");
 static_assert(sizeof(PyASCIIObject) >= 16, "sizeof(PyASCIIObject) < 16");
 static_assert(offsetof(PyBytesObject, ob_sval) >= 16, "offsetof(PyBytesObject, ob_sval) < 16");
+static_assert(!PY_BIG_ENDIAN, "does not support big-endian platform");
+static_assert((SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE % 64) == 0, "(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE % 64) == 0");
 
 
 #endif

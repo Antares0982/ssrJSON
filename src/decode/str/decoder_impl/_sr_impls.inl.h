@@ -52,7 +52,7 @@ force_inline EscapeInfo do_decode_escape(const _src_t *const src, const _src_t *
         // clang-format on
         case 'u': {
             u16 hi;
-            if (unlikely(!verify_escape_hex(src, src_end, 2) || !read_to_hex(src + 2, &hi))) {
+            if (unlikely(!verify_escape_hex(src, src_end, 2) || !to_hex(src + 2, &hi))) {
                 if (!PyErr_Occurred()) {
                     PyErr_SetString(JSONDecodeError, "Invalid escape sequence in string");
                 }
@@ -71,7 +71,7 @@ force_inline EscapeInfo do_decode_escape(const _src_t *const src, const _src_t *
                     PyErr_SetString(JSONDecodeError, "No low surrogate in string");
                     RETURN_DECODE_ERR;
                 }
-                if (unlikely(!verify_escape_hex(src, src_end, 8) || !read_to_hex(src + 8, &lo))) {
+                if (unlikely(!verify_escape_hex(src, src_end, 8) || !to_hex(src + 8, &lo))) {
                     if (!PyErr_Occurred()) {
                         PyErr_SetString(JSONDecodeError, "Invalid escaped sequence in string");
                     }

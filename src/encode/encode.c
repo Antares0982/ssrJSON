@@ -257,7 +257,7 @@ force_inline PyObject *ssrjson_dumps_single_float(PyObject *val, bool to_bytes_o
     return unicode;
 }
 
-force_inline PyObject *ssrjson_dumps_single_constant(ssrjson_py_types py_type, PyObject *obj, bool to_bytes_obj) {
+force_inline PyObject *ssrjson_dumps_single_constant(EncodePyTypes py_type, PyObject *obj, bool to_bytes_obj) {
     PyObject *ret;
     switch (py_type) {
         case T_Bool: {
@@ -314,21 +314,17 @@ force_inline PyObject *ssrjson_dumps_single_constant(ssrjson_py_types py_type, P
     return ret;
 }
 
-extern int ssrjson_invalid_arg_checked;
-extern int ssrjson_nonstrict_argparse;
-extern int ssrjson_write_utf8_cache_value;
-
 force_inline void invalid_arg_warning(void) {
     fprintf(stderr, "Warning: some options are not supported in this version of ssrjson\n");
-    ssrjson_invalid_arg_checked = 1;
+    _InvalidArgChecked = 1;
 }
 
 force_inline bool encode_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **obj_out, PyObject **indent_out) {
     assert(kwnames);
     PyObject *obj, *indent;
     //
-    const bool nonstrict_argparse = ssrjson_nonstrict_argparse;
-    bool invalid_arg_checked = ssrjson_invalid_arg_checked;
+    const bool nonstrict_argparse = _NonstrictArgparse;
+    bool invalid_arg_checked = _InvalidArgChecked;
     //
     usize nkwargs = PyTuple_GET_SIZE(kwnames);
     usize nargs = npargs + nkwargs;
@@ -389,12 +385,10 @@ force_inline bool encode_argparse_with_kw(PyObject *const *args, usize npargs, P
     return true;
 }
 
-/* Entrance for python code. */
-// PyObject *SIMD_NAME_MODIFIER(ssrjson_Encode)(PyObject *self, PyObject *args, PyObject *kwargs) {
-PyObject *SIMD_NAME_MODIFIER(ssrjson_Encode)(PyObject *self,
-                                             PyObject *const *args,
-                                             Py_ssize_t nargsf,
-                                             PyObject *kwnames) {
+PyObject *SIMD_NAME_MODIFIER(ssrjson_Dumps)(PyObject *self,
+                                            PyObject *const *args,
+                                            Py_ssize_t nargsf,
+                                            PyObject *kwnames) {
     PyObject *ret;
     //
     usize npargs = PyVectorcall_NARGS(nargsf);
@@ -434,7 +428,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Encode)(PyObject *self,
 
     assert(obj);
 
-    ssrjson_py_types obj_type = ssrjson_type_check(obj);
+    EncodePyTypes obj_type = ssrjson_type_check(obj);
 
     switch (obj_type) {
         case T_List:
@@ -572,16 +566,16 @@ force_inline bool encode_to_bytes_argparse_with_kw(PyObject *const *args, usize 
     return true;
 }
 
-PyObject *SIMD_NAME_MODIFIER(ssrjson_EncodeToBytes)(PyObject *self,
-                                                    PyObject *const *args,
-                                                    Py_ssize_t nargsf,
-                                                    PyObject *kwnames) {
+PyObject *SIMD_NAME_MODIFIER(ssrjson_DumpsToBytes)(PyObject *self,
+                                                   PyObject *const *args,
+                                                   Py_ssize_t nargsf,
+                                                   PyObject *kwnames) {
     PyObject *ret;
     //
     usize npargs = PyVectorcall_NARGS(nargsf);
     //
     PyObject *obj, *indent;
-    bool is_write_cache = ssrjson_write_utf8_cache_value;
+    bool is_write_cache = _WriteUTF8CacheValue;
     if (!kwnames) {
         if (unlikely(npargs != 1)) {
             if (npargs > 1) {
@@ -614,7 +608,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_EncodeToBytes)(PyObject *self,
 
     assert(obj);
 
-    ssrjson_py_types obj_type = ssrjson_type_check(obj);
+    EncodePyTypes obj_type = ssrjson_type_check(obj);
 
     switch (obj_type) {
         case T_List:

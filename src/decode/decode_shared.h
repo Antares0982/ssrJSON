@@ -57,12 +57,6 @@ force_inline decode_obj_stack_ptr_t get_decode_obj_stack_buffer(void) {
 }
 #endif
 
-// typedef struct DecodeCtnStackInfo {
-//     DecodeCtnWithSize *ctn;
-//     DecodeCtnWithSize *ctn_start;
-//     DecodeCtnWithSize *ctn_end;
-// } DecodeCtnStackInfo;
-
 typedef union {
     struct {
         u32 escape_val;
@@ -80,25 +74,6 @@ typedef union {
 #define DECODE_LOOPSTATE_INVALID 3
 
 extern PyObject *JSONDecodeError;
-
-typedef enum ReadStrScanFlag {
-    StrContinue,
-    StrInvalid,
-    StrEnd,
-} ReadStrScanFlag;
-
-typedef struct ReadStrState {
-    ReadStrScanFlag scan_flag;
-    int max_char_type;
-    bool need_copy;
-    bool dont_check_max_char;
-    bool state_dirty;
-} ReadStrState;
-
-typedef struct SpecialCharReadResult {
-    u32 value;
-    ReadStrScanFlag flag;
-} SpecialCharReadResult;
 
 /*==============================================================================
  * Integer Constants
@@ -184,27 +159,12 @@ typedef struct SpecialCharReadResult {
  *============================================================================*/
 
 
-/**
- Scans an escaped character sequence as a UTF-16 code unit (branchless).
- e.g. "\\u005C" should pass "005C" as `cur`.
- 
- This requires the string has 4-byte zero padding.
- */
-// force_inline bool read_8_to_hex_u16(const u8 *cur, u16 *val);
-
 force_inline bool byte_match_2(const void *buf, const void *pat) {
     u16 u1, u2;
     memcpy(&u1, buf, 2);
     memcpy(&u2, pat, 2);
     return u1 == u2;
 }
-
-// force_inline bool byte_match_4(const void *buf, const void *pat) {
-//     u32 u1, u2;
-//     memcpy(&u1, buf, 4);
-//     memcpy(&u2, pat, 4);
-//     return u1 == u2;
-// }
 
 force_inline void byte_move_2(void *dst, const void *src) {
     u16 tmp;
@@ -224,16 +184,6 @@ force_inline void byte_move_8(void *dst, const void *src) {
     memcpy(dst, &tmp, 8);
 }
 
-// force_inline void byte_move_16(void *dst, const void *src) {
-// char *pdst = (char *)dst;
-// const char *psrc = (const char *)src;
-// u64 tmp1, tmp2;
-// memcpy(&tmp1, psrc, 8);
-// memcpy(&tmp2, psrc + 8, 8);
-// memcpy(pdst, &tmp1, 8);
-// memcpy(pdst + 8, &tmp2, 8);
-// }
-
 force_inline u32 byte_load_4(const void *src) {
     u32 u;
     memcpy(&u, src, 4);
@@ -249,11 +199,11 @@ force_inline bool decode_nan(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_end_addr, bool is_signed);
 
-extern const u8 char_table[256];
+extern const u8 char_type_table[256];
 
 /** Match a character with specified type. */
 force_inline bool char_is_type(u8 c, u8 type) {
-    return (char_table[c] & type) != 0;
+    return (char_type_table[c] & type) != 0;
 }
 
 /** Match a whitespace: ' ', '\\t', '\\n', '\\r'. */
@@ -282,28 +232,16 @@ force_inline bool char_is_ascii_stop(u8 c) {
                                 CHAR_TYPE_NON_ASCII));
 }
 
-force_inline u16 read_b2_unicode(u32 uni) {
-#if PY_BIG_ENDIAN
-    return ((uni & 0x1f000000) >> 18) | ((uni & 0x3f0000) >> 16);
-#else
+force_inline u16 to_b2_unicode(u32 uni) {
     return ((uni & 0x1f) << 6) | ((uni & 0x3f00) >> 8);
-#endif
 }
 
-force_inline u16 read_b3_unicode(u32 uni) {
-#if PY_BIG_ENDIAN
-    return ((uni & 0x0f000000) >> 12) | ((uni & 0x3f0000) >> 10) | ((uni & 0x3f00) >> 8);
-#else
+force_inline u16 to_b3_unicode(u32 uni) {
     return ((uni & 0x0f) << 12) | ((uni & 0x3f00) >> 2) | ((uni & 0x3f0000) >> 16);
-#endif
 }
 
-force_inline u32 read_b4_unicode(u32 uni) {
-#if PY_BIG_ENDIAN
-    return ((uni & 0x07000000) >> 6) | ((uni & 0x3f0000) >> 4) | ((uni & 0x3f00) >> 2) | ((uni & 0x3f));
-#else
+force_inline u32 to_b4_unicode(u32 uni) {
     return ((uni & 0x07) << 18) | ((uni & 0x3f00) << 4) | ((uni & 0x3f0000) >> 10) | ((uni & 0x3f000000) >> 24);
-#endif
 }
 
 force_inline bool init_decode_obj_stack_info(
@@ -358,11 +296,11 @@ force_inline bool ctn_grow_check(DecodeCtnWithSize **ctn_addr, DecodeCtnWithSize
 
 force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int type_flag, bool is_key);
 
-force_inline bool push_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
-                           decode_obj_stack_ptr_t *decode_obj_stack_addr,
-                           decode_obj_stack_ptr_t *decode_obj_stack_end_addr, pyobj_ptr_t obj);
+force_inline bool _decoder_push_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
+                                    decode_obj_stack_ptr_t *decode_obj_stack_addr,
+                                    decode_obj_stack_ptr_t *decode_obj_stack_end_addr, pyobj_ptr_t obj);
 
-force_inline PyObject *read_bytes(const u8 **ptr, u8 *write_buffer, bool is_key);
+force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, bool is_key);
 
 force_inline bool decode_true(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                               decode_obj_stack_ptr_t *decode_obj_stack_addr,
@@ -418,7 +356,7 @@ force_inline void Py_Immortal_IncRef(PyObject *op) {
 #if PY_MINOR_VERSION >= 12
     // Portable saturated add, branching on the carry flag and set low bits
 #    if !defined(NDEBUG) && PY_MINOR_VERSION < 14
-    assert(0 > (int32_t)op->ob_refcnt_split[PY_BIG_ENDIAN]);
+    assert(0 > (int32_t)op->ob_refcnt_split[0]);
 #    endif // NDEBUG
 #else      // PY_MINOR_VERSION >= 12
     op->ob_refcnt++;
@@ -431,11 +369,6 @@ force_inline void Py_Immortal_IncRef(PyObject *op) {
  * These data are used by the floating-point number reader and writer.
  *============================================================================*/
 
-/** Normalized significant 128 bits of pow10, no rounded up (size: 10.4KB).
-    This lookup table is used by both the double number reader and writer.
-    (generate with misc/make_tables.c) */
-extern const u64 pow10_sig_table[];
-
 /**
  Convert normalized u64 (highest bit is 1) to f64.
  */
@@ -447,17 +380,6 @@ force_inline f64 normalized_u64_to_f64(u64 val) {
  * Read state utilities
  *============================================================================*/
 
-// force_inline void update_max_char_type(ReadStrState *read_state, int max_char_type) {
-//     assert(read_state->max_char_type < max_char_type);
-//     read_state->max_char_type = max_char_type;
-//     read_state->state_dirty = true;
-// }
-
-// force_inline void init_read_state(ReadStrState *state) {
-//     // all initialized as 0 or false
-//     memset(state, 0, sizeof(ReadStrState));
-// }
-
 /*==============================================================================
  * xxhash and key cache utilities
  *============================================================================*/
@@ -465,7 +387,7 @@ force_inline f64 normalized_u64_to_f64(u64 val) {
 
 #define REHASHER(_x) (((size_t)(_x)) % (SSRJSON_KEY_CACHE_SIZE))
 typedef XXH64_hash_t decode_keyhash_t;
-extern decode_cache_t DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
+extern decode_cache_t _DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
 
 force_inline u64 make_key_hint(usize real_len, int kind) {
     u64 ret = SSRJSON_CAST(u64, real_len) | (SSRJSON_CAST(u64, kind) << 32);
@@ -476,19 +398,19 @@ force_inline void add_key_cache(decode_keyhash_t hash, PyObject *obj, usize real
     assert(PyUnicode_GET_LENGTH(obj) * PyUnicode_KIND(obj) <= 64);
     size_t index = REHASHER(hash);
     // SSRJSON_TRACE_HASH(index);
-    decode_cache_t old = DecodeKeyCache[index];
+    decode_cache_t old = _DecodeKeyCache[index];
     if (old.key) {
         // SSRJSON_TRACE_HASH_CONFLICT(hash);
         Py_DECREF(old.key);
     }
     Py_INCREF(obj);
-    DecodeKeyCache[index].key = obj;
-    DecodeKeyCache[index].key_hint = make_key_hint(real_len, kind);
+    _DecodeKeyCache[index].key = obj;
+    _DecodeKeyCache[index].key_hint = make_key_hint(real_len, kind);
 }
 
 force_inline PyObject *get_key_cache(const void *unicode_str, decode_keyhash_t hash, usize real_len, int kind) {
     assert(real_len <= 64);
-    decode_cache_t cache = DecodeKeyCache[REHASHER(hash)];
+    decode_cache_t cache = _DecodeKeyCache[REHASHER(hash)];
     if (!cache.key) return NULL;
     u64 key_hint = make_key_hint(real_len, kind);
     Py_ssize_t cache_offset = kind ? sizeof(PyCompactUnicodeObject) : sizeof(PyASCIIObject);

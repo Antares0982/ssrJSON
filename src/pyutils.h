@@ -66,7 +66,7 @@ force_inline void init_pyunicode(void *head, Py_ssize_t size, int kind) {
     ascii->state.statically_allocated = 0;
 #else
     bool is_sharing = false;
-    // ready is dropped in 3.12
+    // `ready` is dropped in 3.12
     ascii->state.ready = 1;
 #endif
 

@@ -47,7 +47,7 @@
         } while (char_is_space(*_u8ptr)); \
     } while (0)
 
-internal_simd_noinline PyObject *read_bytes_not_key(const u8 **ptr, u8 *write_buffer);
+internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_buffer);
 
 internal_simd_noinline PyObject *READ_ROOT_IMPL(const u8 *dat, usize len) {
     // container stack info
@@ -109,16 +109,16 @@ arr_val_begin:
         goto arr_begin;
     }
     if (char_is_number(*cur)) {
-        PyObject *number_obj = read_number_u8(&cur, end);
-        if (likely(number_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        PyObject *number_obj = loads_number_u8(&cur, end);
+        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
         goto fail_number;
     }
     if (*cur == '"') {
-        PyObject *str_obj = read_bytes_not_key(&cur, string_buffer_head);
-        if (likely(str_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
+        PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head);
+        if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
@@ -167,8 +167,8 @@ arr_val_begin:
         goto arr_val_begin;
     }
     if ((*cur == 'i' || *cur == 'I' || *cur == 'N')) {
-        PyObject *number_obj = read_inf_or_nan_u8(false, &cur, end);
-        if (likely(number_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        PyObject *number_obj = loads_inf_or_nan_u8(false, &cur, end);
+        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
@@ -236,8 +236,8 @@ obj_key_begin:
 #endif
 
     if (likely(*cur == '"')) {
-        PyObject *str_obj = read_bytes(&cur, string_buffer_head, true);
-        if (likely(str_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
+        PyObject *str_obj = loads_bytes(&cur, string_buffer_head, true);
+        if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             goto obj_key_end;
         }
         goto fail_string;
@@ -279,16 +279,16 @@ obj_key_end:
 
 obj_val_begin:
     if (*cur == '"') {
-        PyObject *str_obj = read_bytes_not_key(&cur, string_buffer_head);
-        if (likely(str_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
+        PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head);
+        if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
         goto fail_string;
     }
     if (char_is_number(*cur)) {
-        PyObject *number_obj = read_number_u8(&cur, end);
-        if (likely(number_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        PyObject *number_obj = loads_number_u8(&cur, end);
+        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
@@ -343,8 +343,8 @@ obj_val_begin:
         goto obj_val_begin;
     }
     if ((*cur == 'i' || *cur == 'I' || *cur == 'N')) {
-        PyObject *number_obj = read_inf_or_nan_u8(false, &cur, end);
-        if (likely(number_obj && push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        PyObject *number_obj = loads_inf_or_nan_u8(false, &cur, end);
+        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }

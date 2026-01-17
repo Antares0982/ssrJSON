@@ -152,9 +152,9 @@ bool _decode_obj_stack_resize(
         decode_obj_stack_ptr_t *decode_obj_stack_addr,
         decode_obj_stack_ptr_t *decode_obj_stack_end_addr);
 
-force_inline bool push_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
-                           decode_obj_stack_ptr_t *decode_obj_stack_addr,
-                           decode_obj_stack_ptr_t *decode_obj_stack_end_addr, pyobj_ptr_t obj) {
+force_inline bool _decoder_push_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
+                                    decode_obj_stack_ptr_t *decode_obj_stack_addr,
+                                    decode_obj_stack_ptr_t *decode_obj_stack_end_addr, pyobj_ptr_t obj) {
     static_assert(((Py_ssize_t)SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1) > 0, "(SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1) > 0");
     if (unlikely((*decode_obj_writer_addr) >= (*decode_obj_stack_end_addr))) {
         bool c = _decode_obj_stack_resize(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr);
@@ -178,7 +178,7 @@ force_inline bool decode_arr(decode_obj_stack_ptr_t *decode_obj_writer_addr,
         PyList_SET_ITEM(list, j, val); // this never fails
     }
     (*decode_obj_writer_addr) -= arr_len;
-    return push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, list);
+    return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, list);
 }
 
 force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
@@ -212,7 +212,7 @@ force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
         }
     }
     (*decode_obj_writer_addr) -= dict_len * 2;
-    return push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, dict);
+    return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, dict);
 }
 
 force_inline bool decode_null(decode_obj_stack_ptr_t *decode_obj_writer_addr,
@@ -220,7 +220,7 @@ force_inline bool decode_null(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                               decode_obj_stack_ptr_t *decode_obj_stack_end_addr) {
     SSRJSON_TRACE_OP(SSRJSON_OP_CONSTANTS);
     Py_Immortal_IncRef(Py_None);
-    return push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, Py_None);
+    return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, Py_None);
 }
 
 force_inline bool decode_false(decode_obj_stack_ptr_t *decode_obj_writer_addr,
@@ -228,7 +228,7 @@ force_inline bool decode_false(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                                decode_obj_stack_ptr_t *decode_obj_stack_end_addr) {
     SSRJSON_TRACE_OP(SSRJSON_OP_CONSTANTS);
     Py_Immortal_IncRef(Py_False);
-    return push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, Py_False);
+    return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, Py_False);
 }
 
 force_inline bool decode_true(decode_obj_stack_ptr_t *decode_obj_writer_addr,
@@ -236,7 +236,7 @@ force_inline bool decode_true(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                               decode_obj_stack_ptr_t *decode_obj_stack_end_addr) {
     SSRJSON_TRACE_OP(SSRJSON_OP_CONSTANTS);
     Py_Immortal_IncRef(Py_True);
-    return push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, Py_True);
+    return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, Py_True);
 }
 
 force_inline bool decode_nan(decode_obj_stack_ptr_t *decode_obj_writer_addr,
@@ -245,18 +245,15 @@ force_inline bool decode_nan(decode_obj_stack_ptr_t *decode_obj_writer_addr,
     SSRJSON_TRACE_OP(SSRJSON_OP_NAN_INF);
     PyObject *o = PyFloat_FromDouble(is_signed ? -fabs(Py_NAN) : fabs(Py_NAN));
     RETURN_ON_UNLIKELY_ERR(!o);
-    return push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, o);
+    return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, o);
 }
-
-extern int ssrjson_invalid_arg_checked;
-extern int ssrjson_nonstrict_argparse;
 
 force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **s_out) {
     assert(kwnames);
     PyObject *s;
     //
-    const bool nonstrict_argparse = ssrjson_nonstrict_argparse;
-    bool invalid_arg_checked = ssrjson_invalid_arg_checked;
+    const bool nonstrict_argparse = _NonstrictArgparse;
+    bool invalid_arg_checked = _InvalidArgChecked;
     //
     usize nkwargs = PyTuple_GET_SIZE(kwnames);
     usize nargs = npargs + nkwargs;
@@ -297,7 +294,7 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
         }
         if (!invalid_arg_checked) {
             fprintf(stderr, "Warning: some options are not supported in this version of ssrjson\n");
-            ssrjson_invalid_arg_checked = 1;
+            _InvalidArgChecked = 1;
             invalid_arg_checked = true;
         }
     }
