@@ -798,7 +798,7 @@ internal_simd_noinline PyObject *loads_root_single_bytes(const u8 *dat, usize le
             if (unlikely(!write_buffer)) goto fail_alloc;
             dynamic = true;
         } else {
-            write_buffer = _DecodeTempBuffer;
+            write_buffer = _CurrentDecoderCtx->_DecodeTempBuffer;
         }
         ret = loads_bytes_not_key(&cur, write_buffer);
         if (dynamic) free(write_buffer);
@@ -875,8 +875,6 @@ fail_cleanup:
 #undef return_err
 }
 
-extern ssrjson_align(64) u8 _DecodeBytesSrcBuffer[SSRJSON_STRING_BUFFER_SIZE];
-
 force_inline bool _skip_starting_space(char **buffer_addr, Py_ssize_t *len_addr) {
     /* skip empty contents before json document */
     if (unlikely(char_is_space_or_comment(**buffer_addr))) {
@@ -909,7 +907,7 @@ force_inline void _alloc_aligned_bytes_buffer(Py_ssize_t len, bool *dynamic, u8 
         }
         *dynamic = true;
     } else {
-        *buffer = _DecodeBytesSrcBuffer;
+        *buffer = _CurrentDecoderCtx->_DecodeBytesSrcBuffer;
         *dynamic = false;
     }
 }
@@ -931,7 +929,7 @@ force_inline bool should_loads_bytes_pretty(const u8 *buffer, Py_ssize_t len) {
     return false;
 }
 
-internal_simd_noinline PyObject *ssrjson_decode_bytes(char *_buffer, Py_ssize_t len) {
+internal_simd_noinline PyObject *ssrjson_decode_bytes(char *_buffer, Py_ssize_t len, PyObject *object_hook) {
     if (unlikely(!len)) {
         PyErr_Format(JSONDecodeError, "input data is empty");
         return NULL;
@@ -966,9 +964,9 @@ internal_simd_noinline PyObject *ssrjson_decode_bytes(char *_buffer, Py_ssize_t 
     /* read json document */
     if (likely(char_is_container(*buffer))) {
         if (should_loads_bytes_pretty(buffer, len)) {
-            ret = loads_bytes_root_pretty(buffer, len);
+            ret = loads_bytes_root_pretty(buffer, len, object_hook);
         } else {
-            ret = loads_bytes_root_minify(buffer, len);
+            ret = loads_bytes_root_minify(buffer, len, object_hook);
         }
     } else {
         ret = loads_root_single_bytes(buffer, len);

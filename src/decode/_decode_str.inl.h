@@ -57,7 +57,7 @@ force_inline bool check_and_reserve_str_buffer(Py_ssize_t len, _src_t **buffer_h
         *buffer_head_addr = (_src_t *)(new_buffer + TAIL_PADDING);
         *need_dealloc = true;
     } else {
-        *buffer_head_addr = (_src_t *)(_DecodeTempBuffer + TAIL_PADDING);
+        *buffer_head_addr = (_src_t *)(_CurrentDecoderCtx->_DecodeTempBuffer + TAIL_PADDING);
         *need_dealloc = false;
     }
     return true;
@@ -192,7 +192,7 @@ force_inline bool should_loads_pretty(const _src_t *buffer, const _src_t *end) {
     return false;
 }
 
-internal_simd_noinline PyObject *decode(PyUnicodeObject *in_unicode) {
+internal_simd_noinline PyObject *decode(PyUnicodeObject *in_unicode, PyObject *object_hook) {
     // some checks
     assert(in_unicode);
     PyASCIIObject *ascii_head = SSRJSON_CAST(PyASCIIObject *, in_unicode);
@@ -227,9 +227,9 @@ internal_simd_noinline PyObject *decode(PyUnicodeObject *in_unicode) {
     /* read json document */
     if (likely(*buffer <= U8MAX && char_is_container(*buffer))) {
         if (should_loads_pretty(buffer, end)) {
-            ret = loads_root_pretty(buffer, end - buffer);
+            ret = loads_root_pretty(buffer, end - buffer, object_hook);
         } else {
-            ret = loads_root_minify(buffer, end - buffer);
+            ret = loads_root_minify(buffer, end - buffer, object_hook);
         }
     } else {
         ret = loads_root_single(buffer, end - buffer);

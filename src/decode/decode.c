@@ -183,7 +183,7 @@ force_inline bool decode_arr(decode_obj_stack_ptr_t *decode_obj_writer_addr,
 
 force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_addr,
-                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize dict_len) {
+                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize dict_len, PyObject *object_hook) {
     PyObject *dict = _PyDict_NewPresized((Py_ssize_t)dict_len);
     RETURN_ON_UNLIKELY_ERR(!dict);
     decode_obj_stack_ptr_t dict_val_start = (*decode_obj_writer_addr) - dict_len * 2;
@@ -212,6 +212,20 @@ force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
         }
     }
     (*decode_obj_writer_addr) -= dict_len * 2;
+    if (unlikely(object_hook)) {
+        PyObject *hooked_obj = PyObject_CallOneArg(object_hook, dict);
+        Py_DECREF(dict);
+
+        if (unlikely(!hooked_obj)) {
+            return false;
+        }
+        if (unlikely(!hooked_obj)) {
+            PyErr_Format(PyExc_TypeError, "object_hook must return a dict not a %s", Py_TYPE(hooked_obj)->tp_name);
+            Py_DECREF(hooked_obj);
+            return false;
+        }
+        return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, hooked_obj);
+    }
     return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, dict);
 }
 
@@ -248,9 +262,10 @@ force_inline bool decode_nan(decode_obj_stack_ptr_t *decode_obj_writer_addr,
     return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, o);
 }
 
-force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **s_out) {
+force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **s_out, PyObject **object_hook_out) {
     assert(kwnames);
     PyObject *s;
+    PyObject *object_hook;
     //
     const bool nonstrict_argparse = _NonstrictArgparse;
     bool invalid_arg_checked = _InvalidArgChecked;
@@ -260,10 +275,13 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
     assert(nkwargs <= nargs);
     //
     s = npargs ? args[0] : NULL;
+    object_hook = NULL;
     //
     const char *func_name = "loads";
     const char *_s_str = "s";
     const usize _s_str_len = strlen(_s_str);
+    const char *_oh_str = "object_hook";
+    const usize _oh_str_len = strlen(_oh_str);
     //
     if (unlikely(npargs > 1)) {
         PyErr_Format(PyExc_TypeError, "loads() takes 1 positional argument but %d were given", (int)npargs);
@@ -277,7 +295,10 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
         usize char_count;
         parse_ascii(kwname, &is_ascii, &char_data, &char_count);
         if (likely(is_ascii)) {
-            if (char_count == _s_str_len && memcmp(char_data, _s_str, _s_str_len) == 0) {
+            if (char_count == _oh_str_len && memcmp(char_data, _oh_str, _oh_str_len) == 0) {
+                object_hook = args[npargs + i];
+                continue;
+            } else if (char_count == _s_str_len && memcmp(char_data, _s_str, _s_str_len) == 0) {
                 if (unlikely(s)) {
                     // repeated arg
                     PyErr_Format(PyExc_TypeError, "%s() got multiple values for argument '%s'", func_name, _s_str);
@@ -304,12 +325,14 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
         return false;
     }
     *s_out = s;
+    *object_hook_out = (object_hook && !Py_IsNone(object_hook)) ? object_hook : NULL;
     return true;
 }
 
 PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames) {
     PyObject *ret;
     PyObject *s;
+    PyObject *object_hook = NULL;
     //
     usize npargs = PyVectorcall_NARGS(nargsf);
     //
@@ -324,9 +347,37 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
             return NULL;
         }
         s = args[0];
-    } else if (!decode_argparse_with_kw(args, npargs, kwnames, &s)) {
+    } else if (!decode_argparse_with_kw(args, npargs, kwnames, &s, &object_hook)) {
         return NULL;
     }
+    //
+    if (unlikely(object_hook && !PyCallable_Check(object_hook))) {
+        PyErr_SetString(PyExc_TypeError, "object_hook must be callable");
+        return NULL;
+    }
+    //
+    if (unlikely(_DecoderCtxLevel++)) {
+        if (unlikely(_DecoderCtxLevel >= SSRJSON_OBJECT_HOOK_MAX_RECURSION)) {
+            PyErr_SetString(PyExc_RecursionError, "Maximum recursion depth exceeded in decoder");
+            _DecoderCtxLevel--;
+            return NULL;
+        }
+        if (_CurrentDecoderCtx->next) {
+            _CurrentDecoderCtx = _CurrentDecoderCtx->next;
+        } else {
+            _DecoderBuffers *tmp = malloc(sizeof(_DecoderBuffers));
+            if (unlikely(!tmp)) {
+                PyErr_NoMemory();
+                _DecoderCtxLevel--;
+                return NULL;
+            }
+            tmp->next = NULL;
+            tmp->last = _CurrentDecoderCtx;
+            _CurrentDecoderCtx->next = tmp;
+            _CurrentDecoderCtx = tmp;
+        }
+    }
+
     //
     if (PyUnicode_Check(s)) {
         PyASCIIObject *ascii_head = SSRJSON_CAST(PyASCIIObject *, s);
@@ -334,19 +385,19 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
         int pyunicode_kind = ascii_head->state.ascii ? 0 : ascii_head->state.kind;
         switch (pyunicode_kind) {
             case SSRJSON_STRING_TYPE_ASCII: {
-                ret = decode_ascii(in_unicode);
+                ret = decode_ascii(in_unicode, object_hook);
                 break;
             }
             case SSRJSON_STRING_TYPE_LATIN1: {
-                ret = decode_ucs1(in_unicode);
+                ret = decode_ucs1(in_unicode, object_hook);
                 break;
             }
             case SSRJSON_STRING_TYPE_UCS2: {
-                ret = decode_ucs2(in_unicode);
+                ret = decode_ucs2(in_unicode, object_hook);
                 break;
             }
             case SSRJSON_STRING_TYPE_UCS4: {
-                ret = decode_ucs4(in_unicode);
+                ret = decode_ucs4(in_unicode, object_hook);
                 break;
             }
             default: {
@@ -364,22 +415,28 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
             ret = NULL;
             goto done;
         }
-        ret = ssrjson_decode_bytes(buffer, length);
+        ret = ssrjson_decode_bytes(buffer, length, object_hook);
         goto done;
     }
     //
     if (PyByteArray_Check(s)) {
         char *buffer = PyByteArray_AS_STRING(s);
         Py_ssize_t length = PyByteArray_GET_SIZE(s);
-        ret = ssrjson_decode_bytes(buffer, length);
+        ret = ssrjson_decode_bytes(buffer, length, object_hook);
         goto done;
     }
 
 fail:;
     ret = NULL;
-    PyErr_SetString(PyExc_TypeError, "Invalid argument");
+    PyErr_Format(PyExc_TypeError, "the JSON object must be str, bytes or bytearray, not %s", Py_TYPE(s)->tp_name);
 
 done:;
+    if (unlikely(_CurrentDecoderCtx->next)) {
+        free(_CurrentDecoderCtx->next);
+        _CurrentDecoderCtx->next = NULL;
+    }
+    if (unlikely(--_DecoderCtxLevel)) _CurrentDecoderCtx = _CurrentDecoderCtx->last;
+
     if (unlikely(!ret && !PyErr_Occurred())) {
         PyErr_SetString(JSONDecodeError, "Failed to decode JSON: unknown error");
     }

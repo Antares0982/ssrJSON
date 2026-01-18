@@ -43,17 +43,24 @@ typedef struct DecodeCtnWithSize {
 
 
 #if !defined(Py_GIL_DISABLED)
-extern DecodeCtnWithSize _DecodeCtnBuffer[SSRJSON_DECODE_MAX_RECURSION];
-extern u8 _DecodeTempBuffer[SSRJSON_STRING_BUFFER_SIZE];
+typedef struct _DecoderBuffers {
+    ssrjson_align(64) u8 _DecodeTempBuffer[SSRJSON_STRING_BUFFER_SIZE];
+    ssrjson_align(64) u8 _DecodeBytesSrcBuffer[SSRJSON_STRING_BUFFER_SIZE];
+    DecodeCtnWithSize _DecodeCtnBuffer[SSRJSON_DECODE_MAX_RECURSION];
+    PyObject *_DecodeObjBuffer[SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE];
+    struct _DecoderBuffers *next;
+    struct _DecoderBuffers *last;
+} _DecoderBuffers;
+
+extern uint32_t _DecoderCtxLevel;
+extern _DecoderBuffers *_CurrentDecoderCtx;
 
 force_inline DecodeCtnWithSize *get_decode_ctn_stack_buffer(void) {
-    return _DecodeCtnBuffer;
+    return _CurrentDecoderCtx->_DecodeCtnBuffer;
 }
 
-extern PyObject *_DecodeObjBuffer[SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE];
-
 force_inline decode_obj_stack_ptr_t get_decode_obj_stack_buffer(void) {
-    return _DecodeObjBuffer;
+    return _CurrentDecoderCtx->_DecodeObjBuffer;
 }
 #endif
 
@@ -320,7 +327,7 @@ force_inline bool decode_arr(decode_obj_stack_ptr_t *decode_obj_writer_addr,
 
 force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_addr,
-                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize dict_len);
+                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize dict_len, PyObject *object_hook);
 
 
 #if PY_MINOR_VERSION >= 12

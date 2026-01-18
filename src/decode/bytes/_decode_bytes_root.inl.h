@@ -49,7 +49,7 @@
 
 internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_buffer);
 
-internal_simd_noinline PyObject *READ_ROOT_IMPL(const u8 *dat, usize len) {
+internal_simd_noinline PyObject *READ_ROOT_IMPL(const u8 *dat, usize len, PyObject *object_hook) {
     // container stack info
     DecodeCtnWithSize *ctn = NULL;
     DecodeCtnWithSize *ctn_start = NULL;
@@ -60,7 +60,7 @@ internal_simd_noinline PyObject *READ_ROOT_IMPL(const u8 *dat, usize len) {
     decode_obj_stack_ptr_t decode_obj_stack_end = NULL;
     // init
     if (!init_decode_ctn_stack_info(&ctn_start, &ctn, &ctn_end) || !init_decode_obj_stack_info(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end)) goto failed_cleanup;
-    u8 *string_buffer_head = (u8 *)_DecodeTempBuffer;
+    u8 *string_buffer_head = (u8 *)_CurrentDecoderCtx->_DecodeTempBuffer;
 
     //
     if (unlikely(len > ((size_t)(-1)) / 4)) {
@@ -384,7 +384,7 @@ obj_val_end:
 
 obj_end:
     assert(!decode_ctn_is_arr(ctn));
-    if (unlikely(!decode_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, get_decode_ctn_len(ctn)))) goto failed_cleanup;
+    if (unlikely(!decode_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, get_decode_ctn_len(ctn), object_hook))) goto failed_cleanup;
     /* pop container */
     /* point to the next value */
     if (unlikely(ctn-- == ctn_start)) {
@@ -416,7 +416,7 @@ success:;
     assert(obj && !PyErr_Occurred());
     assert(obj->ob_refcnt == 1);
     // free string buffer
-    if (unlikely(string_buffer_head != _DecodeTempBuffer)) {
+    if (unlikely(string_buffer_head != _CurrentDecoderCtx->_DecodeTempBuffer)) {
         free(string_buffer_head);
     }
     // free obj stack buffer if allocated dynamically
@@ -482,7 +482,7 @@ failed_cleanup:
         Py_XDECREF(*obj_ptr);
     }
     // free string buffer
-    if (unlikely(string_buffer_head != _DecodeTempBuffer)) {
+    if (unlikely(string_buffer_head != _CurrentDecoderCtx->_DecodeTempBuffer)) {
         free(string_buffer_head);
     }
     // free obj stack buffer if allocated dynamically

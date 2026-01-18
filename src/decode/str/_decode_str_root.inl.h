@@ -56,7 +56,7 @@ force_inline bool check_and_reserve_str_buffer(Py_ssize_t len, _src_t **buffer_h
     } while (0)
 
 /** Read JSON document (accept all style, but optimized for pretty). */
-internal_simd_noinline PyObject *READ_ROOT_IMPL(const _src_t *dat, Py_ssize_t len) {
+internal_simd_noinline PyObject *READ_ROOT_IMPL(const _src_t *dat, Py_ssize_t len, PyObject *object_hook) {
     static _src_t _CommaReturn[2] = {',', '\n'};
     static _src_t _CommaSpace[2] = {',', ' '};
     static _src_t _ColonSpace[2] = {':', ' '};
@@ -413,7 +413,7 @@ obj_val_end:;
 
 obj_end:
     assert(!decode_ctn_is_arr(ctn));
-    if (unlikely(!decode_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, get_decode_ctn_len(ctn)))) goto failed_cleanup;
+    if (unlikely(!decode_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, get_decode_ctn_len(ctn), object_hook))) goto failed_cleanup;
     /* pop container */
     /* point to the next value */
     if (unlikely(ctn-- == ctn_start)) {

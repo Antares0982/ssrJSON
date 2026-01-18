@@ -88,21 +88,6 @@
 #    define SSRJSON_ENCODE_MAX_RECURSION (1024)
 #endif
 
-/* Whether implementation of encoding ASCII/UCS1 string to bytes is inlined. */
-#ifndef SSRJSON_ENCODE_UCS1_TO_BYTES_IMPL_INLINE
-#    define SSRJSON_ENCODE_UCS1_TO_BYTES_IMPL_INLINE 0
-#endif
-
-/* Whether implementation of encoding UCS2 string to bytes is inlined. */
-#ifndef SSRJSON_ENCODE_UCS2_TO_BYTES_IMPL_INLINE
-#    define SSRJSON_ENCODE_UCS2_TO_BYTES_IMPL_INLINE 0
-#endif
-
-/* Whether implementation of encoding UCS4 string to bytes is inlined. */
-#ifndef SSRJSON_ENCODE_UCS4_TO_BYTES_IMPL_INLINE
-#    define SSRJSON_ENCODE_UCS4_TO_BYTES_IMPL_INLINE 0
-#endif
-
 /* 
  * Whether to write UTF-8 cache when calling dumps_to_bytes().
  * This behavior can also be controlled by the `is_write_cache` argument,
@@ -128,6 +113,10 @@
  */
 #ifndef SSRJSON_SHOULD_WARN_API_USAGE
 #    define SSRJSON_SHOULD_WARN_API_USAGE 1
+#endif
+
+#ifndef SSRJSON_OBJECT_HOOK_MAX_RECURSION
+#    define SSRJSON_OBJECT_HOOK_MAX_RECURSION 32
 #endif
 
 /** Type definition for primitive types. */
