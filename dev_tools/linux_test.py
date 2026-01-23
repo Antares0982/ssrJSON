@@ -113,7 +113,7 @@ def test(build_dir: str, asan: bool):
     if asan:
         minor_version = get_minor_version(python_exe)
         new_env["LD_PRELOAD"] = find_libasan_ldd(build_dir)
-        if minor_version < 13:
+        if minor_version <= 13:
             # version below python3.13 has memory leak issues internally
             new_env["ASAN_OPTIONS"] = "detect_leaks=0"
     cmd = [find_exe(build_dir), "-m", "pytest", "--random-order", "python-test"]

@@ -192,9 +192,9 @@ ValueError: integer indent must be 2 or 4
 
 ### Other Arguments Supported by Python's json
 
-Arguments like `ensure_ascii`, `parse_float` provided by `json` module can be recognized but *ignored by design*. To treat passing these arguments as an error, call `ssrjson.strict_argparse(True)` once and it will take effect globally.
+`object_hook` can be used in `loads`, and works the same as `json.loads`.
 
-The functionality of `object_hook` in `json.loads` will be supported in future.
+Arguments like `ensure_ascii`, `parse_float` provided by `json` module can be recognized but *ignored by design*. To treat passing these arguments as an error, call `ssrjson.strict_argparse(True)` once and it will take effect globally.
 
 ### Inspect Module Features and Settings
 
