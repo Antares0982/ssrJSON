@@ -9,7 +9,6 @@ SSRJSON_FILE = "ssrjson.so"
 
 
 def find_python_cmake_env():
-    # only intended for python3.15
     from sysconfig import get_config_h_filename, get_config_var
 
     include_dir = os.path.dirname(get_config_h_filename())
@@ -37,45 +36,18 @@ def build(build_dir: str, build_type: str, asan: bool) -> None:
         build_dir,
         "-DCMAKE_BUILD_TYPE=" + build_type,
     ]
-    if sys.version_info >= (3, 15):
-        # currently CMake cannot find Python3.15 properly
-        # and we assume that when using Python3.15 to run this script,
-        # the user wants to build ssrJSON against Python3.15
-        include_dir, library_file = find_python_cmake_env()
-        new_env["Python3_INCLUDE_DIR"] = include_dir
-        new_env["Python3_LIBRARY"] = library_file
-        configure_cmd += ["-DSEARCH_PYTHON3_USE_ENV=ON"]
+
+    include_dir, library_file = find_python_cmake_env()
+    new_env["Python3_INCLUDE_DIR"] = include_dir
+    new_env["Python3_LIBRARY"] = library_file
+    new_env["Python3_ROOT_DIR"] = library_file
+    configure_cmd += ["-DSEARCH_PYTHON3_USE_ENV=ON"]
 
     if asan:
         configure_cmd += ["-DASAN_ENABLED=ON"]
     subprocess.run(configure_cmd, check=True, env=new_env)
     build_cmd = ["cmake", "--build", build_dir, "-j"]
     subprocess.run(build_cmd, check=True)
-
-
-def find_exe(build_dir: str) -> str:
-    info_file = os.path.join(build_dir, "info.json")
-    with open(info_file, "rb") as f:
-        info: dict[str, str] = json.load(f)
-    python3_root = info.get("Python3_ROOT_DIR")
-    if not python3_root:
-        python3_libraries = info.get("Python3_LIBRARIES")
-        if not python3_libraries:
-            warnings.warn(
-                f"Neither Python3_ROOT_DIR nor Python3_LIBRARIES set in info.json, fallback to sys.executable={sys.executable}"
-            )
-            return sys.executable
-        python3_root = os.path.dirname(os.path.dirname(python3_libraries))
-
-    exe_path = os.path.join(python3_root, "bin", "python")
-    if not os.path.exists(exe_path):
-        exe_path = os.path.join(python3_root, "bin", "python3")
-        if not os.path.exists(exe_path):
-            warnings.warn(
-                f"python not found in Python3_ROOT_DIR={python3_root}, fallback to sys.executable={sys.executable}"
-            )
-            return sys.executable
-    return exe_path
 
 
 def find_libasan_ldd(build_dir: str) -> str:
@@ -102,9 +74,26 @@ def asan_check_ssrjson_import_leak(python_exe: str, new_env: dict) -> None:
     subprocess.run(cmd, check=True, env=new_env)
 
 
+def get_minor_version(python_exe: str) -> int:
+    minor_version_str = (
+        subprocess.run(
+            [python_exe, "--version"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+        .stdout.strip()
+        .removeprefix("Python ")
+        .split(".")[1]
+    )
+    return int(minor_version_str)
+
+
 def asan_check_cpython_leak(python_exe: str, new_env: dict) -> bool:
     # dry run pytest collect to check if cpython has leak issues
     # run asan_check_ssrjson_import_leak first to avoid false positive from ssrJSON
+
     cmd = [python_exe, "-m", "pytest", "--collect-only", "python-test"]
     result = subprocess.run(
         cmd, check=False, env=new_env, capture_output=True, text=True
@@ -118,17 +107,21 @@ def asan_check_cpython_leak(python_exe: str, new_env: dict) -> bool:
 def test(build_dir: str, asan: bool):
     new_env = os.environ.copy()
     new_env["PYTHONPATH"] = os.path.join(os.curdir, build_dir)
-    python_exe = find_exe(build_dir)
+    python_exe = sys.executable
 
     if asan:
         new_env["LD_PRELOAD"] = find_libasan_ldd(build_dir)
-        asan_check_ssrjson_import_leak(python_exe, new_env)
-        if asan_check_cpython_leak(python_exe, new_env):
+        minor_ver = get_minor_version(python_exe)
+        is_below_314 = minor_ver < 14
+        # known leak issues in python < 3.14
+        if not is_below_314:
+            asan_check_ssrjson_import_leak(python_exe, new_env)
+        if is_below_314 or asan_check_cpython_leak(python_exe, new_env):
             new_env["ASAN_OPTIONS"] = "detect_leaks=0"
             warnings.warn(
                 "Disable ASAN leak detection due to CPython memory leak issues"
             )
-    cmd = [find_exe(build_dir), "-m", "pytest", "--random-order", "python-test"]
+    cmd = [python_exe, "-m", "pytest", "--random-order", "python-test"]
     subprocess.run(cmd, check=True, env=new_env)
 
 
