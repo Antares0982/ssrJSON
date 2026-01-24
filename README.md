@@ -4,7 +4,7 @@
 
 [![PyPI - Version](https://img.shields.io/pypi/v/ssrjson)](https://pypi.org/project/ssrjson/) [![PyPI - Wheel](https://img.shields.io/pypi/wheel/ssrjson)](https://pypi.org/project/ssrjson/) [![Supported Python versions](https://img.shields.io/pypi/pyversions/ssrjson.svg?logo=python&logoColor=FFE873)](https://pypi.org/project/ssrjson) [![codecov](https://codecov.io/gh/Antares0982/ssrJSON/graph/badge.svg?token=A1T0XTPEXO)](https://codecov.io/gh/Antares0982/ssrJSON)
 
-A SIMD boosted high-performance and correct Python JSON parsing library that fully leverages modern processor capabilities.
+A SIMD boosted high-performance and correct Python JSON parsing library, faster than the fastest.
 
 </div>
 
