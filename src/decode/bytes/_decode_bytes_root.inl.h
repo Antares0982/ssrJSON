@@ -49,7 +49,7 @@
 
 internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_buffer);
 
-internal_simd_noinline PyObject *READ_ROOT_IMPL(const u8 *dat, usize len, PyObject *object_hook) {
+internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const u8 *dat, usize len, PyObject *object_hook) {
     // container stack info
     DecodeCtnWithSize *ctn = NULL;
     DecodeCtnWithSize *ctn_start = NULL;
@@ -59,8 +59,8 @@ internal_simd_noinline PyObject *READ_ROOT_IMPL(const u8 *dat, usize len, PyObje
     decode_obj_stack_ptr_t decode_obj_stack = NULL;
     decode_obj_stack_ptr_t decode_obj_stack_end = NULL;
     // init
-    if (!init_decode_ctn_stack_info(&ctn_start, &ctn, &ctn_end) || !init_decode_obj_stack_info(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end)) goto failed_cleanup;
-    u8 *string_buffer_head = (u8 *)_CurrentDecoderCtx->_DecodeTempBuffer;
+    if (!init_decode_ctn_stack_info(decoder_context, &ctn_start, &ctn, &ctn_end) || !init_decode_obj_stack_info(decoder_context, &decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end)) goto failed_cleanup;
+    u8 *string_buffer_head = (u8 *)decoder_context->decoder_ctx_temp_buffer;
 
     //
     if (unlikely(len > ((size_t)(-1)) / 4)) {
@@ -416,7 +416,7 @@ success:;
     assert(obj && !PyErr_Occurred());
     assert(obj->ob_refcnt == 1);
     // free string buffer
-    if (unlikely(string_buffer_head != _CurrentDecoderCtx->_DecodeTempBuffer)) {
+    if (unlikely(string_buffer_head != decoder_context->decoder_ctx_temp_buffer)) {
         free(string_buffer_head);
     }
     // free obj stack buffer if allocated dynamically
@@ -482,7 +482,7 @@ failed_cleanup:
         Py_XDECREF(*obj_ptr);
     }
     // free string buffer
-    if (unlikely(string_buffer_head != _CurrentDecoderCtx->_DecodeTempBuffer)) {
+    if (unlikely(string_buffer_head != decoder_context->decoder_ctx_temp_buffer)) {
         free(string_buffer_head);
     }
     // free obj stack buffer if allocated dynamically

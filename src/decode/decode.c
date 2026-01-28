@@ -333,6 +333,8 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
     PyObject *ret;
     PyObject *s;
     PyObject *object_hook = NULL;
+    DecoderBuffers *decoder_context;
+    DecoderTLSData *tls_data_ptr;
     //
     usize npargs = PyVectorcall_NARGS(nargsf);
     //
@@ -356,28 +358,57 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
         return NULL;
     }
     //
-    if (unlikely(_DecoderCtxLevel++)) {
-        if (unlikely(_DecoderCtxLevel >= SSRJSON_OBJECT_HOOK_MAX_RECURSION)) {
-            PyErr_SetString(PyExc_RecursionError, "Maximum recursion depth exceeded in decoder");
-            _DecoderCtxLevel--;
-            return NULL;
-        }
-        if (_CurrentDecoderCtx->next) {
-            _CurrentDecoderCtx = _CurrentDecoderCtx->next;
-        } else {
-            _DecoderBuffers *tmp = malloc(sizeof(_DecoderBuffers));
-            if (unlikely(!tmp)) {
+    if (likely(!object_hook)) {
+        decoder_context = &_DefaultDecoderCtx;
+    } else {
+        // need to update decoder_context and _CurrentTLSData, i.e. tls_data_ptr->cur_buffer
+        tls_data_ptr = tls_get_decoder_data();
+        if (likely(!tls_data_ptr->cur_buffer)) {
+            // this is the first ctx
+            DecoderBufferLinkedList *new_linked_list = SSRJSON_ALIGNED_ALLOC(64, sizeof(DecoderBufferLinkedList));
+            if (unlikely(!new_linked_list)) {
                 PyErr_NoMemory();
-                _DecoderCtxLevel--;
                 return NULL;
             }
-            tmp->next = NULL;
-            tmp->last = _CurrentDecoderCtx;
-            _CurrentDecoderCtx->next = tmp;
-            _CurrentDecoderCtx = tmp;
+            // do update
+            new_linked_list->level = 0;
+            new_linked_list->prev = NULL;
+            new_linked_list->next = NULL;
+            decoder_context = &new_linked_list->ctx;
+            tls_data_ptr->cur_buffer = new_linked_list;
+        } else {
+            DecoderBufferLinkedList *old_buffer = tls_data_ptr->cur_buffer;
+            assert(old_buffer);
+            if (old_buffer->next) {
+                // use next
+                assert(old_buffer->next->level == old_buffer->level + 1);
+                assert(old_buffer->next->prev == old_buffer);
+                // do update
+                decoder_context = &old_buffer->ctx;
+                tls_data_ptr->cur_buffer = old_buffer->next;
+            } else {
+                u64 newlevel = old_buffer->level + 1;
+                // check recursion depth
+                if (unlikely(newlevel >= SSRJSON_OBJECT_HOOK_MAX_RECURSION)) {
+                    PyErr_SetString(PyExc_RecursionError, "Maximum recursion depth exceeded in decoder");
+                    return NULL;
+                }
+                // create new
+                DecoderBufferLinkedList *new_linked_list = SSRJSON_ALIGNED_ALLOC(64, sizeof(DecoderBufferLinkedList));
+                if (unlikely(!new_linked_list)) {
+                    PyErr_NoMemory();
+                    return NULL;
+                }
+                // do update
+                new_linked_list->level = newlevel;
+                new_linked_list->prev = old_buffer;
+                new_linked_list->next = NULL;
+                old_buffer->next = new_linked_list;
+                decoder_context = &new_linked_list->ctx;
+                tls_data_ptr->cur_buffer = new_linked_list;
+            }
         }
     }
-
     //
     if (PyUnicode_Check(s)) {
         PyASCIIObject *ascii_head = SSRJSON_CAST(PyASCIIObject *, s);
@@ -385,19 +416,19 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
         int pyunicode_kind = ascii_head->state.ascii ? 0 : ascii_head->state.kind;
         switch (pyunicode_kind) {
             case SSRJSON_STRING_TYPE_ASCII: {
-                ret = decode_ascii(in_unicode, object_hook);
+                ret = decode_ascii(decoder_context, in_unicode, object_hook);
                 break;
             }
             case SSRJSON_STRING_TYPE_LATIN1: {
-                ret = decode_ucs1(in_unicode, object_hook);
+                ret = decode_ucs1(decoder_context, in_unicode, object_hook);
                 break;
             }
             case SSRJSON_STRING_TYPE_UCS2: {
-                ret = decode_ucs2(in_unicode, object_hook);
+                ret = decode_ucs2(decoder_context, in_unicode, object_hook);
                 break;
             }
             case SSRJSON_STRING_TYPE_UCS4: {
-                ret = decode_ucs4(in_unicode, object_hook);
+                ret = decode_ucs4(decoder_context, in_unicode, object_hook);
                 break;
             }
             default: {
@@ -415,14 +446,14 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
             ret = NULL;
             goto done;
         }
-        ret = ssrjson_decode_bytes(buffer, length, object_hook);
+        ret = ssrjson_decode_bytes(decoder_context, buffer, length, object_hook);
         goto done;
     }
     //
     if (PyByteArray_Check(s)) {
         char *buffer = PyByteArray_AS_STRING(s);
         Py_ssize_t length = PyByteArray_GET_SIZE(s);
-        ret = ssrjson_decode_bytes(buffer, length, object_hook);
+        ret = ssrjson_decode_bytes(decoder_context, buffer, length, object_hook);
         goto done;
     }
 
@@ -431,12 +462,21 @@ fail:;
     PyErr_Format(PyExc_TypeError, "the JSON object must be str, bytes or bytearray, not %s", Py_TYPE(s)->tp_name);
 
 done:;
-    if (unlikely(_CurrentDecoderCtx->next)) {
-        free(_CurrentDecoderCtx->next);
-        _CurrentDecoderCtx->next = NULL;
+    if (unlikely(object_hook)) {
+        DecoderBufferLinkedList *used_buffer = tls_data_ptr->cur_buffer;
+        DecoderBufferLinkedList *goback_buffer = used_buffer->prev;
+        if (unlikely(used_buffer->next)) {
+            SSRJSON_ALIGNED_FREE(used_buffer->next);
+            used_buffer->next = NULL;
+        }
+        if (likely(!goback_buffer)) {
+            // head buffer, free it
+            assert(used_buffer->level == 0);
+            SSRJSON_ALIGNED_FREE(used_buffer);
+        }
+        tls_data_ptr->cur_buffer = goback_buffer;
     }
-    if (unlikely(--_DecoderCtxLevel)) _CurrentDecoderCtx = _CurrentDecoderCtx->last;
-
+    //
     if (unlikely(!ret && !PyErr_Occurred())) {
         PyErr_SetString(JSONDecodeError, "Failed to decode JSON: unknown error");
     }

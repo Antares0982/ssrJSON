@@ -769,7 +769,7 @@ internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_b
 }
 
 /** Read single value JSON document. */
-internal_simd_noinline PyObject *loads_root_single_bytes(const u8 *dat, usize len) {
+internal_simd_noinline PyObject *loads_root_single_bytes(DecoderBuffers *decoder_context, const u8 *dat, usize len) {
 #define return_err(_pos, _type, _msg)                                                             \
     do {                                                                                          \
         if (_type == JSONDecodeError) {                                                           \
@@ -798,7 +798,7 @@ internal_simd_noinline PyObject *loads_root_single_bytes(const u8 *dat, usize le
             if (unlikely(!write_buffer)) goto fail_alloc;
             dynamic = true;
         } else {
-            write_buffer = _CurrentDecoderCtx->_DecodeTempBuffer;
+            write_buffer = decoder_context->decoder_ctx_temp_buffer;
         }
         ret = loads_bytes_not_key(&cur, write_buffer);
         if (dynamic) free(write_buffer);
@@ -892,7 +892,7 @@ force_inline bool _skip_starting_space(char **buffer_addr, Py_ssize_t *len_addr)
     return true;
 }
 
-force_inline void _alloc_aligned_bytes_buffer(Py_ssize_t len, bool *dynamic, u8 **buffer) {
+force_inline void _alloc_aligned_bytes_buffer(DecoderBuffers *decoder_context, Py_ssize_t len, bool *dynamic, u8 **buffer) {
     if (unlikely(len > (Py_ssize_t)PY_SSIZE_T_MAX - 2 * SSRJSON_MEMCPY_SIMD_SIZE - 4)) {
         PyErr_NoMemory();
         *buffer = NULL;
@@ -907,7 +907,7 @@ force_inline void _alloc_aligned_bytes_buffer(Py_ssize_t len, bool *dynamic, u8 
         }
         *dynamic = true;
     } else {
-        *buffer = _CurrentDecoderCtx->_DecodeBytesSrcBuffer;
+        *buffer = decoder_context->decoder_ctx_bytes_src_buffer;
         *dynamic = false;
     }
 }
@@ -929,7 +929,7 @@ force_inline bool should_loads_bytes_pretty(const u8 *buffer, Py_ssize_t len) {
     return false;
 }
 
-internal_simd_noinline PyObject *ssrjson_decode_bytes(char *_buffer, Py_ssize_t len, PyObject *object_hook) {
+internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_context, char *_buffer, Py_ssize_t len, PyObject *object_hook) {
     if (unlikely(!len)) {
         PyErr_Format(JSONDecodeError, "input data is empty");
         return NULL;
@@ -944,7 +944,7 @@ internal_simd_noinline PyObject *ssrjson_decode_bytes(char *_buffer, Py_ssize_t 
 
     u8 *_new_buffer;
     bool is_dynamic;
-    _alloc_aligned_bytes_buffer(len, &is_dynamic, &_new_buffer);
+    _alloc_aligned_bytes_buffer(decoder_context, len, &is_dynamic, &_new_buffer);
     if (!_new_buffer) {
         PyErr_NoMemory();
         return NULL;
@@ -964,12 +964,12 @@ internal_simd_noinline PyObject *ssrjson_decode_bytes(char *_buffer, Py_ssize_t 
     /* read json document */
     if (likely(char_is_container(*buffer))) {
         if (should_loads_bytes_pretty(buffer, len)) {
-            ret = loads_bytes_root_pretty(buffer, len, object_hook);
+            ret = loads_bytes_root_pretty(decoder_context, buffer, len, object_hook);
         } else {
-            ret = loads_bytes_root_minify(buffer, len, object_hook);
+            ret = loads_bytes_root_minify(decoder_context, buffer, len, object_hook);
         }
     } else {
-        ret = loads_root_single_bytes(buffer, len);
+        ret = loads_root_single_bytes(decoder_context, buffer, len);
     }
 
     if (is_dynamic) SSRJSON_ALIGNED_FREE(_new_buffer);

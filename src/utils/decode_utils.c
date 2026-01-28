@@ -66,9 +66,11 @@ bool _decode_obj_stack_resize(
 /*==============================================================================
  * Global Vars
  *============================================================================*/
+// thread_local uint32_t _DecoderCtxLevel = 0;
 #if !defined(Py_GIL_DISABLED)
-uint32_t _DecoderCtxLevel = 0;
-_DecoderBuffers _DefaultDecoderCtx = {0};
-_DecoderBuffers *_CurrentDecoderCtx = &_DefaultDecoderCtx;
-decode_cache_t _DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
+// thread_local DecoderTLSData _CurrentTLSData = {0};
+DecoderBuffers _DefaultDecoderCtx;
+// DecoderBuffers *_CurrentDecoderCtx = &_DefaultDecoderCtx;
 #endif
+
+decode_cache_t _DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];

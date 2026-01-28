@@ -38,7 +38,7 @@
 
 #include "compile_context/sr_in.inl.h"
 
-force_inline bool check_and_reserve_str_buffer(Py_ssize_t len, _src_t **buffer_head_addr, bool *need_dealloc);
+force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, Py_ssize_t len, _src_t **buffer_head_addr, bool *need_dealloc);
 
 /*
  * Required macros:
@@ -56,7 +56,7 @@ force_inline bool check_and_reserve_str_buffer(Py_ssize_t len, _src_t **buffer_h
     } while (0)
 
 /** Read JSON document (accept all style, but optimized for pretty). */
-internal_simd_noinline PyObject *READ_ROOT_IMPL(const _src_t *dat, Py_ssize_t len, PyObject *object_hook) {
+internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const _src_t *dat, Py_ssize_t len, PyObject *object_hook) {
     static _src_t _CommaReturn[2] = {',', '\n'};
     static _src_t _CommaSpace[2] = {',', ' '};
     static _src_t _ColonSpace[2] = {':', ' '};
@@ -72,10 +72,10 @@ internal_simd_noinline PyObject *READ_ROOT_IMPL(const _src_t *dat, Py_ssize_t le
     decode_obj_stack_ptr_t decode_obj_stack = NULL;
     decode_obj_stack_ptr_t decode_obj_stack_end = NULL;
     // init
-    if (!init_decode_ctn_stack_info(&ctn_start, &ctn, &ctn_end) || !init_decode_obj_stack_info(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end)) goto failed_cleanup;
+    if (!init_decode_ctn_stack_info(decoder_context, &ctn_start, &ctn, &ctn_end) || !init_decode_obj_stack_info(decoder_context, &decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end)) goto failed_cleanup;
     _src_t *string_buffer_head;
     bool need_dealloc = false;
-    if (unlikely(!check_and_reserve_str_buffer(len, &string_buffer_head, &need_dealloc))) {
+    if (unlikely(!check_and_reserve_str_buffer(decoder_context, len, &string_buffer_head, &need_dealloc))) {
         goto fail_alloc;
     }
 

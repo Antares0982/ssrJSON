@@ -43,24 +43,36 @@ typedef struct DecodeCtnWithSize {
 
 
 #if !defined(Py_GIL_DISABLED)
-typedef struct _DecoderBuffers {
-    ssrjson_align(64) u8 _DecodeTempBuffer[SSRJSON_STRING_BUFFER_SIZE];
-    ssrjson_align(64) u8 _DecodeBytesSrcBuffer[SSRJSON_STRING_BUFFER_SIZE];
-    DecodeCtnWithSize _DecodeCtnBuffer[SSRJSON_DECODE_MAX_RECURSION];
-    PyObject *_DecodeObjBuffer[SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE];
-    struct _DecoderBuffers *next;
-    struct _DecoderBuffers *last;
-} _DecoderBuffers;
+typedef struct DecoderBuffers {
+    ssrjson_align(64) u8 decoder_ctx_temp_buffer[SSRJSON_STRING_BUFFER_SIZE];
+    ssrjson_align(64) u8 decoder_ctx_bytes_src_buffer[SSRJSON_STRING_BUFFER_SIZE];
+    DecodeCtnWithSize decoder_ctx_container_buffer[SSRJSON_DECODE_MAX_RECURSION];
+    PyObject *decoder_ctx_object_buffer[SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE];
+    // struct DecoderBuffers *next;
+    // struct DecoderBuffers *last;
+} DecoderBuffers;
 
-extern uint32_t _DecoderCtxLevel;
-extern _DecoderBuffers *_CurrentDecoderCtx;
+typedef struct DecoderBufferLinkedList {
+    DecoderBuffers ctx;
+    struct DecoderBufferLinkedList *prev;
+    struct DecoderBufferLinkedList *next;
+    u64 level;
+} DecoderBufferLinkedList;
 
-force_inline DecodeCtnWithSize *get_decode_ctn_stack_buffer(void) {
-    return _CurrentDecoderCtx->_DecodeCtnBuffer;
+typedef struct DecoderTLSData {
+    DecoderBufferLinkedList *cur_buffer;
+} DecoderTLSData;
+
+// extern thread_local uint32_t _DecoderCtxLevel;
+// extern thread_local DecoderTLSData _CurrentTLSData;
+extern DecoderBuffers _DefaultDecoderCtx;
+
+force_inline DecodeCtnWithSize *get_decode_ctn_stack_buffer(DecoderBuffers *decoder_context) {
+    return decoder_context->decoder_ctx_container_buffer;
 }
 
-force_inline decode_obj_stack_ptr_t get_decode_obj_stack_buffer(void) {
-    return _CurrentDecoderCtx->_DecodeObjBuffer;
+force_inline decode_obj_stack_ptr_t get_decode_obj_stack_buffer(DecoderBuffers *decoder_context) {
+    return decoder_context->decoder_ctx_object_buffer;
 }
 #endif
 
@@ -252,11 +264,11 @@ force_inline u32 to_b4_unicode(u32 uni) {
 }
 
 force_inline bool init_decode_obj_stack_info(
-        // DecodeObjStackInfo *restrict decode_obj_stack_info
+        DecoderBuffers *decoder_context,
         decode_obj_stack_ptr_t *decode_obj_writer_addr,
         decode_obj_stack_ptr_t *decode_obj_stack_addr,
         decode_obj_stack_ptr_t *decode_obj_stack_end_addr) {
-    pyobj_ptr_t *new_buffer = get_decode_obj_stack_buffer();
+    pyobj_ptr_t *new_buffer = get_decode_obj_stack_buffer(decoder_context);
     if (unlikely(!new_buffer)) {
         PyErr_NoMemory();
         return false;
@@ -267,8 +279,8 @@ force_inline bool init_decode_obj_stack_info(
     return true;
 }
 
-force_inline bool init_decode_ctn_stack_info(DecodeCtnWithSize **ctn_start_addr, DecodeCtnWithSize **ctn_addr, DecodeCtnWithSize **ctn_end_addr) {
-    DecodeCtnWithSize *new_buffer = get_decode_ctn_stack_buffer();
+force_inline bool init_decode_ctn_stack_info(DecoderBuffers *decoder_context, DecodeCtnWithSize **ctn_start_addr, DecodeCtnWithSize **ctn_addr, DecodeCtnWithSize **ctn_end_addr) {
+    DecodeCtnWithSize *new_buffer = get_decode_ctn_stack_buffer(decoder_context);
     if (unlikely(!new_buffer)) {
         PyErr_NoMemory();
         return false;

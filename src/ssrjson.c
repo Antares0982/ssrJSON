@@ -83,11 +83,11 @@ static void module_free(void *m) {
         JSONEncodeError = NULL;
     }
 
-#if defined(Py_GIL_DISABLED)
+    // #if defined(Py_GIL_DISABLED)
     if (unlikely(!ssrjson_tls_free())) {
         printf("ssrjson: failed to free TLS\n");
     }
-#endif
+    // #endif
 }
 
 #if PY_MINOR_VERSION >= 13
@@ -234,13 +234,13 @@ static int ssrjson_exec(PyObject *module) {
 
     Py_DECREF(module_string);
 
-#if defined(Py_GIL_DISABLED)
+    // #if defined(Py_GIL_DISABLED)
     // TLS init.
     if (unlikely(!ssrjson_tls_init())) {
         PyErr_SetString(PyExc_ImportError, "Failed to initialize TLS");
         return -1;
     }
-#endif
+    // #endif
 
     // codes below should not fail.
 

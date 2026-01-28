@@ -39,7 +39,7 @@
 //
 #include "compile_context/sr_in.inl.h"
 
-force_inline bool check_and_reserve_str_buffer(Py_ssize_t len, _src_t **buffer_head_addr, bool *need_dealloc) {
+force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, Py_ssize_t len, _src_t **buffer_head_addr, bool *need_dealloc) {
     // consider the max length of the buffer we need
     // assume that each string has an escape of ucs4, we need buffer with size
     // sizeof(ucs4) * len == 4 * len
@@ -57,14 +57,14 @@ force_inline bool check_and_reserve_str_buffer(Py_ssize_t len, _src_t **buffer_h
         *buffer_head_addr = (_src_t *)(new_buffer + TAIL_PADDING);
         *need_dealloc = true;
     } else {
-        *buffer_head_addr = (_src_t *)(_CurrentDecoderCtx->_DecodeTempBuffer + TAIL_PADDING);
+        *buffer_head_addr = (_src_t *)(decoder_context->decoder_ctx_temp_buffer + TAIL_PADDING);
         *need_dealloc = false;
     }
     return true;
 }
 
 /** Read single value JSON document. */
-internal_simd_noinline PyObject *loads_root_single(const _src_t *dat, Py_ssize_t len) {
+internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_context, const _src_t *dat, Py_ssize_t len) {
 #define return_err(_pos, _type, _msg)                                                             \
     do {                                                                                          \
         if (_type == JSONDecodeError) {                                                           \
@@ -91,7 +91,7 @@ internal_simd_noinline PyObject *loads_root_single(const _src_t *dat, Py_ssize_t
         // u8 *write_buffer;
         _src_t *string_buffer_head;
         bool need_dealloc = false;
-        check_and_reserve_str_buffer(len, &string_buffer_head, &need_dealloc);
+        check_and_reserve_str_buffer(decoder_context, len, &string_buffer_head, &need_dealloc);
         cur++;
         ret = decode_str(&cur, end, string_buffer_head, false);
         if (need_dealloc) {
@@ -192,7 +192,7 @@ force_inline bool should_loads_pretty(const _src_t *buffer, const _src_t *end) {
     return false;
 }
 
-internal_simd_noinline PyObject *decode(PyUnicodeObject *in_unicode, PyObject *object_hook) {
+internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnicodeObject *in_unicode, PyObject *object_hook) {
     // some checks
     assert(in_unicode);
     PyASCIIObject *ascii_head = SSRJSON_CAST(PyASCIIObject *, in_unicode);
@@ -227,12 +227,12 @@ internal_simd_noinline PyObject *decode(PyUnicodeObject *in_unicode, PyObject *o
     /* read json document */
     if (likely(*buffer <= U8MAX && char_is_container(*buffer))) {
         if (should_loads_pretty(buffer, end)) {
-            ret = loads_root_pretty(buffer, end - buffer, object_hook);
+            ret = loads_root_pretty(decoder_context, buffer, end - buffer, object_hook);
         } else {
-            ret = loads_root_minify(buffer, end - buffer, object_hook);
+            ret = loads_root_minify(decoder_context, buffer, end - buffer, object_hook);
         }
     } else {
-        ret = loads_root_single(buffer, end - buffer);
+        ret = loads_root_single(decoder_context, buffer, end - buffer);
     }
 
     return ret;
