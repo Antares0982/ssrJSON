@@ -35,7 +35,7 @@ let
       wheel
     ]
   );
-  targetGLIBCVerString = "17";
+  targetGLIBCVerString = "34";
   auditWheelPlats = {
     "x86_64-linux" = "manylinux_2_${targetGLIBCVerString}_x86_64";
     "aarch64-linux" = "manylinux_2_${targetGLIBCVerString}_aarch64";
