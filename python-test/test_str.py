@@ -381,3 +381,8 @@ class TestStr:
         for repeat in (1, 2, 4, 8, 16, 32, 64, 128, 256):
             _test_1(repeat)
             _test_1(repeat + 4096)
+
+    def test_repeat_key(self):
+        s = '{"\\u00ffÿ":"好ÿ","ÿ\\u00ff":"\\/\\"/\\f/a\\r\\b\\/\\f"}'
+        obj = ssrjson.loads(s)
+        assert obj == {"ÿÿ": '/"/\x0c/a\r\x08/\x0c'}

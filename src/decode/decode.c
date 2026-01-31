@@ -193,11 +193,9 @@ force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
         assert(PyUnicode_Check(key));
         PyObject *val = *dict_val_view++;
         assert(((PyASCIIObject *)key)->hash != -1);
-        Py_ssize_t key_refcnt = key->ob_refcnt;
         int retcode = _PyDict_SetItem_KnownHash(dict, key, val, ((PyASCIIObject *)key)->hash); // this may fail
         if (likely(0 == retcode)) {
-            assert(key->ob_refcnt >= key_refcnt);
-            key->ob_refcnt = key_refcnt; // restore refcnt, as the key may be already in the dict
+            Py_DECREF(key);
             Py_DecRef_NoCheck(val);
         } else {
             // we already decrefed some objects, have to manually handle all refcnt here
