@@ -112,8 +112,7 @@ class TestMemory:
             val = ssrjson.loads(FIXTURE)
             assert val
         gc.collect()
-        leak = proc.memory_info().rss - mem
-        assert leak <= MAX_INCREASE
+        assert proc.memory_info().rss - mem <= MAX_INCREASE
 
     @pytest.mark.skipif(psutil is None, reason="psutil not installed")
     @pytest.mark.skipif(asan_loaded, reason="libasan loaded")

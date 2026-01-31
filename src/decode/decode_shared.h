@@ -41,15 +41,11 @@ typedef struct DecodeCtnWithSize {
     Py_ssize_t raw;
 } DecodeCtnWithSize;
 
-
-#if !defined(Py_GIL_DISABLED)
 typedef struct DecoderBuffers {
     ssrjson_align(64) u8 decoder_ctx_temp_buffer[SSRJSON_STRING_BUFFER_SIZE];
     ssrjson_align(64) u8 decoder_ctx_bytes_src_buffer[SSRJSON_STRING_BUFFER_SIZE];
     DecodeCtnWithSize decoder_ctx_container_buffer[SSRJSON_DECODE_MAX_RECURSION];
     PyObject *decoder_ctx_object_buffer[SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE];
-    // struct DecoderBuffers *next;
-    // struct DecoderBuffers *last;
 } DecoderBuffers;
 
 typedef struct DecoderBufferLinkedList {
@@ -63,9 +59,9 @@ typedef struct DecoderTLSData {
     DecoderBufferLinkedList *cur_buffer;
 } DecoderTLSData;
 
-// extern thread_local uint32_t _DecoderCtxLevel;
-// extern thread_local DecoderTLSData _CurrentTLSData;
+#if SSRJSON_GIL_ENABLED
 extern DecoderBuffers _DefaultDecoderCtx;
+#endif
 
 force_inline DecodeCtnWithSize *get_decode_ctn_stack_buffer(DecoderBuffers *decoder_context) {
     return decoder_context->decoder_ctx_container_buffer;
@@ -74,7 +70,6 @@ force_inline DecodeCtnWithSize *get_decode_ctn_stack_buffer(DecoderBuffers *deco
 force_inline decode_obj_stack_ptr_t get_decode_obj_stack_buffer(DecoderBuffers *decoder_context) {
     return decoder_context->decoder_ctx_object_buffer;
 }
-#endif
 
 typedef union {
     struct {
@@ -93,6 +88,68 @@ typedef union {
 #define DECODE_LOOPSTATE_INVALID 3
 
 extern PyObject *JSONDecodeError;
+
+
+/*==============================================================================
+ * xxhash and key cache utilities
+ *============================================================================*/
+
+
+#define REHASHER(_x) (((size_t)(_x)) % (SSRJSON_KEY_CACHE_SIZE))
+typedef XXH64_hash_t decode_keyhash_t;
+
+force_inline u64 make_key_hint(usize real_len, int kind) {
+    u64 ret = SSRJSON_CAST(u64, real_len) | (SSRJSON_CAST(u64, kind) << 32);
+    return ret;
+}
+
+#if SSRJSON_GIL_ENABLED
+#    define DECODER_TLS_KEYCACHE_ADDITIONAL_ARG
+#    define DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF
+extern decode_cache_t _DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
+#else
+#    define DECODER_TLS_KEYCACHE_ADDITIONAL_ARG , decoder_key_cache_arr
+#    define DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF , decode_cache_t *decoder_key_cache_arr
+#endif
+
+
+force_inline void add_key_cache(decode_keyhash_t hash, PyObject *obj, usize real_len, int kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+#if SSRJSON_GIL_ENABLED
+    decode_cache_t *key_cache_arr = _DecodeKeyCache;
+#else
+    decode_cache_t *key_cache_arr = decoder_key_cache_arr;
+#endif
+    assert(PyUnicode_GET_LENGTH(obj) * PyUnicode_KIND(obj) <= 64);
+    size_t index = REHASHER(hash);
+    // SSRJSON_TRACE_HASH(index);
+    decode_cache_t old = key_cache_arr[index];
+    if (old.key) {
+        // SSRJSON_TRACE_HASH_CONFLICT(hash);
+        Py_DECREF(old.key);
+    }
+    Py_INCREF(obj);
+    key_cache_arr[index].key = obj;
+    key_cache_arr[index].key_hint = make_key_hint(real_len, kind);
+}
+
+force_inline PyObject *get_key_cache(const void *unicode_str, decode_keyhash_t hash, usize real_len, int kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+#if SSRJSON_GIL_ENABLED
+    decode_cache_t *key_cache_arr = _DecodeKeyCache;
+#else
+    decode_cache_t *key_cache_arr = decoder_key_cache_arr;
+#endif
+    assert(real_len <= 64);
+    decode_cache_t cache = key_cache_arr[REHASHER(hash)];
+    if (!cache.key) return NULL;
+    u64 key_hint = make_key_hint(real_len, kind);
+    Py_ssize_t cache_offset = kind ? sizeof(PyCompactUnicodeObject) : sizeof(PyASCIIObject);
+    if (likely(key_hint == cache.key_hint && (ssrjson_memcmp_neq_le64(SSRJSON_CAST(u8 *, unicode_str), SSRJSON_CAST(u8 *, cache.key) + cache_offset, real_len) == 0))) {
+        // SSRJSON_TRACE_CACHE_HIT();
+        Py_INCREF(cache.key);
+        return cache.key;
+    }
+    return NULL;
+}
 
 /*==============================================================================
  * Integer Constants
@@ -313,13 +370,13 @@ force_inline bool ctn_grow_check(DecodeCtnWithSize **ctn_addr, DecodeCtnWithSize
     return ++(*ctn_addr) < ctn_end;
 }
 
-force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int type_flag, bool is_key);
+force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int type_flag, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
 force_inline bool _decoder_push_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                                     decode_obj_stack_ptr_t *decode_obj_stack_addr,
                                     decode_obj_stack_ptr_t *decode_obj_stack_end_addr, pyobj_ptr_t obj);
 
-force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, bool is_key);
+force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
 force_inline bool decode_true(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                               decode_obj_stack_ptr_t *decode_obj_stack_addr,
@@ -356,18 +413,22 @@ force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
 #endif
 
 
+#if SSRJSON_GIL_ENABLED
 force_inline void Py_DecRef_NoCheck(PyObject *op) {
     // Non-limited C API and limited C API for Python 3.9 and older access
     // directly PyObject.ob_refcnt.
-#if PY_MINOR_VERSION >= 12
+#    if PY_MINOR_VERSION >= 12
     if (_Py_IsImmortal(op)) {
         return;
     }
-#endif
+#    endif
     SSRJSON_PY_DECREF_DEBUG();
     assert(op->ob_refcnt > 1);
     --op->ob_refcnt;
 }
+#else
+#    define Py_DecRef_NoCheck Py_DECREF
+#endif
 
 force_inline void Py_Immortal_IncRef(PyObject *op) {
     // Non-limited C API and limited C API for Python 3.9 and older access
@@ -398,47 +459,5 @@ force_inline f64 normalized_u64_to_f64(u64 val) {
 /*==============================================================================
  * Read state utilities
  *============================================================================*/
-
-/*==============================================================================
- * xxhash and key cache utilities
- *============================================================================*/
-
-
-#define REHASHER(_x) (((size_t)(_x)) % (SSRJSON_KEY_CACHE_SIZE))
-typedef XXH64_hash_t decode_keyhash_t;
-extern decode_cache_t _DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
-
-force_inline u64 make_key_hint(usize real_len, int kind) {
-    u64 ret = SSRJSON_CAST(u64, real_len) | (SSRJSON_CAST(u64, kind) << 32);
-    return ret;
-}
-
-force_inline void add_key_cache(decode_keyhash_t hash, PyObject *obj, usize real_len, int kind) {
-    assert(PyUnicode_GET_LENGTH(obj) * PyUnicode_KIND(obj) <= 64);
-    size_t index = REHASHER(hash);
-    // SSRJSON_TRACE_HASH(index);
-    decode_cache_t old = _DecodeKeyCache[index];
-    if (old.key) {
-        // SSRJSON_TRACE_HASH_CONFLICT(hash);
-        Py_DECREF(old.key);
-    }
-    Py_INCREF(obj);
-    _DecodeKeyCache[index].key = obj;
-    _DecodeKeyCache[index].key_hint = make_key_hint(real_len, kind);
-}
-
-force_inline PyObject *get_key_cache(const void *unicode_str, decode_keyhash_t hash, usize real_len, int kind) {
-    assert(real_len <= 64);
-    decode_cache_t cache = _DecodeKeyCache[REHASHER(hash)];
-    if (!cache.key) return NULL;
-    u64 key_hint = make_key_hint(real_len, kind);
-    Py_ssize_t cache_offset = kind ? sizeof(PyCompactUnicodeObject) : sizeof(PyASCIIObject);
-    if (likely(key_hint == cache.key_hint && (ssrjson_memcmp_neq_le64(SSRJSON_CAST(u8 *, unicode_str), SSRJSON_CAST(u8 *, cache.key) + cache_offset, real_len) == 0))) {
-        // SSRJSON_TRACE_CACHE_HIT();
-        Py_INCREF(cache.key);
-        return cache.key;
-    }
-    return NULL;
-}
 
 #endif // SSRJSON_DECODE_H

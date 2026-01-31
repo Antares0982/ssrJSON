@@ -38,14 +38,14 @@
 //
 #include "compile_context/sr_in.inl.h"
 
-force_inline PyObject *make_unicode_from_src_ascii(const _src_t *start, usize count, bool is_key) {
+force_inline PyObject *make_unicode_from_src_ascii(const _src_t *start, usize count, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     PyObject *ret;
     decode_keyhash_t hash;
     bool should_cache = is_key && count <= 64;
     bool should_hash = is_key && count > 0;
     if (should_cache) {
         hash = XXH3_64bits(start, count);
-        ret = get_key_cache(start, hash, count, 0);
+        ret = get_key_cache(start, hash, count, 0 DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (ret) {
             goto done;
         }
@@ -55,7 +55,7 @@ force_inline PyObject *make_unicode_from_src_ascii(const _src_t *start, usize co
         u8 *const target = PYUNICODE_ASCII_START(ret);
         ssrjson_memcpy(target, start, count);
         if (should_cache) {
-            add_key_cache(hash, ret, count, 0);
+            add_key_cache(hash, ret, count, 0 DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         }
         if (should_hash) {
             assert(count && SSRJSON_CAST(PyASCIIObject *, ret)->hash == -1);
@@ -381,7 +381,7 @@ internal_simd_noinline PyObject *decode_str_with_escape_ascii(
         const _src_t *src_end,
         void *temp_buffer,
         bool is_key,
-        EscapeInfo in_escape_info) {
+        EscapeInfo in_escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
 #define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
     //
@@ -694,7 +694,7 @@ decode_loop_ucs4:;
     }
 done_ascii:;
     {
-        PyObject *ret = make_unicode_from_src_ascii(temp_buffer, u8writer - SSRJSON_CAST(u8 *, temp_buffer), is_key);
+        PyObject *ret = make_unicode_from_src_ascii(temp_buffer, u8writer - SSRJSON_CAST(u8 *, temp_buffer), is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         *src_addr = src + 1;
         return ret;
     }
@@ -728,35 +728,35 @@ force_inline PyObject *decode_str_ascii(
         const _src_t **src_addr,
         const _src_t *const src_end,
         void *temp_buffer,
-        bool is_key) {
+        bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
 #define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
-#define LOOP_SWITCHER(_status_code_)              \
-    switch (status_code) {                        \
-        case DECODE_LOOPSTATE_CONTINUE: {         \
-            continue;                             \
-        }                                         \
-        case DECODE_LOOPSTATE_END: {              \
-            goto done;                            \
-        }                                         \
-        case DECODE_LOOPSTATE_ESCAPE: {           \
-            PyObject *ret =                       \
-                    decode_str_with_escape_ascii( \
-                            original_src,         \
-                            &src, src_end,        \
-                            temp_buffer,          \
-                            is_key,               \
-                            escape_info);         \
-            *src_addr = src;                      \
-            return ret;                           \
-        }                                         \
-        case DECODE_LOOPSTATE_INVALID: {          \
-            assert(PyErr_Occurred());             \
-            goto failed;                          \
-        }                                         \
-        default: {                                \
-            SSRJSON_UNREACHABLE();                \
-        }                                         \
+#define LOOP_SWITCHER(_status_code_)                                          \
+    switch (status_code) {                                                    \
+        case DECODE_LOOPSTATE_CONTINUE: {                                     \
+            continue;                                                         \
+        }                                                                     \
+        case DECODE_LOOPSTATE_END: {                                          \
+            goto done;                                                        \
+        }                                                                     \
+        case DECODE_LOOPSTATE_ESCAPE: {                                       \
+            PyObject *ret =                                                   \
+                    decode_str_with_escape_ascii(                             \
+                            original_src,                                     \
+                            &src, src_end,                                    \
+                            temp_buffer,                                      \
+                            is_key,                                           \
+                            escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARG); \
+            *src_addr = src;                                                  \
+            return ret;                                                       \
+        }                                                                     \
+        case DECODE_LOOPSTATE_INVALID: {                                      \
+            assert(PyErr_Occurred());                                         \
+            goto failed;                                                      \
+        }                                                                     \
+        default: {                                                            \
+            SSRJSON_UNREACHABLE();                                            \
+        }                                                                     \
     }
 
 
@@ -791,7 +791,7 @@ force_inline PyObject *decode_str_ascii(
                                 &src, src_end,
                                 temp_buffer,
                                 is_key,
-                                escape_info);
+                                escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
                 *src_addr = src;
                 return ret;
             }
@@ -810,7 +810,7 @@ force_inline PyObject *decode_str_ascii(
 
 done:;
     *src_addr = src + 1; // skip the ending '"'
-    return make_unicode_from_src_ascii(original_src, src - original_src, is_key);
+    return make_unicode_from_src_ascii(original_src, src - original_src, is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 
 failed:;
     *src_addr = src;
@@ -822,8 +822,8 @@ failed:;
 
 internal_simd_noinline PyObject *decode_str_ascii_not_key(const _src_t **src_addr,
                                                           const _src_t *const src_end,
-                                                          void *temp_buffer) {
-    return decode_str_ascii(src_addr, src_end, temp_buffer, false);
+                                                          void *temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+    return decode_str_ascii(src_addr, src_end, temp_buffer, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 }
 
 #include "compile_context/sr_out.inl.h"

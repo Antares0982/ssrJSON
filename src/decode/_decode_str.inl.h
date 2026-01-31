@@ -64,7 +64,7 @@ force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, 
 }
 
 /** Read single value JSON document. */
-internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_context, const _src_t *dat, Py_ssize_t len) {
+internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_context, const _src_t *dat, Py_ssize_t len DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define return_err(_pos, _type, _msg)                                                             \
     do {                                                                                          \
         if (_type == JSONDecodeError) {                                                           \
@@ -93,7 +93,7 @@ internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_conte
         bool need_dealloc = false;
         check_and_reserve_str_buffer(decoder_context, len, &string_buffer_head, &need_dealloc);
         cur++;
-        ret = decode_str(&cur, end, string_buffer_head, false);
+        ret = decode_str(&cur, end, string_buffer_head, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (need_dealloc) {
             free((void *)((u8 *)string_buffer_head - TAIL_PADDING));
         }
@@ -192,7 +192,7 @@ force_inline bool should_loads_pretty(const _src_t *buffer, const _src_t *end) {
     return false;
 }
 
-internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnicodeObject *in_unicode, PyObject *object_hook) {
+internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnicodeObject *in_unicode, PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     // some checks
     assert(in_unicode);
     PyASCIIObject *ascii_head = SSRJSON_CAST(PyASCIIObject *, in_unicode);
@@ -227,12 +227,12 @@ internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnico
     /* read json document */
     if (likely(*buffer <= U8MAX && char_is_container(*buffer))) {
         if (should_loads_pretty(buffer, end)) {
-            ret = loads_root_pretty(decoder_context, buffer, end - buffer, object_hook);
+            ret = loads_root_pretty(decoder_context, buffer, end - buffer, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         } else {
-            ret = loads_root_minify(decoder_context, buffer, end - buffer, object_hook);
+            ret = loads_root_minify(decoder_context, buffer, end - buffer, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         }
     } else {
-        ret = loads_root_single(decoder_context, buffer, end - buffer);
+        ret = loads_root_single(decoder_context, buffer, end - buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
     }
 
     return ret;

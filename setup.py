@@ -6,7 +6,8 @@ from setuptools.command.build_ext import build_ext
 from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
 # this is only for publishing
-use_nix_prebuilt = bool(os.environ.get("SSRJSON_USE_NIX_PREBUILT"))
+USE_NIX_PREBUILT = bool(os.environ.get("SSRJSON_USE_NIX_PREBUILT"))
+IS_GIL_ENABLED = not hasattr(sys, "_is_gil_enabled") or sys._is_gil_enabled()  # pylint: disable=protected-access
 
 
 def get_version_from_pyproject_toml():
@@ -21,9 +22,21 @@ def get_version_from_pyproject_toml():
     raise RuntimeError("Invalid pyproject.toml, expected version into inside")
 
 
+def find_windows_python_cmake_env():
+    from sysconfig import get_config_h_filename, get_config_var
+
+    include_dir = os.path.dirname(get_config_h_filename())
+    lib_dir = get_config_var("LIBDIR")
+    minor = sys.version_info[1]
+    library_file = os.path.join(
+        lib_dir, f"python3{minor}{'t' if not IS_GIL_ENABLED else ''}.lib"
+    )
+    return include_dir, library_file
+
+
 VERSION_STRING = get_version_from_pyproject_toml()
 
-if use_nix_prebuilt:
+if USE_NIX_PREBUILT:
 
     class PrebuiltBuildExt(build_ext):
         def build_extension(self, ext):
@@ -51,9 +64,9 @@ else:
     import shutil
     import subprocess
 
-    def run_check(cmd):
+    def run_check(cmd, **kwargs):
         try:
-            subprocess.run(cmd, check=True)
+            subprocess.run(cmd, check=True, **kwargs)
         except subprocess.CalledProcessError:
             print(f"command failed: {cmd}", file=sys.stderr)
             raise
@@ -67,6 +80,7 @@ else:
             if not os.path.exists(build_dir):
                 os.makedirs(build_dir)
             # Configure
+            env = os.environ.copy()
             if os.name == "nt":
                 cmake_cmd = [
                     "cmake",
@@ -91,14 +105,21 @@ else:
                     "-B",
                     "build",
                 ]
-            run_check(cmake_cmd)
+            if not IS_GIL_ENABLED:
+                cmake_cmd.append("-DBUILD_FREE_THREADING=ON")
+                if os.name == "nt":
+                    cmake_cmd += ["-DSEARCH_PYTHON3_USE_ENV=ON"]
+                    include_dir, library_file = find_windows_python_cmake_env()
+                    env["Python3_INCLUDE_DIR"] = include_dir
+                    env["Python3_LIBRARY"] = library_file
+            run_check(cmake_cmd, env=env)
             # Build
             if os.name == "nt":
                 build_cmd = ["cmake", "--build", "build", "--config", "Release"]
             else:
                 # use `-j` default job count
                 build_cmd = ["cmake", "--build", "build", "-j"]
-            run_check(build_cmd)
+            run_check(build_cmd, env=env)
             # Copy file
             if os.name == "nt":
                 built_filename = "Release/ssrjson.pyd"

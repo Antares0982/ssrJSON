@@ -86,6 +86,10 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     PyObject *strict_argparse_bool = _NonstrictArgparse ? Py_False : Py_True;
     err = PyDict_SetItemString(ret, "strict_arg_parse", strict_argparse_bool);
     if (err) goto fail;
+    err = PyDict_SetItemString(ret, "free_threading", SSRJSON_GIL_ENABLED ? Py_False : Py_True);
+    if (err) goto fail;
+    err = PyDict_SetItemString(ret, "lockfree", (!SSRJSON_GIL_ENABLED && SSRJSON_FREE_THREADING_LOCKFREE) ? Py_True : Py_False);
+    if (err) goto fail;
 
 #    define DICT_SET_STRING_ITEM(_k_, _v_)               \
         do {                                             \
@@ -143,6 +147,10 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     if (err) goto fail;
     PyObject *strict_argparse_bool = _NonstrictArgparse ? Py_False : Py_True;
     err = PyDict_SetItemString(ret, "strict_arg_parse", strict_argparse_bool);
+    if (err) goto fail;
+    err = PyDict_SetItemString(ret, "free_threading", SSRJSON_GIL_ENABLED ? Py_False : Py_True);
+    if (err) goto fail;
+    err = PyDict_SetItemString(ret, "lockfree", (!SSRJSON_GIL_ENABLED && SSRJSON_FREE_THREADING_LOCKFREE) ? Py_True : Py_False);
     if (err) goto fail;
     PyObject *neon = PyUnicode_FromString("NEON");
     if (!neon) goto fail;

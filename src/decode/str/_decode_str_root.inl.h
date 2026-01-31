@@ -56,7 +56,7 @@ force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, 
     } while (0)
 
 /** Read JSON document (accept all style, but optimized for pretty). */
-internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const _src_t *dat, Py_ssize_t len, PyObject *object_hook) {
+internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const _src_t *dat, Py_ssize_t len, PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     static _src_t _CommaReturn[2] = {',', '\n'};
     static _src_t _CommaSpace[2] = {',', ' '};
     static _src_t _ColonSpace[2] = {':', ' '};
@@ -127,9 +127,9 @@ arr_val_begin:
         cur++;
         PyObject *str_obj =
 #if COMPILE_UCS_LEVEL == 0
-                decode_str_ascii_not_key(&cur, end, string_buffer_head);
+                decode_str_ascii_not_key(&cur, end, string_buffer_head DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 #else
-                decode_str(&cur, end, string_buffer_head, false);
+                decode_str(&cur, end, string_buffer_head, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 #endif
         if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
@@ -255,7 +255,7 @@ obj_key_begin:
 
     if (likely(*cur == '"')) {
         cur++;
-        PyObject *str_obj = decode_str(&cur, end, string_buffer_head, true);
+        PyObject *str_obj = decode_str(&cur, end, string_buffer_head, true DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             goto obj_key_end;
         }
@@ -302,9 +302,9 @@ obj_val_begin:
         cur++;
         PyObject *str_obj =
 #if COMPILE_UCS_LEVEL == 0
-                decode_str_ascii_not_key(&cur, end, string_buffer_head);
+                decode_str_ascii_not_key(&cur, end, string_buffer_head DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 #else
-                decode_str(&cur, end, string_buffer_head, false);
+                decode_str(&cur, end, string_buffer_head, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 #endif
         if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
@@ -442,7 +442,9 @@ success:;
     assert(ctn == ctn_start - 1);
     assert(decode_obj_writer == decode_obj_stack + 1);
     assert(obj && !PyErr_Occurred());
+#if SSRJSON_GIL_ENABLED
     assert(obj->ob_refcnt == 1);
+#endif
     // free string buffer
     if (need_dealloc) {
         free((void *)((u8 *)string_buffer_head - TAIL_PADDING));

@@ -47,9 +47,9 @@
         } while (char_is_space(*_u8ptr)); \
     } while (0)
 
-internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_buffer);
+internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
-internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const u8 *dat, usize len, PyObject *object_hook) {
+internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const u8 *dat, usize len, PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     // container stack info
     DecodeCtnWithSize *ctn = NULL;
     DecodeCtnWithSize *ctn_start = NULL;
@@ -117,7 +117,7 @@ arr_val_begin:
         goto fail_number;
     }
     if (*cur == '"') {
-        PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head);
+        PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
@@ -236,7 +236,7 @@ obj_key_begin:
 #endif
 
     if (likely(*cur == '"')) {
-        PyObject *str_obj = loads_bytes(&cur, string_buffer_head, true);
+        PyObject *str_obj = loads_bytes(&cur, string_buffer_head, true DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             goto obj_key_end;
         }
@@ -279,7 +279,7 @@ obj_key_end:
 
 obj_val_begin:
     if (*cur == '"') {
-        PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head);
+        PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
@@ -414,7 +414,9 @@ success:;
     assert(ctn == ctn_start - 1);
     assert(decode_obj_writer == decode_obj_stack + 1);
     assert(obj && !PyErr_Occurred());
+#if SSRJSON_GIL_ENABLED
     assert(obj->ob_refcnt == 1);
+#endif
     // free string buffer
     if (unlikely(string_buffer_head != decoder_context->decoder_ctx_temp_buffer)) {
         free(string_buffer_head);

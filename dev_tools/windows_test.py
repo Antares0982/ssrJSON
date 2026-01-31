@@ -7,6 +7,19 @@ import warnings
 
 SSRJSON_FILE = "ssrjson.pyd"
 ASAN_DLL = "clang_rt.asan_dynamic-x86_64.dll"
+IS_GIL_ENABLED = not hasattr(sys, "_is_gil_enabled") or sys._is_gil_enabled()  # pylint: disable=protected-access
+
+
+def find_python_cmake_env():
+    from sysconfig import get_config_h_filename, get_config_var
+
+    include_dir = os.path.dirname(get_config_h_filename())
+    lib_dir = get_config_var("LIBDIR")
+    minor = sys.version_info[1]
+    library_file = os.path.join(
+        lib_dir, f"python3{minor}{'t' if not IS_GIL_ENABLED else ''}.lib"
+    )
+    return include_dir, library_file
 
 
 def build(build_dir: str, build_type: str, asan: bool) -> None:
@@ -25,7 +38,15 @@ def build(build_dir: str, build_type: str, asan: bool) -> None:
 
     if asan:
         configure_cmd += ["-DASAN_ENABLED=ON"]
-    subprocess.run(configure_cmd, check=True)
+    if not IS_GIL_ENABLED:
+        configure_cmd.append("-DBUILD_FREE_THREADING=ON")
+        configure_cmd.append("-DSEARCH_PYTHON3_USE_ENV=ON")
+    env = os.environ.copy()
+    if not IS_GIL_ENABLED:
+        include_dir, library_file = find_python_cmake_env()
+        env["Python3_INCLUDE_DIR"] = include_dir
+        env["Python3_LIBRARY"] = library_file
+    subprocess.run(configure_cmd, check=True, env=env)
     build_cmd = ["cmake", "--build", build_dir, "--config", build_type]
     subprocess.run(build_cmd, check=True)
     copy_src = os.path.join(build_dir, build_type, SSRJSON_FILE)
@@ -38,6 +59,7 @@ def build(build_dir: str, build_type: str, asan: bool) -> None:
 
 
 def find_exe(build_dir: str) -> str:
+    return sys.executable
     info_file = os.path.join(build_dir, "info.json")
     with open(info_file, "rb") as f:
         info = json.load(f)

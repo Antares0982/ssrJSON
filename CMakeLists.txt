@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 # ------------------------------------------------------------------------------
 # Build Options for tests and docs
+option(BUILD_FREE_THREADING "Build with free-threading support" OFF)
+option(FREE_THREADING_LOCKFREE "Use lock-free free-threading encoding" OFF)
 option(ASAN_ENABLED "Build with asan" OFF)
 option(BUILD_COVERAGE "Build with coverage" OFF)
 option(BUILD_TEST "Build tests" ON)
@@ -101,6 +103,15 @@ target_link_libraries(commonBuild INTERFACE)
 target_include_directories(
   commonBuild INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 target_include_directories(commonBuild SYSTEM INTERFACE ${Python3_INCLUDE_DIRS})
+if(BUILD_FREE_THREADING)
+  message("GIL: Disabled")
+  target_compile_definitions(commonBuild INTERFACE Py_GIL_DISABLED=1)
+  if(FREE_THREADING_LOCKFREE)
+    message("Lock-free: Enabled")
+    target_compile_definitions(commonBuild
+                               INTERFACE SSRJSON_FREE_THREADING_LOCKFREE=1)
+  endif()
+endif()
 target_compile_definitions(commonBuild
                            INTERFACE BUILD_MULTI_LIB=${BUILD_MULTI_LIB})
 if(MSVC)

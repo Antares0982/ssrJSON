@@ -21,13 +21,16 @@
  *============================================================================*/
 
 #include "ssrjson.h"
+#include "decode/decode_shared.h"
 #include "pythonlib.h"
 #include "tls.h"
 #include "version.h"
 
 #pragma clang diagnostic ignored "-Wcast-function-type-mismatch"
 
+#if SSRJSON_GIL_ENABLED
 extern decode_cache_t _DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
+#endif
 
 PyObject *ssrjson_Dumps(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);
 PyObject *ssrjson_DumpsToBytes(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);
@@ -53,6 +56,9 @@ static struct PyModuleDef_Slot ssrjson_slots[] = {
 #if PY_MINOR_VERSION >= 12
         {Py_mod_multiple_interpreters, Py_MOD_MULTIPLE_INTERPRETERS_NOT_SUPPORTED}, // stage 3
 #endif
+#if !SSRJSON_GIL_ENABLED
+        {Py_mod_gil, Py_MOD_GIL_NOT_USED}, // stage 4
+#endif
         {0, NULL}};
 
 static struct PyModuleDef moduledef = {
@@ -68,10 +74,12 @@ static struct PyModuleDef moduledef = {
 };
 
 static void module_free(void *m) {
+#if SSRJSON_GIL_ENABLED
     for (size_t i = 0; i < SSRJSON_KEY_CACHE_SIZE; i++) {
         Py_XDECREF(_DecodeKeyCache[i].key);
         _DecodeKeyCache[i].key = NULL;
     }
+#endif
 
     if (JSONDecodeError) {
         Py_DECREF(JSONDecodeError);
@@ -83,11 +91,9 @@ static void module_free(void *m) {
         JSONEncodeError = NULL;
     }
 
-    // #if defined(Py_GIL_DISABLED)
     if (unlikely(!ssrjson_tls_free())) {
         printf("ssrjson: failed to free TLS\n");
     }
-    // #endif
 }
 
 #if PY_MINOR_VERSION >= 13
@@ -234,19 +240,18 @@ static int ssrjson_exec(PyObject *module) {
 
     Py_DECREF(module_string);
 
-    // #if defined(Py_GIL_DISABLED)
     // TLS init.
     if (unlikely(!ssrjson_tls_init())) {
         PyErr_SetString(PyExc_ImportError, "Failed to initialize TLS");
         return -1;
     }
-    // #endif
 
     // codes below should not fail.
 
     // do ssrjson internal init.
-
+#if SSRJSON_GIL_ENABLED
     memset(_DecodeKeyCache, 0, sizeof(_DecodeKeyCache));
+#endif
 
 #if PY_MINOR_VERSION >= 13
     PyNone_Type = Py_TYPE(Py_None);

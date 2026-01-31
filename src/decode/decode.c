@@ -59,7 +59,7 @@ size_t __hash_add_key_call_count = 0;
 #    define SSRJSON_TRACE_HASH_CONFLICT(_hash) (void)(0)
 #endif // SSRJSON_ENABLE_TRACE
 
-force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int kind, bool is_key) {
+force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int kind, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     SSRJSON_TRACE_STR_LEN(len);
     PyObject *obj;
     decode_keyhash_t hash;
@@ -105,7 +105,7 @@ force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int ki
 
     if (should_cache) {
         hash = XXH3_64bits(unicode_str, real_len);
-        obj = get_key_cache(unicode_str, hash, real_len, kind);
+        obj = get_key_cache(unicode_str, hash, real_len, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (obj) {
             return obj;
         }
@@ -115,7 +115,7 @@ force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int ki
     if (obj == NULL) return NULL;
     ssrjson_memcpy(SSRJSON_CAST(u8 *, obj) + offset, unicode_str, real_len);
     if (should_cache) {
-        add_key_cache(hash, obj, real_len, kind);
+        add_key_cache(hash, obj, real_len, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
     }
 success:
     if (is_key) {
@@ -332,6 +332,9 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
     PyObject *s;
     PyObject *object_hook = NULL;
     DecoderBuffers *decoder_context;
+#if !SSRJSON_GIL_ENABLED
+    decode_cache_t *decoder_key_cache_arr;
+#endif
     DecoderTLSData *tls_data_ptr;
     //
     usize npargs = PyVectorcall_NARGS(nargsf);
@@ -355,13 +358,22 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
         PyErr_SetString(PyExc_TypeError, "object_hook must be callable");
         return NULL;
     }
-    //
+#if !SSRJSON_GIL_ENABLED
+    decoder_key_cache_arr = get_tls_decoder_key_cache();
+    if (unlikely(!decoder_key_cache_arr)) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+#endif
+#if SSRJSON_GIL_ENABLED
     if (likely(!object_hook)) {
         decoder_context = &_DefaultDecoderCtx;
-    } else {
+    } else
+#endif
+    {
         // need to update decoder_context and _CurrentTLSData, i.e. tls_data_ptr->cur_buffer
         tls_data_ptr = tls_get_decoder_data();
-        if (likely(!tls_data_ptr->cur_buffer)) {
+        if (!tls_data_ptr->cur_buffer) {
             // this is the first ctx
             DecoderBufferLinkedList *new_linked_list = SSRJSON_ALIGNED_ALLOC(64, sizeof(DecoderBufferLinkedList));
             if (unlikely(!new_linked_list)) {
@@ -407,6 +419,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
             }
         }
     }
+
     //
     if (PyUnicode_Check(s)) {
         PyASCIIObject *ascii_head = SSRJSON_CAST(PyASCIIObject *, s);
@@ -414,19 +427,19 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
         int pyunicode_kind = ascii_head->state.ascii ? 0 : ascii_head->state.kind;
         switch (pyunicode_kind) {
             case SSRJSON_STRING_TYPE_ASCII: {
-                ret = decode_ascii(decoder_context, in_unicode, object_hook);
+                ret = decode_ascii(decoder_context, in_unicode, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
                 break;
             }
             case SSRJSON_STRING_TYPE_LATIN1: {
-                ret = decode_ucs1(decoder_context, in_unicode, object_hook);
+                ret = decode_ucs1(decoder_context, in_unicode, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
                 break;
             }
             case SSRJSON_STRING_TYPE_UCS2: {
-                ret = decode_ucs2(decoder_context, in_unicode, object_hook);
+                ret = decode_ucs2(decoder_context, in_unicode, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
                 break;
             }
             case SSRJSON_STRING_TYPE_UCS4: {
-                ret = decode_ucs4(decoder_context, in_unicode, object_hook);
+                ret = decode_ucs4(decoder_context, in_unicode, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
                 break;
             }
             default: {
@@ -444,14 +457,14 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
             ret = NULL;
             goto done;
         }
-        ret = ssrjson_decode_bytes(decoder_context, buffer, length, object_hook);
+        ret = ssrjson_decode_bytes(decoder_context, buffer, length, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         goto done;
     }
     //
     if (PyByteArray_Check(s)) {
         char *buffer = PyByteArray_AS_STRING(s);
         Py_ssize_t length = PyByteArray_GET_SIZE(s);
-        ret = ssrjson_decode_bytes(decoder_context, buffer, length, object_hook);
+        ret = ssrjson_decode_bytes(decoder_context, buffer, length, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         goto done;
     }
 
@@ -460,19 +473,27 @@ fail:;
     PyErr_Format(PyExc_TypeError, "the JSON object must be str, bytes or bytearray, not %s", Py_TYPE(s)->tp_name);
 
 done:;
-    if (unlikely(object_hook)) {
+    if (ssrjson_consteval(!SSRJSON_GIL_ENABLED) || unlikely(object_hook)) {
         DecoderBufferLinkedList *used_buffer = tls_data_ptr->cur_buffer;
         DecoderBufferLinkedList *goback_buffer = used_buffer->prev;
         if (unlikely(used_buffer->next)) {
             SSRJSON_ALIGNED_FREE(used_buffer->next);
             used_buffer->next = NULL;
         }
+#if SSRJSON_GIL_ENABLED
         if (likely(!goback_buffer)) {
             // head buffer, free it
             assert(used_buffer->level == 0);
             SSRJSON_ALIGNED_FREE(used_buffer);
         }
         tls_data_ptr->cur_buffer = goback_buffer;
+#else
+        if (unlikely(goback_buffer)) {
+            SSRJSON_ALIGNED_FREE(used_buffer);
+            tls_data_ptr->cur_buffer = goback_buffer;
+            goback_buffer->next = NULL;
+        }
+#endif
     }
     //
     if (unlikely(!ret && !PyErr_Occurred())) {

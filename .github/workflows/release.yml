@@ -87,7 +87,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14"]
+        pyver: ["10", "11", "12", "13", "14", "14t"]
 
     steps:
     - name: Checkout
@@ -171,7 +171,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14"]
+        pyver: ["10", "11", "12", "13", "14", "14t"]
 
     steps:
     - name: Checkout
@@ -251,7 +251,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14"]
+        pyver: ["10", "11", "12", "13", "14", "14t"]
 
     steps:
     - name: Checkout
@@ -331,7 +331,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14"]
+        pyver: ["10", "11", "12", "13", "14", "14t"]
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
 
@@ -428,7 +428,7 @@ jobs:
 
     - name: Import GPG key
       id: import-gpg
-      uses: crazy-max/ghaction-import-gpg@master
+      uses: crazy-max/ghaction-import-gpg@v6
       with:
         gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
         passphrase: ${{ secrets.PASSPHRASE }}

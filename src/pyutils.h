@@ -25,7 +25,7 @@
 
 #include "ssrjson.h"
 #include "utils/unicode.h"
-#if defined(Py_GIL_DISABLED)
+#if !SSRJSON_GIL_ENABLED
 #    include <stdatomic.h>
 #endif
 
@@ -103,7 +103,9 @@ force_inline void init_pyunicode(void *head, Py_ssize_t size, int kind) {
     }
 #endif
     assert(_PyUnicode_CheckConsistency((PyObject *)unicode, 0));
+#if SSRJSON_GIL_ENABLED
     assert(ascii->ob_base.ob_refcnt == 1);
+#endif
 }
 
 // Create an empty unicode object with the given size and kind, like PyUnicode_New.
@@ -132,7 +134,7 @@ force_inline void make_hash(PyASCIIObject *ascii, const void *unicode_str, size_
 force_noinline void init_pyunicode_noinline(void *head, Py_ssize_t size, int kind);
 
 force_inline const u8 *pyunicode_get_utf8_cache(PyObject *unicode) {
-#if defined(Py_GIL_DISABLED)
+#if !SSRJSON_GIL_ENABLED
     return __c11_atomic_load((const _Atomic(void *) *)&SSRJSON_CAST(PyCompactUnicodeObject *, unicode)->utf8, memory_order_acquire);
 #else
     return (const u8 *)SSRJSON_PYCOMPACTUNICODE_CAST(unicode)->utf8;
@@ -147,14 +149,15 @@ force_inline void get_utf8_cache(PyObject *unicode, const u8 **utf8_cache_out, u
 }
 
 force_inline void set_cache(PyObject *str, const u8 **utf8_cache_addr, usize *utf8_length_addr) {
-#if defined(Py_GIL_DISABLED)
-    // TODO
-    const u8 *expected = NULL;
-    if (!atomic_compare_exchange_strong(&SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8, &expected, *utf8_cache_addr)) {
+#if !SSRJSON_GIL_ENABLED
+    u8 *expected = NULL;
+    if (!atomic_compare_exchange_strong((_Atomic(u8 *) *)&SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8, &expected, (u8 *)(*utf8_cache_addr))) {
         // already has an UTF-8 cache, free the allocated one
         PyMem_Free((void *)*utf8_cache_addr);
         *utf8_cache_addr = expected;
         assert(*utf8_length_addr == (usize)SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8_length);
+    } else {
+        SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8_length = (Py_ssize_t)*utf8_length_addr;
     }
 #else
     SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8 = (void *)*utf8_cache_addr;

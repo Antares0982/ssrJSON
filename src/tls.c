@@ -23,31 +23,82 @@
 #include "tls.h"
 #include <assert.h>
 
-TLS_KEY_TYPE _DecoderBufferLinkedList_Key;
+/*==============================================================================
+ * Thread local macros
+ *============================================================================*/
+#if defined(_POSIX_THREADS)
+#    define DO_TLS_INIT(_key_, _destructor_) success = success && (0 == pthread_key_create(&_key_, _destructor_))
+#    define DO_TLS_FREE(_key_) success = success && (0 == pthread_key_delete(_key_))
+#else
+#    define DO_TLS_INIT(_key_, _destructor_)         \
+        if (success) _key_ = FlsAlloc(_destructor_); \
+        if (_key_ == FLS_OUT_OF_INDEXES) success = false
+#    define DO_TLS_FREE(_key_) success = success && FlsFree(_key_)
+#endif
 
-void _tls_buffer_destructor(void *ptr) {
-    if (ptr) free(ptr);
+/*==============================================================================
+ * Thread local key definition
+ *============================================================================*/
+TLS_KEY_TYPE _DecoderBufferLinkedList_Key;
+#if !SSRJSON_GIL_ENABLED
+TLS_KEY_TYPE _EncoderContainerBuffer_Key;
+TLS_KEY_TYPE _DecoderKeyCache_Key;
+#endif
+
+/*==============================================================================
+ * Thread local destructors
+ *============================================================================*/
+void _tls_decode_buffer_destructor(void *ptr) {
+    if (ptr) {
+#if !SSRJSON_GIL_ENABLED
+        DecoderTLSData *tls_data_ptr = (DecoderTLSData *)ptr;
+        if (tls_data_ptr->cur_buffer) {
+            if (tls_data_ptr->cur_buffer->next) {
+                SSRJSON_ALIGNED_FREE(tls_data_ptr->cur_buffer->next);
+                tls_data_ptr->cur_buffer->next = NULL;
+            }
+            SSRJSON_ALIGNED_FREE(tls_data_ptr->cur_buffer);
+            tls_data_ptr->cur_buffer = NULL;
+        }
+#endif
+        free(ptr);
+    }
 }
 
+#if !SSRJSON_GIL_ENABLED
+void _tls_decode_key_cache_destructor(void *ptr) {
+    if (ptr) {
+        PyThreadState *tstate = PyThreadState_GetUnchecked();
+        if (unlikely(tstate) && Py_IsInitialized()) {
+            decode_cache_t *key_cache_arr = ptr;
+            for (usize i = 0; i < SSRJSON_KEY_CACHE_SIZE; ++i) {
+                Py_XDECREF(key_cache_arr[i].key);
+            }
+        }
+        free(ptr);
+    }
+}
+#endif
+
+/*==============================================================================
+ * Thread local init/free
+ *============================================================================*/
 bool ssrjson_tls_init(void) {
     bool success = true;
-#if defined(_POSIX_THREADS)
-    success = success && (0 == pthread_key_create(&_DecoderBufferLinkedList_Key, _tls_buffer_destructor));
-#else
-    if (success) _DecoderBufferLinkedList_Key = FlsAlloc(_tls_buffer_destructor);
-    if (_DecoderBufferLinkedList_Key == FLS_OUT_OF_INDEXES) success = false;
+    DO_TLS_INIT(_DecoderBufferLinkedList_Key, _tls_decode_buffer_destructor);
+#if !SSRJSON_GIL_ENABLED
+    DO_TLS_INIT(_EncoderContainerBuffer_Key, free);
+    DO_TLS_INIT(_DecoderKeyCache_Key, _tls_decode_key_cache_destructor);
 #endif
     return success;
 }
 
 bool ssrjson_tls_free(void) {
     bool success = true;
-#if defined(_POSIX_THREADS)
-    success = success && (0 == pthread_key_delete(_DecoderBufferLinkedList_Key));
-#else
-    success = success && FlsFree(_DecoderBufferLinkedList_Key);
+    DO_TLS_FREE(_DecoderBufferLinkedList_Key);
+#if !SSRJSON_GIL_ENABLED
+    DO_TLS_FREE(_EncoderContainerBuffer_Key);
+    DO_TLS_FREE(_DecoderKeyCache_Key);
 #endif
     return success;
 }
-
-// #endif // defined(Py_GIL_DISABLED)

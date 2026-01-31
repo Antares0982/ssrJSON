@@ -79,6 +79,6 @@ EncodePyTypes slow_type_check(PyTypeObject *type) {
 /*==============================================================================
  * Global Vars
  *============================================================================*/
-#if !defined(Py_GIL_DISABLED)
+#if SSRJSON_GIL_ENABLED
 EncodeCtnWithIndex _EncodeCtnBuffer[SSRJSON_ENCODE_MAX_RECURSION];
 #endif

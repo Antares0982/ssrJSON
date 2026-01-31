@@ -4,5 +4,6 @@
     "maxSupportVer": 15,
     "activeSupportingVer": 14,
     "latestUseStableNixpkgsVer": 12,
-    "latestWheelBuildableVer": 14
+    "latestWheelBuildableVer": 14,
+    "minSupportNoGILVer": 14
 }

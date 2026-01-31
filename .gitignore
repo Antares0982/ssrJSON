@@ -16,6 +16,9 @@ bench/*.py
 /src/version.h
 /benchmark_result*
 /_coverage
+/.github/prompts
+/.github/skills
+/openspec
 
 # reserved for packaging
 /result

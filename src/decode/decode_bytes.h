@@ -41,7 +41,7 @@
  @param msg The error message pointer.
  @return Whether success.
  */
-force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, bool is_key) {
+force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     /*
      Each unicode code point is encoded as 1 to 4 bytes in UTF-8 encoding,
      we use 4-byte mask and pattern value to validate UTF-8 byte sequence,
@@ -194,7 +194,7 @@ skip_ascii_end:
 
         // this is a fast path for ascii strings. directly copy the buffer to pyobject
         *ptr = src + 1;
-        return make_string(src_start, src - src_start, SSRJSON_STRING_TYPE_ASCII, is_key);
+        return make_string(src_start, src - src_start, SSRJSON_STRING_TYPE_ASCII, is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
     } else if (src != src_start) {
         ssrjson_memcpy(temp_string_buf, src_start, src - src_start);
         len_ucs1 = src - src_start;
@@ -755,7 +755,7 @@ finalize:
         final_type_flag = is_ascii ? SSRJSON_STRING_TYPE_ASCII : SSRJSON_STRING_TYPE_LATIN1;
     }
 
-    return make_string(temp_string_buf, final_string_length, final_type_flag, is_key);
+    return make_string(temp_string_buf, final_string_length, final_type_flag, is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 
 #undef return_err
 #undef is_valid_seq_1
@@ -764,12 +764,12 @@ finalize:
 #undef is_valid_seq_4
 }
 
-internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_buffer) {
-    return loads_bytes(ptr, write_buffer, false);
+internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+    return loads_bytes(ptr, write_buffer, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 }
 
 /** Read single value JSON document. */
-internal_simd_noinline PyObject *loads_root_single_bytes(DecoderBuffers *decoder_context, const u8 *dat, usize len) {
+internal_simd_noinline PyObject *loads_root_single_bytes(DecoderBuffers *decoder_context, const u8 *dat, usize len DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define return_err(_pos, _type, _msg)                                                             \
     do {                                                                                          \
         if (_type == JSONDecodeError) {                                                           \
@@ -800,7 +800,7 @@ internal_simd_noinline PyObject *loads_root_single_bytes(DecoderBuffers *decoder
         } else {
             write_buffer = decoder_context->decoder_ctx_temp_buffer;
         }
-        ret = loads_bytes_not_key(&cur, write_buffer);
+        ret = loads_bytes_not_key(&cur, write_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (dynamic) free(write_buffer);
         if (likely(ret)) goto single_end;
         goto fail_string;
@@ -929,7 +929,7 @@ force_inline bool should_loads_bytes_pretty(const u8 *buffer, Py_ssize_t len) {
     return false;
 }
 
-internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_context, char *_buffer, Py_ssize_t len, PyObject *object_hook) {
+internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_context, char *_buffer, Py_ssize_t len, PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     if (unlikely(!len)) {
         PyErr_Format(JSONDecodeError, "input data is empty");
         return NULL;
@@ -964,12 +964,12 @@ internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_co
     /* read json document */
     if (likely(char_is_container(*buffer))) {
         if (should_loads_bytes_pretty(buffer, len)) {
-            ret = loads_bytes_root_pretty(decoder_context, buffer, len, object_hook);
+            ret = loads_bytes_root_pretty(decoder_context, buffer, len, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         } else {
-            ret = loads_bytes_root_minify(decoder_context, buffer, len, object_hook);
+            ret = loads_bytes_root_minify(decoder_context, buffer, len, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         }
     } else {
-        ret = loads_root_single_bytes(decoder_context, buffer, len);
+        ret = loads_root_single_bytes(decoder_context, buffer, len DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
     }
 
     if (is_dynamic) SSRJSON_ALIGNED_FREE(_new_buffer);

@@ -1,9 +1,11 @@
 {
   pkgs,
+  lib,
   clangStdenv,
   python,
   cmake,
   forNonNix ? true,
+  useNoGIL ? false,
   ...
 }:
 let
@@ -14,22 +16,20 @@ let
       python
       cmake
       forNonNix
+      useNoGIL
       ;
   };
-  # workaround until `nix build .#ssrjson-wheel-py314` works normally
-  auditwheelSkipTest =
-    pypkgs:
-    pypkgs.auditwheel.overrideAttrs {
-      pytestCheckPhase = ":";
-    };
+
+  # TODO workaround until `nix build .#nixpkgs.legacyPackages.x86_64-linux.python314Packages.auditwheel` works normally
+  _overrideAuditwheel =
+    lib.attrsets.optionalAttrs (pkgs.lib.strings.toInt python.sourceVersion.minor >= 14)
+      {
+        pytestCheckPhase = ":";
+      };
+  auditwheelSkipTest = pypkgs: pypkgs.auditwheel.overrideAttrs _overrideAuditwheel;
   pyenv = python.withPackages (
     pypkgs: with pypkgs; [
-      (
-        if (pkgs.lib.strings.toInt python.sourceVersion.minor) < 14 then
-          auditwheel
-        else
-          (auditwheelSkipTest pypkgs)
-      )
+      (auditwheelSkipTest pypkgs)
       build
       setuptools
       wheel
@@ -53,18 +53,22 @@ clangStdenv.mkDerivation {
     cp -r ${./../..}/* .
     chmod -R 700 .
   '';
-  buildPhase = ''
-    SSRJSON_SONAME=ssrjson.cpython-3${python.sourceVersion.minor}-${abiflag}.so
-    cp -r pysrc ssrjson
-    cp licenses/* .
-    cp ${dylib}/$SSRJSON_SONAME ssrjson
-    chmod 700 ssrjson/$SSRJSON_SONAME
-    strip --strip-all ssrjson/$SSRJSON_SONAME
-    python dev_tools/check_glibc_version.py ssrjson/$SSRJSON_SONAME ${targetGLIBCVerString}
-    SSRJSON_USE_NIX_PREBUILT=1 python -m build --no-isolation
-    auditwheel repair --plat ${auditWheelPlat} dist/*.whl
-    mkdir -p $out
-    cp wheelhouse/*.whl $out
-  '';
+  buildPhase =
+    let
+      pyver-abiname = (builtins.toString python.sourceVersion.minor) + (lib.optionalString useNoGIL "t");
+    in
+    ''
+      SSRJSON_SONAME=ssrjson.cpython-3${pyver-abiname}-${abiflag}.so
+      cp -r pysrc ssrjson
+      cp licenses/* .
+      cp ${dylib}/$SSRJSON_SONAME ssrjson
+      chmod 700 ssrjson/$SSRJSON_SONAME
+      strip --strip-all ssrjson/$SSRJSON_SONAME
+      python dev_tools/check_glibc_version.py ssrjson/$SSRJSON_SONAME ${targetGLIBCVerString}
+      SSRJSON_USE_NIX_PREBUILT=1 python -m build --no-isolation
+      auditwheel repair --plat ${auditWheelPlat} dist/*.whl
+      mkdir -p $out
+      cp wheelhouse/*.whl $out
+    '';
   buildInputs = [ pyenv ];
 }

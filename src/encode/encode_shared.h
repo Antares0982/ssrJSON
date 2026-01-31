@@ -23,10 +23,13 @@
 #ifndef SSRJSON_ENCODE_SHARED_H
 #define SSRJSON_ENCODE_SHARED_H
 
+#include "encode_typedefs.h"
 #include "simd/simd_detect.h"
-#include "ssrjson.h"
 #include "tls.h"
 #include "utils/unicode.h"
+#if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
+#    include "khash.h"
+#endif
 
 /*==============================================================================
  * Macros
@@ -61,85 +64,15 @@
 #define GET_VEC_COMPACT_START(_unicode_buffer_info_) (SSRJSON_CAST(PyCompactUnicodeObject *, (_unicode_buffer_info_)->head) + 1)
 
 /*==============================================================================
- * Enums
- *============================================================================*/
-typedef enum EncodeContainerType {
-    EncodeContainerType_Dict = 0,
-    EncodeContainerType_List = 1,
-    EncodeContainerType_Tuple = 2,
-} EncodeContainerType;
-
-typedef enum EncodePyTypes {
-    T_Unicode,
-    T_Long,
-    T_Bool,
-    T_None,
-    T_Float,
-    T_List,
-    T_Dict,
-    T_Tuple,
-    T_UnicodeNonCompact,
-    T_Unknown,
-} EncodePyTypes;
-
-typedef enum EncodeValJumpFlag {
-    JumpFlag_Default,
-    JumpFlag_ArrValBegin,
-    JumpFlag_DictPairBegin,
-    JumpFlag_TupleValBegin,
-    JumpFlag_Elevate1_ArrVal,
-    JumpFlag_Elevate1_ObjVal,
-    JumpFlag_Elevate1_Key,
-    JumpFlag_Elevate2_ArrVal,
-    JumpFlag_Elevate2_ObjVal,
-    JumpFlag_Elevate2_Key,
-    JumpFlag_Elevate4_ArrVal,
-    JumpFlag_Elevate4_ObjVal,
-    JumpFlag_Elevate4_Key,
-    JumpFlag_Fail,
-} EncodeValJumpFlag;
-
-typedef enum EncodeCallFlag {
-    CallFlag_ObjVal,
-    CallFlag_ArrVal,
-    CallFlag_Key,
-} EncodeCallFlag;
-
-/*==============================================================================
- * Typedefs
- *============================================================================*/
-
-typedef struct EncodeCtnWithIndex {
-    PyObject *ctn;
-    usize index_and_type;
-} EncodeCtnWithIndex;
-
-typedef struct EncodeUnicodeInfo {
-    Py_ssize_t ascii_size;
-    Py_ssize_t u8_size;
-    Py_ssize_t u16_size;
-    Py_ssize_t u32_size;
-    int cur_ucs_type;
-} EncodeUnicodeInfo;
-
-typedef struct EncodeUnicodeBufferInfo {
-    void *head;
-    void *end;
-} EncodeUnicodeBufferInfo;
-
-typedef void *EncodeUnicodeWriter;
-
-/*==============================================================================
  * Global Vars
  *============================================================================*/
-#if !defined(Py_GIL_DISABLED)
+#if SSRJSON_GIL_ENABLED
 extern EncodeCtnWithIndex _EncodeCtnBuffer[SSRJSON_ENCODE_MAX_RECURSION];
 
 force_inline EncodeCtnWithIndex *get_encode_obj_stack_buffer(void) {
     return _EncodeCtnBuffer;
 }
 #endif
-
 /*==============================================================================
  * Utils
  *============================================================================*/
@@ -511,10 +444,14 @@ force_inline u8 *write_u64(u64 val, u8 *buf) {
 force_inline bool init_encode_ctn_stack(EncodeCtnWithIndex **ctn_stack_addr) {
     EncodeCtnWithIndex *ctn_stack = get_encode_obj_stack_buffer();
     *ctn_stack_addr = ctn_stack;
+#if SSRJSON_GIL_ENABLED
+    assert(ctn_stack);
+#else
     if (unlikely(!ctn_stack)) {
         PyErr_NoMemory();
         return false;
     }
+#endif
     return true;
 }
 
@@ -540,5 +477,12 @@ force_inline bool init_unicode_buffer(EncodeUnicodeWriter *writer_addr, EncodeUn
 force_inline bool init_bytes_buffer(u8 **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info) {
     return _init_encode_buffer(SSRJSON_CAST(EncodeUnicodeWriter *, writer_addr), unicode_buffer_info, PYBYTES_START_OFFSET);
 }
+
+/*==============================================================================
+ * Hash set for free-threading circular reference detection
+ *============================================================================*/
+#if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
+KHASH_SET_INIT_INT64(ptr_set)
+#endif
 
 #endif // SSRJSON_ENCODE_SHARED_H

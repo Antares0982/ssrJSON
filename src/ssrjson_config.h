@@ -119,6 +119,16 @@
 #    define SSRJSON_OBJECT_HOOK_MAX_RECURSION 32
 #endif
 
+#if defined(Py_GIL_DISABLED)
+#    define SSRJSON_GIL_ENABLED 0
+#else
+#    define SSRJSON_GIL_ENABLED 1
+#endif
+
+#if !defined(SSRJSON_FREE_THREADING_LOCKFREE)
+#    define SSRJSON_FREE_THREADING_LOCKFREE 0
+#endif
+
 /** Type definition for primitive types. */
 typedef float f32;
 typedef double f64;

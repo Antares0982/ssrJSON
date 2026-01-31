@@ -96,7 +96,7 @@ force_inline int decode_str_fast_trailing(const _src_t **src_addr, const _src_t 
 }
 
 // fast path unicode maker
-force_inline PyObject *make_unicode_from_src(const _src_t *start, usize count, bool is_key, vector_a maxvec, void *temp_buffer) {
+force_inline PyObject *make_unicode_from_src(const _src_t *start, usize count, bool is_key, vector_a maxvec, void *temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     const _src_t upper_bound = (COMPILE_UCS_LEVEL == 1) ? 0x7f : ((COMPILE_UCS_LEVEL == 2) ? 0xff : 0xffff);
 
     PyObject *ret;
@@ -134,7 +134,7 @@ force_inline PyObject *make_unicode_from_src(const _src_t *start, usize count, b
         usize hash_string_u8size;
         get_cache_key_hash_and_size(&hash_string_ptr, &hash_string_u8size, start, count, tpsize, need_size_cvt, temp_buffer);
         hash = XXH3_64bits(hash_string_ptr, hash_string_u8size);
-        ret = get_key_cache(hash_string_ptr, hash, hash_string_u8size, kind);
+        ret = get_key_cache(hash_string_ptr, hash, hash_string_u8size, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (ret) {
             goto done;
         }
@@ -153,7 +153,7 @@ force_inline PyObject *make_unicode_from_src(const _src_t *start, usize count, b
             MAKE_UCS_NAME(copy_to_new_unicode)(&dst_void, ret, need_cvt, start, count, kind);
         }
         if (should_cache) {
-            add_key_cache(hash, ret, count * tpsize, kind);
+            add_key_cache(hash, ret, count * tpsize, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         }
         if (should_hash) {
             assert(count && SSRJSON_CAST(PyASCIIObject *, ret)->hash == -1);
@@ -584,7 +584,7 @@ internal_simd_noinline PyObject *decode_str(
         const _src_t **src_addr,
         const _src_t *const src_end,
         void *temp_buffer,
-        bool is_key) {
+        bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
 #define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
 #define LOOP_SWITCHER(_status_code_)        \
@@ -668,7 +668,7 @@ internal_simd_noinline PyObject *decode_str(
 
 done:;
     *src_addr = src + 1; // skip the ending '"'
-    return make_unicode_from_src(original_src, src - original_src, is_key, maxvec, temp_buffer);
+    return make_unicode_from_src(original_src, src - original_src, is_key, maxvec, temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 
 failed:;
     *src_addr = src;

@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15"]
+        pyver: ["10", "11", "12", "13", "14", "15", "14t"]
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -21,3 +21,7 @@ jobs:
     - name: Run asan check
       run: |
         nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --asan
+    - name: Run asan check (lockfree)
+      if: contains(matrix.pyver, 't')
+      run: |
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --asan --lockfree

@@ -26,6 +26,9 @@
 #include "ssrjson_config.h"
 //
 #include "decode/decode_shared.h"
+#if !SSRJSON_GIL_ENABLED
+#    include "encode/encode_typedefs.h"
+#endif
 
 #if defined(_POSIX_THREADS)
 #    include <pthread.h>
@@ -90,5 +93,55 @@ force_inline DecoderTLSData *tls_get_decoder_data(void) {
     }
     return (DecoderTLSData *)value;
 }
+
+/*==============================================================================
+ * Thread local encoder container buffer
+ *============================================================================*/
+#if !SSRJSON_GIL_ENABLED
+
+extern TLS_KEY_TYPE _EncoderContainerBuffer_Key;
+
+SSRJSON_DECLARE_TLS_GETTER(_EncoderContainerBuffer_Key, _get_encoder_buffer_pointer)
+SSRJSON_DECLARE_TLS_SETTER(_EncoderContainerBuffer_Key, _set_encoder_buffer_pointer)
+
+force_inline EncodeCtnWithIndex *get_encode_obj_stack_buffer(void) {
+    void *value = _get_encoder_buffer_pointer();
+    if (unlikely(value == NULL)) {
+        value = malloc(sizeof(EncodeCtnWithIndex) * SSRJSON_ENCODE_MAX_RECURSION);
+        if (unlikely(value == NULL)) return NULL;
+        // memset(value, 0, sizeof(DecoderTLSData));
+        bool succ = _set_encoder_buffer_pointer(value);
+        if (unlikely(!succ)) {
+            free(value);
+            return NULL;
+        }
+    }
+    return (EncodeCtnWithIndex *)value;
+}
+#endif
+
+/*==============================================================================
+ * Thread local decoder key cache
+ *============================================================================*/
+#if !SSRJSON_GIL_ENABLED
+extern TLS_KEY_TYPE _DecoderKeyCache_Key;
+
+SSRJSON_DECLARE_TLS_GETTER(_DecoderKeyCache_Key, _get_decoder_key_cache_pointer)
+SSRJSON_DECLARE_TLS_SETTER(_DecoderKeyCache_Key, _set_decoder_key_cache_pointer)
+
+force_inline decode_cache_t *get_tls_decoder_key_cache(void) {
+    void *value = _get_decoder_key_cache_pointer();
+    if (unlikely(value == NULL)) {
+        value = calloc(SSRJSON_KEY_CACHE_SIZE, sizeof(decode_cache_t));
+        if (unlikely(value == NULL)) return NULL;
+        bool succ = _set_decoder_key_cache_pointer(value);
+        if (unlikely(!succ)) {
+            free(value);
+            return NULL;
+        }
+    }
+    return (decode_cache_t *)value;
+}
+#endif
 
 #endif // SSRJSON_TLS_H

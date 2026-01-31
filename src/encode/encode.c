@@ -480,9 +480,9 @@ dumps_container:;
             PyErr_SetString(JSONEncodeError, "Failed to decode JSON: unknown error");
         }
     }
-
+#if SSRJSON_GIL_ENABLED
     assert(!ret || ret->ob_refcnt == 1);
-
+#endif
     return ret;
 
 dumps_unicode:;
@@ -661,7 +661,9 @@ dumps_container:;
         }
     }
 
+#if SSRJSON_GIL_ENABLED
     assert(!ret || ret->ob_refcnt == 1);
+#endif
 
     return ret;
 

@@ -33,6 +33,12 @@ class TestDict:
         assert ssrjson.loads(ssrjson.dumps(obj)) == obj
         assert ssrjson.loads(ssrjson.dumps_to_bytes(obj)) == obj
 
+    def test_nested(self):
+        nested = []
+        for i in range(100):
+            nested = [{"level": i, "next": nested}]
+        ssrjson.dumps(nested)
+
     def test_dict_large_4096(self):
         """
         dict with >4096 keys

@@ -18,6 +18,7 @@ jobs:
     - name: Run coverage test
       run: |
         nix develop -c bash ./dev_tools/coverage_test.sh
+        nix develop .#devenv-py314t -c bash ./dev_tools/coverage_test.sh
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
       with:

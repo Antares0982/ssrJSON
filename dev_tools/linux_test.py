@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 import subprocess
@@ -6,6 +5,7 @@ import sys
 import warnings
 
 SSRJSON_FILE = "ssrjson.so"
+IS_GIL_ENABLED = not hasattr(sys, "_is_gil_enabled") or sys._is_gil_enabled()  # pylint: disable=protected-access
 
 
 def find_python_cmake_env():
@@ -14,11 +14,13 @@ def find_python_cmake_env():
     include_dir = os.path.dirname(get_config_h_filename())
     lib_dir = get_config_var("LIBDIR")
     minor = sys.version_info[1]
-    library_file = os.path.join(lib_dir, f"libpython3.{minor}.so")
+    library_file = os.path.join(
+        lib_dir, f"libpython3.{minor}{'t' if not IS_GIL_ENABLED else ''}.so"
+    )
     return include_dir, library_file
 
 
-def build(build_dir: str, build_type: str, asan: bool) -> None:
+def build(build_dir: str, build_type: str, asan: bool, lockfree: bool) -> None:
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
     new_env = os.environ.copy()
@@ -36,6 +38,10 @@ def build(build_dir: str, build_type: str, asan: bool) -> None:
         build_dir,
         "-DCMAKE_BUILD_TYPE=" + build_type,
     ]
+    if not IS_GIL_ENABLED:
+        configure_cmd += ["-DBUILD_FREE_THREADING=ON"]
+    if lockfree:
+        configure_cmd += ["-DFREE_THREADING_LOCKFREE=ON"]
 
     include_dir, library_file = find_python_cmake_env()
     new_env["Python3_INCLUDE_DIR"] = include_dir
@@ -135,6 +141,9 @@ def main() -> int:
     parser.add_argument(
         "--asan", help="Run address sanitizer check", action="store_true"
     )
+    parser.add_argument(
+        "--lockfree", help="Test lock-free free-threading build", action="store_true"
+    )
     parser.add_argument("--build-only", help="Build only", action="store_true")
     parser.add_argument(
         "--build-dir",
@@ -143,10 +152,15 @@ def main() -> int:
     )
     args = parser.parse_args()
     build_type: str = args.build_type
-    build_dir: str = args.build_dir
     asan = bool(args.asan)
+    lockfree = bool(args.lockfree)
     build_only = bool(args.build_only)
-    build(build_dir, build_type, asan)
+    build_dir: str = args.build_dir
+    if lockfree and IS_GIL_ENABLED:
+        raise ValueError(
+            "Lock-free free-threading build is not supported when GIL is enabled"
+        )
+    build(build_dir, build_type, asan, lockfree)
     if not build_only:
         test(build_dir, asan)
     return 0

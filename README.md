@@ -202,7 +202,7 @@ Call `get_current_features` to get current features and settings of ssrJSON.
 
 ```python
 >>> ssrjson.get_current_features()
-{'multi_lib': True, 'write_utf8_cache': True, 'strict_arg_parse': False, 'simd': 'AVX2'}
+{'multi_lib': True, 'write_utf8_cache': True, 'strict_arg_parse': False, 'simd': 'AVX2', "free_threading": False}
 ```
 
 ## Features
@@ -293,6 +293,12 @@ The case of `math.nan` is similar.
 [nan, nan, nan, nan]
 ```
 
+### Free Threading
+
+ssrJSON experimentally supports free-threading (Python >= 3.14). You can find stable wheel releases on PyPI. When building from source, enable this feature by specifying `-DBUILD_FREE_THREADING=ON`. In that build, during encoding ssrJSON acquires locks on dict and list objects from outer to inner; if another thread attempts to lock those objects in a different order, a deadlock may occur — this is expected behavior. If you encounter unexpected crashes, please file an issue. Decoding is lock-free.
+
+If you require a lock-free encoding variant, build from source with `-DFREE_THREADING_LOCKFREE=ON`. Compared with the lock-based version, the lock-free version achieves approximately a 13% improvement in single-threaded encoding performance. In that configuration, multi-threaded modifications of the same dict/list can cause the program to crash; users are responsible for ensuring there are no race conditions. Lock-free builds are not distributed on PyPI.
+
 ## License
 
 This project is licensed under the MIT License. Licenses of other repositories are under [licenses](licenses) directory.
@@ -306,4 +312,5 @@ We would like to express our gratitude to the outstanding libraries and their au
 - [orjson](https://github.com/ijl/orjson): ssrJSON references parts of orjson’s SIMD-based ASCII string encoding and decoding algorithms, as well as the key caching mechanism. Additionally, ssrJSON utilizes orjson’s pytest framework for testing purposes.
 - [Dragonbox](https://github.com/jk-jeon/dragonbox): ssrJSON employs Dragonbox for high-performance floating-point encoding.
 - [xxHash](https://github.com/Cyan4973/xxHash): ssrJSON leverages xxHash to efficiently compute hash values for key caching.
+- [klib](https://github.com/attractivechaos/klib): ssrJSON uses khash to implement circular detection in free-threading build.
 
