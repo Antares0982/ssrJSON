@@ -202,7 +202,7 @@ Call `get_current_features` to get current features and settings of ssrJSON.
 
 ```python
 >>> ssrjson.get_current_features()
-{'multi_lib': True, 'write_utf8_cache': True, 'strict_arg_parse': False, 'simd': 'AVX2', "free_threading": False}
+{'multi_lib': True, 'write_utf8_cache': True, 'strict_arg_parse': False, 'free_threading': False, 'lockfree': False, 'simd': 'AVX2'}
 ```
 
 ## Features
