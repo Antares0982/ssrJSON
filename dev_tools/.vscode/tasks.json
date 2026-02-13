@@ -193,6 +193,52 @@
                 "isDefault": true
             },
             "detail": "Run coverage test"
+        },
+        {
+            "label": "Emit Assembly",
+            "type": "shell",
+            "command": "./dev_tools/emit_asm.py",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "${workspaceFolder}/.nix-devenv/bin/python"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Generate assembly files from compile_commands.json"
+        },
+        {
+            "label": "Analyze Call Graph",
+            "type": "shell",
+            "command": "${workspaceFolder}/.nix-devenv/bin/python ${workspaceFolder}/dev_tools/call_graph.py ${workspaceFolder}/build/ssrjson.so",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "bash",
+                        "-c"
+                    ]
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Analyze function call graph in ssrjson.so and generate DOT file"
         }
     ]
 }
