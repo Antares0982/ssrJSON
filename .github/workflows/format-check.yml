@@ -1,0 +1,35 @@
+name: Format Check
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - "src/**"
+      - "CMakeLists.txt"
+  pull_request:
+    paths:
+      - "src/**"
+      - "CMakeLists.txt"
+
+jobs:
+  formatting-check:
+    name: Formatting Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Install clang-format and cmake-format
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format
+        pip install cmake-format
+    - name: Run format check
+      run: |
+        bash dev_tools/format-src.sh
+        if ! git diff --exit-code; then
+          echo "::error::The following files are not properly formatted:"
+          git diff --name-only
+          exit 1
+        fi
