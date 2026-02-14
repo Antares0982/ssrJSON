@@ -20,14 +20,11 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-    - name: Install clang-format and cmake-format
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y clang-format
-        pip install cmake-format
+    - name: Install nix
+      uses: cachix/install-nix-action@master
     - name: Run format check
       run: |
-        bash dev_tools/format-src.sh
+        nix shell nixpkgs#clang-tools nixpkgs#cmake-format -c bash ./dev_tools/format-src.sh
         if ! git diff --exit-code; then
           echo "::error::The following files are not properly formatted:"
           git diff --name-only
