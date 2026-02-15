@@ -131,8 +131,12 @@
 #endif
 
 #ifndef ssrjson_compiletime
+// indicates that an argument is immediate
 #    define ssrjson_compiletime
+// indicates that an `if` statement is evaluated at compile time
 #    define ssrjson_consteval(_x_) (_x_)
+// indicates that a writer function does not fail
+#    define ssrjson_nofail
 #endif
 
 /** compiler version (MSVC) */
@@ -389,11 +393,11 @@ __extension__ typedef unsigned __int128 u128;
 
 
 /* Helper for quickly write an err handle. */
-#define RETURN_ON_UNLIKELY_ERR(x) \
-    do {                          \
-        if (unlikely((x))) {      \
-            return false;         \
-        }                         \
+#define return_if_unlikely(_x_) \
+    do {                        \
+        if (unlikely((_x_))) {  \
+            return false;       \
+        }                       \
     } while (0)
 
 /* Some constants. */

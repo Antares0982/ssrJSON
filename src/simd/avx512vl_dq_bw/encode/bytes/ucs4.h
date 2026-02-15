@@ -222,16 +222,15 @@ force_inline void ucs4_encode_3bytes_utf8_avx512(u8 *writer, vector_a z) {
  *   vector in 3-bytes range
  * 4-bytes case is considered as *unlikely*.
  */
-force_inline bool bytes_write_ucs4_trailing_512(u8 **writer_addr, const u32 *src, usize len) {
+force_inline u8 *bytes_write_ucs4_trailing_512(u8 *writer, const u32 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
-    //
-    u8 *writer = *writer_addr;
     //
     u16 maskz = len_to_maskz(len);
     vector_a vec = maskz_loadu(maskz, src);
     if (len == 1) {
     one_left:;
-        if (unlikely(!encode_one_ucs4(&writer, *src))) return false;
+        writer = encode_one_ucs4(writer, *src);
+        if (unlikely(!writer)) return NULL;
         goto finished;
     }
     u32 cur_unicode = *src;
@@ -264,7 +263,8 @@ restart:;
             goto _3bytes;
         }
         case 4: {
-            if (unlikely(!encode_one_ucs4(&writer, cur_unicode))) return false;
+            writer = encode_one_ucs4(writer, cur_unicode);
+            if (unlikely(!writer)) return NULL;
             src++;
             len--;
             if (len) {
@@ -299,7 +299,8 @@ ascii:;
             if (escape_unicode >= ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash && escape_unicode != _Quote) {
                 SSRJSON_UNREACHABLE();
             } else {
-                if (unlikely(!encode_one_ucs4(&writer, escape_unicode))) return false;
+                writer = encode_one_ucs4(writer, escape_unicode);
+                if (unlikely(!writer)) return NULL;
             }
             if (len) {
                 maskz = maskz >> (done_count + 1);
@@ -332,7 +333,8 @@ _2bytes:;
             if (escape_unicode >= 0x80 && escape_unicode <= 0x7ff) {
                 SSRJSON_UNREACHABLE();
             } else {
-                if (unlikely(!encode_one_ucs4(&writer, escape_unicode))) return false;
+                writer = encode_one_ucs4(writer, escape_unicode);
+                if (unlikely(!writer)) return NULL;
             }
             if (len) {
                 maskz = maskz >> (done_count + 1);
@@ -365,7 +367,8 @@ _3bytes:;
             if (escape_unicode >= 0x800 && escape_unicode <= 0xffff && (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)) {
                 SSRJSON_UNREACHABLE();
             } else {
-                if (unlikely(!encode_one_ucs4(&writer, escape_unicode))) return false;
+                writer = encode_one_ucs4(writer, escape_unicode);
+                if (unlikely(!writer)) return NULL;
             }
             if (len) {
                 maskz = maskz >> (done_count + 1);
@@ -381,24 +384,22 @@ _3bytes:;
         }
     }
 finished:;
-    *writer_addr = writer;
-    return true;
+    return writer;
 }
 
 /* See AVX2 code for more details. */
 #define __readbefore_bytes_write_ucs4_raw_utf8_trailing_512 (0)
 #define __excess_bytes_write_ucs4_raw_utf8_trailing_512 (48 - max_utf8_bytes_per_ucs4)
 
-force_inline bool bytes_write_ucs4_raw_utf8_trailing_512(u8 **writer_addr, const u32 *src, usize len) {
+force_inline u8 *bytes_write_ucs4_raw_utf8_trailing_512(u8 *writer, const u32 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
-    //
-    u8 *writer = *writer_addr;
     //
     u16 maskz = len_to_maskz(len);
     vector_a vec = maskz_loadu(maskz, src);
     if (len == 1) {
     one_left:;
-        if (unlikely(!encode_one_ucs4_noescape(&writer, *src))) return false;
+        writer = encode_one_ucs4_noescape(writer, *src);
+        if (unlikely(!writer)) return NULL;
         goto finished;
     }
     u32 cur_unicode = *src;
@@ -416,7 +417,8 @@ restart:;
             goto _3bytes;
         }
         case 4: {
-            if (unlikely(!encode_one_ucs4_noescape(&writer, cur_unicode))) return false;
+            writer = encode_one_ucs4_noescape(writer, cur_unicode);
+            assert(writer);
             src++;
             len--;
             if (len) {
@@ -449,7 +451,8 @@ ascii:;
             len -= done_count + 1;
             writer += done_count;
             assume(escape_unicode >= 128);
-            if (unlikely(!encode_one_ucs4_noescape(&writer, escape_unicode))) return false;
+            writer = encode_one_ucs4_noescape(writer, escape_unicode);
+            if (unlikely(!writer)) return NULL;
             if (len) {
                 maskz = maskz >> (done_count + 1);
                 cur_unicode = *src;
@@ -480,7 +483,8 @@ _2bytes:;
             len -= done_count + 1;
             writer += done_count * 2;
             assume(!(escape_unicode >= 0x80 && escape_unicode <= 0x7ff));
-            if (unlikely(!encode_one_ucs4_noescape(&writer, escape_unicode))) return false;
+            writer = encode_one_ucs4_noescape(writer, escape_unicode);
+            if (unlikely(!writer)) return NULL;
             if (len) {
                 maskz = maskz >> (done_count + 1);
                 cur_unicode = *src;
@@ -511,7 +515,8 @@ _3bytes:;
             len -= done_count + 1;
             writer += done_count * 3;
             assume(!(escape_unicode >= 0x800 && escape_unicode <= 0xffff && (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)));
-            if (unlikely(!encode_one_ucs4_noescape(&writer, escape_unicode))) return false;
+            writer = encode_one_ucs4_noescape(writer, escape_unicode);
+            if (unlikely(!writer)) return NULL;
             if (len) {
                 maskz = maskz >> (done_count + 1);
                 cur_unicode = *src;
@@ -527,8 +532,7 @@ _3bytes:;
         // ---unreachable here---
     }
 finished:;
-    *writer_addr = writer;
-    return true;
+    return writer;
 }
 
 #include "compile_context/srw_out.inl.h"

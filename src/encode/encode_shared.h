@@ -56,9 +56,6 @@
 #define WRITER_AS_U8(_writer_) (*SSRJSON_CAST(u8 **, &(_writer_)))
 #define WRITER_AS_U16(_writer_) (*SSRJSON_CAST(u16 **, &(_writer_)))
 #define WRITER_AS_U32(_writer_) (*SSRJSON_CAST(u32 **, &(_writer_)))
-#define WRITER_ADDR_AS_U8(_writer_addr_) (*SSRJSON_CAST(u8 **, (_writer_addr_)))
-#define WRITER_ADDR_AS_U16(_writer_addr_) (*SSRJSON_CAST(u16 **, (_writer_addr_)))
-#define WRITER_ADDR_AS_U32(_writer_addr_) (*SSRJSON_CAST(u32 **, (_writer_addr_)))
 
 #define GET_VEC_ASCII_START(_unicode_buffer_info_) (SSRJSON_CAST(PyASCIIObject *, (_unicode_buffer_info_)->head) + 1)
 #define GET_VEC_COMPACT_START(_unicode_buffer_info_) (SSRJSON_CAST(PyCompactUnicodeObject *, (_unicode_buffer_info_)->head) + 1)
@@ -455,27 +452,28 @@ force_inline bool init_encode_ctn_stack(EncodeCtnWithIndex **ctn_stack_addr) {
     return true;
 }
 
-force_inline bool _init_encode_buffer(EncodeUnicodeWriter *writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, usize u8_start_offset) {
+force_inline EncodeUnicodeWriter _init_encode_buffer(EncodeUnicodeBufferInfo *unicode_buffer_info, usize u8_start_offset) {
+    EncodeUnicodeWriter writer;
     unicode_buffer_info->head = PyObject_Malloc(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
     if (likely(unicode_buffer_info->head)) {
 #ifndef NDEBUG
         memset(unicode_buffer_info->head, 0, SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
 #endif
-        WRITER_ADDR_AS_U8(writer_addr) = SSRJSON_CAST(u8 *, unicode_buffer_info->head) + u8_start_offset;
+        WRITER_AS_U8(writer) = SSRJSON_CAST(u8 *, unicode_buffer_info->head) + u8_start_offset;
         unicode_buffer_info->end = SSRJSON_CAST(u8 *, unicode_buffer_info->head) + SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE;
     } else {
         PyErr_NoMemory();
-        return false;
+        return NULL;
     }
-    return true;
+    return writer;
 }
 
-force_inline bool init_unicode_buffer(EncodeUnicodeWriter *writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return _init_encode_buffer(writer_addr, unicode_buffer_info, sizeof(PyASCIIObject));
+force_inline EncodeUnicodeWriter init_unicode_buffer(EncodeUnicodeBufferInfo *unicode_buffer_info) {
+    return _init_encode_buffer(unicode_buffer_info, sizeof(PyASCIIObject));
 }
 
-force_inline bool init_bytes_buffer(u8 **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return _init_encode_buffer(SSRJSON_CAST(EncodeUnicodeWriter *, writer_addr), unicode_buffer_info, PYBYTES_START_OFFSET);
+force_inline u8 *init_bytes_buffer(EncodeUnicodeBufferInfo *unicode_buffer_info) {
+    return _init_encode_buffer(unicode_buffer_info, PYBYTES_START_OFFSET);
 }
 
 /*==============================================================================

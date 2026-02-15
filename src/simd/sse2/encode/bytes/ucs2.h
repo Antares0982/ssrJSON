@@ -113,19 +113,19 @@ force_inline void ucs2_encode_2bytes_utf8_sse2(u8 *writer, vector_a x) {
  *   vector in 2-bytes range
  *   vector in 3-bytes range
  */
-force_inline bool bytes_write_ucs2_trailing_128(u8 **writer_addr, const u16 *src, usize len) {
+force_inline u8 *bytes_write_ucs2_trailing_128(u8 *writer, const u16 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
     const u16 *const src_end = src + len;
     const u16 *const last_batch_start = src_end - READ_BATCH_COUNT;
     const vector_a vec = *(const vector_u *)last_batch_start;
-    u8 *writer = *writer_addr;
     //
     vector_a m, tail_vec;
     usize shift;
 
 restart:;
     if (len == 1) {
-        if (unlikely(!encode_one_ucs2(&writer, *src))) return false;
+        writer = encode_one_ucs2(writer, *src);
+        if (unlikely(!writer)) return NULL;
         goto finished;
     }
     u16 cur_unicode = *src;
@@ -150,7 +150,8 @@ restart:;
 #if __SSSE3__
             goto _3bytes;
 #else
-            if (unlikely(!encode_one_ucs2(&writer, cur_unicode))) return false;
+            writer = encode_one_ucs2(writer, cur_unicode);
+            if (unlikely(!writer)) return NULL;
             src++;
             len--;
             if (len) goto restart;
@@ -183,7 +184,8 @@ ascii:;
             if (escape_unicode >= ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash && escape_unicode != _Quote) {
                 SSRJSON_UNREACHABLE();
             } else {
-                if (unlikely(!encode_one_ucs2(&writer, escape_unicode))) return false;
+                writer = encode_one_ucs2(writer, escape_unicode);
+                if (unlikely(!writer)) return NULL;
             }
             if (len) goto restart;
             goto finished;
@@ -211,7 +213,8 @@ _2bytes:;
             if (escape_unicode >= 0x80 && escape_unicode <= 0x7ff) {
                 SSRJSON_UNREACHABLE();
             } else {
-                if (unlikely(!encode_one_ucs2(&writer, escape_unicode))) return false;
+                writer = encode_one_ucs2(writer, escape_unicode);
+                if (unlikely(!writer)) return NULL;
             }
             if (len) goto restart;
             goto finished;
@@ -241,7 +244,8 @@ _3bytes:;
             if (escape_unicode >= 0x800 && (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)) {
                 SSRJSON_UNREACHABLE();
             } else {
-                if (unlikely(!encode_one_ucs2(&writer, escape_unicode))) return false;
+                writer = encode_one_ucs2(writer, escape_unicode);
+                if (unlikely(!writer)) return NULL;
             }
             if (len) goto restart;
             goto finished;
@@ -250,27 +254,26 @@ _3bytes:;
     }
 #endif
 finished:;
-    *writer_addr = writer;
-    return true;
+    return writer;
 }
 
 /* See AVX2 code for more details. */
 #define __readbefore_bytes_write_ucs2_raw_utf8_trailing_128 (16)
 #define __excess_bytes_write_ucs2_raw_utf8_trailing_128 (24 - max_utf8_bytes_per_ucs2)
 
-force_inline bool bytes_write_ucs2_raw_utf8_trailing_128(u8 **writer_addr, const u16 *src, usize len) {
+force_inline u8 *bytes_write_ucs2_raw_utf8_trailing_128(u8 *writer, const u16 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
     const u16 *const src_end = src + len;
     const u16 *const last_batch_start = src_end - READ_BATCH_COUNT;
     const vector_a vec = *(const vector_u *)last_batch_start;
-    u8 *writer = *writer_addr;
     //
     vector_a m, tail_vec;
     usize shift;
 
 restart:;
     if (len == 1) {
-        if (unlikely(!encode_one_ucs2_noescape(&writer, *src))) return false;
+        writer = encode_one_ucs2_noescape(writer, *src);
+        if (unlikely(!writer)) return NULL;
         goto finished;
     }
     u16 cur_unicode = *src;
@@ -287,7 +290,8 @@ restart:;
 #if __SSSE3__
             goto _3bytes;
 #else
-            if (unlikely(!encode_one_ucs2_noescape(&writer, cur_unicode))) return false;
+            writer = encode_one_ucs2_noescape(writer, cur_unicode);
+            if (unlikely(!writer)) return NULL;
             src++;
             len--;
             if (len) goto restart;
@@ -318,7 +322,8 @@ ascii:;
             writer += real_done_count;
             len = READ_BATCH_COUNT - done_count - 1;
             assume(escape_unicode >= 128);
-            if (unlikely(!encode_one_ucs2_noescape(&writer, escape_unicode))) return false;
+            writer = encode_one_ucs2_noescape(writer, escape_unicode);
+            if (unlikely(!writer)) return NULL;
             if (len) goto restart;
             goto finished;
         }
@@ -343,7 +348,8 @@ _2bytes:;
             writer += real_done_count * 2;
             len = READ_BATCH_COUNT - done_count - 1;
             assume(!(escape_unicode >= 0x80 && escape_unicode <= 0x7ff));
-            if (unlikely(!encode_one_ucs2_noescape(&writer, escape_unicode))) return false;
+            writer = encode_one_ucs2_noescape(writer, escape_unicode);
+            if (unlikely(!writer)) return NULL;
             if (len) goto restart;
             goto finished;
         }
@@ -370,7 +376,8 @@ _3bytes:;
             writer += real_done_count * 3;
             len = READ_BATCH_COUNT - done_count - 1;
             assume(!(escape_unicode >= 0x800 && (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)));
-            if (unlikely(!encode_one_ucs2_noescape(&writer, escape_unicode))) return false;
+            writer = encode_one_ucs2_noescape(writer, escape_unicode);
+            if (unlikely(!writer)) return NULL;
             if (len) goto restart;
             goto finished;
         }
@@ -378,8 +385,7 @@ _3bytes:;
     }
 #endif
 finished:;
-    *writer_addr = writer;
-    return true;
+    return writer;
 }
 
 #include "compile_context/srw_out.inl.h"

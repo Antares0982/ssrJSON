@@ -73,7 +73,7 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, bool to_
     EncodeUnicodeWriter writer;
     EncodeUnicodeBufferInfo _unicode_buffer_info; //, new_unicode_buffer_info;
     _unicode_buffer_info.head = PyObject_Malloc(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
-    RETURN_ON_UNLIKELY_ERR(!_unicode_buffer_info.head);
+    return_if_unlikely(!_unicode_buffer_info.head);
     //
     bool compact = SSRJSON_CAST(PyASCIIObject *, unicode)->state.compact;
     assert(compact);
@@ -99,7 +99,8 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, bool to_
     //
     bool success;
     if (to_bytes_obj) {
-        success = bytes_buffer_append_str_indent0(unicode, &WRITER_AS_U8(writer), &_unicode_buffer_info, 0, true, is_write_cache);
+        WRITER_AS_U8(writer) = bytes_buffer_append_str_indent0(unicode, WRITER_AS_U8(writer), &_unicode_buffer_info, 0, true, is_write_cache);
+        success = !!WRITER_AS_U8(writer);
         WRITER_AS_U8(writer)
         --;
     } else {
@@ -107,21 +108,24 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, bool to_
             // pass `is_in_obj = true` to avoid unwanted indent check
             case 1: {
                 const u8 *src = is_ascii ? PYUNICODE_ASCII_START(unicode) : PYUNICODE_UCS1_START(unicode);
-                success = STR_WRITER_NOINDENT_IMPL(u8, u8)(src, len, &WRITER_AS_U8(writer), &_unicode_buffer_info, 0, true);
+                WRITER_AS_U8(writer) = STR_WRITER_NOINDENT_IMPL(u8, u8)(src, len, WRITER_AS_U8(writer), &_unicode_buffer_info, 0, true);
+                success = !!WRITER_AS_U8(writer);
                 WRITER_AS_U8(writer)
                 --;
                 break;
             }
             case 2: {
                 const u16 *src = PYUNICODE_UCS2_START(unicode);
-                success = STR_WRITER_NOINDENT_IMPL(u16, u16)(src, len, &WRITER_AS_U16(writer), &_unicode_buffer_info, 0, true);
+                WRITER_AS_U16(writer) = STR_WRITER_NOINDENT_IMPL(u16, u16)(src, len, WRITER_AS_U16(writer), &_unicode_buffer_info, 0, true);
+                success = !!WRITER_AS_U16(writer);
                 WRITER_AS_U16(writer)
                 --;
                 break;
             }
             case 4: {
                 const u32 *src = PYUNICODE_UCS4_START(unicode);
-                success = STR_WRITER_NOINDENT_IMPL(u32, u32)(src, len, &WRITER_AS_U32(writer), &_unicode_buffer_info, 0, true);
+                WRITER_AS_U32(writer) = STR_WRITER_NOINDENT_IMPL(u32, u32)(src, len, WRITER_AS_U32(writer), &_unicode_buffer_info, 0, true);
+                success = !!WRITER_AS_U32(writer);
                 WRITER_AS_U32(writer)
                 --;
                 break;
@@ -175,14 +179,14 @@ force_inline PyObject *ssrjson_dumps_single_long(PyObject *val, bool to_bytes_ob
     if (pylong_is_zero(val)) {
         if (to_bytes_obj) {
             ret = PyObject_Malloc(PYBYTES_START_OFFSET + 1 + 1);
-            RETURN_ON_UNLIKELY_ERR(!ret);
+            return_if_unlikely(!ret);
             init_pybytes(ret, 1);
             PyBytesObject *b = SSRJSON_CAST(PyBytesObject *, ret);
             b->ob_sval[0] = '0';
             b->ob_sval[1] = 0;
         } else {
             ret = create_empty_unicode(1, 0);
-            RETURN_ON_UNLIKELY_ERR(!ret);
+            return_if_unlikely(!ret);
             u8 *writer = (u8 *)(((PyASCIIObject *)ret) + 1);
             writer[0] = '0';
             writer[1] = 0;
@@ -215,12 +219,12 @@ force_inline PyObject *ssrjson_dumps_single_long(PyObject *val, bool to_bytes_ob
         u8 *writer;
         if (to_bytes_obj) {
             ret = PyObject_Malloc(PYBYTES_START_OFFSET + string_size + 1);
-            RETURN_ON_UNLIKELY_ERR(!ret);
+            return_if_unlikely(!ret);
             init_pybytes(ret, string_size);
             writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyBytesObject *, ret)->ob_sval);
         } else {
             ret = create_empty_unicode(string_size, 0);
-            RETURN_ON_UNLIKELY_ERR(!ret);
+            return_if_unlikely(!ret);
             writer = (u8 *)(((PyASCIIObject *)ret) + 1);
         }
         ssrjson_memcpy(writer, buffer, string_size);
@@ -265,12 +269,12 @@ force_inline PyObject *ssrjson_dumps_single_constant(EncodePyTypes py_type, PyOb
                 u8 *writer;
                 if (to_bytes_obj) {
                     ret = PyObject_Malloc(PYBYTES_START_OFFSET + 5 + 1);
-                    RETURN_ON_UNLIKELY_ERR(!ret);
+                    return_if_unlikely(!ret);
                     init_pybytes(ret, 5);
                     writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyBytesObject *, ret)->ob_sval);
                 } else {
                     ret = create_empty_unicode(5, 0);
-                    RETURN_ON_UNLIKELY_ERR(!ret);
+                    return_if_unlikely(!ret);
                     writer = (u8 *)(((PyASCIIObject *)ret) + 1);
                 }
                 strcpy((char *)writer, "false");
@@ -278,12 +282,12 @@ force_inline PyObject *ssrjson_dumps_single_constant(EncodePyTypes py_type, PyOb
                 u8 *writer;
                 if (to_bytes_obj) {
                     ret = PyObject_Malloc(PYBYTES_START_OFFSET + 4 + 1);
-                    RETURN_ON_UNLIKELY_ERR(!ret);
+                    return_if_unlikely(!ret);
                     init_pybytes(ret, 4);
                     writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyBytesObject *, ret)->ob_sval);
                 } else {
                     ret = create_empty_unicode(4, 0);
-                    RETURN_ON_UNLIKELY_ERR(!ret);
+                    return_if_unlikely(!ret);
                     writer = (u8 *)(((PyASCIIObject *)ret) + 1);
                 }
                 strcpy((char *)writer, "true");
@@ -294,12 +298,12 @@ force_inline PyObject *ssrjson_dumps_single_constant(EncodePyTypes py_type, PyOb
             u8 *writer;
             if (to_bytes_obj) {
                 ret = PyObject_Malloc(PYBYTES_START_OFFSET + 4 + 1);
-                RETURN_ON_UNLIKELY_ERR(!ret);
+                return_if_unlikely(!ret);
                 init_pybytes(ret, 4);
                 writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyBytesObject *, ret)->ob_sval);
             } else {
                 ret = create_empty_unicode(4, 0);
-                RETURN_ON_UNLIKELY_ERR(!ret);
+                return_if_unlikely(!ret);
                 writer = (u8 *)(((PyASCIIObject *)ret) + 1);
             }
             strcpy((char *)writer, "null");

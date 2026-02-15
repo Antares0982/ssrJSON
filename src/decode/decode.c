@@ -158,7 +158,7 @@ force_inline bool _decoder_push_obj(decode_obj_stack_ptr_t *decode_obj_writer_ad
     static_assert(((Py_ssize_t)SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1) > 0, "(SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1) > 0");
     if (unlikely((*decode_obj_writer_addr) >= (*decode_obj_stack_end_addr))) {
         bool c = _decode_obj_stack_resize(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr);
-        RETURN_ON_UNLIKELY_ERR(!c);
+        return_if_unlikely(!c);
     }
     *(*decode_obj_writer_addr)++ = obj;
     return true;
@@ -169,7 +169,7 @@ force_inline bool decode_arr(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize arr_len) {
     assert(arr_len >= 0);
     PyObject *list = PyList_New(arr_len);
-    RETURN_ON_UNLIKELY_ERR(!list);
+    return_if_unlikely(!list);
     decode_obj_stack_ptr_t list_val_start = (*decode_obj_writer_addr) - arr_len;
     assert(list_val_start >= (*decode_obj_stack_addr));
     for (usize j = 0; j < arr_len; j++) {
@@ -185,7 +185,7 @@ force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize dict_len, PyObject *object_hook) {
     PyObject *dict = _PyDict_NewPresized((Py_ssize_t)dict_len);
-    RETURN_ON_UNLIKELY_ERR(!dict);
+    return_if_unlikely(!dict);
     decode_obj_stack_ptr_t dict_val_start = (*decode_obj_writer_addr) - dict_len * 2;
     decode_obj_stack_ptr_t dict_val_view = dict_val_start;
     for (usize j = 0; j < dict_len; j++) {
@@ -256,7 +256,7 @@ force_inline bool decode_nan(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_end_addr, bool is_signed) {
     SSRJSON_TRACE_OP(SSRJSON_OP_NAN_INF);
     PyObject *o = PyFloat_FromDouble(is_signed ? -fabs(Py_NAN) : fabs(Py_NAN));
-    RETURN_ON_UNLIKELY_ERR(!o);
+    return_if_unlikely(!o);
     return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, o);
 }
 

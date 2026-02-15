@@ -39,10 +39,9 @@
 extern const _dst_t ControlEscapeTable[(_Slash + 1) * 8];
 extern const Py_ssize_t _ControlJump[_Slash + 1];
 
-force_inline void encode_unicode_loop4(_dst_t **dst_addr, const _src_t **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail _dst_t *encode_unicode_loop4(register _dst_t *dst, const _src_t **src_addr, usize *len_addr) {
     register usize len = *len_addr;
     register const _src_t *src = *src_addr;
-    register _dst_t *dst = *dst_addr;
     while (len >= READ_BATCH_COUNT * 4) {
         union {
             vector_a x[4];
@@ -75,13 +74,12 @@ force_inline void encode_unicode_loop4(_dst_t **dst_addr, const _src_t **src_add
     }
     *len_addr = len;
     *src_addr = src;
-    *dst_addr = dst;
+    return dst;
 }
 
-force_inline void encode_unicode_loop(_dst_t **dst_addr, const _src_t **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail _dst_t *encode_unicode_loop(register _dst_t *dst, const _src_t **src_addr, usize *len_addr) {
     register usize len = *len_addr;
     register const _src_t *src = *src_addr;
-    register _dst_t *dst = *dst_addr;
     while (len >= READ_BATCH_COUNT) {
         vector_a x = *(vector_u *)src;
         vector_a escape_mask = get_escape_mask(x);
@@ -106,13 +104,12 @@ force_inline void encode_unicode_loop(_dst_t **dst_addr, const _src_t **src_addr
     }
     *len_addr = len;
     *src_addr = src;
-    *dst_addr = dst;
+    return dst;
 }
 
-force_inline void encode_trailing_copy_with_cvt(_dst_t **dst_addr, const _src_t *src, usize len) {
+force_inline ssrjson_nofail _dst_t *encode_trailing_copy_with_cvt(register _dst_t *dst, const _src_t *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
-    _dst_t *dst_old = *dst_addr;
-    _dst_t *dst = *dst_addr;
+    _dst_t *dst_old = dst;
     const _src_t *src_end = src + len;
     const _src_t *load_start = src_end - READ_BATCH_COUNT;
     const vector_a vec = *(vector_u *)load_start;
@@ -144,19 +141,19 @@ restart:;
     // calculate in usize: SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode
     // the conclusion works for all SIMD features: NEON, SSE, AVX2, AVX512
     assert(dst > dst_old);
-    *dst_addr = dst;
+    return dst;
 }
 
 // excess written count = SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode >= 2
-force_inline void encode_unicode_impl(_dst_t **dst_addr, const _src_t *src, usize len, bool is_key) {
-    if (!is_key) encode_unicode_loop4(dst_addr, &src, &len);
-    encode_unicode_loop(dst_addr, &src, &len);
-    if (!len) return;
-    encode_trailing_copy_with_cvt(dst_addr, src, len);
+force_inline ssrjson_nofail _dst_t *encode_unicode_impl(_dst_t *dst, const _src_t *src, usize len, bool is_key) {
+    if (!is_key) dst = encode_unicode_loop4(dst, &src, &len);
+    dst = encode_unicode_loop(dst, &src, &len);
+    if (len) dst = encode_trailing_copy_with_cvt(dst, src, len);
+    return dst;
 }
 
-internal_simd_noinline void encode_unicode_impl_no_key(_dst_t **dst_addr, const _src_t *src, usize len) {
-    encode_unicode_impl(dst_addr, src, len, false);
+internal_simd_noinline ssrjson_nofail _dst_t *encode_unicode_impl_no_key(_dst_t *dst, const _src_t *src, usize len) {
+    return encode_unicode_impl(dst, src, len, false);
 }
 
 #include "compile_context/srw_out.inl.h"

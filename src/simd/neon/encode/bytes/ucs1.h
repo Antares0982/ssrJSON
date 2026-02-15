@@ -44,15 +44,13 @@
  * Only consider vector in ASCII range,
  * because most of 2-bytes UTF-8 code points cannot be presented by UCS1.
  */
-force_inline void bytes_write_ucs1_trailing_128(u8 **writer_addr, const u8 *src, usize len) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1_trailing_128(u8 *writer, const u8 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
     // constants
     const u8 *src_end = src + len;
     const u8 *last_batch_start = src_end - READ_BATCH_COUNT;
     const vector_a vec = *(const vector_u *)last_batch_start;
     const vector_a m0 = (vec == broadcast(_Quote)) | (vec == broadcast(_Slash)) | signed_cmpgt(broadcast(ControlMax), vec);
-    //
-    u8 *writer = *writer_addr;
 restart:;
     vector_a x, m;
     int shift;
@@ -69,25 +67,23 @@ restart:;
         writer += done_count;
         src += done_count;
         u8 unicode = *src++;
-        encode_one_special_ucs1(&writer, unicode);
+        writer = encode_one_special_ucs1(writer, unicode);
         if (len) goto restart;
     }
-    *writer_addr = writer;
+    return writer;
 }
 
 /* See AVX2 code for more details. */
 #define __readbefore_bytes_write_ucs1_raw_utf8_trailing_128 (16)
 #define __excess_bytes_write_ucs1_raw_utf8_trailing_128 (16 - max_utf8_bytes_per_ucs1)
 
-force_inline void bytes_write_ucs1_raw_utf8_trailing_128(u8 **writer_addr, const u8 *src, usize len) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8_trailing_128(u8 *writer, const u8 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
     // constants
     const u8 *src_end = src + len;
     const u8 *last_batch_start = src_end - READ_BATCH_COUNT;
     const vector_a vec = *(const vector_u *)last_batch_start;
     const vector_a m0 = (vec >= broadcast(0x80));
-    //
-    u8 *writer = *writer_addr;
 restart:;
     vector_a x, m;
     int shift;
@@ -110,7 +106,7 @@ restart:;
 
         if (len) goto restart;
     }
-    *writer_addr = writer;
+    return writer;
 }
 
 #include "compile_context/srw_out.inl.h"

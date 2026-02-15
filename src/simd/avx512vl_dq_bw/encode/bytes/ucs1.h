@@ -45,16 +45,12 @@
  * Only consider vector in ASCII range,
  * because most of 2-bytes UTF-8 code points cannot be presented by UCS1.
  */
-force_inline void bytes_write_ucs1_trailing_512(u8 **writer_addr, const u8 *src, usize len) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1_trailing_512(u8 *writer, const u8 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
-
-    //
     u64 maskz = len_to_maskz(len);
     vector_a vec = maskz_loadu(maskz, src);
     avx512_bitmask_t m = cmpeq_bitmask(vec, broadcast(_Quote)) | cmpeq_bitmask(vec, broadcast(_Slash)) | signed_cmpgt_bitmask(broadcast(ControlMax), vec);
     m = m & maskz;
-    u8 *writer = *writer_addr;
-//
 restart:;
     *(vector_u *)writer = vec;
     if (likely(m == 0)) {
@@ -69,7 +65,7 @@ restart:;
         if (escape_unicode >= ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash && escape_unicode != _Quote) {
             SSRJSON_UNREACHABLE();
         } else {
-            encode_one_special_ucs1(&writer, escape_unicode);
+            writer = encode_one_special_ucs1(writer, escape_unicode);
         }
         if (len) {
             maskz = maskz >> (done_count + 1);
@@ -78,14 +74,14 @@ restart:;
             goto restart;
         }
     }
-    *writer_addr = writer;
+    return writer;
 }
 
 /* See AVX2 code for more details. */
 #define __readbefore_bytes_write_ucs1_raw_utf8_trailing_512 (0)
 #define __excess_bytes_write_ucs1_raw_utf8_trailing_512 (64 - max_utf8_bytes_per_ucs1)
 
-force_inline void bytes_write_ucs1_raw_utf8_trailing_512(u8 **writer_addr, const u8 *src, usize len) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8_trailing_512(u8 *writer, const u8 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
 
     //
@@ -93,8 +89,6 @@ force_inline void bytes_write_ucs1_raw_utf8_trailing_512(u8 **writer_addr, const
     vector_a vec = maskz_loadu(maskz, src);
     avx512_bitmask_t m = signed_cmpgt_bitmask(broadcast(0), vec);
     m = m & maskz;
-    u8 *writer = *writer_addr;
-//
 restart:;
     *(vector_u *)writer = vec;
     if (likely(m == 0)) {
@@ -117,7 +111,7 @@ restart:;
             goto restart;
         }
     }
-    *writer_addr = writer;
+    return writer;
 }
 
 #include "compile_context/srw_out.inl.h"

@@ -40,9 +40,9 @@
 
 /* UTF-8 src. */
 // forward declaration
-force_inline void bytes_write_ascii(u8 **writer_addr, const u8 *src, usize len, bool is_key);
+force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usize len, bool is_key);
 
-force_inline void bytes_write_utf8(u8 **writer_addr, const u8 *src, usize len, bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_utf8(u8 *writer, const u8 *src, usize len, bool is_key) {
     // UTF-8 trailing source case is a little different,
     // because the 16 bytes before `src_end` are not readable in general.
     // This function only impls the fast path that we can reuse the unicode encode loop,
@@ -52,21 +52,23 @@ force_inline void bytes_write_utf8(u8 **writer_addr, const u8 *src, usize len, b
     // Other cases: SIMD register size is 16 bytes (SSE, NEON).
     assert(USING_AVX512 || len >= 16);
     // reuse the ascii encode loop.
-    bytes_write_ascii(writer_addr, src, len, is_key);
+    writer = bytes_write_ascii(writer, src, len, is_key);
+    return writer;
 }
 
 /* ASCII src. */
-force_inline void bytes_write_ascii(u8 **writer_addr, const u8 *src, usize len, bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usize len, bool is_key) {
     // reuse the unicode encode loop.
     // excess written bytes = SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode >= 2
-    if (!is_key) encode_unicode_loop4(writer_addr, &src, &len);
-    encode_unicode_loop(writer_addr, &src, &len);
-    if (!len) return;
-    encode_trailing_copy_with_cvt(writer_addr, src, len);
+    if (!is_key) writer = encode_unicode_loop4(writer, &src, &len);
+    writer = encode_unicode_loop(writer, &src, &len);
+    if (len) writer = encode_trailing_copy_with_cvt(writer, src, len);
+    return writer;
 }
 
-force_inline void bytes_write_ascii_not_key(u8 **writer_addr, const u8 *src, usize len) {
-    bytes_write_ascii(writer_addr, src, len, false);
+force_inline ssrjson_nofail u8 *bytes_write_ascii_not_key(u8 *writer, const u8 *src, usize len) {
+    writer = bytes_write_ascii(writer, src, len, false);
+    return writer;
 }
 
 /* UCS1 src. */
@@ -204,9 +206,8 @@ force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_count(vector_a vec, 
     }
 }
 
-force_inline bool ascii_in_ucs1_encode_loop4(u8 **dst_addr, const u8 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop4(u8 *dst, const u8 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u8 *src = *src_addr;
     usize len = *len_addr;
 
@@ -225,12 +226,12 @@ force_inline bool ascii_in_ucs1_encode_loop4(u8 **dst_addr, const u8 **src_addr,
     *(vector_u *)(dst + READ_BATCH_COUNT * 3) = vec.x[3];
 
     // check
-    bool checked;
+    // bool checked;
     usize done_count;
-    check_ascii_in_ucs1_and_get_done_countx4(vec, &checked, &done_count);
+    check_ascii_in_ucs1_and_get_done_countx4(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += 4 * READ_BATCH_COUNT;
         src += 4 * READ_BATCH_COUNT;
         len -= 4 * READ_BATCH_COUNT;
@@ -239,15 +240,13 @@ force_inline bool ascii_in_ucs1_encode_loop4(u8 **dst_addr, const u8 **src_addr,
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
-force_inline bool ascii_in_ucs1_encode_loop(u8 **dst_addr, const u8 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop(u8 *dst, const u8 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u8 *src = *src_addr;
     usize len = *len_addr;
 
@@ -258,12 +257,11 @@ force_inline bool ascii_in_ucs1_encode_loop(u8 **dst_addr, const u8 **src_addr, 
     *(vector_u *)dst = vec;
 
     // check
-    bool checked;
     usize done_count;
-    check_ascii_in_ucs1_and_get_done_count(vec, &checked, &done_count);
+    check_ascii_in_ucs1_and_get_done_count(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += READ_BATCH_COUNT;
         src += READ_BATCH_COUNT;
         len -= READ_BATCH_COUNT;
@@ -272,15 +270,13 @@ force_inline bool ascii_in_ucs1_encode_loop(u8 **dst_addr, const u8 **src_addr, 
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
-force_inline bool ascii_in_ucs1_encode_loop4_raw_utf8(u8 **dst_addr, const u8 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop4_raw_utf8(u8 *dst, const u8 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u8 *src = *src_addr;
     usize len = *len_addr;
 
@@ -299,12 +295,11 @@ force_inline bool ascii_in_ucs1_encode_loop4_raw_utf8(u8 **dst_addr, const u8 **
     *(vector_u *)(dst + READ_BATCH_COUNT * 3) = vec.x[3];
 
     // check
-    bool checked;
     usize done_count;
-    check_ascii_in_ucs1_raw_utf8_and_get_done_countx4(vec, &checked, &done_count);
+    check_ascii_in_ucs1_raw_utf8_and_get_done_countx4(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += 4 * READ_BATCH_COUNT;
         src += 4 * READ_BATCH_COUNT;
         len -= 4 * READ_BATCH_COUNT;
@@ -313,15 +308,13 @@ force_inline bool ascii_in_ucs1_encode_loop4_raw_utf8(u8 **dst_addr, const u8 **
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
-force_inline bool ascii_in_ucs1_encode_loop_raw_utf8(u8 **dst_addr, const u8 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop_raw_utf8(u8 *dst, const u8 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u8 *src = *src_addr;
     usize len = *len_addr;
 
@@ -332,12 +325,11 @@ force_inline bool ascii_in_ucs1_encode_loop_raw_utf8(u8 **dst_addr, const u8 **s
     *(vector_u *)dst = vec;
 
     // check
-    bool checked;
     usize done_count;
-    check_ascii_in_ucs1_raw_utf8_and_get_done_count(vec, &checked, &done_count);
+    check_ascii_in_ucs1_raw_utf8_and_get_done_count(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += READ_BATCH_COUNT;
         src += READ_BATCH_COUNT;
         len -= READ_BATCH_COUNT;
@@ -346,13 +338,12 @@ force_inline bool ascii_in_ucs1_encode_loop_raw_utf8(u8 **dst_addr, const u8 **s
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
-force_inline void bytes_write_ucs1(u8 **writer_addr, const u8 *src, usize len, bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1(u8 *writer, const u8 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -362,7 +353,7 @@ force_inline void bytes_write_ucs1(u8 **writer_addr, const u8 *src, usize len, b
             bool continuous;
             if (!is_key) {
                 while (CAN_LOOP4) {
-                    continuous = ascii_in_ucs1_encode_loop4(writer_addr, &src, &len);
+                    writer = ascii_in_ucs1_encode_loop4(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
                         goto encode_one;
                     }
@@ -370,7 +361,7 @@ force_inline void bytes_write_ucs1(u8 **writer_addr, const u8 *src, usize len, b
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
-                continuous = ascii_in_ucs1_encode_loop(writer_addr, &src, &len);
+                writer = ascii_in_ucs1_encode_loop(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -383,17 +374,17 @@ force_inline void bytes_write_ucs1(u8 **writer_addr, const u8 *src, usize len, b
     encode_one:;
         unicode = *src;
     do_encode_one:;
-        encode_one_ucs1(writer_addr, unicode);
+        writer = encode_one_ucs1(writer, unicode);
         src++;
         len--;
     }
-    if (!len) return;
-    bytes_write_ucs1_trailing(writer_addr, src, len);
+    if (len) writer = bytes_write_ucs1_trailing(writer, src, len);
+    return writer;
 #undef CAN_LOOP
 #undef CAN_LOOP4
 }
 
-force_inline void bytes_write_ucs1_raw_utf8(u8 **writer_addr, const u8 *src, usize len, bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8(u8 *writer, const u8 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -403,7 +394,7 @@ force_inline void bytes_write_ucs1_raw_utf8(u8 **writer_addr, const u8 *src, usi
             bool continuous;
             if (!is_key) {
                 while (CAN_LOOP4) {
-                    continuous = ascii_in_ucs1_encode_loop4_raw_utf8(writer_addr, &src, &len);
+                    writer = ascii_in_ucs1_encode_loop4_raw_utf8(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
                         goto encode_one;
                     }
@@ -411,7 +402,7 @@ force_inline void bytes_write_ucs1_raw_utf8(u8 **writer_addr, const u8 *src, usi
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
-                continuous = ascii_in_ucs1_encode_loop_raw_utf8(writer_addr, &src, &len);
+                writer = ascii_in_ucs1_encode_loop_raw_utf8(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -424,12 +415,12 @@ force_inline void bytes_write_ucs1_raw_utf8(u8 **writer_addr, const u8 *src, usi
     encode_one:;
         unicode = *src;
     do_encode_one:;
-        encode_one_ucs1_noescape(writer_addr, unicode);
+        writer = encode_one_ucs1_noescape(writer, unicode);
         src++;
         len--;
     }
-    if (!len) return;
-    bytes_write_ucs1_raw_utf8_trailing(writer_addr, src, len);
+    if (len) writer = bytes_write_ucs1_raw_utf8_trailing(writer, src, len);
+    return writer;
 #undef CAN_LOOP
 #undef CAN_LOOP4
 }
@@ -609,9 +600,8 @@ force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_count(vector_a vec, 
     }
 }
 
-force_inline bool ascii_in_ucs2_encode_loop4(u8 **dst_addr, const u16 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop4(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u16 *src = *src_addr;
     usize len = *len_addr;
 
@@ -630,12 +620,11 @@ force_inline bool ascii_in_ucs2_encode_loop4(u8 **dst_addr, const u16 **src_addr
     cvt_to_dst(dst + READ_BATCH_COUNT * 3, vec.x[3]);
 
     // check
-    bool checked;
     usize done_count;
-    check_ascii_in_ucs2_and_get_done_countx4(vec, &checked, &done_count);
+    check_ascii_in_ucs2_and_get_done_countx4(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += 4 * READ_BATCH_COUNT;
         src += 4 * READ_BATCH_COUNT;
         len -= 4 * READ_BATCH_COUNT;
@@ -644,15 +633,13 @@ force_inline bool ascii_in_ucs2_encode_loop4(u8 **dst_addr, const u16 **src_addr
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
-force_inline bool ascii_in_ucs2_encode_loop4_raw_utf8(u8 **dst_addr, const u16 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop4_raw_utf8(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u16 *src = *src_addr;
     usize len = *len_addr;
 
@@ -671,13 +658,12 @@ force_inline bool ascii_in_ucs2_encode_loop4_raw_utf8(u8 **dst_addr, const u16 *
     cvt_to_dst(dst + READ_BATCH_COUNT * 3, vec.x[3]);
 
     // check
-    bool checked;
     usize done_count;
 
-    check_ascii_in_ucs2_raw_utf8_and_get_done_countx4(vec, &checked, &done_count);
+    check_ascii_in_ucs2_raw_utf8_and_get_done_countx4(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += 4 * READ_BATCH_COUNT;
         src += 4 * READ_BATCH_COUNT;
         len -= 4 * READ_BATCH_COUNT;
@@ -686,15 +672,13 @@ force_inline bool ascii_in_ucs2_encode_loop4_raw_utf8(u8 **dst_addr, const u16 *
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
-force_inline bool ascii_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u16 *src = *src_addr;
     usize len = *len_addr;
 
@@ -707,12 +691,11 @@ force_inline bool ascii_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_addr,
     cvt_to_dst(dst, vec);
 
     // check
-    bool checked;
     usize done_count;
-    check_ascii_in_ucs2_and_get_done_count(vec, &checked, &done_count);
+    check_ascii_in_ucs2_and_get_done_count(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += READ_BATCH_COUNT;
         src += READ_BATCH_COUNT;
         len -= READ_BATCH_COUNT;
@@ -721,15 +704,13 @@ force_inline bool ascii_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_addr,
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
-force_inline bool ascii_in_ucs2_encode_loop_raw_utf8(u8 **dst_addr, const u16 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop_raw_utf8(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u16 *src = *src_addr;
     usize len = *len_addr;
 
@@ -742,12 +723,11 @@ force_inline bool ascii_in_ucs2_encode_loop_raw_utf8(u8 **dst_addr, const u16 **
     cvt_to_dst(dst, vec);
 
     // check
-    bool checked;
     usize done_count;
-    check_ascii_in_ucs2_raw_utf8_and_get_done_count(vec, &checked, &done_count);
+    check_ascii_in_ucs2_raw_utf8_and_get_done_count(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += READ_BATCH_COUNT;
         src += READ_BATCH_COUNT;
         len -= READ_BATCH_COUNT;
@@ -756,10 +736,9 @@ force_inline bool ascii_in_ucs2_encode_loop_raw_utf8(u8 **dst_addr, const u16 **
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
 force_inline void check_2bytes_in_ucs2_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
@@ -782,9 +761,8 @@ force_inline void check_2bytes_in_ucs2_and_get_done_count(vector_a vec, bool *ou
     }
 }
 
-force_inline bool _2bytes_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *_2bytes_in_ucs2_encode_loop(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u16 *src = *src_addr;
     usize len = *len_addr;
 
@@ -807,12 +785,11 @@ force_inline bool _2bytes_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_add
 #endif
 
     // check
-    bool checked;
     usize done_count;
-    check_2bytes_in_ucs2_and_get_done_count(vec, &checked, &done_count);
+    check_2bytes_in_ucs2_and_get_done_count(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += READ_BATCH_COUNT * 2;
         src += READ_BATCH_COUNT;
         len -= READ_BATCH_COUNT;
@@ -821,10 +798,9 @@ force_inline bool _2bytes_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_add
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
 force_inline void check_3bytes_in_ucs2_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
@@ -878,9 +854,8 @@ force_inline void check_3bytes_in_ucs4_and_get_done_count(vector_a vec, bool *ou
     }
 }
 
-force_inline bool _3bytes_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *_3bytes_in_ucs2_encode_loop(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u16 *src = *src_addr;
     usize len = *len_addr;
 
@@ -905,12 +880,11 @@ force_inline bool _3bytes_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_add
 #endif
 
     // check
-    bool checked;
     usize done_count;
-    check_3bytes_in_ucs2_and_get_done_count(vec, &checked, &done_count);
+    check_3bytes_in_ucs2_and_get_done_count(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += READ_BATCH_COUNT * 3;
         src += READ_BATCH_COUNT;
         len -= READ_BATCH_COUNT;
@@ -919,14 +893,13 @@ force_inline bool _3bytes_in_ucs2_encode_loop(u8 **dst_addr, const u16 **src_add
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
 /* Return false when src contains invalid character. */
-force_inline bool bytes_write_ucs2(u8 **writer_addr, const u16 *src, usize len, bool is_key) {
+force_inline u8 *bytes_write_ucs2(u8 *writer, const u16 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -937,7 +910,7 @@ force_inline bool bytes_write_ucs2(u8 **writer_addr, const u16 *src, usize len, 
             bool continuous;
             if (!is_key) {
                 while (CAN_LOOP4) {
-                    continuous = ascii_in_ucs2_encode_loop4(writer_addr, &src, &len);
+                    writer = ascii_in_ucs2_encode_loop4(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
                         goto encode_one;
                     }
@@ -945,7 +918,7 @@ force_inline bool bytes_write_ucs2(u8 **writer_addr, const u16 *src, usize len, 
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
-                continuous = ascii_in_ucs2_encode_loop(writer_addr, &src, &len);
+                writer = ascii_in_ucs2_encode_loop(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -955,7 +928,7 @@ force_inline bool bytes_write_ucs2(u8 **writer_addr, const u16 *src, usize len, 
         } else if (unicode < 0x800) {
             bool continuous;
             while (CAN_LOOP) {
-                continuous = _2bytes_in_ucs2_encode_loop(writer_addr, &src, &len);
+                writer = _2bytes_in_ucs2_encode_loop(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -966,7 +939,7 @@ force_inline bool bytes_write_ucs2(u8 **writer_addr, const u16 *src, usize len, 
 #if COMPILE_SIMD_BITS >= 256 || __SSSE3__
             bool continuous;
             while (CAN_LOOP) {
-                continuous = _3bytes_in_ucs2_encode_loop(writer_addr, &src, &len);
+                writer = _3bytes_in_ucs2_encode_loop(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -980,19 +953,20 @@ force_inline bool bytes_write_ucs2(u8 **writer_addr, const u16 *src, usize len, 
     encode_one:;
         unicode = *src;
     do_encode_one:;
-        if (unlikely(!encode_one_ucs2(writer_addr, unicode))) {
-            return false;
+        writer = encode_one_ucs2(writer, unicode);
+        if (unlikely(!writer)) {
+            return NULL;
         }
         src++;
         len--;
     }
-    if (!len) return true;
-    return bytes_write_ucs2_trailing(writer_addr, src, len);
+    if (len) writer = bytes_write_ucs2_trailing(writer, src, len);
+    return writer;
 #undef CAN_LOOP
 #undef CAN_LOOP4
 }
 
-force_inline bool bytes_write_ucs2_raw_utf8(u8 **writer_addr, const u16 *src, usize len, bool is_key) {
+force_inline u8 *bytes_write_ucs2_raw_utf8(u8 *writer, const u16 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -1003,7 +977,7 @@ force_inline bool bytes_write_ucs2_raw_utf8(u8 **writer_addr, const u16 *src, us
             bool continuous;
             if (!is_key) {
                 while (CAN_LOOP4) {
-                    continuous = ascii_in_ucs2_encode_loop4_raw_utf8(writer_addr, &src, &len);
+                    writer = ascii_in_ucs2_encode_loop4_raw_utf8(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
                         goto encode_one;
                     }
@@ -1011,7 +985,7 @@ force_inline bool bytes_write_ucs2_raw_utf8(u8 **writer_addr, const u16 *src, us
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
-                continuous = ascii_in_ucs2_encode_loop_raw_utf8(writer_addr, &src, &len);
+                writer = ascii_in_ucs2_encode_loop_raw_utf8(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -1021,7 +995,7 @@ force_inline bool bytes_write_ucs2_raw_utf8(u8 **writer_addr, const u16 *src, us
         } else if (unicode < 0x800) {
             bool continuous;
             while (CAN_LOOP) {
-                continuous = _2bytes_in_ucs2_encode_loop(writer_addr, &src, &len);
+                writer = _2bytes_in_ucs2_encode_loop(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -1032,7 +1006,7 @@ force_inline bool bytes_write_ucs2_raw_utf8(u8 **writer_addr, const u16 *src, us
 #if COMPILE_SIMD_BITS >= 256 || __SSSE3__
             bool continuous;
             while (CAN_LOOP) {
-                continuous = _3bytes_in_ucs2_encode_loop(writer_addr, &src, &len);
+                writer = _3bytes_in_ucs2_encode_loop(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -1046,14 +1020,15 @@ force_inline bool bytes_write_ucs2_raw_utf8(u8 **writer_addr, const u16 *src, us
     encode_one:;
         unicode = *src;
     do_encode_one:;
-        if (unlikely(!encode_one_ucs2_noescape(writer_addr, unicode))) {
-            return false;
+        writer = encode_one_ucs2_noescape(writer, unicode);
+        if (unlikely(!writer)) {
+            return NULL;
         }
         src++;
         len--;
     }
-    if (!len) return true;
-    return bytes_write_ucs2_raw_utf8_trailing(writer_addr, src, len);
+    if (len) writer = bytes_write_ucs2_raw_utf8_trailing(writer, src, len);
+    return writer;
 #undef CAN_LOOP
 #undef CAN_LOOP4
 }
@@ -1185,9 +1160,8 @@ force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_countx4(unionvector_
     }
 }
 
-force_inline bool ascii_in_ucs4_encode_loop4(u8 **dst_addr, const u32 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop4(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u32 *src = *src_addr;
     usize len = *len_addr;
 
@@ -1206,12 +1180,11 @@ force_inline bool ascii_in_ucs4_encode_loop4(u8 **dst_addr, const u32 **src_addr
     cvt_to_dst(dst + READ_BATCH_COUNT * 3, vec.x[3]);
 
     // check
-    bool checked;
     usize done_count;
-    check_ascii_in_ucs4_and_get_done_countx4(vec, &checked, &done_count);
+    check_ascii_in_ucs4_and_get_done_countx4(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += 4 * READ_BATCH_COUNT;
         src += 4 * READ_BATCH_COUNT;
         len -= 4 * READ_BATCH_COUNT;
@@ -1220,15 +1193,13 @@ force_inline bool ascii_in_ucs4_encode_loop4(u8 **dst_addr, const u32 **src_addr
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
-force_inline bool ascii_in_ucs4_encode_loop4_raw_utf8(u8 **dst_addr, const u32 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop4_raw_utf8(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u32 *src = *src_addr;
     usize len = *len_addr;
 
@@ -1247,12 +1218,11 @@ force_inline bool ascii_in_ucs4_encode_loop4_raw_utf8(u8 **dst_addr, const u32 *
     cvt_to_dst(dst + READ_BATCH_COUNT * 3, vec.x[3]);
 
     // check
-    bool checked;
     usize done_count;
-    check_ascii_in_ucs4_raw_utf8_and_get_done_countx4(vec, &checked, &done_count);
+    check_ascii_in_ucs4_raw_utf8_and_get_done_countx4(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += 4 * READ_BATCH_COUNT;
         src += 4 * READ_BATCH_COUNT;
         len -= 4 * READ_BATCH_COUNT;
@@ -1261,10 +1231,9 @@ force_inline bool ascii_in_ucs4_encode_loop4_raw_utf8(u8 **dst_addr, const u32 *
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
 force_inline void check_ascii_in_ucs4_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
@@ -1315,9 +1284,8 @@ force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_count(vector_a vec, 
     }
 }
 
-force_inline bool ascii_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u32 *src = *src_addr;
     usize len = *len_addr;
 
@@ -1330,12 +1298,11 @@ force_inline bool ascii_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_addr,
     cvt_to_dst(dst, vec);
 
     // check
-    bool checked;
     usize done_count;
-    check_ascii_in_ucs4_and_get_done_count(vec, &checked, &done_count);
+    check_ascii_in_ucs4_and_get_done_count(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += READ_BATCH_COUNT;
         src += READ_BATCH_COUNT;
         len -= READ_BATCH_COUNT;
@@ -1344,15 +1311,13 @@ force_inline bool ascii_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_addr,
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
-force_inline bool ascii_in_ucs4_encode_loop_raw_utf8(u8 **dst_addr, const u32 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop_raw_utf8(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u32 *src = *src_addr;
     usize len = *len_addr;
 
@@ -1365,12 +1330,11 @@ force_inline bool ascii_in_ucs4_encode_loop_raw_utf8(u8 **dst_addr, const u32 **
     cvt_to_dst(dst, vec);
 
     // check
-    bool checked;
     usize done_count;
-    check_ascii_in_ucs4_raw_utf8_and_get_done_count(vec, &checked, &done_count);
+    check_ascii_in_ucs4_raw_utf8_and_get_done_count(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += READ_BATCH_COUNT;
         src += READ_BATCH_COUNT;
         len -= READ_BATCH_COUNT;
@@ -1379,10 +1343,9 @@ force_inline bool ascii_in_ucs4_encode_loop_raw_utf8(u8 **dst_addr, const u32 **
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
 force_inline void check_2bytes_in_ucs4_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
@@ -1405,9 +1368,8 @@ force_inline void check_2bytes_in_ucs4_and_get_done_count(vector_a vec, bool *ou
     }
 }
 
-force_inline bool _2bytes_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *_2bytes_in_ucs4_encode_loop(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u32 *src = *src_addr;
     usize len = *len_addr;
 
@@ -1430,12 +1392,11 @@ force_inline bool _2bytes_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_add
 #endif
 
     // check
-    bool checked;
     usize done_count;
-    check_2bytes_in_ucs4_and_get_done_count(vec, &checked, &done_count);
+    check_2bytes_in_ucs4_and_get_done_count(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += READ_BATCH_COUNT * 2;
         src += READ_BATCH_COUNT;
         len -= READ_BATCH_COUNT;
@@ -1444,15 +1405,13 @@ force_inline bool _2bytes_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_add
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
-force_inline bool _3bytes_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail u8 *_3bytes_in_ucs4_encode_loop(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
     // prepare
-    u8 *dst = *dst_addr;
     const u32 *src = *src_addr;
     usize len = *len_addr;
 
@@ -1477,12 +1436,11 @@ force_inline bool _3bytes_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_add
 #endif
 
     // check
-    bool checked;
     usize done_count;
-    check_3bytes_in_ucs4_and_get_done_count(vec, &checked, &done_count);
+    check_3bytes_in_ucs4_and_get_done_count(vec, continuous_out, &done_count);
 
     // update ptr
-    if (likely(checked)) {
+    if (likely(*continuous_out)) {
         dst += READ_BATCH_COUNT * 3;
         src += READ_BATCH_COUNT;
         len -= READ_BATCH_COUNT;
@@ -1491,14 +1449,13 @@ force_inline bool _3bytes_in_ucs4_encode_loop(u8 **dst_addr, const u32 **src_add
         src += done_count;
         len -= done_count;
     }
-    *dst_addr = dst;
     *src_addr = src;
     *len_addr = len;
-    return checked;
+    return dst;
 }
 
 /* Return false when src contains invalid character. */
-force_inline bool bytes_write_ucs4(u8 **writer_addr, const u32 *src, usize len, bool is_key) {
+force_inline u8 *bytes_write_ucs4(u8 *writer, const u32 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -1509,7 +1466,7 @@ force_inline bool bytes_write_ucs4(u8 **writer_addr, const u32 *src, usize len, 
             bool continuous;
             if (!is_key) {
                 while (CAN_LOOP4) {
-                    continuous = ascii_in_ucs4_encode_loop4(writer_addr, &src, &len);
+                    writer = ascii_in_ucs4_encode_loop4(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
                         goto encode_one;
                     }
@@ -1517,7 +1474,7 @@ force_inline bool bytes_write_ucs4(u8 **writer_addr, const u32 *src, usize len, 
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
-                continuous = ascii_in_ucs4_encode_loop(writer_addr, &src, &len);
+                writer = ascii_in_ucs4_encode_loop(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -1527,7 +1484,7 @@ force_inline bool bytes_write_ucs4(u8 **writer_addr, const u32 *src, usize len, 
         } else if (unicode < 0x800) {
             bool continuous;
             while (CAN_LOOP) {
-                continuous = _2bytes_in_ucs4_encode_loop(writer_addr, &src, &len);
+                writer = _2bytes_in_ucs4_encode_loop(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -1538,7 +1495,7 @@ force_inline bool bytes_write_ucs4(u8 **writer_addr, const u32 *src, usize len, 
 #if COMPILE_SIMD_BITS >= 256 || __SSSE3__
             bool continuous;
             while (CAN_LOOP) {
-                continuous = _3bytes_in_ucs4_encode_loop(writer_addr, &src, &len);
+                writer = _3bytes_in_ucs4_encode_loop(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -1554,19 +1511,20 @@ force_inline bool bytes_write_ucs4(u8 **writer_addr, const u32 *src, usize len, 
     encode_one:;
         unicode = *src;
     do_encode_one:;
-        if (unlikely(!encode_one_ucs4(writer_addr, unicode))) {
-            return false;
+        writer = encode_one_ucs4(writer, unicode);
+        if (unlikely(!writer)) {
+            return NULL;
         }
         src++;
         len--;
     }
-    if (!len) return true;
-    return bytes_write_ucs4_trailing(writer_addr, src, len);
+    if (len) writer = bytes_write_ucs4_trailing(writer, src, len);
+    return writer;
 #undef CAN_LOOP
 #undef CAN_LOOP4
 }
 
-force_inline bool bytes_write_ucs4_raw_utf8(u8 **writer_addr, const u32 *src, usize len, bool is_key) {
+force_inline u8 *bytes_write_ucs4_raw_utf8(u8 *writer, const u32 *src, usize len, bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -1577,7 +1535,7 @@ force_inline bool bytes_write_ucs4_raw_utf8(u8 **writer_addr, const u32 *src, us
             bool continuous;
             if (!is_key) {
                 while (CAN_LOOP4) {
-                    continuous = ascii_in_ucs4_encode_loop4_raw_utf8(writer_addr, &src, &len);
+                    writer = ascii_in_ucs4_encode_loop4_raw_utf8(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
                         goto encode_one;
                     }
@@ -1585,7 +1543,7 @@ force_inline bool bytes_write_ucs4_raw_utf8(u8 **writer_addr, const u32 *src, us
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
-                continuous = ascii_in_ucs4_encode_loop_raw_utf8(writer_addr, &src, &len);
+                writer = ascii_in_ucs4_encode_loop_raw_utf8(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -1595,7 +1553,7 @@ force_inline bool bytes_write_ucs4_raw_utf8(u8 **writer_addr, const u32 *src, us
         } else if (unicode < 0x800) {
             bool continuous;
             while (CAN_LOOP) {
-                continuous = _2bytes_in_ucs4_encode_loop(writer_addr, &src, &len);
+                writer = _2bytes_in_ucs4_encode_loop(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -1606,7 +1564,7 @@ force_inline bool bytes_write_ucs4_raw_utf8(u8 **writer_addr, const u32 *src, us
 #if COMPILE_SIMD_BITS >= 256 || __SSSE3__
             bool continuous;
             while (CAN_LOOP) {
-                continuous = _3bytes_in_ucs4_encode_loop(writer_addr, &src, &len);
+                writer = _3bytes_in_ucs4_encode_loop(writer, &src, &len, &continuous);
                 if (unlikely(!continuous)) {
                     goto encode_one;
                 }
@@ -1622,14 +1580,15 @@ force_inline bool bytes_write_ucs4_raw_utf8(u8 **writer_addr, const u32 *src, us
     encode_one:;
         unicode = *src;
     do_encode_one:;
-        if (unlikely(!encode_one_ucs4_noescape(writer_addr, unicode))) {
-            return false;
+        writer = encode_one_ucs4_noescape(writer, unicode);
+        if (unlikely(!writer)) {
+            return NULL;
         }
         src++;
         len--;
     }
-    if (!len) return true;
-    return bytes_write_ucs4_raw_utf8_trailing(writer_addr, src, len);
+    if (len) writer = bytes_write_ucs4_raw_utf8_trailing(writer, src, len);
+    return writer;
 #undef CAN_LOOP
 #undef CAN_LOOP4
 }

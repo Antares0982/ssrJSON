@@ -44,15 +44,13 @@
  * Only consider vector in ASCII range,
  * because most of 2-bytes UTF-8 code points cannot be presented by UCS1.
  */
-force_inline void bytes_write_ucs1_trailing_256(u8 **writer_addr, const u8 *src, usize len) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1_trailing_256(u8 *writer, const u8 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
     // constants
     const u8 *src_end = src + len;
     const u8 *last_batch_start = src_end - READ_BATCH_COUNT;
     const vector_a vec = *(const vector_u *)last_batch_start;
     const vector_a m0 = (vec == broadcast(_Quote)) | (vec == broadcast(_Slash)) | signed_cmpgt(broadcast(ControlMax), vec);
-    //
-    u8 *writer = *writer_addr;
 restart:;
     vector_a m = high_mask(m0, len);
     // excess bytes written: 32 - max_json_bytes_per_unicode (at least one unicode in src)
@@ -69,24 +67,22 @@ restart:;
         src = last_batch_start + done_count + 1;
         u8 unicode = last_batch_start[done_count];
         assume(!(unicode >= ControlMax && unicode < 0x80 && unicode != _Slash && unicode != _Quote));
-        encode_one_special_ucs1(&writer, unicode);
+        writer = encode_one_special_ucs1(writer, unicode);
         if (len) goto restart;
     }
-    *writer_addr = writer;
+    return writer;
 }
 
 #define __readbefore_bytes_write_ucs1_raw_utf8_trailing_256 (32)
 #define __excess_bytes_write_ucs1_raw_utf8_trailing_256 (32 - max_utf8_bytes_per_ucs1)
 
-force_inline void bytes_write_ucs1_raw_utf8_trailing_256(u8 **writer_addr, const u8 *src, usize len) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8_trailing_256(u8 *writer, const u8 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
     // constants
     const u8 *src_end = src + len;
     const u8 *last_batch_start = src_end - READ_BATCH_COUNT;
     const vector_a vec = *(const vector_u *)last_batch_start;
     const vector_a m0 = signed_cmpgt(broadcast(0), vec);
-    //
-    u8 *writer = *writer_addr;
 restart:;
     vector_a m = high_mask(m0, len);
     // excess bytes written: 32 - max_utf8_bytes_per_ucs1 (at least one ucs1 in src)
@@ -108,7 +104,7 @@ restart:;
 
         if (len) goto restart;
     }
-    *writer_addr = writer;
+    return writer;
 }
 
 #include "compile_context/srw_out.inl.h"

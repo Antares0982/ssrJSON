@@ -35,7 +35,7 @@
 
 #include "compile_context/sw_in.inl.h"
 
-#define _ELEVATE_FROM_U8_NUM_BUFFER MAKE_W_NAME(_elevate_u8_copy)
+#define _elevate_u8_copy MAKE_W_NAME(_elevate_u8_copy)
 
 extern u8 *dragonbox_to_chars_n(double value, u8 *buffer);
 
@@ -45,14 +45,12 @@ extern u8 *dragonbox_to_chars_n(double value, u8 *buffer);
  * The space (32 * sizeof(_dst_t)) must be reserved before calling this function.
  */
 #if COMPILE_WRITE_UCS_LEVEL > 1
-force_inline void _ELEVATE_FROM_U8_NUM_BUFFER(_dst_t **writer_addr, const u8 *buffer, Py_ssize_t len) {
-    _dst_t *writer = *writer_addr;
+force_inline ssrjson_nofail void _elevate_u8_copy(_dst_t *writer, const u8 *buffer) {
 #    if COMPILE_WRITE_UCS_LEVEL == 2
     __partial_cvt_32_u8_u16(&writer, &buffer);
 #    else // COMPILE_WRITE_UCS_LEVEL == 4
     __partial_cvt_32_u8_u32(&writer, &buffer);
 #    endif
-    *writer_addr += len;
 }
 #endif
 
@@ -60,10 +58,10 @@ force_inline void _ELEVATE_FROM_U8_NUM_BUFFER(_dst_t **writer_addr, const u8 *bu
  * Write a u64 number to the buffer.
  * The space (32 * sizeof(_dst_t)) must be reserved before calling this function.
  */
-force_inline void u64_to_unicode(_dst_t **writer_addr, u64 val, usize sign) {
+force_inline ssrjson_nofail _dst_t *u64_to_unicode(register _dst_t *writer, u64 val, usize sign) {
     assert(sign <= 1);
 #if COMPILE_WRITE_UCS_LEVEL == 1
-    u8 *buffer = *writer_addr; //_CAST_WRITER(unicode_buffer_info);
+    u8 *buffer = writer;
 #else
     u8 _buffer[64];
     u8 *buffer = _buffer;
@@ -71,37 +69,35 @@ force_inline void u64_to_unicode(_dst_t **writer_addr, u64 val, usize sign) {
     if (sign) *buffer = '-';
     u8 *buffer_end = write_u64(val, buffer + sign);
 #if COMPILE_WRITE_UCS_LEVEL == 1
-    *writer_addr = buffer_end;
-    // unicode_buffer_info->writer.writer_u8 = buffer_end;
+    return buffer_end;
 #else
     Py_ssize_t write_len = buffer_end - buffer;
-    _ELEVATE_FROM_U8_NUM_BUFFER(writer_addr, buffer, write_len);
+    _elevate_u8_copy(writer, buffer);
+    return writer + write_len;
 #endif
-    // assert(check_unicode_writer_valid(unicode_buffer_info));
 }
 
 /*
  * Write a f64 number to the buffer.
  * The space (32 * sizeof(_dst_t)) must be reserved before calling this function.
  */
-force_inline void f64_to_unicode(_dst_t **writer_addr, u64 val_u64_repr) {
+force_inline ssrjson_nofail _dst_t *f64_to_unicode(register _dst_t *writer, u64 val_u64_repr) {
 #if COMPILE_WRITE_UCS_LEVEL == 1
-    u8 *buffer = *writer_addr; //_CAST_WRITER(unicode_buffer_info);
+    u8 *buffer = writer;
 #else
     u8 _buffer[32];
     u8 *buffer = _buffer;
 #endif
     u8 *buffer_end = dragonbox_to_chars_n(f64_from_raw(val_u64_repr), buffer);
-    // u8 *buffer_end = buffer + d2s_buffered_n(f64_from_raw(val_u64_repr), (char *)buffer);
 #if COMPILE_WRITE_UCS_LEVEL == 1
-    *writer_addr = buffer_end;
-    // unicode_buffer_info->writer.writer_u8 = buffer_end;
+    return buffer_end;
 #else
     Py_ssize_t write_len = buffer_end - buffer;
-    _ELEVATE_FROM_U8_NUM_BUFFER(writer_addr, buffer, write_len);
+    _elevate_u8_copy(writer, buffer);
+    return writer + write_len;
 #endif
 }
 
 #include "compile_context/sw_out.inl.h"
 
-#undef _ELEVATE_FROM_U8_NUM_BUFFER
+#undef _elevate_u8_copy

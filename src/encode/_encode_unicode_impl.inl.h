@@ -40,7 +40,7 @@
 /* Macro IN */
 #include "compile_context/sirw_in.inl.h"
 
-force_inline bool unicode_buffer_append_key_internal(const _src_t *str_data, usize len, _dst_t **writer_addr, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth) {
+force_inline _dst_t *unicode_buffer_append_key_internal(const _src_t *str_data, usize len, _dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth) {
     static_assert(COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL, "COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL");
     {
         // write_unicode_indent and '"' writes `get_indent_char_count() + 1` unicodes
@@ -52,12 +52,12 @@ force_inline bool unicode_buffer_append_key_internal(const _src_t *str_data, usi
         const usize excess_count_in_encoding = SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode;
         usize excess_count_after = (COMPILE_INDENT_LEVEL > 0) ? 4 : 2;
         excess_count_after = SSRJSON_MAX(excess_count_after, excess_count_in_encoding);
-        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, excess_count_before + reserve_count_in_encoding + excess_count_after));
+        writer = unicode_buffer_reserve(writer, unicode_buffer_info, excess_count_before + reserve_count_in_encoding + excess_count_after);
+        return_if_unlikely(!writer);
     }
-    _dst_t *writer = *writer_addr;
-    write_unicode_indent(&writer, cur_nested_depth);
+    writer = write_unicode_indent(writer, cur_nested_depth);
     *writer++ = '"';
-    encode_unicode_impl(&writer, str_data, len, true);
+    writer = encode_unicode_impl(writer, str_data, len, true);
     *writer++ = '"';
     *writer++ = ':';
 #if COMPILE_INDENT_LEVEL > 0
@@ -66,15 +66,13 @@ force_inline bool unicode_buffer_append_key_internal(const _src_t *str_data, usi
     *writer = 0;
 #    endif // COMPILE_WRITE_UCS_LEVEL < 4
 #endif     // COMPILE_INDENT_LEVEL > 0
-    *writer_addr = writer;
     assert(check_unicode_writer_valid(writer, unicode_buffer_info));
-    return true;
+    return writer;
 }
 
-force_inline bool unicode_buffer_append_str_internal(const _src_t *str_data, usize len, _dst_t **writer_addr,
-                                                     EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
+force_inline _dst_t *unicode_buffer_append_str_internal(const _src_t *str_data, usize len, _dst_t *writer,
+                                                        EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     static_assert(COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL, "COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL");
-    _dst_t *writer;
     //
     const usize reserve_count_in_encoding = max_json_bytes_per_unicode * len;
     const usize excess_count_in_encoding = SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode;
@@ -86,25 +84,24 @@ force_inline bool unicode_buffer_append_str_internal(const _src_t *str_data, usi
         // excess `SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode` unicodes written in encode_unicode_impl_no_key (see comments in AVX2 impl of encode_unicode_impl)
         // '"' and ',': 2 unicodes
         const usize excess_count_before = 1;
-        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, excess_count_before + reserve_count_in_encoding + excess_count_after));
-        writer = *writer_addr;
+        writer = unicode_buffer_reserve(writer, unicode_buffer_info, excess_count_before + reserve_count_in_encoding + excess_count_after);
+        return_if_unlikely(!writer);
     } else {
         // write_unicode_indent and '"' writes `get_indent_char_count() + 1` unicodes
         // max_json_bytes_per_unicode * len is the written count when every character needs to be escaped
         // excess `SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode` unicodes written in encode_unicode_impl_no_key (see comments in AVX2 impl of encode_unicode_impl)
         // '"' and ',': 2 unicodes
         const usize excess_count_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
-        RETURN_ON_UNLIKELY_ERR(!unicode_buffer_reserve(writer_addr, unicode_buffer_info, excess_count_before + reserve_count_in_encoding + excess_count_after));
-        writer = *writer_addr;
-        write_unicode_indent(&writer, cur_nested_depth);
+        writer = unicode_buffer_reserve(writer, unicode_buffer_info, excess_count_before + reserve_count_in_encoding + excess_count_after);
+        return_if_unlikely(!writer);
+        writer = write_unicode_indent(writer, cur_nested_depth);
     }
     *writer++ = '"';
-    encode_unicode_impl_no_key(&writer, str_data, len);
+    writer = encode_unicode_impl_no_key(writer, str_data, len);
     *writer++ = '"';
     *writer++ = ',';
-    *writer_addr = writer;
     assert(check_unicode_writer_valid(writer, unicode_buffer_info));
-    return true;
+    return writer;
 }
 
 #include "compile_context/sirw_out.inl.h"
