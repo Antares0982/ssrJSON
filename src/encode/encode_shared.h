@@ -275,19 +275,6 @@ force_inline bool resize_to_fit_pybytes(EncodeUnicodeBufferInfo *unicode_buffer_
 }
 
 /*==============================================================================
- * Number Utils
- * These functions are used to detect and convert NaN and Inf numbers.
- *============================================================================*/
-
-/** Convert raw binary to double. */
-force_inline f64 f64_from_raw(u64 u) {
-    /* use memcpy to avoid violating the strict aliasing rule */
-    f64 f;
-    memcpy(&f, &u, 8);
-    return f;
-}
-
-/*==============================================================================
  * Integer Writer
  *
  * The maximum value of uint32_t is 4294967295 (10 digits),

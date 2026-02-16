@@ -236,8 +236,7 @@ force_inline PyObject *ssrjson_dumps_single_long(PyObject *val, bool to_bytes_ob
 force_inline PyObject *ssrjson_dumps_single_float(PyObject *val, bool to_bytes_obj) {
     u8 buffer[32];
     double v = PyFloat_AS_DOUBLE(val);
-    u64 *raw = (u64 *)&v;
-    u8 *buffer_end = dragonbox_to_chars_n(f64_from_raw(*raw), buffer);
+    u8 *buffer_end = dragonbox_to_chars_n(v, buffer);
     usize size = buffer_end - buffer;
     assert(size < 64);
     PyObject *unicode;

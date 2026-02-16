@@ -81,14 +81,14 @@ force_inline ssrjson_nofail _dst_t *u64_to_unicode(register _dst_t *writer, u64 
  * Write a f64 number to the buffer.
  * The space (32 * sizeof(_dst_t)) must be reserved before calling this function.
  */
-force_inline ssrjson_nofail _dst_t *f64_to_unicode(register _dst_t *writer, u64 val_u64_repr) {
+force_inline ssrjson_nofail _dst_t *f64_to_unicode(register _dst_t *writer, double d) {
 #if COMPILE_WRITE_UCS_LEVEL == 1
     u8 *buffer = writer;
 #else
     u8 _buffer[32];
     u8 *buffer = _buffer;
 #endif
-    u8 *buffer_end = dragonbox_to_chars_n(f64_from_raw(val_u64_repr), buffer);
+    u8 *buffer_end = dragonbox_to_chars_n(d, buffer);
 #if COMPILE_WRITE_UCS_LEVEL == 1
     return buffer_end;
 #else

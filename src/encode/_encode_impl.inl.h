@@ -367,8 +367,7 @@ force_inline _dst_t *unicode_buffer_append_null(_dst_t *writer, EncodeUnicodeBuf
 force_inline _dst_t *unicode_buffer_append_float(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 32);
     double v = PyFloat_AS_DOUBLE(val);
-    u64 raw = *SSRJSON_CAST(u64 *, &v);
-    writer = f64_to_unicode(writer, raw);
+    writer = f64_to_unicode(writer, v);
     *writer++ = ',';
     return writer;
 }
