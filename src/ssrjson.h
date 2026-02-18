@@ -227,6 +227,9 @@
 #define likely ssrjson_likely
 #define unlikely ssrjson_unlikely
 
+/* assembly */
+#define ssrjson_asm(x) asm x
+
 /* assume for compiler */
 #ifdef NDEBUG
 #    if defined(__GNUC__) || defined(__clang__)

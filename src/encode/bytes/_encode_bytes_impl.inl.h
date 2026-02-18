@@ -138,7 +138,7 @@ static force_noinline u8 *bytes_buffer_append_nonascii_key_no_write_cache(u8 *wr
     return writer;
 }
 
-force_inline u8 *bytes_buffer_append_key(u8 *writer, PyObject *key, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_write_cache) {
+static force_noinline u8 *bytes_buffer_append_key(u8 *writer, PyObject *key, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_write_cache) {
     int src_pykind = PyUnicode_KIND(key);
     bool is_ascii = PyUnicode_IS_ASCII(key);
     usize len = PyUnicode_GET_LENGTH(key);
@@ -182,7 +182,7 @@ force_inline u8 *bytes_buffer_append_str(PyObject *str,
                                          u8 *writer,
                                          EncodeUnicodeBufferInfo *unicode_buffer_info,
                                          Py_ssize_t cur_nested_depth,
-                                         bool is_in_obj,
+                                         ssrjson_compiletime bool is_in_obj,
                                          bool is_write_cache) {
     int src_pykind = PyUnicode_KIND(str);
     bool is_ascii = PyUnicode_IS_ASCII(str);
@@ -196,7 +196,7 @@ force_inline u8 *bytes_buffer_append_str(PyObject *str,
     excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs4_trailing); // ucs4
     assert(excess_bytes_in_encoding >= 4);
     const usize excess_bytes_after = excess_bytes_in_encoding;
-    if (is_in_obj) {
+    if (ssrjson_consteval(is_in_obj)) {
         // '"' writes 1 byte
         // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
         // excess `16 - max_json_bytes_per_unicode` bytes written in bytes_write_utf8 or bytes_write_ascii (see comments in AVX2 impl of encode_unicode_impl)
@@ -230,6 +230,20 @@ force_inline u8 *bytes_buffer_append_str(PyObject *str,
             return bytes_buffer_append_nonascii_str_no_write_cache(writer, src_pykind, src_voidp, len, str);
         }
     }
+}
+
+static force_noinline u8 *bytes_buffer_append_str_dict(u8 *writer, PyObject *str,
+                                                       EncodeUnicodeBufferInfo *unicode_buffer_info,
+                                                       Py_ssize_t cur_nested_depth,
+                                                       bool is_write_cache) {
+    return bytes_buffer_append_str(str, writer, unicode_buffer_info, cur_nested_depth, true, is_write_cache);
+}
+
+static force_noinline u8 *bytes_buffer_append_str_list(u8 *writer, PyObject *str,
+                                                       EncodeUnicodeBufferInfo *unicode_buffer_info,
+                                                       Py_ssize_t cur_nested_depth,
+                                                       bool is_write_cache) {
+    return bytes_buffer_append_str(str, writer, unicode_buffer_info, cur_nested_depth, false, is_write_cache);
 }
 
 force_inline u8 *encode_bytes_process_val(
@@ -267,7 +281,11 @@ force_inline u8 *encode_bytes_process_val(
 
     switch (obj_type) {
         case T_Unicode: {
-            writer = bytes_buffer_append_str(val, writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, is_write_cache);
+            if (ssrjson_consteval(is_in_obj)) {
+                writer = bytes_buffer_append_str_dict(writer, val, unicode_buffer_info, *cur_nested_depth_addr, is_write_cache);
+            } else {
+                writer = bytes_buffer_append_str_list(writer, val, unicode_buffer_info, *cur_nested_depth_addr, is_write_cache);
+            }
             return_jump_fail_if_unlikely(!writer);
             break;
         }
@@ -360,7 +378,7 @@ force_inline u8 *encode_bytes_process_val(
             break;
         }
         case T_Tuple: {
-            Py_ssize_t this_list_size = PyTuple_Size(val);
+            Py_ssize_t this_list_size = PyTuple_GET_SIZE(val);
             if (unlikely(this_list_size == 0)) {
                 writer = unicode_buffer_append_empty_arr(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj);
                 return_jump_fail_if_unlikely(!writer);

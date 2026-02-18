@@ -47,9 +47,14 @@
  */
 force_inline ssrjson_nofail u8 *bytes_write_ucs1_trailing_512(u8 *writer, const u8 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
     u64 maskz = len_to_maskz(len);
     vector_a vec = maskz_loadu(maskz, src);
-    avx512_bitmask_t m = cmpeq_bitmask(vec, broadcast(_Quote)) | cmpeq_bitmask(vec, broadcast(_Slash)) | signed_cmpgt_bitmask(broadcast(ControlMax), vec);
+    avx512_bitmask_t m = cmpeq_bitmask(vec, t1) | cmpeq_bitmask(vec, t2) | signed_cmpgt_bitmask(t3, vec);
     m = m & maskz;
 restart:;
     *(vector_u *)writer = vec;

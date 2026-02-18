@@ -73,6 +73,7 @@
 #undef checkmax
 #undef unsigned_max
 #undef unsigned_max4
+#undef _CheckerMasks
 //
 #undef anymask_t
 #undef get_escape_anymask

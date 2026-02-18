@@ -59,6 +59,7 @@
 #define unicode_buffer_reserve MAKE_W_NAME(unicode_buffer_reserve)
 #define u64_to_unicode MAKE_W_NAME(u64_to_unicode)
 #define f64_to_unicode MAKE_W_NAME(f64_to_unicode)
+#define inf_nan_to_unicode MAKE_W_NAME(inf_nan_to_unicode)
 #define ControlEscapeTable MAKE_W_NAME(ControlEscapeTable)
 
 #endif // SSRJSON_COMPILE_CONTEXT_W

@@ -37,8 +37,7 @@
 
 #define _elevate_u8_copy MAKE_W_NAME(_elevate_u8_copy)
 
-extern u8 *dragonbox_to_chars_n(double value, u8 *buffer);
-
+extern u8 *zmij_write_f64(double value, u8 *buffer);
 /*
  * (PRIVATE)
  * Convert the u8 buffer to the buffer.
@@ -88,7 +87,7 @@ force_inline ssrjson_nofail _dst_t *f64_to_unicode(register _dst_t *writer, doub
     u8 _buffer[32];
     u8 *buffer = _buffer;
 #endif
-    u8 *buffer_end = dragonbox_to_chars_n(d, buffer);
+    u8 *buffer_end = zmij_write_f64(d, buffer);
 #if COMPILE_WRITE_UCS_LEVEL == 1
     return buffer_end;
 #else
@@ -96,6 +95,21 @@ force_inline ssrjson_nofail _dst_t *f64_to_unicode(register _dst_t *writer, doub
     _elevate_u8_copy(writer, buffer);
     return writer + write_len;
 #endif
+}
+
+force_inline ssrjson_nofail _dst_t *inf_nan_to_unicode(register _dst_t *writer, double d) {
+    if (isinf(d)) {
+        bool sign = d < 0;
+        *writer = '-';
+        static const _dst_t _Inf[9] = {'I', 'n', 'f', 'i', 'n', 'i', 't', 'y', 0};
+        memcpy(writer + sign, _Inf, sizeof(_Inf));
+        writer += sign + 8;
+    } else {
+        static const _dst_t _NaN[4] = {'N', 'a', 'N', 0};
+        memcpy(writer, _NaN, sizeof(_NaN));
+        writer += 3;
+    }
+    return writer;
 }
 
 #include "compile_context/sw_out.inl.h"

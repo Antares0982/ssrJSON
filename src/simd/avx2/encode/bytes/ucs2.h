@@ -243,6 +243,11 @@ force_inline void ucs2_encode_3bytes_utf8_avx2_trailing(const u16 *src, const u1
 force_inline u8 *bytes_write_ucs2_trailing_256(u8 *writer, const u16 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
     // constants
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
     const u16 *const src_end = src + len;
     const u16 *const last_batch_start = src_end - READ_BATCH_COUNT;
     const vector_a vec = *(const vector_u *)last_batch_start;
@@ -283,7 +288,7 @@ restart:;
     SSRJSON_UNREACHABLE();
 ascii:;
     {
-        const vector_a m_not_ascii = (vec == broadcast(_Quote)) | (vec == broadcast(_Slash)) | signed_cmpgt(broadcast(ControlMax), vec) | signed_cmpgt(vec, broadcast(0x7f));
+        const vector_a m_not_ascii = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, broadcast(0x7f));
         vector_a m = high_mask(m_not_ascii, len);
         // excess bytes written: 16 - max_json_bytes_per_unicode = 10
         avx2_trailing_cvt(src, src_end, writer);

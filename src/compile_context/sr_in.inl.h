@@ -96,6 +96,7 @@
 #define checkmax MAKE_SR_NAME(checkmax)
 #define unsigned_max MAKE_SR_NAME(unsigned_max)
 #define unsigned_max4 MAKE_SR_NAME(unsigned_max4)
+#define _CheckerMasks MAKE_SR_NAME(_CheckerMasks)
 //
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
 #    define anymask_t avx512_bitmask_t

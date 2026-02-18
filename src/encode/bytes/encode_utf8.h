@@ -73,9 +73,11 @@ force_inline ssrjson_nofail u8 *bytes_write_ascii_not_key(u8 *writer, const u8 *
 
 /* UCS1 src. */
 force_inline void check_ascii_in_ucs1_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
-    vector_a t1 = broadcast(_Quote);
-    vector_a t2 = broadcast(_Slash);
-    vector_a t3 = broadcast(ControlMax);
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
     struct {
         u64 x[4];
@@ -168,9 +170,11 @@ force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_countx4(unionvector_
 }
 
 force_inline void check_ascii_in_ucs1_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
-    vector_a t1 = broadcast(_Quote);
-    vector_a t2 = broadcast(_Slash);
-    vector_a t3 = broadcast(ControlMax);
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
     u64 m;
 
@@ -435,9 +439,11 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8(u8 *writer, const u8 *
 #include "compile_context/srw_in.inl.h"
 
 force_inline void check_ascii_in_ucs2_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
-    vector_a t1 = broadcast(_Quote);
-    vector_a t2 = broadcast(_Slash);
-    vector_a t3 = broadcast(ControlMax);
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
     struct {
@@ -498,8 +504,6 @@ force_inline void check_ascii_in_ucs2_and_get_done_countx4(unionvector_a_x4 vec,
 }
 
 force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
-    // vector_a t1 = broadcast(_Quote);
-    // vector_a t2 = broadcast(_Slash);
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
@@ -553,9 +557,11 @@ force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_countx4(unionvector_
 }
 
 force_inline void check_ascii_in_ucs2_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
-    vector_a t1 = broadcast(_Quote);
-    vector_a t2 = broadcast(_Slash);
-    vector_a t3 = broadcast(ControlMax);
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
     u32 m;
@@ -578,8 +584,6 @@ force_inline void check_ascii_in_ucs2_and_get_done_count(vector_a vec, bool *out
 }
 
 force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
-    // vector_a t1 = broadcast(_Quote);
-    // vector_a t2 = broadcast(_Slash);
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
@@ -1043,9 +1047,11 @@ force_inline u8 *bytes_write_ucs2_raw_utf8(u8 *writer, const u16 *src, usize len
 #include "compile_context/srw_in.inl.h"
 
 force_inline void check_ascii_in_ucs4_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
-    vector_a t1 = broadcast(_Quote);
-    vector_a t2 = broadcast(_Slash);
-    vector_a t3 = broadcast(ControlMax);
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
     struct {
@@ -1106,8 +1112,6 @@ force_inline void check_ascii_in_ucs4_and_get_done_countx4(unionvector_a_x4 vec,
 }
 
 force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
-    // vector_a t1 = broadcast(_Quote);
-    // vector_a t2 = broadcast(_Slash);
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
@@ -1237,9 +1241,11 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop4_raw_utf8(u8 *dst, con
 }
 
 force_inline void check_ascii_in_ucs4_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
-    vector_a t1 = broadcast(_Quote);
-    vector_a t2 = broadcast(_Slash);
-    vector_a t3 = broadcast(ControlMax);
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
     u32 m;
@@ -1262,8 +1268,6 @@ force_inline void check_ascii_in_ucs4_and_get_done_count(vector_a vec, bool *out
 }
 
 force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
-    // vector_a t1 = broadcast(_Quote);
-    // vector_a t2 = broadcast(_Slash);
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512

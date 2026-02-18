@@ -32,4 +32,5 @@
 #undef unicode_buffer_reserve
 #undef u64_to_unicode
 #undef f64_to_unicode
+#undef inf_nan_to_unicode
 #undef ControlEscapeTable

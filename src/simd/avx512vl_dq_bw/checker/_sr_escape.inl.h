@@ -55,9 +55,14 @@ force_inline vector_a low_mask(vector_a x, usize count) {
 }
 
 force_inline avx512_bitmask_t get_escape_bitmask(vector_a x) {
-    avx512_bitmask_t bitmask_1 = cmpeq_bitmask(x, broadcast(_Slash));
-    avx512_bitmask_t bitmask_2 = cmpeq_bitmask(x, broadcast(_Quote));
-    avx512_bitmask_t bitmask_3 = unsigned_cmplt_bitmask(x, broadcast(ControlMax));
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
+    avx512_bitmask_t bitmask_1 = cmpeq_bitmask(x, t1);
+    avx512_bitmask_t bitmask_2 = cmpeq_bitmask(x, t2);
+    avx512_bitmask_t bitmask_3 = unsigned_cmplt_bitmask(x, t3);
     return bitmask_1 | bitmask_2 | bitmask_3;
 }
 

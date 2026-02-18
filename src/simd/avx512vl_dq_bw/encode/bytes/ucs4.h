@@ -225,6 +225,11 @@ force_inline void ucs4_encode_3bytes_utf8_avx512(u8 *writer, vector_a z) {
 force_inline u8 *bytes_write_ucs4_trailing_512(u8 *writer, const u32 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
     //
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
     u16 maskz = len_to_maskz(len);
     vector_a vec = maskz_loadu(maskz, src);
     if (len == 1) {
@@ -283,7 +288,7 @@ restart:;
     SSRJSON_UNREACHABLE();
 ascii:;
     {
-        avx512_bitmask_t m_not_ascii = cmpeq_bitmask(vec, broadcast(_Quote)) | cmpeq_bitmask(vec, broadcast(_Slash)) | unsigned_cmpgt_bitmask(broadcast(ControlMax), vec) | unsigned_cmpgt_bitmask(vec, broadcast(0x7f));
+        avx512_bitmask_t m_not_ascii = cmpeq_bitmask(vec, t1) | cmpeq_bitmask(vec, t2) | unsigned_cmpgt_bitmask(t3, vec) | unsigned_cmpgt_bitmask(vec, broadcast(0x7f));
         m_not_ascii = m_not_ascii & maskz;
     __ascii:;
         cvt_to_dst(writer, vec);

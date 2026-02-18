@@ -756,26 +756,26 @@ class TestType:
         """
         float precision dumps()
         """
-        assert ssrjson.dumps(31.245270191439438) == "3.1245270191439438e1"
-        assert ssrjson.dumps(-31.245270191439438) == "-3.1245270191439438e1"
-        assert ssrjson.dumps(121.48791951161945) == "1.2148791951161945e2"
-        assert ssrjson.dumps(-121.48791951161945) == "-1.2148791951161945e2"
-        assert ssrjson.dumps(100.78399658203125) == "1.0078399658203125e2"
-        assert ssrjson.dumps(-100.78399658203125) == "-1.0078399658203125e2"
+        assert ssrjson.dumps(31.245270191439438) == "31.245270191439438"
+        assert ssrjson.dumps(-31.245270191439438) == "-31.245270191439438"
+        assert ssrjson.dumps(121.48791951161945) == "121.48791951161945"
+        assert ssrjson.dumps(-121.48791951161945) == "-121.48791951161945"
+        assert ssrjson.dumps(100.78399658203125) == "100.78399658203125"
+        assert ssrjson.dumps(-100.78399658203125) == "-100.78399658203125"
 
-        assert ssrjson.dumps_to_bytes(31.245270191439438) == b"3.1245270191439438e1"
-        assert ssrjson.dumps_to_bytes(-31.245270191439438) == b"-3.1245270191439438e1"
-        assert ssrjson.dumps_to_bytes(121.48791951161945) == b"1.2148791951161945e2"
-        assert ssrjson.dumps_to_bytes(-121.48791951161945) == b"-1.2148791951161945e2"
-        assert ssrjson.dumps_to_bytes(100.78399658203125) == b"1.0078399658203125e2"
-        assert ssrjson.dumps_to_bytes(-100.78399658203125) == b"-1.0078399658203125e2"
+        assert ssrjson.dumps_to_bytes(31.245270191439438) == b"31.245270191439438"
+        assert ssrjson.dumps_to_bytes(-31.245270191439438) == b"-31.245270191439438"
+        assert ssrjson.dumps_to_bytes(121.48791951161945) == b"121.48791951161945"
+        assert ssrjson.dumps_to_bytes(-121.48791951161945) == b"-121.48791951161945"
+        assert ssrjson.dumps_to_bytes(100.78399658203125) == b"100.78399658203125"
+        assert ssrjson.dumps_to_bytes(-100.78399658203125) == b"-100.78399658203125"
 
     def test_float_edge(self):
         """
         float edge cases
         """
-        assert ssrjson.dumps(0.8701) == "8.701e-1"
-        assert ssrjson.dumps_to_bytes(0.8701) == b"8.701e-1"
+        assert ssrjson.dumps(0.8701) == "0.8701"
+        assert ssrjson.dumps_to_bytes(0.8701) == b"0.8701"
 
         assert ssrjson.loads("0.8701") == 0.8701
         assert ssrjson.loads(b"0.8701") == 0.8701

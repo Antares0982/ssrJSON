@@ -46,6 +46,16 @@ extern int _PyDict_SetItem_KnownHash_LockHeld(PyObject *mp, PyObject *key, PyObj
 #    define _PyDict_SetItem_KnownHash _PyDict_SetItem_KnownHash_LockHeld
 #endif // PY_MINOR_VERSION >= 13
 
+#if PY_MINOR_VERSION >= 13
+// _PyNone_Type is hidden in Python 3.13
+extern PyTypeObject *PyNone_Type;
+#else
+#    define PyNone_Type &_PyNone_Type
+#endif
+#if PY_MINOR_VERSION >= 13
+extern PyTypeObject *PyNone_Type;
+#endif
+
 // Initialize a PyUnicode object with the given size and kind.
 force_inline void init_pyunicode(void *head, Py_ssize_t size, int kind) {
     u8 *const u8head = SSRJSON_CAST(u8 *, head);
@@ -219,5 +229,7 @@ force_inline void parse_ascii(PyObject *unicode, bool *is_ascii_out, const u8 **
     *char_data_out = char_data;
     *char_count_out = char_count;
 }
+
+extern ssrjson_align(64) u64 _PyFastType[8];
 
 #endif // SSRJSON_PYUTILS_H

@@ -32,9 +32,10 @@ force_inline _dst_t *unicode_buffer_reserve(_dst_t *writer, EncodeUnicodeBufferI
     if (unlikely(target_ptr > SSRJSON_CAST(_dst_t *, unicode_buffer_info->end))) {
         u8 *old_head = (u8 *)unicode_buffer_info->head;
         usize target_size = SSRJSON_CAST(u8 *, target_ptr) - SSRJSON_CAST(u8 *, unicode_buffer_info->head);
-        bool ret = _unicode_buffer_reserve(unicode_buffer_info, target_size);
-        return_if_unlikely(!ret);
+        EncodeUnicodeBufferInfo new_info = _unicode_buffer_reserve(*unicode_buffer_info, target_size);
+        return_if_unlikely(!new_info.head);
         usize u8offset = SSRJSON_CAST(u8 *, writer) - old_head;
+        *unicode_buffer_info = new_info;
         writer = SSRJSON_CAST(_dst_t *, SSRJSON_CAST(u8 *, unicode_buffer_info->head) + u8offset);
     }
     return writer;

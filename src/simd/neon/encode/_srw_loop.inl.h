@@ -147,7 +147,7 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_impl(_dst_t *dst, const _src_
     return dst;
 }
 
-static force_noinline ssrjson_nofail _dst_t *encode_unicode_impl_no_key(_dst_t *dst, const _src_t *src, usize len) {
+force_inline ssrjson_nofail _dst_t *encode_unicode_impl_no_key(_dst_t *dst, const _src_t *src, usize len) {
     return encode_unicode_impl(dst, src, len, false);
 }
 

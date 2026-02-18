@@ -112,6 +112,11 @@ force_inline void ucs4_encode_2bytes_utf8_neon(u8 *writer, vector_a x) {
  */
 force_inline u8 *bytes_write_ucs4_trailing_128(u8 *writer, const u32 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
     const u32 *const src_end = src + len;
     const u32 *const last_batch_start = src_end - READ_BATCH_COUNT;
     const vector_a vec = *(const vector_u *)last_batch_start;
@@ -161,7 +166,7 @@ restart:;
     // Unreachable
 ascii:;
     {
-        const vector_a m_not_ascii = (vec == broadcast(_Quote)) | (vec == broadcast(_Slash)) | signed_cmpgt(broadcast(ControlMax), vec) | signed_cmpgt(vec, broadcast(0x7f));
+        const vector_a m_not_ascii = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, broadcast(0x7f));
         m = high_mask(m_not_ascii, len);
         shift = sizeof(u32) * (READ_BATCH_COUNT - len);
         tail_vec = runtime_byte_rshift_128(vec, shift);

@@ -60,6 +60,8 @@
 
 #define bytes_buffer_append_key MAKE_I_NAME(bytes_buffer_append_key)
 #define bytes_buffer_append_str MAKE_I_NAME(bytes_buffer_append_str)
+#define bytes_buffer_append_str_dict MAKE_I_NAME(bytes_buffer_append_str_dict)
+#define bytes_buffer_append_str_list MAKE_I_NAME(bytes_buffer_append_str_list)
 #define bytes_buffer_append_nonascii_key_write_cache MAKE_I_NAME(bytes_buffer_append_nonascii_key_write_cache)
 #define bytes_buffer_append_nonascii_key_no_write_cache MAKE_I_NAME(bytes_buffer_append_nonascii_key_no_write_cache)
 #define encode_bytes_process_val MAKE_I_NAME(encode_bytes_process_val)

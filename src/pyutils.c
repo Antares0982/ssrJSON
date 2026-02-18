@@ -26,7 +26,7 @@
 #include "simd/memcpy.h"
 #include "utils/unicode.h"
 
-force_noinline void init_pyunicode_noinline(void *head, Py_ssize_t size, int kind) {
+void init_pyunicode_noinline(void *head, Py_ssize_t size, int kind) {
     init_pyunicode(head, size, kind);
 }
 
@@ -138,3 +138,5 @@ PyObject *make_unicode_down_ucs4_ucs2(void *raw_buffer, usize size, bool do_hash
     }
     return unicode;
 }
+
+ssrjson_align(64) u64 _PyFastType[8];

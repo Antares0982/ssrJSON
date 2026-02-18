@@ -52,9 +52,11 @@ force_inline vector_a low_mask(vector_a x, usize count) {
 }
 
 force_inline vector_a get_escape_mask(vector_a x) {
-    vector_a t1 = broadcast(_Slash);
-    vector_a t2 = broadcast(_Quote);
-    vector_a t3 = broadcast(ControlMax);
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
     vector_a x1 = x == t1;
     vector_a x2 = x == t2;
 #if CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS

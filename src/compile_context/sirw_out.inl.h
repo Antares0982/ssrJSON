@@ -40,6 +40,8 @@
 #undef unicode_buffer_append_key_distribute2
 #undef unicode_buffer_append_key_distribute4
 #undef unicode_buffer_append_str
+#undef unicode_buffer_append_str_dict
+#undef unicode_buffer_append_str_list
 #undef unicode_buffer_append_str_distribute2
 #undef unicode_buffer_append_str_distribute4
 #undef unicode_buffer_append_long

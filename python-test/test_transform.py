@@ -8,14 +8,18 @@ from util import read_fixture_bytes
 
 
 def _read_file(filename):
-    return read_fixture_bytes("json/test_transform/" + filename).strip(b"\n").strip(b"\r")
+    return (
+        read_fixture_bytes("json/test_transform/" + filename).strip(b"\n").strip(b"\r")
+    )
 
 
 class TestJSONTestSuiteTransform:
     def _pass_transform(self, filename, reference=None):
         data = _read_file(filename)
         assert ssrjson.dumps(ssrjson.loads(data)) == (reference or data.decode("utf-8"))
-        assert ssrjson.dumps_to_bytes(ssrjson.loads(data)) == (reference and reference.encode("utf-8") or data)
+        assert ssrjson.dumps_to_bytes(ssrjson.loads(data)) == (
+            reference and reference.encode("utf-8") or data
+        )
 
     def _fail_transform(self, filename):
         data = _read_file(filename)
@@ -32,7 +36,7 @@ class TestJSONTestSuiteTransform:
         """
         number_1e6.json
         """
-        self._pass_transform("number_1e6.json", "[1e6]")
+        self._pass_transform("number_1e6.json", "[1000000.0]")
 
     def test_number_1e_999(self):
         """

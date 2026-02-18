@@ -165,40 +165,31 @@ force_inline int pydict_next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
 #endif
 }
 
-#if PY_MINOR_VERSION >= 13
-// _PyNone_Type is hidden in Python 3.13
-extern PyTypeObject *PyNone_Type;
-#else
-#    define PyNone_Type &_PyNone_Type
-#endif
-#if PY_MINOR_VERSION >= 13
-extern PyTypeObject *PyNone_Type;
-#endif
-
 EncodePyTypes slow_type_check(PyTypeObject *type);
 
 /* Get the value type as fast as possible. */
 force_inline EncodePyTypes ssrjson_type_check(PyObject *val) {
-    PyTypeObject *type = Py_TYPE(val);
+    u64 type = (u64)Py_TYPE(val);
     assert(type);
-    if (type == &PyUnicode_Type) {
+    u64 *py_fast_type = _PyFastType;
+    if (type == _PyFastType[0]) {
         return T_Unicode;
-    } else if (type == &PyLong_Type) {
+    } else if (type == _PyFastType[1]) {
         return T_Long;
-    } else if (type == &PyBool_Type) {
+    } else if (type == _PyFastType[2]) {
         return T_Bool;
-    } else if (type == PyNone_Type) {
+    } else if (type == _PyFastType[3]) {
         return T_None;
-    } else if (type == &PyFloat_Type) {
+    } else if (type == _PyFastType[4]) {
         return T_Float;
-    } else if (type == &PyList_Type) {
+    } else if (type == _PyFastType[5]) {
         return T_List;
-    } else if (type == &PyDict_Type) {
+    } else if (type == _PyFastType[6]) {
         return T_Dict;
-    } else if (type == &PyTuple_Type) {
+    } else if (type == _PyFastType[7]) {
         return T_Tuple;
     } else {
-        return slow_type_check(type);
+        return slow_type_check((PyTypeObject *)type);
     }
 }
 
@@ -217,7 +208,7 @@ force_inline void init_pybytes(PyObject *in_new_bytes, usize final_len) {
  *============================================================================*/
 
 
-bool _unicode_buffer_reserve(EncodeUnicodeBufferInfo *unicode_buffer_info, usize target_size);
+EncodeUnicodeBufferInfo _unicode_buffer_reserve(EncodeUnicodeBufferInfo unicode_buffer_info, usize target_size);
 
 #ifndef NDEBUG
 force_inline bool check_unicode_writer_valid(void *writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {

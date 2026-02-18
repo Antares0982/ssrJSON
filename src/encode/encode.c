@@ -233,10 +233,52 @@ force_inline PyObject *ssrjson_dumps_single_long(PyObject *val, bool to_bytes_ob
     return ret;
 }
 
+force_inline PyObject *_ssrjson_dumps_single_inf_nan(double v, ssrjson_compiletime bool to_bytes_obj) {
+    if (isinf(v)) {
+        bool sign = v < 0;
+        usize length = 8 + sign;
+        PyObject *unicode;
+        u8 *writer;
+        if (ssrjson_consteval(to_bytes_obj)) {
+            unicode = PyObject_Malloc(PYBYTES_START_OFFSET + length + 1);
+            return_if_unlikely(!unicode);
+            init_pybytes(unicode, length);
+            writer = SSRJSON_CAST(u8 *, unicode) + PYBYTES_START_OFFSET;
+        } else {
+            unicode = create_empty_unicode(length, 0);
+            return_if_unlikely(!unicode);
+            writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyASCIIObject *, unicode) + 1);
+        }
+        *writer = '-';
+        memcpy(writer + sign, "Infinity", 8);
+        writer[8 + sign] = 0;
+        return unicode;
+    } else {
+        PyObject *unicode;
+        u8 *writer;
+        if (to_bytes_obj) {
+            unicode = PyObject_Malloc(PYBYTES_START_OFFSET + 3 + 1);
+            return_if_unlikely(!unicode);
+            init_pybytes(unicode, 3);
+            writer = SSRJSON_CAST(u8 *, unicode) + PYBYTES_START_OFFSET;
+        } else {
+            unicode = create_empty_unicode(3, 0);
+            return_if_unlikely(!unicode);
+            writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyASCIIObject *, unicode) + 1);
+        }
+        memcpy(writer, "NaN", 4);
+        return unicode;
+    }
+}
+
 force_inline PyObject *ssrjson_dumps_single_float(PyObject *val, bool to_bytes_obj) {
     u8 buffer[32];
+    u8 *buffer_end;
     double v = PyFloat_AS_DOUBLE(val);
-    u8 *buffer_end = dragonbox_to_chars_n(v, buffer);
+    if (unlikely(isinf(v) || isnan(v))) {
+        return _ssrjson_dumps_single_inf_nan(v, to_bytes_obj);
+    }
+    buffer_end = zmij_write_f64(v, buffer);
     usize size = buffer_end - buffer;
     assert(size < 64);
     PyObject *unicode;

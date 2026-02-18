@@ -138,7 +138,7 @@ force_inline EncodeUnicodeWriter unicode_buffer_append_key_distribute4(EncodeUni
     return writer;
 }
 
-force_inline EncodeUnicodeWriter unicode_buffer_append_key(PyObject *key, EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *unicode_info, Py_ssize_t cur_nested_depth) {
+static force_noinline EncodeUnicodeWriter unicode_buffer_append_key(PyObject *key, EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *unicode_info, Py_ssize_t cur_nested_depth) {
     usize len;
     unsigned int pykind, write_kind;
     const void *src_voidp;
@@ -237,6 +237,14 @@ force_inline EncodeUnicodeWriter unicode_buffer_append_str(PyObject *val, Encode
             return NULL;
         }
     }
+}
+
+static force_noinline EncodeUnicodeWriter unicode_buffer_append_str_dict(EncodeUnicodeWriter writer, PyObject *val, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *unicode_info, Py_ssize_t cur_nested_depth) {
+    return unicode_buffer_append_str(val, writer, unicode_buffer_info, unicode_info, cur_nested_depth, true);
+}
+
+static force_noinline EncodeUnicodeWriter unicode_buffer_append_str_list(EncodeUnicodeWriter writer, PyObject *val, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *unicode_info, Py_ssize_t cur_nested_depth) {
+    return unicode_buffer_append_str(val, writer, unicode_buffer_info, unicode_info, cur_nested_depth, false);
 }
 
 force_inline _dst_t *unicode_buffer_append_long(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
@@ -367,7 +375,11 @@ force_inline _dst_t *unicode_buffer_append_null(_dst_t *writer, EncodeUnicodeBuf
 force_inline _dst_t *unicode_buffer_append_float(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 32);
     double v = PyFloat_AS_DOUBLE(val);
-    writer = f64_to_unicode(writer, v);
+    if (unlikely(isinf(v) || isnan(v))) {
+        writer = inf_nan_to_unicode(writer, v);
+    } else {
+        writer = f64_to_unicode(writer, v);
+    }
     *writer++ = ',';
     return writer;
 }
@@ -491,7 +503,11 @@ force_inline EncodeUnicodeWriter encode_process_val(
 
     switch (obj_type) {
         case T_Unicode: {
-            writer = unicode_buffer_append_str(val, writer, unicode_buffer_info, unicode_info_addr, *cur_nested_depth_addr, is_in_obj);
+            if (ssrjson_consteval(is_in_obj)) {
+                writer = unicode_buffer_append_str_dict(writer, val, unicode_buffer_info, unicode_info_addr, *cur_nested_depth_addr);
+            } else {
+                writer = unicode_buffer_append_str_list(writer, val, unicode_buffer_info, unicode_info_addr, *cur_nested_depth_addr);
+            }
             return_jump_fail_if_unlikely(!writer);
 #if COMPILE_UCS_LEVEL < 1
             if (unlikely(unicode_info_addr->cur_ucs_type == 1)) {
@@ -603,7 +619,7 @@ force_inline EncodeUnicodeWriter encode_process_val(
             break;
         }
         case T_Tuple: {
-            Py_ssize_t this_list_size = PyTuple_Size(val);
+            Py_ssize_t this_list_size = PyTuple_GET_SIZE(val);
             if (unlikely(this_list_size == 0)) {
                 _CAST_WRITER(writer) = unicode_buffer_append_empty_arr(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, is_in_obj);
                 return_jump_fail_if_unlikely(!writer);

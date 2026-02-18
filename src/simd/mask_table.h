@@ -32,6 +32,18 @@ extern ssrjson_align(64) const u8 _RShiftMaskTable[17][16];
 extern ssrjson_align(16) const u8 _AVX2TrailingCvtRShiftMaskTable32to8[4][16];
 extern ssrjson_align(16) const u64 _LenToMaskZTable[64];
 
+extern ssrjson_align(16) const u8 _CheckerMasks_u8_128[3][16];
+extern ssrjson_align(16) const u16 _CheckerMasks_u16_128[3][8];
+extern ssrjson_align(16) const u32 _CheckerMasks_u32_128[3][4];
+
+extern ssrjson_align(32) const u8 _CheckerMasks_u8_256[3][32];
+extern ssrjson_align(32) const u16 _CheckerMasks_u16_256[3][16];
+extern ssrjson_align(32) const u32 _CheckerMasks_u32_256[3][8];
+
+extern ssrjson_align(64) const u8 _CheckerMasks_u8_512[3][64];
+extern ssrjson_align(64) const u16 _CheckerMasks_u16_512[3][32];
+extern ssrjson_align(64) const u32 _CheckerMasks_u32_512[3][16];
+
 /*==============================================================================
  * Read mask from tail mask table.
  * `read_tail_mask_table_x` gives `row` zeroes in the front of the mask.

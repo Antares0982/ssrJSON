@@ -246,15 +246,23 @@ static int ssrjson_exec(PyObject *module) {
         return -1;
     }
 
+#if PY_MINOR_VERSION >= 13
+    PyNone_Type = Py_TYPE(Py_None);
+#endif
     // codes below should not fail.
+
+    _PyFastType[0] = (u64)&PyUnicode_Type;
+    _PyFastType[1] = (u64)&PyLong_Type;
+    _PyFastType[2] = (u64)&PyBool_Type;
+    _PyFastType[3] = (u64)PyNone_Type;
+    _PyFastType[4] = (u64)&PyFloat_Type;
+    _PyFastType[5] = (u64)&PyList_Type;
+    _PyFastType[6] = (u64)&PyDict_Type;
+    _PyFastType[7] = (u64)&PyTuple_Type;
 
     // do ssrjson internal init.
 #if SSRJSON_GIL_ENABLED
     memset(_DecodeKeyCache, 0, sizeof(_DecodeKeyCache));
-#endif
-
-#if PY_MINOR_VERSION >= 13
-    PyNone_Type = Py_TYPE(Py_None);
 #endif
 
     return 0;

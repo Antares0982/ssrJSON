@@ -16,6 +16,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 
+SPILL_RELOAD_PATTERN = re.compile(r"#\s+\d+-byte\s+.*(?:Spill|Reload)")
+
+
 def find_project_root() -> Path:
     """Find the project root directory (where compile_commands.json is located)."""
     script_dir = Path(__file__).resolve().parent
@@ -101,12 +104,12 @@ def convert_to_asm_command(entry: dict) -> tuple[list[str], Path, str]:
 
 def run_asm_command(
     args: list[str], output_path: Path, source_file: str, directory: Path
-) -> tuple[bool, str, Path, str]:
+) -> tuple[bool, str, Path, int, str]:
     """
     Run the assembly generation command.
 
     Returns:
-        tuple of (success, source_file, output_path, error_message)
+        tuple of (success, source_file, output_path, spill_reload_count, error_message)
     """
     try:
         # Ensure output directory exists
@@ -121,14 +124,26 @@ def run_asm_command(
         )
 
         if result.returncode != 0:
-            return False, source_file, output_path, result.stderr
+            return False, source_file, output_path, 0, result.stderr
 
-        return True, source_file, output_path, ""
+        spill_reload_count = count_spill_reload_lines(output_path)
+
+        return True, source_file, output_path, spill_reload_count, ""
 
     except subprocess.TimeoutExpired:
-        return False, source_file, output_path, "Timeout expired"
+        return False, source_file, output_path, 0, "Timeout expired"
     except Exception as e:
-        return False, source_file, output_path, str(e)
+        return False, source_file, output_path, 0, str(e)
+
+
+def count_spill_reload_lines(asm_path: Path) -> int:
+    """Count spill/reload comment lines in a generated assembly file."""
+    count = 0
+    with open(asm_path, "r", encoding="utf-8", errors="ignore") as asm_file:
+        for line in asm_file:
+            if SPILL_RELOAD_PATTERN.search(line):
+                count += 1
+    return count
 
 
 def main():
@@ -171,7 +186,9 @@ def main():
         }
 
         for future in as_completed(futures):
-            success, source_file, output_path, error = future.result()
+            success, source_file, output_path, spill_reload_count, error = (
+                future.result()
+            )
             source_name = Path(source_file).name
             # Make output path relative to project root
             try:
@@ -182,12 +199,12 @@ def main():
             if success:
                 success_count += 1
                 print(
-                    f"  [{success_count + failure_count}/{total}] ✓ {source_name} -> ./{rel_output}"
+                    f"  [{success_count + failure_count}/{total}] ✓ {source_name} -> ./{rel_output} | spill/reload: {spill_reload_count}"
                 )
             else:
                 failure_count += 1
                 print(
-                    f"  [{success_count + failure_count}/{total}] ✗ {source_name} -> ./{rel_output}"
+                    f"  [{success_count + failure_count}/{total}] ✗ {source_name} -> ./{rel_output} | spill/reload: {spill_reload_count}"
                 )
                 failures.append((source_file, error))
 

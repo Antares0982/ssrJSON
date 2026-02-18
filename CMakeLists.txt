@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 project(ssrjson LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 17)
-set(CMAKE_CXX_STANDARD 17)
 
 # ------------------------------------------------------------------------------
 # Build Options for tests and docs
@@ -215,7 +214,15 @@ set(SRC_FILES
 
 set(SRC_WITH_SIMD src/decode/decode.c src/encode/encode.c src/simd/cvt.c)
 
-set(SRC_DRAGON_BOX src/dragonbox/dragonbox_to_chars.cpp)
+if(APPLE)
+  set(LIB_ZMIJ ${CMAKE_CURRENT_SOURCE_DIR}/src/zmij/libzmij-aarch64-macos.a)
+elseif(WIN32)
+  set(LIB_ZMIJ ${CMAKE_CURRENT_SOURCE_DIR}/src/zmij/libzmij-x86_64-windows.lib)
+elseif("${TARGET_SIMD_ARCH}" STREQUAL "x86")
+  set(LIB_ZMIJ ${CMAKE_CURRENT_SOURCE_DIR}/src/zmij/libzmij-x86_64-linux.a)
+elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
+  set(LIB_ZMIJ ${CMAKE_CURRENT_SOURCE_DIR}/src/zmij/libzmij-aarch64-linux.a)
+endif()
 
 set(SRC_TEST src/ctests/tools.c src/ctests/main.c src/utils/float_tables.c)
 
@@ -223,14 +230,7 @@ set(SRC_TEST_WITH_SIMD src/ctests/test.c)
 
 set(SRC_FUZZER src/ctests/fuzzer.c)
 
-add_library(dragon_box OBJECT ${SRC_DRAGON_BOX})
-target_link_libraries(dragon_box PUBLIC commonBuild)
-
-if(BUILD_COVERAGE)
-  add_coverage_flags(dragon_box)
-endif()
-
-# add library ssrjson
+# library ssrjson
 if(BUILD_MULTI_LIB)
   set(SRC_FILES ${SRC_FILES} src/multilib.c)
 
@@ -247,14 +247,12 @@ if(BUILD_MULTI_LIB)
 
     add_library(ssrjson_sse4 OBJECT ${SRC_WITH_SIMD})
     target_link_libraries(ssrjson_sse4 PUBLIC _ssrjson_common)
-    # add_library(ssrjson_sse2 OBJECT ${SRC_WITH_SIMD})
-    # target_link_libraries(ssrjson_sse2 PUBLIC _ssrjson_common)
     add_library(
       ssrjson SHARED
       $<TARGET_OBJECTS:ssrjson_avx512> $<TARGET_OBJECTS:ssrjson_avx2>
-      $<TARGET_OBJECTS:ssrjson_sse4> $<TARGET_OBJECTS:_ssrjson_common>
-      $<TARGET_OBJECTS:dragon_box>)
+      $<TARGET_OBJECTS:ssrjson_sse4> $<TARGET_OBJECTS:_ssrjson_common>)
     target_link_libraries(ssrjson PUBLIC commonBuild)
+    target_link_libraries(ssrjson PUBLIC ${LIB_ZMIJ})
 
     add_avx512_compile_option(ssrjson_avx512)
     add_avx2_compile_option(ssrjson_avx2)
@@ -278,8 +276,9 @@ if(BUILD_MULTI_LIB)
     add_library(
       ssrjson SHARED
       $<TARGET_OBJECTS:ssrjson_neon> $<TARGET_OBJECTS:_ssrjson_common>
-      $<TARGET_OBJECTS:_ssrjson_common> $<TARGET_OBJECTS:dragon_box>)
+      $<TARGET_OBJECTS:_ssrjson_common>)
     target_link_libraries(ssrjson PUBLIC commonBuild)
+    target_link_libraries(ssrjson PUBLIC ${LIB_ZMIJ})
 
     if(BUILD_COVERAGE)
       add_coverage_flags(_ssrjson_common)
@@ -291,9 +290,11 @@ if(BUILD_MULTI_LIB)
   endif()
 else()
   set(SRC_FILES ${SRC_FILES} src/singlelib.c)
-  add_library(ssrjson SHARED ${SRC_FILES} ${SRC_WITH_SIMD} ${SRC_DRAGON_BOX})
+  add_library(ssrjson SHARED ${SRC_FILES} ${SRC_WITH_SIMD} # ${SRC_ZMIJ}
+  )
   target_compile_definitions(ssrjson PUBLIC SSRJSON_EXPORTS=1)
   target_link_libraries(ssrjson PUBLIC commonBuild)
+  target_link_libraries(ssrjson PUBLIC ${LIB_ZMIJ})
 endif()
 
 set_target_properties(ssrjson PROPERTIES PREFIX "")
@@ -336,7 +337,13 @@ if(XCODE)
     "-Werror"
     "-pedantic"
     "-pedantic-errors"
-    "-Wno-psabi")
+    "-Wno-psabi"
+    "-Wno-language-extension-token"
+    "-fno-stack-protector")
+
+  if(CMAKE_BUILD_TYPE MATCHES "Release")
+    list(APPEND SSRJSON_FLAGS "-fomit-frame-pointer")
+  endif()
 
   set_default_xcode_property(commonBuild)
   set_xcode_deployment_version(commonBuild "10.13" "12.0" "12.0" "4.0")
@@ -344,7 +351,6 @@ if(XCODE)
   set_xcode_property(commonBuild GCC_C_LANGUAGE_STANDARD "c17")
   set_xcode_property(commonBuild CLANG_C_LANGUAGE_STANDARD "c17")
 
-  # set_xcode_property(commonBuild CLANG_CXX_LANGUAGE_STANDARD "c++98")
   set_xcode_property(commonBuild OTHER_CFLAGS[variant=Debug] ${SSRJSON_FLAGS})
   set_xcode_property(commonBuild OTHER_CFLAGS[variant=MinSizeRel]
                      ${SSRJSON_FLAGS})
@@ -367,7 +373,9 @@ elseif(MSVC)
     "-Wno-uninitialized"
     "-Wno-unused-but-set-variable"
     "-Wno-deprecated-declarations"
-    "-Wno-visibility")
+    "-Wno-visibility"
+    "-Wno-language-extension-token"
+    "/GS-")
 
   target_compile_options(commonBuild INTERFACE ${SSRJSON_FLAGS})
 
@@ -388,7 +396,9 @@ else()
     "-Wno-uninitialized"
     "-Wno-unused-but-set-variable"
     "-Wno-deprecated-declarations"
-    "-Wno-visibility")
+    "-Wno-visibility"
+    "-Wno-language-extension-token"
+    "-fno-stack-protector")
 
   if(CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
     message(
@@ -400,6 +410,7 @@ else()
     message("Release mode, enabling maximal optimization")
     target_compile_options(commonBuild INTERFACE -Werror -Wno-psabi -pedantic
                                                  -pedantic-errors)
+    list(APPEND SSRJSON_FLAGS "-fomit-frame-pointer")
   else()
     target_compile_options(commonBuild INTERFACE -O0 -Wno-psabi)
 

@@ -47,10 +47,15 @@
 force_inline ssrjson_nofail u8 *bytes_write_ucs1_trailing_128(u8 *writer, const u8 *src, usize len) {
     assert(len && len < READ_BATCH_COUNT);
     // constants
+    vector_a *checker_masks = (vector_a *)&_CheckerMasks;
+    ssrjson_asm(("" : "+r"(checker_masks)));
+    vector_a t1 = checker_masks[0];
+    vector_a t2 = checker_masks[1];
+    vector_a t3 = checker_masks[2];
     const u8 *src_end = src + len;
     const u8 *last_batch_start = src_end - READ_BATCH_COUNT;
     const vector_a vec = *(const vector_u *)last_batch_start;
-    const vector_a m0 = (vec == broadcast(_Quote)) | (vec == broadcast(_Slash)) | signed_cmpgt(broadcast(ControlMax), vec);
+    const vector_a m0 = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec);
 restart:;
     vector_a x, m;
     int shift;
