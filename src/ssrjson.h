@@ -228,7 +228,7 @@
 #define unlikely ssrjson_unlikely
 
 /* assembly */
-#define ssrjson_asm(x) asm x
+#define ssrjson_asm(x) // asm x
 
 /* assume for compiler */
 #ifdef NDEBUG
