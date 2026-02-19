@@ -10,7 +10,7 @@ A SIMD boosted high-performance and correct Python JSON parsing library, faster 
 
 ## Introduction
 
-ssrJSON is a Python JSON library that leverages modern hardware capabilities to achieve peak performance, implemented primarily in C with some components written in C++. It offers a fully compatible interface to Python’s standard `json` module, making it a seamless drop-in replacement, while providing exceptional performance for JSON encoding and decoding.
+ssrJSON is a Python JSON library that leverages modern hardware capabilities to achieve peak performance, implemented primarily in C. It offers a fully compatible interface to Python’s standard `json` module, making it a seamless drop-in replacement, while providing exceptional performance for JSON encoding and decoding.
 
 If you prefer to skip the technical details below, please proceed directly to the [How To Install](#how-to-install) section.
 
@@ -89,9 +89,9 @@ If you decide to disable it, ssrJSON will not write cache; but if the cache alre
 
 By default, writing cache is enabled globally. You can use `ssrjson.write_utf8_cache` to control this behavior globally, or pass `is_write_cache` to `ssrjson.dumps_to_bytes` in each call.
 
-### Dragonbox
+### Żmij
 
-Tests and comparisons reveals that the [Dragonbox](https://github.com/jk-jeon/dragonbox) algorithm significantly outperforms other algorithms in terms of performance. Consequently, the ssrJSON project adopts a floating-point number string conversion approach based on the Dragonbox algorithm. The modified Dragonbox library constitutes the sole C++ code within ssrJSON.
+Tests and comparisons reveals that the [Zmij](https://github.com/vitaut/zmij) algorithm significantly outperforms other algorithms in terms of performance. ssrJSON project adopts the [Rust implementation of Żmij algorithm](https://github.com/dtolnay/zmij) (using static lib).
 
 ### JSON Module compatibility
 
@@ -224,7 +224,7 @@ Traceback (most recent call last):
   File "<python-input>", line 1, in <module>
     ssrjson.dumps_to_bytes(s)
     ~~~~~~~~~~~~~~~~~~~~~~^^^
-ssrjson.JSONEncodeError: Cannot encode unicode character in range [0xd800, 0xdfff] to utf-8
+ssrjson.JSONEncodeError: Cannot encode unicode character in range [0xd800, 0xdfff] to UTF-8
 >>> json.loads(json.dumps(s, ensure_ascii=False)) == s
 True
 >>> ssrjson.loads(ssrjson.dumps(s)) == s
@@ -269,7 +269,7 @@ ssrjson.JSONEncodeError: convert value to unsigned long long failed
 
 ### Floats
 
-For floating-point encoding, ssrJSON employs a slightly modified version of the [Dragonbox](https://github.com/jk-jeon/dragonbox) algorithm. Dragonbox is a highly efficient algorithm for converting floating-point to strings, typically producing output in scientific notation. ssrJSON has partially adapted this algorithm to enhance readability by outputting a more user-friendly format when no exponent is present.
+For floating-point encoding, ssrJSON employs Rust version of the [Żmij](https://github.com/dtolnay/zmij) algorithm. Żmij is a highly efficient algorithm for converting floating-point to strings.
 
 Encoding and decoding `math.inf` are supported. `ssrjson.dumps` outputs the same result as `json.dumps`. The input of `ssrjson.loads` should be `"infinity"` with lower or upper cases (for each character), and cannot be `"inf"`.
 
@@ -278,7 +278,7 @@ Encoding and decoding `math.inf` are supported. `ssrjson.dumps` outputs the same
 'Infinity'
 >>> ssrjson.dumps(math.inf)
 'Infinity'
->>> ssrjson.loads("[infinity, Infinity, InFiNiTy, INFINITY]")
+>>> ssrjson.loads("[infinity, Infinity, InFiNiTy, INFINITY]")  # allowed but not recommended to write `InFiNiTy` in JSON
 [inf, inf, inf, inf]
 ```
 
@@ -289,7 +289,7 @@ The case of `math.nan` is similar.
 'NaN'
 >>> ssrjson.dumps(math.nan)
 'NaN'
->>> ssrjson.loads("[nan, Nan, NaN, NAN]")
+>>> ssrjson.loads("[nan, Nan, NaN, NAN]")  # allowed but not recommended to write `Nan` in JSON
 [nan, nan, nan, nan]
 ```
 
@@ -310,7 +310,7 @@ We would like to express our gratitude to the outstanding libraries and their au
 - [CPython](https://github.com/python/cpython)
 - [yyjson](https://github.com/ibireme/yyjson): ssrJSON draws extensively from yyjson’s highly optimized implementations, including the core decoding logic, the decoding of bytes objects, the integer encoding and number decoding routines.
 - [orjson](https://github.com/ijl/orjson): ssrJSON references parts of orjson’s SIMD-based ASCII string encoding and decoding algorithms, as well as the key caching mechanism. Additionally, ssrJSON utilizes orjson’s pytest framework for testing purposes.
-- [Dragonbox](https://github.com/jk-jeon/dragonbox): ssrJSON employs Dragonbox for high-performance floating-point encoding.
+- [Żmij](https://github.com/dtolnay/zmij): ssrJSON employs Żmij for high-performance floating-point encoding.
 - [xxHash](https://github.com/Cyan4973/xxHash): ssrJSON leverages xxHash to efficiently compute hash values for key caching.
 - [klib](https://github.com/attractivechaos/klib): ssrJSON uses khash to implement circular detection in free-threading build.
 
