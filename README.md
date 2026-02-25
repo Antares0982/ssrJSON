@@ -91,7 +91,7 @@ By default, writing cache is enabled globally. You can use `ssrjson.write_utf8_c
 
 ### Żmij
 
-Tests and comparisons reveals that the [Zmij](https://github.com/vitaut/zmij) algorithm significantly outperforms other algorithms in terms of performance. ssrJSON project adopts the [Rust implementation of Żmij algorithm](https://github.com/dtolnay/zmij) (using static lib).
+Tests and comparisons reveals that the [Żmij](https://github.com/vitaut/zmij) algorithm significantly outperforms other algorithms in terms of performance. ssrJSON project adopts the [Rust implementation of Żmij algorithm](https://github.com/dtolnay/zmij) (using static lib).
 
 ### JSON Module compatibility
 
