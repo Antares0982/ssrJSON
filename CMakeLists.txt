@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(ssrjson LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # ------------------------------------------------------------------------------
 # Build Options for tests and docs
@@ -214,15 +215,9 @@ set(SRC_FILES
 
 set(SRC_WITH_SIMD src/decode/decode.c src/encode/encode.c src/simd/cvt.c)
 
-if(APPLE)
-  set(LIB_ZMIJ ${CMAKE_CURRENT_SOURCE_DIR}/src/zmij/libzmij-aarch64-macos.a)
-elseif(WIN32)
-  set(LIB_ZMIJ ${CMAKE_CURRENT_SOURCE_DIR}/src/zmij/libzmij-x86_64-windows.lib)
-elseif("${TARGET_SIMD_ARCH}" STREQUAL "x86")
-  set(LIB_ZMIJ ${CMAKE_CURRENT_SOURCE_DIR}/src/zmij/libzmij-x86_64-linux.a)
-elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
-  set(LIB_ZMIJ ${CMAKE_CURRENT_SOURCE_DIR}/src/zmij/libzmij-aarch64-linux.a)
-endif()
+set(SRC_XJB src/xjb/xjb.cpp)
+add_library(xjb OBJECT ${SRC_XJB})
+target_link_libraries(xjb PUBLIC commonBuild)
 
 set(SRC_TEST src/ctests/tools.c src/ctests/main.c src/utils/float_tables.c)
 
@@ -250,9 +245,9 @@ if(BUILD_MULTI_LIB)
     add_library(
       ssrjson SHARED
       $<TARGET_OBJECTS:ssrjson_avx512> $<TARGET_OBJECTS:ssrjson_avx2>
-      $<TARGET_OBJECTS:ssrjson_sse4> $<TARGET_OBJECTS:_ssrjson_common>)
+      $<TARGET_OBJECTS:ssrjson_sse4> $<TARGET_OBJECTS:_ssrjson_common>
+      $<TARGET_OBJECTS:xjb>)
     target_link_libraries(ssrjson PUBLIC commonBuild)
-    target_link_libraries(ssrjson PUBLIC ${LIB_ZMIJ})
 
     add_avx512_compile_option(ssrjson_avx512)
     add_avx2_compile_option(ssrjson_avx2)
@@ -276,9 +271,8 @@ if(BUILD_MULTI_LIB)
     add_library(
       ssrjson SHARED
       $<TARGET_OBJECTS:ssrjson_neon> $<TARGET_OBJECTS:_ssrjson_common>
-      $<TARGET_OBJECTS:_ssrjson_common>)
+      $<TARGET_OBJECTS:_ssrjson_common> $<TARGET_OBJECTS:xjb>)
     target_link_libraries(ssrjson PUBLIC commonBuild)
-    target_link_libraries(ssrjson PUBLIC ${LIB_ZMIJ})
 
     if(BUILD_COVERAGE)
       add_coverage_flags(_ssrjson_common)
@@ -290,11 +284,9 @@ if(BUILD_MULTI_LIB)
   endif()
 else()
   set(SRC_FILES ${SRC_FILES} src/singlelib.c)
-  add_library(ssrjson SHARED ${SRC_FILES} ${SRC_WITH_SIMD} # ${SRC_ZMIJ}
-  )
+  add_library(ssrjson SHARED ${SRC_FILES} ${SRC_WITH_SIMD} ${SRC_XJB})
   target_compile_definitions(ssrjson PUBLIC SSRJSON_EXPORTS=1)
   target_link_libraries(ssrjson PUBLIC commonBuild)
-  target_link_libraries(ssrjson PUBLIC ${LIB_ZMIJ})
 endif()
 
 set_target_properties(ssrjson PROPERTIES PREFIX "")
