@@ -19,6 +19,7 @@
 #  SOFTWARE.
 
 import json
+import math
 import random
 
 import pytest
@@ -94,9 +95,7 @@ templates = [
 
 
 class TestFloat:
-    def test_float000(
-        self,
-    ):
+    def test_float000(self):
         for _ in range(1000):
             s = generate_special_float_string()
             f = float(s)
@@ -107,3 +106,18 @@ class TestFloat:
                 y = ssrjson.loads(template.replace("@", s))
                 assert y == ssrjson.loads(template.replace("@", s).encode("utf-8"))
                 assert y["b"] == x
+
+    def test_dtoa_api(self):
+        assert ssrjson.dumps(math.inf) == json.dumps(math.inf) == "Infinity"
+        assert ssrjson.dumps(-math.inf) == json.dumps(-math.inf) == "-Infinity"
+        assert ssrjson.dumps(math.nan) == json.dumps(math.nan) == "NaN"
+        assert ssrjson.dumps(-math.nan) == json.dumps(-math.nan) == "NaN"
+        assert ssrjson.dumps(1.0) == json.dumps(1.0) == "1.0"
+        assert ssrjson.dumps(-1.0) == json.dumps(-1.0) == "-1.0"
+        assert ssrjson.dumps(0.0) == json.dumps(0.0) == "0.0"
+        assert ssrjson.dumps(-0.0) == json.dumps(-0.0) == "-0.0"
+        assert ssrjson.dumps(1e-5) == json.dumps(1e-5) == "1e-05"
+        assert ssrjson.dumps(-1e-5) == json.dumps(-1e-5) == "-1e-05"
+        # assert ssrjson.dumps(1e-4) == json.dumps(1e-4)
+        assert ssrjson.dumps(1e21) == json.dumps(1e21) == "1e+21"
+        assert ssrjson.dumps(1e20) == json.dumps(1e20) == "1e+20"

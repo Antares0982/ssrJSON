@@ -97,6 +97,7 @@ force_inline ssrjson_nofail _dst_t *f64_to_unicode(register _dst_t *writer, doub
 #endif
 }
 
+/* Intended for a dtoa that does not support Inf/NaN writing, like zmij (Rust impl) */
 force_inline ssrjson_nofail _dst_t *inf_nan_to_unicode(register _dst_t *writer, double d) {
     if (isinf(d)) {
         bool sign = d < 0;
