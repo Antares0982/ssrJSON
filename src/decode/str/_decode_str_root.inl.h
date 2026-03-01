@@ -447,7 +447,7 @@ success:;
 #endif
     // free string buffer
     if (need_dealloc) {
-        free((void *)((u8 *)string_buffer_head - TAIL_PADDING));
+        free((void *)((u8 *)string_buffer_head - _TailPadding));
     }
     // free obj stack buffer if allocated dynamically
     if (unlikely(decode_obj_stack_end - decode_obj_stack > SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE)) {
@@ -513,7 +513,7 @@ failed_cleanup:
     }
     // free string buffer
     if (need_dealloc) {
-        free((void *)((u8 *)string_buffer_head - TAIL_PADDING));
+        free((void *)((u8 *)string_buffer_head - _TailPadding));
     }
     // free obj stack buffer if allocated dynamically
     if (unlikely(decode_obj_stack_end - decode_obj_stack > SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE)) {

@@ -62,7 +62,7 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop4(register _dst_t *dst, c
         _addr_cvt4(dst, src);
 
         for (usize i = 0; i < 4; ++i) {
-            escape_union_vec.x[i] = get_escape_mask(SSRJSON_CAST(vector_u *, src)[i]);
+            escape_union_vec.x[i] = get_escape_mask(ssrjson_cast(vector_u *, src)[i]);
         }
         if (likely(testz(escape_union_vec.x[0] | escape_union_vec.x[1] | escape_union_vec.x[2] | escape_union_vec.x[3]))) {
             src += 4 * READ_BATCH_COUNT;
@@ -73,7 +73,7 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop4(register _dst_t *dst, c
             const _src_t *escape_pos = src + done_count;
             src += done_count + 1;
             _src_t escape_unicode = *escape_pos;
-            assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < ControlMax);
+            assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < _ControlMax);
             dst += done_count;
             len -= done_count + 1;
             memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(_dst_t));
@@ -101,7 +101,7 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop(register _dst_t *dst, co
             const _src_t *escape_pos = src + done_count;
             src += done_count + 1;
             _src_t escape_unicode = *escape_pos;
-            assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < ControlMax);
+            assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < _ControlMax);
             dst += done_count;
             len -= done_count + 1;
             memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(_dst_t));
@@ -132,7 +132,7 @@ restart:;
         src += real_done_count + 1;
         copy_len -= real_done_count + 1;
         usize unicode = *escape_ptr;
-        assert(unicode < ControlMax || unicode == _Slash || unicode == _Quote);
+        assert(unicode < _ControlMax || unicode == _Slash || unicode == _Quote);
         memcpy(dst, ControlEscapeTable + unicode * 8, 8 * sizeof(_dst_t));
         dst += _ControlJump[unicode];
         if (copy_len) goto restart;

@@ -249,10 +249,10 @@ force_inline SIMD_128 runtime_byte_rshift_128(SIMD_128 x, int imm8) {
             break;
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
-    SSRJSON_UNREACHABLE();
+    ssrjson_unreachable();
     return x;
 #endif
 }

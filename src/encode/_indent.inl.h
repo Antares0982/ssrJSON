@@ -79,7 +79,7 @@ force_inline _dst_t *unicode_indent_writer( // clang-format on
             case 64:
                 return MAKE_IW_NAME(list_unicode_indent_writer_impl64)(writer, unicode_buffer_info, cur_nested_depth);
             default:
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
                 return writer;
         }
     } else {

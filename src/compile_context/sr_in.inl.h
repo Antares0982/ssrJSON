@@ -31,9 +31,9 @@
 #define READ_BATCH_COUNT (COMPILE_SIMD_BITS / 8 / sizeof(_src_t))
 
 // Name creation macros.
-#define MAKE_SR_NAME(_x_) SSRJSON_CONCAT3(_x_, _src_t, COMPILE_SIMD_BITS)
+#define MAKE_SR_NAME(_x_) ssrjson_concat3(_x_, _src_t, COMPILE_SIMD_BITS)
 #ifdef COMPILE_UCS_LEVEL
-#    define MAKE_S_UCS_NAME(_x_) SSRJSON_CONCAT3(_x_, __UCS_NAME, COMPILE_SIMD_BITS)
+#    define MAKE_S_UCS_NAME(_x_) ssrjson_concat3(_x_, __UCS_NAME, COMPILE_SIMD_BITS)
 #endif
 
 /*
@@ -57,8 +57,8 @@
 /*
  * Names using SR context.
  */
-#define unionvector_a_x4 SSRJSON_CONCAT2(MAKE_SR_NAME(unionvector_a), x4)
-#define unionvector_u_x4 SSRJSON_CONCAT2(MAKE_SR_NAME(unionvector_u), x4)
+#define unionvector_a_x4 ssrjson_concat2(MAKE_SR_NAME(unionvector_a), x4)
+#define unionvector_u_x4 ssrjson_concat2(MAKE_SR_NAME(unionvector_u), x4)
 //
 #define get_bitmask_from MAKE_SR_NAME(get_bitmask_from)
 #define get_escape_mask MAKE_SR_NAME(get_escape_mask)

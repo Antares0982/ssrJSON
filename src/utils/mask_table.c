@@ -259,54 +259,54 @@ ssrjson_align(16) const u64 _LenToMaskZTable[64] = {
 ssrjson_align(16) const u8 _CheckerMasks_u8_128[3][16] = {
         {REPEAT_16(_Quote)},
         {REPEAT_16(_Slash)},
-        {REPEAT_16(ControlMax)},
+        {REPEAT_16(_ControlMax)},
 };
 
 ssrjson_align(16) const u16 _CheckerMasks_u16_128[3][8] = {
         {REPEAT_8(_Quote)},
         {REPEAT_8(_Slash)},
-        {REPEAT_8(ControlMax)},
+        {REPEAT_8(_ControlMax)},
 };
 
 ssrjson_align(16) const u32 _CheckerMasks_u32_128[3][4] = {
         {REPEAT_4(_Quote)},
         {REPEAT_4(_Slash)},
-        {REPEAT_4(ControlMax)},
+        {REPEAT_4(_ControlMax)},
 };
 
 
 ssrjson_align(32) const u8 _CheckerMasks_u8_256[3][32] = {
         {REPEAT_32(_Quote)},
         {REPEAT_32(_Slash)},
-        {REPEAT_32(ControlMax)},
+        {REPEAT_32(_ControlMax)},
 };
 
 ssrjson_align(32) const u16 _CheckerMasks_u16_256[3][16] = {
         {REPEAT_16(_Quote)},
         {REPEAT_16(_Slash)},
-        {REPEAT_16(ControlMax)},
+        {REPEAT_16(_ControlMax)},
 };
 
 ssrjson_align(32) const u32 _CheckerMasks_u32_256[3][8] = {
         {REPEAT_8(_Quote)},
         {REPEAT_8(_Slash)},
-        {REPEAT_8(ControlMax)},
+        {REPEAT_8(_ControlMax)},
 };
 
 ssrjson_align(64) const u8 _CheckerMasks_u8_512[3][64] = {
         {REPEAT_64(_Quote)},
         {REPEAT_64(_Slash)},
-        {REPEAT_64(ControlMax)},
+        {REPEAT_64(_ControlMax)},
 };
 
 ssrjson_align(64) const u16 _CheckerMasks_u16_512[3][32] = {
         {REPEAT_32(_Quote)},
         {REPEAT_32(_Slash)},
-        {REPEAT_32(ControlMax)},
+        {REPEAT_32(_ControlMax)},
 };
 
 ssrjson_align(64) const u32 _CheckerMasks_u32_512[3][16] = {
         {REPEAT_16(_Quote)},
         {REPEAT_16(_Slash)},
-        {REPEAT_16(ControlMax)},
+        {REPEAT_16(_ControlMax)},
 };

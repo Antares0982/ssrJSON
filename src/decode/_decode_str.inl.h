@@ -43,21 +43,21 @@ force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, 
     // consider the max length of the buffer we need
     // assume that each string has an escape of ucs4, we need buffer with size
     // sizeof(ucs4) * len == 4 * len
-    // reserve additional TAIL_PADDING bytes before and after the buffer for convenience,
-    // i.e. additional 2 * TAIL_PADDING bytes
-    if (len > ((Py_ssize_t)PY_SSIZE_T_MAX - TAIL_PADDING * 2) / 4) {
+    // reserve additional _TailPadding bytes before and after the buffer for convenience,
+    // i.e. additional 2 * _TailPadding bytes
+    if (len > ((Py_ssize_t)PY_SSIZE_T_MAX - _TailPadding * 2) / 4) {
         return false;
     }
-    static_assert(((Py_ssize_t)SSRJSON_STRING_BUFFER_SIZE - TAIL_PADDING * 2) > 4, "((Py_ssize_t)SSRJSON_STRING_BUFFER_SIZE - 128) > 4");
-    Py_ssize_t new_buffer_size = 4 * len + 2 * TAIL_PADDING;
+    static_assert(((Py_ssize_t)SSRJSON_STRING_BUFFER_SIZE - _TailPadding * 2) > 4, "((Py_ssize_t)SSRJSON_STRING_BUFFER_SIZE - 128) > 4");
+    Py_ssize_t new_buffer_size = 4 * len + 2 * _TailPadding;
     if (new_buffer_size > SSRJSON_STRING_BUFFER_SIZE) {
         // malloc new buffer
         u8 *new_buffer = (u8 *)malloc(new_buffer_size);
         if (!new_buffer) return false;
-        *buffer_head_addr = (_src_t *)(new_buffer + TAIL_PADDING);
+        *buffer_head_addr = (_src_t *)(new_buffer + _TailPadding);
         *need_dealloc = true;
     } else {
-        *buffer_head_addr = (_src_t *)(decoder_context->decoder_ctx_temp_buffer + TAIL_PADDING);
+        *buffer_head_addr = (_src_t *)(decoder_context->decoder_ctx_temp_buffer + _TailPadding);
         *need_dealloc = false;
     }
     return true;
@@ -95,7 +95,7 @@ internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_conte
         cur++;
         ret = decode_str(&cur, end, string_buffer_head, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (need_dealloc) {
-            free((void *)((u8 *)string_buffer_head - TAIL_PADDING));
+            free((void *)((u8 *)string_buffer_head - _TailPadding));
         }
         if (likely(ret)) goto single_end;
         goto fail_string;
@@ -195,16 +195,16 @@ force_inline bool should_loads_pretty(const _src_t *buffer, const _src_t *end) {
 internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnicodeObject *in_unicode, PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     // some checks
     assert(in_unicode);
-    PyASCIIObject *ascii_head = SSRJSON_CAST(PyASCIIObject *, in_unicode);
+    PyASCIIObject *ascii_head = ssrjson_cast(PyASCIIObject *, in_unicode);
     assert((ascii_head->state.ascii ? 0 : ascii_head->state.kind) == COMPILE_UCS_LEVEL);
     if (unlikely(!ascii_head->length)) {
         PyErr_Format(JSONDecodeError, "input data is empty");
         return NULL;
     }
 #if COMPILE_UCS_LEVEL > 0
-    const _src_t *buffer = SSRJSON_CAST(_src_t *, SSRJSON_CAST(PyCompactUnicodeObject *, in_unicode) + 1);
+    const _src_t *buffer = ssrjson_cast(_src_t *, ssrjson_cast(PyCompactUnicodeObject *, in_unicode) + 1);
 #else
-    const _src_t *buffer = SSRJSON_CAST(_src_t *, ascii_head + 1);
+    const _src_t *buffer = ssrjson_cast(_src_t *, ascii_head + 1);
 #endif
     assert(buffer);
     assert(ascii_head->length > 0);

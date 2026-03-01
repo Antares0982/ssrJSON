@@ -49,11 +49,11 @@ force_inline vector_a_u8_128 setzero_128(void) {
 #define broadcast_u64_128 vdupq_n_u64
 
 force_inline vector_a_u16_128 cvt_u8_to_u16_128(vector_a_u8_128 a) {
-    return vmovl_u8(*SSRJSON_CAST(vector_a_u8_64 *, &a));
+    return vmovl_u8(*ssrjson_cast(vector_a_u8_64 *, &a));
 }
 
 force_inline vector_a_u32_128 cvt_u16_to_u32_128(vector_a_u16_128 a) {
-    return vmovl_u16(*SSRJSON_CAST(vector_a_u16_64 *, &a));
+    return vmovl_u16(*ssrjson_cast(vector_a_u16_64 *, &a));
 }
 
 force_inline vector_a_u32_128 cvt_u8_to_u32_128(vector_a_u8_128 a) {

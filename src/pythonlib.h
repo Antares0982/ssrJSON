@@ -90,11 +90,11 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
 
 #    define MAKE_FORWARD_PYFASTFUNCTION_IMPL(_func_name_)                                                    \
         PyObject *_func_name_(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames) { \
-            assert(SSRJSON_CONCAT2(_func_name_, interface));                                                 \
-            return SSRJSON_CONCAT2(_func_name_, interface)(self, args, nargsf, kwnames);                     \
+            assert(ssrjson_concat2(_func_name_, interface));                                                 \
+            return ssrjson_concat2(_func_name_, interface)(self, args, nargsf, kwnames);                     \
         }
 
-#    define SET_INTERFACE(_func_name_, _feature_name_) SSRJSON_CONCAT2(_func_name_, interface) = SSRJSON_CONCAT2(_func_name_, _feature_name_)
+#    define SET_INTERFACE(_func_name_, _feature_name_) ssrjson_concat2(_func_name_, interface) = ssrjson_concat2(_func_name_, _feature_name_)
 
 #    define BATCH_SET_INTERFACE(_feature_name_)                   \
         SET_INTERFACE(ssrjson_Dumps, _feature_name_);             \
@@ -108,27 +108,27 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
         SET_INTERFACE(long_cvt_noinline_u16_u8, _feature_name_);
 #    if SSRJSON_X86
 #        define DECLARE_MULTILIB_PYFASTFUNCTION(_func_name_)                                                                                    \
-            PyObject *SSRJSON_CONCAT2(_func_name_, avx512)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);       \
-            PyObject *SSRJSON_CONCAT2(_func_name_, avx2)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);         \
-            PyObject *SSRJSON_CONCAT2(_func_name_, sse4_2)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);       \
-            typedef PyObject *(*SSRJSON_CONCAT2(_func_name_, t))(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
-            extern SSRJSON_CONCAT2(_func_name_, t) SSRJSON_CONCAT2(_func_name_, interface);
+            PyObject *ssrjson_concat2(_func_name_, avx512)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);       \
+            PyObject *ssrjson_concat2(_func_name_, avx2)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);         \
+            PyObject *ssrjson_concat2(_func_name_, sse4_2)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);       \
+            typedef PyObject *(*ssrjson_concat2(_func_name_, t))(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
+            extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 #        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)      \
-            _ret_type_ SSRJSON_CONCAT2(_func_name_, avx512)(__VA_ARGS__);       \
-            _ret_type_ SSRJSON_CONCAT2(_func_name_, avx2)(__VA_ARGS__);         \
-            _ret_type_ SSRJSON_CONCAT2(_func_name_, sse4_2)(__VA_ARGS__);       \
-            typedef _ret_type_ (*SSRJSON_CONCAT2(_func_name_, t))(__VA_ARGS__); \
-            extern SSRJSON_CONCAT2(_func_name_, t) SSRJSON_CONCAT2(_func_name_, interface);
+            _ret_type_ ssrjson_concat2(_func_name_, avx512)(__VA_ARGS__);       \
+            _ret_type_ ssrjson_concat2(_func_name_, avx2)(__VA_ARGS__);         \
+            _ret_type_ ssrjson_concat2(_func_name_, sse4_2)(__VA_ARGS__);       \
+            typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__); \
+            extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 
 #    elif SSRJSON_AARCH
 #        define DECLARE_MULTILIB_PYFASTFUNCTION(_func_name_)                                                                                    \
-            PyObject *SSRJSON_CONCAT2(_func_name_, neon)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);         \
-            typedef PyObject *(*SSRJSON_CONCAT2(_func_name_, t))(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
-            extern SSRJSON_CONCAT2(_func_name_, t) SSRJSON_CONCAT2(_func_name_, interface);
+            PyObject *ssrjson_concat2(_func_name_, neon)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);         \
+            typedef PyObject *(*ssrjson_concat2(_func_name_, t))(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
+            extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 #        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)      \
-            _ret_type_ SSRJSON_CONCAT2(_func_name_, neon)(__VA_ARGS__);         \
-            typedef _ret_type_ (*SSRJSON_CONCAT2(_func_name_, t))(__VA_ARGS__); \
-            extern SSRJSON_CONCAT2(_func_name_, t) SSRJSON_CONCAT2(_func_name_, interface);
+            _ret_type_ ssrjson_concat2(_func_name_, neon)(__VA_ARGS__);         \
+            typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__); \
+            extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 // #        define long_cvt_noinline_u16_u32_interface long_cvt_noinline_u16_u32_neon
 // #        define long_cvt_noinline_u8_u32_interface long_cvt_noinline_u8_u32_neon
 // #        define long_cvt_noinline_u8_u16_interface long_cvt_noinline_u8_u16_neon

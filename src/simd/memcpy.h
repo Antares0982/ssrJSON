@@ -171,7 +171,7 @@ force_inline void ssrjson_memcpy_aligned_all_power2(void *restrict dest, const v
         case 256:
             COPY_ALIGNED(256);
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
 #undef COPY_ALIGNED
@@ -206,7 +206,7 @@ force_inline void ssrjson_memcpy_aligned_store_power2(void *restrict dest, const
         case 256:
             COPY_TO_ALIGNED_DST(256);
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
 #undef COPY_TO_ALIGNED_DST

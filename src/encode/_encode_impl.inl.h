@@ -142,7 +142,7 @@ static force_noinline EncodeUnicodeWriter unicode_buffer_append_key(PyObject *ke
     usize len;
     unsigned int pykind, write_kind;
     const void *src_voidp;
-    assert(SSRJSON_CAST(PyASCIIObject *, key)->state.compact);
+    assert(ssrjson_cast(PyASCIIObject *, key)->state.compact);
     writer = prepare_unicode_write(key, writer, unicode_buffer_info, unicode_info, &len, &pykind, &write_kind, &src_voidp);
 
     switch (write_kind) {
@@ -164,7 +164,7 @@ static force_noinline EncodeUnicodeWriter unicode_buffer_append_key(PyObject *ke
             return unicode_buffer_append_key_distribute4(writer, unicode_buffer_info, cur_nested_depth, len, pykind, src_voidp);
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
             return NULL;
         }
     }
@@ -211,7 +211,7 @@ force_inline EncodeUnicodeWriter unicode_buffer_append_str(PyObject *val, Encode
     usize len;
     unsigned int kind, write_kind;
     const void *src_voidp;
-    assert(SSRJSON_CAST(PyASCIIObject *, val)->state.compact);
+    assert(ssrjson_cast(PyASCIIObject *, val)->state.compact);
     writer = prepare_unicode_write(val, writer, unicode_buffer_info, unicode_info, &len, &kind, &write_kind, &src_voidp);
 
     switch (write_kind) {
@@ -233,7 +233,7 @@ force_inline EncodeUnicodeWriter unicode_buffer_append_str(PyObject *val, Encode
             return unicode_buffer_append_str_distribute4(writer, unicode_buffer_info, cur_nested_depth, len, kind, is_in_obj, src_voidp);
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
             return NULL;
         }
     }
@@ -572,7 +572,7 @@ force_inline EncodeUnicodeWriter encode_process_val(
                         *jump_flag_out = JumpFlag_Fail;
                         return NULL;
                     }
-                    PyMutex_Lock(&SSRJSON_CAST(PyObject *, val)->ob_mutex);
+                    PyMutex_Lock(&ssrjson_cast(PyObject *, val)->ob_mutex);
                 }
 #endif
                 ctn_size_grow();
@@ -604,7 +604,7 @@ force_inline EncodeUnicodeWriter encode_process_val(
                         *jump_flag_out = JumpFlag_Fail;
                         return NULL;
                     }
-                    PyMutex_Lock(&SSRJSON_CAST(PyObject *, val)->ob_mutex);
+                    PyMutex_Lock(&ssrjson_cast(PyObject *, val)->ob_mutex);
                 }
 #endif
                 ctn_size_grow();
@@ -651,7 +651,7 @@ force_inline EncodeUnicodeWriter encode_process_val(
 #undef ctn_size_grow
 }
 
-#define dumps_next(_u_) SSRJSON_CONCAT3(_ssrjson_dumps_obj, _u_, __INDENT_NAME)
+#define dumps_next(_u_) ssrjson_concat3(_ssrjson_dumps_obj, _u_, __INDENT_NAME)
 #if SSRJSON_GIL_ENABLED || SSRJSON_FREE_THREADING_LOCKFREE
 #    define _DUMPS_PASS_ARGSDECL EncodeUnicodeWriter writer, PyObject *key, PyObject *val, PyObject *cur_obj, Py_ssize_t cur_pos, Py_ssize_t cur_nested_depth, Py_ssize_t cur_list_size, EncodeCtnWithIndex *ctn_stack, EncodeUnicodeInfo unicode_info, bool cur_is_tuple, EncodeUnicodeBufferInfo _unicode_buffer_info, EncodeCallFlag encode_call_flag
 #    define _DUMPS_PASS_ARGS writer, key, val, cur_obj, cur_pos, cur_nested_depth, cur_list_size, ctn_stack, unicode_info, cur_is_tuple
@@ -724,7 +724,7 @@ ssrjson_dumps_obj(
             int ret;
             kh_put(ptr_set, pyobj_set, (u64)cur_obj, &ret);
             assert(ret == 1);
-            PyMutex_Lock(&SSRJSON_CAST(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Lock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
         }
 #    endif
         assert(!cur_nested_depth);
@@ -748,7 +748,7 @@ ssrjson_dumps_obj(
             int ret;
             kh_put(ptr_set, pyobj_set, (u64)cur_obj, &ret);
             assert(ret == 1);
-            PyMutex_Lock(&SSRJSON_CAST(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Lock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
         }
 #    endif
         assert(!cur_nested_depth);
@@ -795,7 +795,7 @@ ssrjson_dumps_obj(
             goto dict_key_done;
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
 #endif
@@ -867,7 +867,7 @@ dict_pair_begin:;
             }
 #endif
             default: {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             }
         }
     } else {
@@ -887,7 +887,7 @@ dict_pair_begin:;
             khiter_t k = kh_get(ptr_set, pyobj_set, (u64)cur_obj);
             assert(k != kh_end(pyobj_set));
             kh_del(ptr_set, pyobj_set, k);
-            PyMutex_Unlock(&SSRJSON_CAST(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
         }
 #endif
 
@@ -911,7 +911,7 @@ dict_pair_begin:;
                 goto arr_val_begin;
             }
             default: {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             }
         }
     }
@@ -969,7 +969,7 @@ arr_val_begin:;
             }
 #endif
             default: {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             }
         }
     } else {
@@ -988,7 +988,7 @@ arr_val_begin:;
             khiter_t k = kh_get(ptr_set, pyobj_set, (u64)cur_obj);
             assert(k != kh_end(pyobj_set));
             kh_del(ptr_set, pyobj_set, k);
-            PyMutex_Unlock(&SSRJSON_CAST(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
         }
 #endif
 
@@ -1012,7 +1012,7 @@ arr_val_begin:;
                 goto arr_val_begin;
             }
             default: {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             }
         }
     }
@@ -1045,7 +1045,7 @@ success:;
         assert(size == (toplevel_locked_obj ? 1 : 0));
 #    endif
         if (likely(toplevel_locked_obj)) {
-            PyMutex_Unlock(&SSRJSON_CAST(PyObject *, toplevel_locked_obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_cast(PyObject *, toplevel_locked_obj)->ob_mutex);
         }
         kh_destroy(ptr_set, pyobj_set);
     }
@@ -1058,7 +1058,7 @@ fail:;
     for (khiter_t k = kh_begin(pyobj_set); k != kh_end(pyobj_set); ++k) {
         if (kh_exist(pyobj_set, k)) {
             PyObject *obj = (PyObject *)kh_key(pyobj_set, k);
-            PyMutex_Unlock(&SSRJSON_CAST(PyObject *, obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_cast(PyObject *, obj)->ob_mutex);
         }
     }
     kh_destroy(ptr_set, pyobj_set);
@@ -1079,7 +1079,7 @@ fail:;
     //             child_is_tuple = (_child_type == EncodeContainerType_Tuple);
     //         }
     //         if (child && !child_is_tuple) {
-    //             PyMutex_Unlock(&SSRJSON_CAST(PyObject *, child)->ob_mutex);
+    //             PyMutex_Unlock(&ssrjson_cast(PyObject *, child)->ob_mutex);
     //         }
     //     }
     // }

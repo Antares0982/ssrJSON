@@ -45,7 +45,7 @@
 #endif
 
 // Name creation macro.
-#define MAKE_S_NAME(_x_) SSRJSON_CONCAT2(_x_, COMPILE_SIMD_BITS)
+#define MAKE_S_NAME(_x_) ssrjson_concat2(_x_, COMPILE_SIMD_BITS)
 
 /*
  * Names using S context.
@@ -79,7 +79,7 @@
 #define fast_skip_spaces_u16 MAKE_S_NAME(fast_skip_spaces_u16)
 #define fast_skip_spaces_u32 MAKE_S_NAME(fast_skip_spaces_u32)
 //
-#define STR_WRITER_NOINDENT_IMPL(r_t, w_t) SSRJSON_CONCAT5(_unicode_buffer_append_str_internal, r_t, w_t, indent0, COMPILE_SIMD_BITS)
-#define KEY_WRITER_NOINDENT_IMPL(r_t, w_t) SSRJSON_CONCAT5(_unicode_buffer_append_key_internal, r_t, w_t, indent0, COMPILE_SIMD_BITS)
+#define STR_WRITER_NOINDENT_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_str_internal, r_t, w_t, indent0, COMPILE_SIMD_BITS)
+#define KEY_WRITER_NOINDENT_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_key_internal, r_t, w_t, indent0, COMPILE_SIMD_BITS)
 
 #endif // SSRJSON_COMPILE_CONTEXT_S

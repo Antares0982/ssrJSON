@@ -53,12 +53,12 @@
 /* double number exponent bit mask */
 #define F64_EXP_MASK U64(0x7FF00000, 0x00000000)
 
-#define WRITER_AS_U8(_writer_) (*SSRJSON_CAST(u8 **, &(_writer_)))
-#define WRITER_AS_U16(_writer_) (*SSRJSON_CAST(u16 **, &(_writer_)))
-#define WRITER_AS_U32(_writer_) (*SSRJSON_CAST(u32 **, &(_writer_)))
+#define WRITER_AS_U8(_writer_) (*ssrjson_cast(u8 **, &(_writer_)))
+#define WRITER_AS_U16(_writer_) (*ssrjson_cast(u16 **, &(_writer_)))
+#define WRITER_AS_U32(_writer_) (*ssrjson_cast(u32 **, &(_writer_)))
 
-#define GET_VEC_ASCII_START(_unicode_buffer_info_) (SSRJSON_CAST(PyASCIIObject *, (_unicode_buffer_info_)->head) + 1)
-#define GET_VEC_COMPACT_START(_unicode_buffer_info_) (SSRJSON_CAST(PyCompactUnicodeObject *, (_unicode_buffer_info_)->head) + 1)
+#define GET_VEC_ASCII_START(_unicode_buffer_info_) (ssrjson_cast(PyASCIIObject *, (_unicode_buffer_info_)->head) + 1)
+#define GET_VEC_COMPACT_START(_unicode_buffer_info_) (ssrjson_cast(PyCompactUnicodeObject *, (_unicode_buffer_info_)->head) + 1)
 
 /*==============================================================================
  * Global Vars
@@ -87,14 +87,14 @@ force_inline EncodeContainerType get_encode_ctn_type(ssrjson_compiletime bool is
 }
 
 force_inline void extract_index_and_type(EncodeCtnWithIndex *ctn_with_index, Py_ssize_t *index, EncodeContainerType *type) {
-    *index = SSRJSON_CAST(Py_ssize_t, ctn_with_index->index_and_type >> 2);
+    *index = ssrjson_cast(Py_ssize_t, ctn_with_index->index_and_type >> 2);
     *type = ctn_with_index->index_and_type & 0x3;
 }
 
 force_inline void set_index_and_type(EncodeCtnWithIndex *ctn_with_index, Py_ssize_t index, EncodeContainerType type) {
-    usize _index = SSRJSON_CAST(usize, index);
+    usize _index = ssrjson_cast(usize, index);
     // not expect index so large that it will overflow after left shift
-    assert((_index & ~(SSRJSON_CAST(usize, -1) >> 2)) == 0);
+    assert((_index & ~(ssrjson_cast(usize, -1) >> 2)) == 0);
     ctn_with_index->index_and_type = (_index << 2) | type;
 }
 
@@ -194,7 +194,7 @@ force_inline EncodePyTypes ssrjson_type_check(PyObject *val) {
 }
 
 force_inline void init_pybytes(PyObject *in_new_bytes, usize final_len) {
-    PyBytesObject *new_bytes = SSRJSON_CAST(PyBytesObject *, in_new_bytes);
+    PyBytesObject *new_bytes = ssrjson_cast(PyBytesObject *, in_new_bytes);
     PyObject_Init(in_new_bytes, &PyBytes_Type);
     new_bytes->ob_base.ob_size = (Py_ssize_t)final_len;
 #if PY_MINOR_VERSION < 11
@@ -212,7 +212,7 @@ EncodeUnicodeBufferInfo _unicode_buffer_reserve(EncodeUnicodeBufferInfo unicode_
 
 #ifndef NDEBUG
 force_inline bool check_unicode_writer_valid(void *writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return SSRJSON_CAST(u8 *, writer) <= (u8 *)unicode_buffer_info->end && SSRJSON_CAST(u8 *, writer) >= (u8 *)unicode_buffer_info->head;
+    return ssrjson_cast(u8 *, writer) <= (u8 *)unicode_buffer_info->end && ssrjson_cast(u8 *, writer) >= (u8 *)unicode_buffer_info->head;
 }
 #endif
 
@@ -250,8 +250,8 @@ force_inline Py_ssize_t get_unicode_buffer_final_len_ucs4(EncodeUnicodeWriter wr
 }
 
 force_inline usize get_bytes_buffer_final_len(u8 *writer, void *head) {
-    assert(writer >= SSRJSON_CAST(u8 *, head) + PYBYTES_START_OFFSET);
-    usize ret = writer - SSRJSON_CAST(u8 *, head) - PYBYTES_START_OFFSET;
+    assert(writer >= ssrjson_cast(u8 *, head) + PYBYTES_START_OFFSET);
+    usize ret = writer - ssrjson_cast(u8 *, head) - PYBYTES_START_OFFSET;
     return ret;
 }
 
@@ -437,8 +437,8 @@ force_inline EncodeUnicodeWriter _init_encode_buffer(EncodeUnicodeBufferInfo *un
 #ifndef NDEBUG
         memset(unicode_buffer_info->head, 0, SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
 #endif
-        WRITER_AS_U8(writer) = SSRJSON_CAST(u8 *, unicode_buffer_info->head) + u8_start_offset;
-        unicode_buffer_info->end = SSRJSON_CAST(u8 *, unicode_buffer_info->head) + SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE;
+        WRITER_AS_U8(writer) = ssrjson_cast(u8 *, unicode_buffer_info->head) + u8_start_offset;
+        unicode_buffer_info->end = ssrjson_cast(u8 *, unicode_buffer_info->head) + SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE;
     } else {
         PyErr_NoMemory();
         return NULL;

@@ -24,7 +24,7 @@
 #include "ssrjson.h"
 
 
-#define IMPL_MULTILIB_FUNCTION_INTERFACE(_func_name_) SSRJSON_CONCAT2(_func_name_, t) SSRJSON_CONCAT2(_func_name_, interface);
+#define IMPL_MULTILIB_FUNCTION_INTERFACE(_func_name_) ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 
 IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_Dumps)
 IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_Decode)

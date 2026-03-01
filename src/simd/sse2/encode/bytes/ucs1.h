@@ -59,7 +59,7 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1_trailing_128(u8 *writer, const 
 restart:;
     vector_a x, m;
     int shift;
-    shift = SSRJSON_CAST(int, READ_BATCH_COUNT - len);
+    shift = ssrjson_cast(int, READ_BATCH_COUNT - len);
     x = runtime_byte_rshift_128(vec, shift);
     m = runtime_byte_rshift_128(m0, shift);
     *(vector_u *)writer = x;
@@ -92,7 +92,7 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8_trailing_128(u8 *write
 restart:;
     vector_a x, m;
     int shift;
-    shift = SSRJSON_CAST(int, READ_BATCH_COUNT - len);
+    shift = ssrjson_cast(int, READ_BATCH_COUNT - len);
     x = runtime_byte_rshift_128(vec, shift);
     m = runtime_byte_rshift_128(m0, shift);
     *(vector_u *)writer = x;

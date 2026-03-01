@@ -29,7 +29,7 @@
 
 
 // Name creation macro.
-#define MAKE_RW_NAME(_x_) SSRJSON_CONCAT3(_x_, _src_t, _dst_t)
+#define MAKE_RW_NAME(_x_) ssrjson_concat3(_x_, _src_t, _dst_t)
 
 #define avx2_trailing_cvt MAKE_RW_NAME(avx2_trailing_cvt)
 

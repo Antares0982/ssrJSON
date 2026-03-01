@@ -43,10 +43,10 @@
 #    error "COMPILE_INDENT_LEVEL must be 0, 2 or 4"
 #endif
 
-#define __INDENT_NAME SSRJSON_SIMPLE_CONCAT2(indent, COMPILE_INDENT_LEVEL)
+#define __INDENT_NAME ssrjson_simple_concat2(indent, COMPILE_INDENT_LEVEL)
 
-#define MAKE_I_NAME(_x_) SSRJSON_CONCAT2(_x_, __INDENT_NAME)
-#define MAKE_IW_NAME(_x_) SSRJSON_CONCAT3(_x_, __INDENT_NAME, _dst_t)
+#define MAKE_I_NAME(_x_) ssrjson_concat2(_x_, __INDENT_NAME)
+#define MAKE_IW_NAME(_x_) ssrjson_concat3(_x_, __INDENT_NAME, _dst_t)
 
 /*
  * Write indents to unicode buffer. Need to reserve space before calling this function.

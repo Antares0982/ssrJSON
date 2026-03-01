@@ -40,14 +40,14 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
         case 1: {
             new_buffer = pymem_malloc_wrapped(max_utf8_bytes_per_ucs1 * len + __excess_bytes_write_ucs1_raw_utf8_trailing);
             return_if_unlikely(!new_buffer);
-            writer = SSRJSON_CAST(u8 *, new_buffer);
+            writer = ssrjson_cast(u8 *, new_buffer);
             writer = bytes_write_ucs1_raw_utf8(writer, src_voidp, len, is_key);
             break;
         }
         case 2: {
             new_buffer = pymem_malloc_wrapped(max_utf8_bytes_per_ucs2 * len + __excess_bytes_write_ucs2_raw_utf8_trailing);
             return_if_unlikely(!new_buffer);
-            writer = SSRJSON_CAST(u8 *, new_buffer);
+            writer = ssrjson_cast(u8 *, new_buffer);
             writer = bytes_write_ucs2_raw_utf8(writer, src_voidp, len, is_key);
             if (unlikely(!writer)) goto fail;
             break;
@@ -55,23 +55,23 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
         case 4: {
             new_buffer = pymem_malloc_wrapped(max_utf8_bytes_per_ucs4 * len + __excess_bytes_write_ucs4_raw_utf8_trailing);
             return_if_unlikely(!new_buffer);
-            writer = SSRJSON_CAST(u8 *, new_buffer);
+            writer = ssrjson_cast(u8 *, new_buffer);
             writer = bytes_write_ucs4_raw_utf8(writer, src_voidp, len, is_key);
             if (unlikely(!writer)) goto fail;
             break;
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
     //
-    usize utf8_length = (usize)(writer - SSRJSON_CAST(u8 *, new_buffer));
+    usize utf8_length = (usize)(writer - ssrjson_cast(u8 *, new_buffer));
     *utf8_length_out = utf8_length;
     // resize buffer
     void *resized_buffer = pymem_realloc_wrapped(new_buffer, utf8_length + 1);
     if (unlikely(!resized_buffer)) goto fail;
     //
-    u8 *final_buffer = SSRJSON_CAST(u8 *, resized_buffer);
+    u8 *final_buffer = ssrjson_cast(u8 *, resized_buffer);
     final_buffer[utf8_length] = 0;
     *utf8_cache_out = final_buffer;
     return true;
@@ -89,7 +89,7 @@ static force_noinline bool write_str_cache_impl(const void *src_voidp, int src_p
 }
 
 static force_noinline u8 *bytes_buffer_append_nonascii_str_write_cache(u8 *writer, int src_pykind, const void *src_voidp, usize len, PyObject *str) {
-    assert(SSRJSON_PYASCII_CAST(str)->state.compact);
+    assert(ssrjson_pyascii_cast(str)->state.compact);
     const u8 *utf8_cache;
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
@@ -122,7 +122,7 @@ static force_noinline u8 *bytes_buffer_append_nonascii_str_write_cache(u8 *write
                 break;
             }
             default: {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             }
         }
         *writer++ = '"';
@@ -132,7 +132,7 @@ static force_noinline u8 *bytes_buffer_append_nonascii_str_write_cache(u8 *write
 }
 
 static force_noinline u8 *bytes_buffer_append_nonascii_str_no_write_cache(u8 *writer, int src_pykind, const void *src_voidp, usize len, PyObject *str) {
-    assert(SSRJSON_CAST(PyASCIIObject *, str)->state.compact);
+    assert(ssrjson_cast(PyASCIIObject *, str)->state.compact);
     const u8 *utf8_cache;
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
@@ -159,7 +159,7 @@ static force_noinline u8 *bytes_buffer_append_nonascii_str_no_write_cache(u8 *wr
                 break;
             }
             default: {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             }
         }
         *writer++ = '"';

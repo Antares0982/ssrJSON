@@ -58,11 +58,11 @@ extern PyTypeObject *PyNone_Type;
 
 // Initialize a PyUnicode object with the given size and kind.
 force_inline void init_pyunicode(void *head, Py_ssize_t size, int kind) {
-    u8 *const u8head = SSRJSON_CAST(u8 *, head);
-    PyCompactUnicodeObject *unicode = SSRJSON_CAST(PyCompactUnicodeObject *, head);
-    PyASCIIObject *ascii = SSRJSON_CAST(PyASCIIObject *, head);
-    PyObject_Init(SSRJSON_CAST(PyObject *, head), &PyUnicode_Type);
-    void *data = SSRJSON_CAST(void *, u8head + (kind ? UNICODE_OFFSET : ASCII_OFFSET));
+    u8 *const u8head = ssrjson_cast(u8 *, head);
+    PyCompactUnicodeObject *unicode = ssrjson_cast(PyCompactUnicodeObject *, head);
+    PyASCIIObject *ascii = ssrjson_cast(PyASCIIObject *, head);
+    PyObject_Init(ssrjson_cast(PyObject *, head), &PyUnicode_Type);
+    void *data = ssrjson_cast(void *, u8head + (kind ? UNICODE_OFFSET : ASCII_OFFSET));
     //
     ascii->length = size;
     ascii->hash = -1;
@@ -145,33 +145,33 @@ force_noinline void init_pyunicode_noinline(void *head, Py_ssize_t size, int kin
 
 force_inline const u8 *pyunicode_get_utf8_cache(PyObject *unicode) {
 #if !SSRJSON_GIL_ENABLED
-    return __c11_atomic_load((const _Atomic(void *) *)&SSRJSON_CAST(PyCompactUnicodeObject *, unicode)->utf8, memory_order_acquire);
+    return __c11_atomic_load((const _Atomic(void *) *)&ssrjson_cast(PyCompactUnicodeObject *, unicode)->utf8, memory_order_acquire);
 #else
-    return (const u8 *)SSRJSON_PYCOMPACTUNICODE_CAST(unicode)->utf8;
+    return (const u8 *)ssrjson_pycompactunicode_cast(unicode)->utf8;
 #endif
 }
 
 force_inline void get_utf8_cache(PyObject *unicode, const u8 **utf8_cache_out, usize *utf8_length_out) {
-    assert(SSRJSON_CAST(PyASCIIObject *, unicode)->state.compact);
-    assert(!SSRJSON_CAST(PyASCIIObject *, unicode)->state.ascii);
+    assert(ssrjson_cast(PyASCIIObject *, unicode)->state.compact);
+    assert(!ssrjson_cast(PyASCIIObject *, unicode)->state.ascii);
     *utf8_cache_out = (const u8 *)pyunicode_get_utf8_cache(unicode);
-    *utf8_length_out = (usize)SSRJSON_PYCOMPACTUNICODE_CAST(unicode)->utf8_length;
+    *utf8_length_out = (usize)ssrjson_pycompactunicode_cast(unicode)->utf8_length;
 }
 
 force_inline void set_cache(PyObject *str, const u8 **utf8_cache_addr, usize *utf8_length_addr) {
 #if !SSRJSON_GIL_ENABLED
     u8 *expected = NULL;
-    if (!atomic_compare_exchange_strong((_Atomic(u8 *) *)&SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8, &expected, (u8 *)(*utf8_cache_addr))) {
+    if (!atomic_compare_exchange_strong((_Atomic(u8 *) *)&ssrjson_pycompactunicode_cast(str)->utf8, &expected, (u8 *)(*utf8_cache_addr))) {
         // already has an UTF-8 cache, free the allocated one
         PyMem_Free((void *)*utf8_cache_addr);
         *utf8_cache_addr = expected;
-        assert(*utf8_length_addr == (usize)SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8_length);
+        assert(*utf8_length_addr == (usize)ssrjson_pycompactunicode_cast(str)->utf8_length);
     } else {
-        SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8_length = (Py_ssize_t)*utf8_length_addr;
+        ssrjson_pycompactunicode_cast(str)->utf8_length = (Py_ssize_t)*utf8_length_addr;
     }
 #else
-    SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8 = (void *)*utf8_cache_addr;
-    SSRJSON_PYCOMPACTUNICODE_CAST(str)->utf8_length = (Py_ssize_t)*utf8_length_addr;
+    ssrjson_pycompactunicode_cast(str)->utf8 = (void *)*utf8_cache_addr;
+    ssrjson_pycompactunicode_cast(str)->utf8_length = (Py_ssize_t)*utf8_length_addr;
 #endif
 }
 
@@ -216,12 +216,12 @@ force_inline void parse_ascii(PyObject *unicode, bool *is_ascii_out, const u8 **
     usize char_count;
     is_ascii = PyUnicode_IS_ASCII(unicode);
     if (likely(is_ascii)) {
-        is_compact = SSRJSON_CAST(PyASCIIObject *, unicode)->state.compact;
+        is_compact = ssrjson_cast(PyASCIIObject *, unicode)->state.compact;
         char_count = (usize)PyUnicode_GET_LENGTH(unicode);
         if (likely(is_compact)) {
             char_data = PYUNICODE_ASCII_START(unicode);
         } else {
-            char_data = SSRJSON_CAST(PyUnicodeObject *, unicode)->data.any;
+            char_data = ssrjson_cast(PyUnicodeObject *, unicode)->data.any;
         }
     }
 

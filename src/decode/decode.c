@@ -98,7 +98,7 @@ force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int ki
             break;
         }
         default:
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
     }
 
     bool should_cache = (is_key && real_len && likely(real_len <= 64));
@@ -113,13 +113,13 @@ force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int ki
 
     obj = create_empty_unicode(len, kind);
     if (obj == NULL) return NULL;
-    ssrjson_memcpy(SSRJSON_CAST(u8 *, obj) + offset, unicode_str, real_len);
+    ssrjson_memcpy(ssrjson_cast(u8 *, obj) + offset, unicode_str, real_len);
     if (should_cache) {
         add_key_cache(hash, obj, real_len, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
     }
 success:
     if (is_key) {
-        PyASCIIObject *ascii_obj = SSRJSON_CAST(PyASCIIObject *, obj);
+        PyASCIIObject *ascii_obj = ssrjson_cast(PyASCIIObject *, obj);
         if (len) {
             assert(ascii_obj->hash == -1);
             make_hash(ascii_obj, unicode_str, real_len);
@@ -375,7 +375,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
         tls_data_ptr = tls_get_decoder_data();
         if (!tls_data_ptr->cur_buffer) {
             // this is the first ctx
-            DecoderBufferLinkedList *new_linked_list = SSRJSON_ALIGNED_ALLOC(64, sizeof(DecoderBufferLinkedList));
+            DecoderBufferLinkedList *new_linked_list = ssrjson_aligned_alloc(64, sizeof(DecoderBufferLinkedList));
             if (unlikely(!new_linked_list)) {
                 PyErr_NoMemory();
                 return NULL;
@@ -404,7 +404,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
                     return NULL;
                 }
                 // create new
-                DecoderBufferLinkedList *new_linked_list = SSRJSON_ALIGNED_ALLOC(64, sizeof(DecoderBufferLinkedList));
+                DecoderBufferLinkedList *new_linked_list = ssrjson_aligned_alloc(64, sizeof(DecoderBufferLinkedList));
                 if (unlikely(!new_linked_list)) {
                     PyErr_NoMemory();
                     return NULL;
@@ -422,8 +422,8 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
 
     //
     if (PyUnicode_Check(s)) {
-        PyASCIIObject *ascii_head = SSRJSON_CAST(PyASCIIObject *, s);
-        PyUnicodeObject *in_unicode = SSRJSON_CAST(PyUnicodeObject *, s);
+        PyASCIIObject *ascii_head = ssrjson_cast(PyASCIIObject *, s);
+        PyUnicodeObject *in_unicode = ssrjson_cast(PyUnicodeObject *, s);
         int pyunicode_kind = ascii_head->state.ascii ? 0 : ascii_head->state.kind;
         switch (pyunicode_kind) {
             case SSRJSON_STRING_TYPE_ASCII: {
@@ -444,7 +444,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
             }
             default: {
                 ret = NULL;
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             }
         }
         goto done;
@@ -477,19 +477,19 @@ done:;
         DecoderBufferLinkedList *used_buffer = tls_data_ptr->cur_buffer;
         DecoderBufferLinkedList *goback_buffer = used_buffer->prev;
         if (unlikely(used_buffer->next)) {
-            SSRJSON_ALIGNED_FREE(used_buffer->next);
+            ssrjson_aligned_free(used_buffer->next);
             used_buffer->next = NULL;
         }
 #if SSRJSON_GIL_ENABLED
         if (likely(!goback_buffer)) {
             // head buffer, free it
             assert(used_buffer->level == 0);
-            SSRJSON_ALIGNED_FREE(used_buffer);
+            ssrjson_aligned_free(used_buffer);
         }
         tls_data_ptr->cur_buffer = goback_buffer;
 #else
         if (unlikely(goback_buffer)) {
-            SSRJSON_ALIGNED_FREE(used_buffer);
+            ssrjson_aligned_free(used_buffer);
             tls_data_ptr->cur_buffer = goback_buffer;
             goback_buffer->next = NULL;
         }

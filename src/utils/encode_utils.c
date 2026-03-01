@@ -24,10 +24,10 @@
 
 
 #define RESERVE_MAX ((~(usize)PY_SSIZE_T_MAX) >> 1)
-static_assert((SSRJSON_CAST(usize, RESERVE_MAX) & (SSRJSON_CAST(usize, RESERVE_MAX) - 1)) == 0, "");
+static_assert((ssrjson_cast(usize, RESERVE_MAX) & (ssrjson_cast(usize, RESERVE_MAX) - 1)) == 0, "");
 
 EncodeUnicodeBufferInfo _unicode_buffer_reserve(EncodeUnicodeBufferInfo unicode_buffer_info, usize target_size) {
-    usize u8len = SSRJSON_CAST(uintptr_t, unicode_buffer_info.end) - SSRJSON_CAST(uintptr_t, unicode_buffer_info.head);
+    usize u8len = ssrjson_cast(uintptr_t, unicode_buffer_info.end) - ssrjson_cast(uintptr_t, unicode_buffer_info.head);
     assert((u8len & (u8len - 1)) == 0);
     while (target_size > u8len) {
         if (u8len & RESERVE_MAX) {
@@ -44,7 +44,7 @@ EncodeUnicodeBufferInfo _unicode_buffer_reserve(EncodeUnicodeBufferInfo unicode_
         return unicode_buffer_info;
     }
     unicode_buffer_info.head = new_ptr;
-    unicode_buffer_info.end = SSRJSON_CAST(u8 *, unicode_buffer_info.head) + u8len;
+    unicode_buffer_info.end = ssrjson_cast(u8 *, unicode_buffer_info.head) + u8len;
     return unicode_buffer_info;
 }
 

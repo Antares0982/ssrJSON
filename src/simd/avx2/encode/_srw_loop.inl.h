@@ -65,7 +65,7 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop4(register _dst_t *dst, c
             const _src_t *escape_pos = src + done_count;
             src += done_count + 1;
             _src_t escape_unicode = *escape_pos;
-            assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < ControlMax);
+            assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < _ControlMax);
             dst += done_count;
             len -= done_count + 1;
             memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(_dst_t));
@@ -94,7 +94,7 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop(register _dst_t *dst, co
             const _src_t *escape_pos = src + done_count;
             src += done_count + 1;
             _src_t escape_unicode = *escape_pos;
-            assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < ControlMax);
+            assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < _ControlMax);
             dst += done_count;
             len -= done_count + 1;
             // excess written count = 2
@@ -131,7 +131,7 @@ restart:;
         src = load_start + done_count + 1;
         dst = write_start + done_count;
         len -= real_done_count + 1;
-        assert(unicode == _Slash || unicode == _Quote || unicode < ControlMax);
+        assert(unicode == _Slash || unicode == _Quote || unicode < _ControlMax);
         // excess written count = 8 - max_json_bytes_per_unicode = 2
         memcpy(dst, &ControlEscapeTable[unicode * 8], 8 * sizeof(_dst_t));
         dst += _ControlJump[unicode];

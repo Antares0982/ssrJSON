@@ -57,21 +57,21 @@
 #endif
 
 // The source type.
-#define _src_t SSRJSON_SIMPLE_CONCAT2(u, READ_BIT_SIZE)
+#define _src_t ssrjson_simple_concat2(u, READ_BIT_SIZE)
 
 // Other type definitions.
-#define avx512_bitmask_t SSRJSON_SIMPLE_CONCAT2(u, AVX512BITMASK_SIZE)
+#define avx512_bitmask_t ssrjson_simple_concat2(u, AVX512BITMASK_SIZE)
 
 // Name creation macro.
-#define MAKE_R_NAME(_x_) SSRJSON_CONCAT2(_x_, _src_t)
+#define MAKE_R_NAME(_x_) ssrjson_concat2(_x_, _src_t)
 
 #ifdef COMPILE_UCS_LEVEL
 #    if COMPILE_UCS_LEVEL == 0
 #        define __UCS_NAME ascii
 #    else
-#        define __UCS_NAME SSRJSON_SIMPLE_CONCAT2(ucs, COMPILE_UCS_LEVEL)
+#        define __UCS_NAME ssrjson_simple_concat2(ucs, COMPILE_UCS_LEVEL)
 #    endif
-#    define MAKE_UCS_NAME(_x_) SSRJSON_CONCAT2(_x_, __UCS_NAME)
+#    define MAKE_UCS_NAME(_x_) ssrjson_concat2(_x_, __UCS_NAME)
 #endif
 /*
  * Names using R context.

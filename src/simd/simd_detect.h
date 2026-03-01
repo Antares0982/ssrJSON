@@ -94,7 +94,7 @@
 #    ifndef SIMD_FEATURE_NAME
 #        error "SIMD_FEATURE_NAME is not defined"
 #    endif
-#    define SIMD_NAME_MODIFIER(x) SSRJSON_CONCAT2(x, SIMD_FEATURE_NAME)
+#    define SIMD_NAME_MODIFIER(x) ssrjson_concat2(x, SIMD_FEATURE_NAME)
 #else
 #    define SIMD_NAME_MODIFIER(x) x
 #endif

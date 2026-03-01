@@ -48,10 +48,10 @@
 #endif
 
 // The destination type.
-#define _dst_t SSRJSON_SIMPLE_CONCAT2(u, WRITE_BIT_SIZE)
+#define _dst_t ssrjson_simple_concat2(u, WRITE_BIT_SIZE)
 
 // Name creation macro.
-#define MAKE_W_NAME(_x_) SSRJSON_CONCAT2(_x_, _dst_t)
+#define MAKE_W_NAME(_x_) ssrjson_concat2(_x_, _dst_t)
 
 /*
  * Names using W context.

@@ -45,7 +45,7 @@ force_inline void _decode_str_loop4_read_src_impl(
         anymask_t *out_check_mask_arr4,
         anymask_t *out_check_mask_total) {
     for (int i = 0; i < 4; ++i) {
-        out_vec->x[i] = *(SSRJSON_CAST(vector_u *, src) + i);
+        out_vec->x[i] = *(ssrjson_cast(vector_u *, src) + i);
     }
     for (int i = 0; i < 4; ++i) {
         out_check_mask_arr4[i] = get_escape_anymask(out_vec->x[i]);
@@ -57,7 +57,7 @@ force_inline void _decode_str_loop_read_src_impl(
         const _src_t *src,
         vector_a *out_vec,
         anymask_t *out_check_mask) {
-    *out_vec = *SSRJSON_CAST(vector_u *, src);
+    *out_vec = *ssrjson_cast(vector_u *, src);
     *out_check_mask = get_escape_anymask(*out_vec);
 }
 
@@ -126,7 +126,7 @@ force_inline usize _decode_str_loop4_decoder_impl(
             bool is_invalid = escapeval_addr->escape_val == _DECODE_UNICODE_ERR;
             *ret_addr = DECODE_LOOPSTATE_ESCAPE + is_invalid;
         } else {
-            assert(unicode < ControlMax);
+            assert(unicode < _ControlMax);
             PyErr_SetString(JSONDecodeError, "Invalid control character in string");
             *ret_addr = DECODE_LOOPSTATE_INVALID;
         }
@@ -173,7 +173,7 @@ force_inline usize _decode_str_loop_decoder_impl(
             bool is_invalid = escapeval_addr->escape_val == _DECODE_UNICODE_ERR;
             *ret_addr = DECODE_LOOPSTATE_ESCAPE + is_invalid;
         } else {
-            assert(unicode < ControlMax);
+            assert(unicode < _ControlMax);
             PyErr_SetString(JSONDecodeError, "Invalid control character in string");
             *ret_addr = DECODE_LOOPSTATE_INVALID;
         }
@@ -227,7 +227,7 @@ force_inline usize _decode_str_trailing_decoder_impl(
             bool is_invalid = escapeval_addr->escape_val == _DECODE_UNICODE_ERR;
             *ret_addr = DECODE_LOOPSTATE_ESCAPE + is_invalid;
         } else {
-            assert(unicode < ControlMax);
+            assert(unicode < _ControlMax);
             PyErr_SetString(JSONDecodeError, "Invalid control character in string");
             *ret_addr = DECODE_LOOPSTATE_INVALID;
         }

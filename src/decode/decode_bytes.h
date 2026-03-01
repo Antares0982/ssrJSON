@@ -169,15 +169,15 @@ skip_ascii_begin:
     skip_ascii_stop##i : src += i; \
     goto skip_ascii_end;
 
-    REPEAT_INCR_16(expr_jump)
-    src += 16;
+    repeat_incr_16(expr_jump)
+            src += 16;
     goto skip_ascii_begin;
-    REPEAT_INCR_16(expr_stop)
+    repeat_incr_16(expr_stop)
 
 #undef expr_jump
 #undef expr_stop
 
-skip_ascii_end:
+            skip_ascii_end :
 
     /*
      GCC may store src[i] in a register at each line of expr_jump(i) above.
@@ -188,7 +188,7 @@ skip_ascii_end:
      MSVC, Clang, ICC can generate expected instructions without this hint.
      */
 #if SSRJSON_IS_REAL_GCC
-    __asm__ volatile("" : "=m"(*src));
+        __asm__ volatile("" : "=m"(*src));
 #endif
     if (likely(*src == '"')) {
 
@@ -317,10 +317,10 @@ copy_ascii_ucs1:
             goto copy_ascii_ucs1_stop_##i;           \
         }
 #endif
-    REPEAT_INCR_16(expr_jump)
+    repeat_incr_16(expr_jump)
 #undef expr_jump
 
-    memcpy(dst, src, 16);
+            memcpy(dst, src, 16);
     src += 16;
     dst += 16;
     goto copy_ascii_ucs1;
@@ -558,13 +558,12 @@ copy_escape_ucs2:
 
 copy_ascii_ucs2:
     assert(cur_max_ucs_size == 2);
-    while (true) REPEAT_CALL_16({
+    while (true) repeat_call_16({
         if (unlikely(char_is_ascii_stop(*src))) break;
         *dst_ucs2++ = *src++;
     })
 
-copy_utf8_ucs2:
-    assert(cur_max_ucs_size == 2);
+            copy_utf8_ucs2 : assert(cur_max_ucs_size == 2);
 
     if (*src & 0x80) { /* non-ASCII character */
     copy_utf8_inner_ucs2:
@@ -685,13 +684,12 @@ copy_escape_ucs4:
 
 copy_ascii_ucs4:
     assert(cur_max_ucs_size == 4);
-    while (true) REPEAT_CALL_16({
+    while (true) repeat_call_16({
         if (unlikely(char_is_ascii_stop(*src))) break;
         *dst_ucs4++ = *src++;
     })
 
-copy_utf8_ucs4:
-    assert(cur_max_ucs_size == 4);
+            copy_utf8_ucs4 : assert(cur_max_ucs_size == 4);
 
     if (*src & 0x80) { /* non-ASCII character */
     copy_utf8_inner_ucs4:
@@ -900,7 +898,7 @@ force_inline void _alloc_aligned_bytes_buffer(DecoderBuffers *decoder_context, P
     }
     Py_ssize_t required_size = size_align_up(len + SSRJSON_MEMCPY_SIMD_SIZE + 4, SSRJSON_MEMCPY_SIMD_SIZE);
     if (unlikely(required_size > SSRJSON_STRING_BUFFER_SIZE)) {
-        *buffer = SSRJSON_ALIGNED_ALLOC(SSRJSON_MEMCPY_SIMD_SIZE, required_size);
+        *buffer = ssrjson_aligned_alloc(SSRJSON_MEMCPY_SIMD_SIZE, required_size);
         if (unlikely(!*buffer)) {
             PyErr_NoMemory();
             return;
@@ -972,7 +970,7 @@ internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_co
         ret = loads_root_single_bytes(decoder_context, buffer, len DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
     }
 
-    if (is_dynamic) SSRJSON_ALIGNED_FREE(_new_buffer);
+    if (is_dynamic) ssrjson_aligned_free(_new_buffer);
     return ret;
 }
 

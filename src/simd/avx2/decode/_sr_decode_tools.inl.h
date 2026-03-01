@@ -50,12 +50,11 @@ loop:;
         }
     } else {
         static _src_t _t[2] = {' ', ' '};
-        while (true) REPEAT_CALL_16({
+        while (true) repeat_call_16({
             if (cmpeq_2chars(cur, _t, end)) cur += 2;
             else
                 break;
-        })
-        if (*cur == ' ') cur++;
+        }) if (*cur == ' ') cur++;
     }
     *cur_addr = cur;
     assert(*cur != ' ');

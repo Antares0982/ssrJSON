@@ -97,7 +97,7 @@ force_inline vector_a __ucs2_encode_bytes_avx2_trailing(const u16 *src, const u1
 
 force_inline void ucs2_encode_2bytes_utf8_avx2_trailing(const u16 *src, const u16 *src_end, u8 *writer) {
     vector_a y = __ucs2_encode_bytes_avx2_trailing(src, src_end);
-    *SSRJSON_CAST(vector_u_u16_256 *, writer) = __ucs2_encode_2bytes_utf8_avx2_impl(y);
+    *ssrjson_cast(vector_u_u16_256 *, writer) = __ucs2_encode_2bytes_utf8_avx2_impl(y);
 }
 
 force_inline void __ucs2_encode_3bytes_utf8_avx2_impl(vector_a y, vector_a_u8_128 *out_x1, vector_a_u8_128 *out_x2, vector_a_u8_128 *out_x3, vector_a_u8_128 *out_x4) {
@@ -282,10 +282,10 @@ restart:;
             goto _3bytes;
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
-    SSRJSON_UNREACHABLE();
+    ssrjson_unreachable();
 ascii:;
     {
         const vector_a m_not_ascii = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, broadcast(0x7f));
@@ -303,8 +303,8 @@ ascii:;
             src = last_batch_start + done_count + 1;
             writer += real_done_count;
             len = READ_BATCH_COUNT - done_count - 1;
-            if (escape_unicode >= ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash && escape_unicode != _Quote) {
-                SSRJSON_UNREACHABLE();
+            if (escape_unicode >= _ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash && escape_unicode != _Quote) {
+                ssrjson_unreachable();
             } else {
                 // excess bytes written: 16 - max_json_bytes_per_unicode = 10
                 writer = encode_one_ucs2(writer, escape_unicode);
@@ -313,7 +313,7 @@ ascii:;
             if (len) goto restart;
             goto finished;
         }
-        SSRJSON_UNREACHABLE();
+        ssrjson_unreachable();
     }
 _2bytes:;
     {
@@ -333,7 +333,7 @@ _2bytes:;
             writer += real_done_count * 2;
             len = READ_BATCH_COUNT - done_count - 1;
             if (escape_unicode >= 0x80 && escape_unicode <= 0x7ff) {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             } else {
                 // excess bytes written: 8 - max_json_bytes_per_unicode = 2
                 writer = encode_one_ucs2(writer, escape_unicode);
@@ -342,7 +342,7 @@ _2bytes:;
             if (len) goto restart;
             goto finished;
         }
-        SSRJSON_UNREACHABLE();
+        ssrjson_unreachable();
     }
 _3bytes:;
     {
@@ -363,7 +363,7 @@ _3bytes:;
             writer += real_done_count * 3;
             len = READ_BATCH_COUNT - done_count - 1;
             if (escape_unicode >= 0x800 && (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)) {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             } else {
                 // excess bytes written: 8 - max_json_bytes_per_unicode = 2
                 writer = encode_one_ucs2(writer, escape_unicode);
@@ -372,7 +372,7 @@ _3bytes:;
             if (len) goto restart;
             goto finished;
         }
-        SSRJSON_UNREACHABLE();
+        ssrjson_unreachable();
     }
 finished:;
     return writer;
@@ -407,7 +407,7 @@ restart:;
             goto _3bytes;
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
     // ---unreachable here---

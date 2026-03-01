@@ -75,7 +75,7 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, bool to_
     _unicode_buffer_info.head = PyObject_Malloc(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
     return_if_unlikely(!_unicode_buffer_info.head);
     //
-    bool compact = SSRJSON_CAST(PyASCIIObject *, unicode)->state.compact;
+    bool compact = ssrjson_cast(PyASCIIObject *, unicode)->state.compact;
     assert(compact);
     usize len;
     int unicode_kind;
@@ -94,8 +94,8 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, bool to_
             write_offset = sizeof(PyCompactUnicodeObject);
         }
     }
-    WRITER_AS_U8(writer) = SSRJSON_CAST(u8 *, _unicode_buffer_info.head) + write_offset;
-    _unicode_buffer_info.end = SSRJSON_CAST(u8 *, _unicode_buffer_info.head) + SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE;
+    WRITER_AS_U8(writer) = ssrjson_cast(u8 *, _unicode_buffer_info.head) + write_offset;
+    _unicode_buffer_info.end = ssrjson_cast(u8 *, _unicode_buffer_info.head) + SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE;
     //
     bool success;
     if (to_bytes_obj) {
@@ -131,7 +131,7 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, bool to_
                 break;
             }
             default: {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             }
         }
     }
@@ -181,7 +181,7 @@ force_inline PyObject *ssrjson_dumps_single_long(PyObject *val, bool to_bytes_ob
             ret = PyObject_Malloc(PYBYTES_START_OFFSET + 1 + 1);
             return_if_unlikely(!ret);
             init_pybytes(ret, 1);
-            PyBytesObject *b = SSRJSON_CAST(PyBytesObject *, ret);
+            PyBytesObject *b = ssrjson_cast(PyBytesObject *, ret);
             b->ob_sval[0] = '0';
             b->ob_sval[1] = 0;
         } else {
@@ -221,7 +221,7 @@ force_inline PyObject *ssrjson_dumps_single_long(PyObject *val, bool to_bytes_ob
             ret = PyObject_Malloc(PYBYTES_START_OFFSET + string_size + 1);
             return_if_unlikely(!ret);
             init_pybytes(ret, string_size);
-            writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyBytesObject *, ret)->ob_sval);
+            writer = ssrjson_cast(u8 *, ssrjson_cast(PyBytesObject *, ret)->ob_sval);
         } else {
             ret = create_empty_unicode(string_size, 0);
             return_if_unlikely(!ret);
@@ -243,11 +243,11 @@ force_inline PyObject *_ssrjson_dumps_single_inf_nan(double v, ssrjson_compileti
             unicode = PyObject_Malloc(PYBYTES_START_OFFSET + length + 1);
             return_if_unlikely(!unicode);
             init_pybytes(unicode, length);
-            writer = SSRJSON_CAST(u8 *, unicode) + PYBYTES_START_OFFSET;
+            writer = ssrjson_cast(u8 *, unicode) + PYBYTES_START_OFFSET;
         } else {
             unicode = create_empty_unicode(length, 0);
             return_if_unlikely(!unicode);
-            writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyASCIIObject *, unicode) + 1);
+            writer = ssrjson_cast(u8 *, ssrjson_cast(PyASCIIObject *, unicode) + 1);
         }
         *writer = '-';
         memcpy(writer + sign, "Infinity", 8);
@@ -260,11 +260,11 @@ force_inline PyObject *_ssrjson_dumps_single_inf_nan(double v, ssrjson_compileti
             unicode = PyObject_Malloc(PYBYTES_START_OFFSET + 3 + 1);
             return_if_unlikely(!unicode);
             init_pybytes(unicode, 3);
-            writer = SSRJSON_CAST(u8 *, unicode) + PYBYTES_START_OFFSET;
+            writer = ssrjson_cast(u8 *, unicode) + PYBYTES_START_OFFSET;
         } else {
             unicode = create_empty_unicode(3, 0);
             return_if_unlikely(!unicode);
-            writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyASCIIObject *, unicode) + 1);
+            writer = ssrjson_cast(u8 *, ssrjson_cast(PyASCIIObject *, unicode) + 1);
         }
         memcpy(writer, "NaN", 4);
         return unicode;
@@ -293,7 +293,7 @@ force_inline PyObject *ssrjson_dumps_single_float(PyObject *val, bool to_bytes_o
     }
     char *write_pos;
     if (to_bytes_obj) {
-        write_pos = SSRJSON_CAST(PyBytesObject *, unicode)->ob_sval;
+        write_pos = ssrjson_cast(PyBytesObject *, unicode)->ob_sval;
     } else {
         write_pos = (char *)(((PyASCIIObject *)unicode) + 1);
     }
@@ -312,7 +312,7 @@ force_inline PyObject *ssrjson_dumps_single_constant(EncodePyTypes py_type, PyOb
                     ret = PyObject_Malloc(PYBYTES_START_OFFSET + 5 + 1);
                     return_if_unlikely(!ret);
                     init_pybytes(ret, 5);
-                    writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyBytesObject *, ret)->ob_sval);
+                    writer = ssrjson_cast(u8 *, ssrjson_cast(PyBytesObject *, ret)->ob_sval);
                 } else {
                     ret = create_empty_unicode(5, 0);
                     return_if_unlikely(!ret);
@@ -325,7 +325,7 @@ force_inline PyObject *ssrjson_dumps_single_constant(EncodePyTypes py_type, PyOb
                     ret = PyObject_Malloc(PYBYTES_START_OFFSET + 4 + 1);
                     return_if_unlikely(!ret);
                     init_pybytes(ret, 4);
-                    writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyBytesObject *, ret)->ob_sval);
+                    writer = ssrjson_cast(u8 *, ssrjson_cast(PyBytesObject *, ret)->ob_sval);
                 } else {
                     ret = create_empty_unicode(4, 0);
                     return_if_unlikely(!ret);
@@ -341,7 +341,7 @@ force_inline PyObject *ssrjson_dumps_single_constant(EncodePyTypes py_type, PyOb
                 ret = PyObject_Malloc(PYBYTES_START_OFFSET + 4 + 1);
                 return_if_unlikely(!ret);
                 init_pybytes(ret, 4);
-                writer = SSRJSON_CAST(u8 *, SSRJSON_CAST(PyBytesObject *, ret)->ob_sval);
+                writer = ssrjson_cast(u8 *, ssrjson_cast(PyBytesObject *, ret)->ob_sval);
             } else {
                 ret = create_empty_unicode(4, 0);
                 return_if_unlikely(!ret);
@@ -352,7 +352,7 @@ force_inline PyObject *ssrjson_dumps_single_constant(EncodePyTypes py_type, PyOb
         }
         default: {
             ret = NULL;
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
             break;
         }
     }
@@ -516,7 +516,7 @@ dumps_container:;
             break;
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
 
@@ -696,7 +696,7 @@ dumps_container:;
             break;
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
 

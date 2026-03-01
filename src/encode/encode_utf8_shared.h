@@ -36,7 +36,7 @@ force_inline ssrjson_nofail u8 *encode_one_special_ucs1(u8 *writer, u8 unicode) 
         *writer++ = (unicode >> 6) | 0xc0;
         *writer++ = (unicode & 0x3f) | 0x80;
     } else {
-        assert(unicode < ControlMax || unicode == _Quote || unicode == _Slash);
+        assert(unicode < _ControlMax || unicode == _Quote || unicode == _Slash);
         memcpy(writer, &ControlEscapeTable_u8[unicode * 8], 8);
         writer += _ControlJump[unicode];
     }
@@ -45,7 +45,7 @@ force_inline ssrjson_nofail u8 *encode_one_special_ucs1(u8 *writer, u8 unicode) 
 }
 
 force_inline ssrjson_nofail u8 *encode_one_ucs1(u8 *writer, u8 unicode) {
-    if (unicode < 128 && unicode >= ControlMax && unicode != _Quote && unicode != _Slash) {
+    if (unicode < 128 && unicode >= _ControlMax && unicode != _Quote && unicode != _Slash) {
         *writer++ = unicode;
         return writer;
     }
@@ -65,7 +65,7 @@ force_inline ssrjson_nofail u8 *encode_one_ucs1_noescape(u8 *writer, u8 unicode)
 /* UCS2 src. */
 force_inline u8 *encode_one_ucs2(u8 *writer, u16 unicode) {
     if (unicode < 128) {
-        if (unicode >= ControlMax && unicode != _Slash && unicode != _Quote) {
+        if (unicode >= _ControlMax && unicode != _Slash && unicode != _Quote) {
             *writer++ = unicode;
         } else {
             memcpy(writer, &ControlEscapeTable_u8[unicode * 8], 8);
@@ -110,7 +110,7 @@ force_inline u8 *encode_one_ucs2_noescape(u8 *writer, u16 unicode) {
 
 force_inline int ucs2_get_type(u16 unicode, bool *is_escaped) {
     if (unicode < 128) {
-        *is_escaped = !(unicode >= ControlMax && unicode != _Slash && unicode != _Quote);
+        *is_escaped = !(unicode >= _ControlMax && unicode != _Slash && unicode != _Quote);
         return 1;
     } else if (unicode < 0x800) {
         return 2;
@@ -121,7 +121,7 @@ force_inline int ucs2_get_type(u16 unicode, bool *is_escaped) {
 /* UCS4 src. */
 force_inline u8 *encode_one_ucs4(u8 *writer, u32 unicode) {
     if (unicode < 128) {
-        if (unicode >= ControlMax && unicode != _Slash && unicode != _Quote) {
+        if (unicode >= _ControlMax && unicode != _Slash && unicode != _Quote) {
             *writer++ = unicode;
         } else {
             memcpy(writer, &ControlEscapeTable_u8[unicode * 8], 8);
@@ -180,7 +180,7 @@ force_inline u8 *encode_one_ucs4_noescape(u8 *writer, u32 unicode) {
 
 force_inline int ucs4_get_type(u32 unicode, bool *is_escaped) {
     if (unicode < 128) {
-        *is_escaped = !(unicode >= ControlMax && unicode != _Slash && unicode != _Quote);
+        *is_escaped = !(unicode >= _ControlMax && unicode != _Slash && unicode != _Quote);
         return 1;
     } else if (unicode < 0x800) {
         return 2;

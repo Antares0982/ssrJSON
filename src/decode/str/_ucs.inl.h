@@ -39,24 +39,24 @@
 // long cvt function choosing.
 #if COMPILE_UCS_LEVEL == 1
 #    define long_cvt_noinline_to_u8 memcpy
-#    define long_cvt_noinline_to_u16 SIMD_NAME_MODIFIER(SSRJSON_CONCAT3(long_cvt_noinline, _src_t, u16))
-#    define long_cvt_noinline_to_u32 SIMD_NAME_MODIFIER(SSRJSON_CONCAT3(long_cvt_noinline, _src_t, u32))
+#    define long_cvt_noinline_to_u16 SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, _src_t, u16))
+#    define long_cvt_noinline_to_u32 SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, _src_t, u32))
 #elif COMPILE_UCS_LEVEL == 2
 #    define long_cvt_noinline_to_u16(_d_, _s_, _cnt_) memcpy((_d_), (_s_), 2 * (_cnt_))
-#    define long_cvt_noinline_to_u32 SIMD_NAME_MODIFIER(SSRJSON_CONCAT3(long_cvt_noinline, _src_t, u32))
+#    define long_cvt_noinline_to_u32 SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, _src_t, u32))
 #elif COMPILE_UCS_LEVEL == 4
 #    define long_cvt_noinline_to_u32(_d_, _s_, _cnt_) memcpy((_d_), (_s_), 4 * (_cnt_))
 #endif
-#define decode_str_copy_loop4_to_u8 SSRJSON_CONCAT2(MAKE_UCS_NAME(decode_str_copy_loop4), u8)
-#define decode_str_copy_loop4_to_u16 SSRJSON_CONCAT2(MAKE_UCS_NAME(decode_str_copy_loop4), u16)
-#define decode_str_copy_loop4_to_u32 SSRJSON_CONCAT2(MAKE_UCS_NAME(decode_str_copy_loop4), u32)
-#define decode_str_copy_loop_to_u8 SSRJSON_CONCAT2(MAKE_UCS_NAME(decode_str_copy_loop), u8)
-#define decode_str_copy_loop_to_u16 SSRJSON_CONCAT2(MAKE_UCS_NAME(decode_str_copy_loop), u16)
-#define decode_str_copy_loop_to_u32 SSRJSON_CONCAT2(MAKE_UCS_NAME(decode_str_copy_loop), u32)
+#define decode_str_copy_loop4_to_u8 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop4), u8)
+#define decode_str_copy_loop4_to_u16 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop4), u16)
+#define decode_str_copy_loop4_to_u32 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop4), u32)
+#define decode_str_copy_loop_to_u8 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop), u8)
+#define decode_str_copy_loop_to_u16 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop), u16)
+#define decode_str_copy_loop_to_u32 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop), u32)
 
-#define decode_str_copy_trailing_to_u8 SSRJSON_CONCAT2(MAKE_UCS_NAME(decode_str_copy_trailing), u8)
-#define decode_str_copy_trailing_to_u16 SSRJSON_CONCAT2(MAKE_UCS_NAME(decode_str_copy_trailing), u16)
-#define decode_str_copy_trailing_to_u32 SSRJSON_CONCAT2(MAKE_UCS_NAME(decode_str_copy_trailing), u32)
+#define decode_str_copy_trailing_to_u8 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_trailing), u8)
+#define decode_str_copy_trailing_to_u16 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_trailing), u16)
+#define decode_str_copy_trailing_to_u32 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_trailing), u32)
 
 force_inline int decode_str_fast_loop4(const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
     int ret;
@@ -156,8 +156,8 @@ force_inline PyObject *make_unicode_from_src(const _src_t *start, usize count, b
             add_key_cache(hash, ret, count * tpsize, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         }
         if (should_hash) {
-            assert(count && SSRJSON_CAST(PyASCIIObject *, ret)->hash == -1);
-            make_hash(SSRJSON_CAST(PyASCIIObject *, ret), dst_void, count * tpsize);
+            assert(count && ssrjson_cast(PyASCIIObject *, ret)->hash == -1);
+            make_hash(ssrjson_cast(PyASCIIObject *, ret), dst_void, count * tpsize);
         }
     }
 done:;
@@ -198,7 +198,7 @@ internal_simd_noinline PyObject *decode_str_with_escape(
             // ascii, or ucs1
             decode_state_size = 1;
             long_cvt_noinline_to_u8(temp_buffer, src_start, pre_copy_size);
-            u8writer = SSRJSON_CAST(u8 *, temp_buffer) + pre_copy_size;
+            u8writer = ssrjson_cast(u8 *, temp_buffer) + pre_copy_size;
             *u8writer++ = (u8)in_escape_val;
         } else
 #endif
@@ -207,14 +207,14 @@ internal_simd_noinline PyObject *decode_str_with_escape(
             // ucs2
             decode_state_size = 2;
             long_cvt_noinline_to_u16(temp_buffer, src_start, pre_copy_size);
-            u16writer = SSRJSON_CAST(u16 *, temp_buffer) + pre_copy_size;
+            u16writer = ssrjson_cast(u16 *, temp_buffer) + pre_copy_size;
             *u16writer++ = (u16)in_escape_val;
         } else
 #endif
         {
             decode_state_size = 4;
             long_cvt_noinline_to_u32(temp_buffer, src_start, pre_copy_size);
-            u32writer = SSRJSON_CAST(u32 *, temp_buffer) + pre_copy_size;
+            u32writer = ssrjson_cast(u32 *, temp_buffer) + pre_copy_size;
             *u32writer++ = in_escape_val;
         }
         src += in_escape_info.escape_size;
@@ -235,7 +235,7 @@ internal_simd_noinline PyObject *decode_str_with_escape(
             goto decode_loop_ucs4;
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
 
@@ -265,7 +265,7 @@ decode_loop_ucs1:;
                             goto decode_loop_ucs4;          \
                         }                                   \
                         default: {                          \
-                            SSRJSON_UNREACHABLE();          \
+                            ssrjson_unreachable();          \
                         }                                   \
                     }                                       \
                     continue;                               \
@@ -275,7 +275,7 @@ decode_loop_ucs1:;
                     goto failed;                            \
                 }                                           \
                 default: {                                  \
-                    SSRJSON_UNREACHABLE();                  \
+                    ssrjson_unreachable();                  \
                 }                                           \
             }                                               \
         }
@@ -315,7 +315,7 @@ decode_loop_ucs1:;
                             goto decode_loop_ucs4;
                         }
                         default: {
-                            SSRJSON_UNREACHABLE();
+                            ssrjson_unreachable();
                         }
                     }
                     goto trailing_ucs1;
@@ -325,7 +325,7 @@ decode_loop_ucs1:;
                     goto failed;
                 }
                 default: {
-                    SSRJSON_UNREACHABLE();
+                    ssrjson_unreachable();
                 }
             }
         } else {
@@ -359,7 +359,7 @@ decode_loop_ucs2:;
                             goto decode_loop_ucs4;          \
                         }                                   \
                         default: {                          \
-                            SSRJSON_UNREACHABLE();          \
+                            ssrjson_unreachable();          \
                         }                                   \
                     }                                       \
                     continue;                               \
@@ -369,7 +369,7 @@ decode_loop_ucs2:;
                     goto failed;                            \
                 }                                           \
                 default: {                                  \
-                    SSRJSON_UNREACHABLE();                  \
+                    ssrjson_unreachable();                  \
                 }                                           \
             }                                               \
         }
@@ -410,7 +410,7 @@ decode_loop_ucs2:;
                             goto decode_loop_ucs4;
                         }
                         default: {
-                            SSRJSON_UNREACHABLE();
+                            ssrjson_unreachable();
                         }
                     }
                     goto trailing_ucs2;
@@ -420,7 +420,7 @@ decode_loop_ucs2:;
                     goto failed;
                 }
                 default: {
-                    SSRJSON_UNREACHABLE();
+                    ssrjson_unreachable();
                 }
             }
         } else {
@@ -455,7 +455,7 @@ decode_loop_ucs4:;
                 goto failed;                    \
             }                                   \
             default: {                          \
-                SSRJSON_UNREACHABLE();          \
+                ssrjson_unreachable();          \
             }                                   \
         }                                       \
     }
@@ -492,7 +492,7 @@ decode_loop_ucs4:;
                     goto failed;
                 }
                 default: {
-                    SSRJSON_UNREACHABLE();
+                    ssrjson_unreachable();
                 }
             }
         } else {
@@ -508,9 +508,9 @@ done_ucs1:;
         // check if down to ascii
         if (max_escape <= 0x7f && checkmax(maxvec, 0x7f)) {
             // ascii
-            ret = make_unicode_from_raw_ascii(temp_buffer, u8writer - SSRJSON_CAST(u8 *, temp_buffer), is_key);
+            ret = make_unicode_from_raw_ascii(temp_buffer, u8writer - ssrjson_cast(u8 *, temp_buffer), is_key);
         } else {
-            ret = make_unicode_from_raw_ucs1(temp_buffer, u8writer - SSRJSON_CAST(u8 *, temp_buffer), is_key);
+            ret = make_unicode_from_raw_ucs1(temp_buffer, u8writer - ssrjson_cast(u8 *, temp_buffer), is_key);
         }
         *src_addr = src + 1;
         return ret;
@@ -523,7 +523,7 @@ done_ucs2:;
 #    if COMPILE_UCS_LEVEL == 2
         if (max_escape <= 0xff && checkmax(maxvec, 0xff)) {
             bool is_ascii = (max_escape <= 0x7f && checkmax(maxvec, 0x7f));
-            ret = make_unicode_down_ucs2_u8(temp_buffer, u16writer - SSRJSON_CAST(u16 *, temp_buffer), is_key, is_ascii);
+            ret = make_unicode_down_ucs2_u8(temp_buffer, u16writer - ssrjson_cast(u16 *, temp_buffer), is_key, is_ascii);
         } else
 #    endif
         {
@@ -534,7 +534,7 @@ done_ucs2:;
                                              0
 #    endif
                                              ,
-                                             u16writer - SSRJSON_CAST(u16 *, temp_buffer), is_key);
+                                             u16writer - ssrjson_cast(u16 *, temp_buffer), is_key);
         }
         *src_addr = src + 1;
         return ret;
@@ -547,9 +547,9 @@ done_ucs4:;
         if (max_escape <= 0xffff && checkmax(maxvec, 0xffff)) {
             if (max_escape <= 0xff && checkmax(maxvec, 0xff)) {
                 bool is_ascii = (max_escape <= 0x7f && checkmax(maxvec, 0x7f));
-                ret = make_unicode_down_ucs4_u8(temp_buffer, u32writer - SSRJSON_CAST(u32 *, temp_buffer), is_key, is_ascii);
+                ret = make_unicode_down_ucs4_u8(temp_buffer, u32writer - ssrjson_cast(u32 *, temp_buffer), is_key, is_ascii);
             } else {
-                ret = make_unicode_down_ucs4_ucs2(temp_buffer, u32writer - SSRJSON_CAST(u32 *, temp_buffer), is_key);
+                ret = make_unicode_down_ucs4_ucs2(temp_buffer, u32writer - ssrjson_cast(u32 *, temp_buffer), is_key);
             }
         } else
 #endif
@@ -567,7 +567,7 @@ done_ucs4:;
                                              0
 #endif
                                              ,
-                                             u32writer - SSRJSON_CAST(u32 *, temp_buffer), is_key);
+                                             u32writer - ssrjson_cast(u32 *, temp_buffer), is_key);
         }
         *src_addr = src + 1;
         return ret;
@@ -612,7 +612,7 @@ internal_simd_noinline PyObject *decode_str(
             goto failed;                    \
         }                                   \
         default: {                          \
-            SSRJSON_UNREACHABLE();          \
+            ssrjson_unreachable();          \
         }                                   \
     }
 
@@ -658,7 +658,7 @@ internal_simd_noinline PyObject *decode_str(
                 goto failed;
             }
             default: {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             }
         }
     } else {

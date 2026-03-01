@@ -163,10 +163,10 @@ restart:;
             goto finished;
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
-    SSRJSON_UNREACHABLE();
+    ssrjson_unreachable();
 ascii:;
     {
         const vector_a m_not_ascii = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, broadcast(0x7f));
@@ -185,8 +185,8 @@ ascii:;
             src = last_batch_start + done_count + 1;
             writer += real_done_count;
             len = READ_BATCH_COUNT - done_count - 1;
-            if (escape_unicode >= ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash && escape_unicode != _Quote) {
-                SSRJSON_UNREACHABLE();
+            if (escape_unicode >= _ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash && escape_unicode != _Quote) {
+                ssrjson_unreachable();
             } else {
                 writer = encode_one_ucs4(writer, escape_unicode);
                 if (unlikely(!writer)) return NULL;
@@ -194,7 +194,7 @@ ascii:;
             if (len) goto restart;
             goto finished;
         }
-        SSRJSON_UNREACHABLE();
+        ssrjson_unreachable();
     }
 _2bytes:;
     {
@@ -215,7 +215,7 @@ _2bytes:;
             writer += real_done_count * 2;
             len = READ_BATCH_COUNT - done_count - 1;
             if (escape_unicode >= 0x80 && escape_unicode <= 0x7ff) {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             } else {
                 writer = encode_one_ucs4(writer, escape_unicode);
                 if (unlikely(!writer)) return NULL;
@@ -223,7 +223,7 @@ _2bytes:;
             if (len) goto restart;
             goto finished;
         }
-        SSRJSON_UNREACHABLE();
+        ssrjson_unreachable();
     }
 #if __SSSE3__
 _3bytes:;
@@ -245,7 +245,7 @@ _3bytes:;
             writer += real_done_count * 3;
             len = READ_BATCH_COUNT - done_count - 1;
             if (escape_unicode >= 0x800 && escape_unicode <= 0xffff && (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)) {
-                SSRJSON_UNREACHABLE();
+                ssrjson_unreachable();
             } else {
                 writer = encode_one_ucs4(writer, escape_unicode);
                 if (unlikely(!writer)) return NULL;
@@ -253,7 +253,7 @@ _3bytes:;
             if (len) goto restart;
             goto finished;
         }
-        SSRJSON_UNREACHABLE();
+        ssrjson_unreachable();
     }
 #endif
 finished:;
@@ -310,7 +310,7 @@ restart:;
             goto finished;
         }
         default: {
-            SSRJSON_UNREACHABLE();
+            ssrjson_unreachable();
         }
     }
     // ---unreachable here---

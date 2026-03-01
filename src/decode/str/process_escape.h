@@ -43,17 +43,17 @@ force_inline int process_escape_ucs1_u8(
         return 1;
     } else if (escape_val < 0x10000) {
         // R: ucs1,ucs2 W: ucs1,ucs2
-        usize u8size = (*u8writer_addr) - SSRJSON_CAST(u8 *, temp_buffer);
+        usize u8size = (*u8writer_addr) - ssrjson_cast(u8 *, temp_buffer);
         *u8size_addr = u8size;
         *u8writer_addr = NULL;
-        *u16writer_addr = SSRJSON_CAST(u16 *, temp_buffer) + u8size;
+        *u16writer_addr = ssrjson_cast(u16 *, temp_buffer) + u8size;
         *(*u16writer_addr)++ = (u16)escape_val;
         return 2;
     } else {
-        usize u8size = (*u8writer_addr) - SSRJSON_CAST(u8 *, temp_buffer);
+        usize u8size = (*u8writer_addr) - ssrjson_cast(u8 *, temp_buffer);
         *u8size_addr = u8size;
         *u8writer_addr = NULL;
-        *u32writer_addr = SSRJSON_CAST(u32 *, temp_buffer) + u8size;
+        *u32writer_addr = ssrjson_cast(u32 *, temp_buffer) + u8size;
         *(*u32writer_addr)++ = escape_val;
         return 4;
     }
@@ -76,10 +76,10 @@ force_inline int process_escape_ucs1_u16(
         *(*u16writer_addr)++ = (u16)escape_val;
         return 2;
     } else {
-        usize totalsize = (*u16writer_addr) - SSRJSON_CAST(u16 *, temp_buffer);
+        usize totalsize = (*u16writer_addr) - ssrjson_cast(u16 *, temp_buffer);
         *u16size_addr = totalsize - *u8size_addr;
         *u16writer_addr = NULL;
-        *u32writer_addr = SSRJSON_CAST(u32 *, temp_buffer) + totalsize;
+        *u32writer_addr = ssrjson_cast(u32 *, temp_buffer) + totalsize;
         *(*u32writer_addr)++ = escape_val;
         return 4;
     }
@@ -101,10 +101,10 @@ force_inline int process_escape_ucs2_u16(
         *(*u16writer_addr)++ = (u16)escape_val;
         return 2;
     } else {
-        usize u16size = (*u16writer_addr) - SSRJSON_CAST(u16 *, temp_buffer);
+        usize u16size = (*u16writer_addr) - ssrjson_cast(u16 *, temp_buffer);
         *u16size_addr = u16size;
         *u16writer_addr = NULL;
-        *u32writer_addr = SSRJSON_CAST(u32 *, temp_buffer) + u16size;
+        *u32writer_addr = ssrjson_cast(u32 *, temp_buffer) + u16size;
         *(*u32writer_addr)++ = escape_val;
         return 4;
     }

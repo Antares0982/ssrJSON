@@ -353,7 +353,7 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1(u8 *writer, const u8 *src, usiz
     while (CAN_LOOP) {
         u8 unicode;
         unicode = *src;
-        if (unicode < 128 && unicode >= ControlMax && unicode != _Quote && unicode != _Slash) {
+        if (unicode < 128 && unicode >= _ControlMax && unicode != _Quote && unicode != _Slash) {
             bool continuous;
             if (!is_key) {
                 while (CAN_LOOP4) {
@@ -877,7 +877,7 @@ force_inline ssrjson_nofail u8 *_3bytes_in_ucs2_encode_loop(u8 *dst, const u16 *
 #    elif __SSSE3__
     ucs2_encode_3bytes_utf8_ssse3(dst, vec);
 #    else
-    SSRJSON_UNREACHABLE();
+    ssrjson_unreachable();
 #    endif
 #else
     ucs2_encode_3bytes_utf8_neon(dst, vec);
@@ -1433,7 +1433,7 @@ force_inline ssrjson_nofail u8 *_3bytes_in_ucs4_encode_loop(u8 *dst, const u32 *
 #    elif __SSSE3__
     ucs4_encode_3bytes_utf8_ssse3(dst, vec);
 #    else
-    SSRJSON_UNREACHABLE();
+    ssrjson_unreachable();
 #    endif
 #elif SSRJSON_AARCH
     ucs4_encode_3bytes_utf8_neon(dst, vec);

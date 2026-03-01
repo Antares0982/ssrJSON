@@ -98,7 +98,7 @@ force_inline usize joined4_escape_mask_to_done_count(vector_a mask1,
             return i * (64 / dividesize) + u64_tz_bits(u.parts[i]) / dividesize;
         }
     }
-    SSRJSON_UNREACHABLE();
+    ssrjson_unreachable();
     return (usize)-1;
 }
 

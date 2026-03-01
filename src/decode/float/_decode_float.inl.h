@@ -87,7 +87,7 @@ internal_simd_noinline PyObject *loads_number(const _src_t **ptr, const _src_t *
     do {                                                                                              \
         *end = cur;                                                                                   \
         u64 temp = (sign ? (u64)(~(_v) + 1) : (u64)(_v));                                             \
-        if (unlikely(SSRJSON_CAST(i64, temp) < 0 && !sign)) return PyLong_FromUnsignedLongLong(temp); \
+        if (unlikely(ssrjson_cast(i64, temp) < 0 && !sign)) return PyLong_FromUnsignedLongLong(temp); \
         return PyLong_FromLongLong((i64)temp);                                                        \
     } while (false)
 
@@ -192,11 +192,11 @@ internal_simd_noinline PyObject *loads_number(const _src_t **ptr, const _src_t *
 #define expr_intg(i)                                                        \
     if (likely((num = (u64)(cur[i] - (u8)'0')) <= 9)) sig = num + sig * 10; \
     else { goto digi_sepr_##i; }
-    REPEAT_INCR_IN_1_18(expr_intg)
+    repeat_incr_in_1_18(expr_intg)
 #undef expr_intg
 
 
-    cur += 19; /* skip continuous 19 digits */
+            cur += 19; /* skip continuous 19 digits */
     if (!digi_is_digit_or_fp(*cur)) {
         /* this number is an integer consisting of 19 digits */
         if (sign && (sig > ((u64)1 << 63))) { /* overflow */
@@ -218,7 +218,7 @@ internal_simd_noinline PyObject *loads_number(const _src_t **ptr, const _src_t *
     cur += i;                                          \
     sig_end = cur;                                     \
     goto digi_exp_more;
-    REPEAT_INCR_IN_1_18(expr_sepr)
+    repeat_incr_in_1_18(expr_sepr)
 #undef expr_sepr
 
 
@@ -227,10 +227,10 @@ internal_simd_noinline PyObject *loads_number(const _src_t **ptr, const _src_t *
     digi_frac_##i : if (likely((num = (u64)(cur[i + 1] - (u8)'0')) <= 9)) \
                             sig = num + sig * 10;                         \
     else { goto digi_stop_##i; }
-    REPEAT_INCR_IN_1_18(expr_frac)
+            repeat_incr_in_1_18(expr_frac)
 #undef expr_frac
 
-    cur += 20;                                    /* skip 19 digits and 1 decimal point */
+                    cur += 20;                    /* skip 19 digits and 1 decimal point */
     if (!digi_is_digit(*cur)) goto digi_frac_end; /* fraction part end */
     goto digi_frac_more;                          /* read more digits in fraction part */
 
@@ -239,13 +239,12 @@ internal_simd_noinline PyObject *loads_number(const _src_t **ptr, const _src_t *
 #define expr_stop(i)              \
     digi_stop_##i : cur += i + 1; \
     goto digi_frac_end;
-    REPEAT_INCR_IN_1_18(expr_stop)
+    repeat_incr_in_1_18(expr_stop)
 #undef expr_stop
 
 
-    /* read more digits in integral part */
-digi_intg_more:
-    if (digi_is_digit(*cur)) {
+            /* read more digits in integral part */
+            digi_intg_more : if (digi_is_digit(*cur)) {
         if (!digi_is_digit_or_fp(cur[1])) {
             /* this number is an integer consisting of 20 digits */
             num = (u64)(*cur - '0');

@@ -90,7 +90,7 @@ force_inline vector_a_u8_128 cvt_u16_to_u8_256(vector_a_u16_256 y) {
 }
 
 // force_inline u32 get_low_bitmask_256(usize len) {
-//     return (SSRJSON_CAST(u32, 1) << len) - 1;
+//     return (ssrjson_cast(u32, 1) << len) - 1;
 // }
 
 // force_inline u64 get_high_bitmask_256(usize len) {

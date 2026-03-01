@@ -106,13 +106,6 @@
 #    define SSRJSON_STDC_VER 0
 #endif
 
-/* C++ version */
-#if defined(__cplusplus)
-#    define SSRJSON_CPP_VER __cplusplus
-#else
-#    define SSRJSON_CPP_VER 0
-#endif
-
 /** inline for compiler */
 #ifndef ssrjson_inline
 #    if defined(_MSC_VER) && _MSC_VER >= 1200
@@ -279,35 +272,28 @@ force_inline int get_cpuid_max(void) {
 #define REPEAT_64(x) REPEAT_32(x) REPEAT_32(x)
 
 #if defined(SSRJSON_COVERAGE) || defined(NDEBUG)
-#    define SSRJSON_UNREACHABLE() __builtin_unreachable()
+#    define ssrjson_unreachable() __builtin_unreachable()
 #else
-#    define SSRJSON_UNREACHABLE() assert(false)
+#    define ssrjson_unreachable() assert(false)
 #endif
 
-#define SSRJSON_CAST(type, expr) ((type)(expr))
-#define SSRJSON_PYASCII_CAST(expr) SSRJSON_CAST(PyASCIIObject *, (expr))
-#define SSRJSON_PYCOMPACTUNICODE_CAST(expr) SSRJSON_CAST(PyCompactUnicodeObject *, (expr))
-#define SSRJSON_PYUNICODE_CAST(expr) SSRJSON_CAST(PyUnicodeObject *, (expr))
+#define ssrjson_cast(type, expr) ((type)(expr))
+#define ssrjson_pyascii_cast(expr) ssrjson_cast(PyASCIIObject *, (expr))
+#define ssrjson_pycompactunicode_cast(expr) ssrjson_cast(PyCompactUnicodeObject *, (expr))
+
 /*==============================================================================
  * Macros
  *============================================================================*/
 
 /* Macros used for loop unrolling and other purpose. */
-// #define repeat2(x)  { x x }
-// #define repeat3(x)  { x x x }
-#define REPEAT_CALL_4(x) {x x x x}
-// #define repeat8(x)  { x x x x x x x x }
-#define REPEAT_CALL_16(x) {x x x x x x x x x x x x x x x x}
+#define count_of(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+#define repeat_call_16(x) {x x x x x x x x x x x x x x x x}
 
-// #define repeat2_incr(x)   { x(0)  x(1) }
-// #define repeat4_incr(x)   { x(0)  x(1)  x(2)  x(3) }
-// #define repeat8_incr(x)   { x(0)  x(1)  x(2)  x(3)  x(4)  x(5)  x(6)  x(7)  }
-#define REPEAT_INCR_16(x) {x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) \
+#define repeat_incr_16(x) {x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) \
                                    x(8) x(9) x(10) x(11) x(12) x(13) x(14) x(15)}
 
-#define REPEAT_INCR_IN_1_18(x) {x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8)                \
+#define repeat_incr_in_1_18(x) {x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8)                \
                                         x(9) x(10) x(11) x(12) x(13) x(14) x(15) x(16) \
                                                 x(17) x(18)}
 
@@ -318,8 +304,6 @@ force_inline int get_cpuid_max(void) {
 #        define ssrjson_align(x) __declspec(align(x))
 #    elif ssrjson_has_attribute(aligned) || defined(__GNUC__)
 #        define ssrjson_align(x) __attribute__((aligned(x)))
-#    elif SSRJSON_CPP_VER >= 201103L
-#        define ssrjson_align(x) alignas(x)
 #    else
 #        define ssrjson_align(x)
 #    endif
@@ -327,39 +311,30 @@ force_inline int get_cpuid_max(void) {
 
 
 /* Concat macros */
-#define SSRJSON_CONCAT2_EX(a, b) a##_##b
-#define SSRJSON_CONCAT2(a, b) SSRJSON_CONCAT2_EX(a, b)
+#define ssrjson_concat2_ex(a, b) a##_##b
+#define ssrjson_concat2(a, b) ssrjson_concat2_ex(a, b)
 
-#define SSRJSON_CONCAT3_EX(a, b, c) a##_##b##_##c
-#define SSRJSON_CONCAT3(a, b, c) SSRJSON_CONCAT3_EX(a, b, c)
+#define ssrjson_concat3_ex(a, b, c) a##_##b##_##c
+#define ssrjson_concat3(a, b, c) ssrjson_concat3_ex(a, b, c)
 
-#define SSRJSON_CONCAT4_EX(a, b, c, d) a##_##b##_##c##_##d
-#define SSRJSON_CONCAT4(a, b, c, d) SSRJSON_CONCAT4_EX(a, b, c, d)
+#define ssrjson_concat4_ex(a, b, c, d) a##_##b##_##c##_##d
+#define ssrjson_concat4(a, b, c, d) ssrjson_concat4_ex(a, b, c, d)
 
-#define SSRJSON_CONCAT5_EX(a, b, c, d, e) a##_##b##_##c##_##d##_##e
-#define SSRJSON_CONCAT5(a, b, c, d, e) SSRJSON_CONCAT5_EX(a, b, c, d, e)
+#define ssrjson_concat5_ex(a, b, c, d, e) a##_##b##_##c##_##d##_##e
+#define ssrjson_concat5(a, b, c, d, e) ssrjson_concat5_ex(a, b, c, d, e)
 
-#define SSRJSON_SIMPLE_CONCAT2_EX(a, b) a##b
-#define SSRJSON_SIMPLE_CONCAT2(a, b) SSRJSON_SIMPLE_CONCAT2_EX(a, b)
-
-#define SSRJSON_SIMPLE_CONCAT3_EX(a, b, c) a##b##c
-#define SSRJSON_SIMPLE_CONCAT3(a, b, c) SSRJSON_SIMPLE_CONCAT3_EX(a, b, c)
-
-#define SSRJSON_SIMPLE_CONCAT4_EX(a, b, c, d) a##b##c##d
-#define SSRJSON_SIMPLE_CONCAT4(a, b, c, d) SSRJSON_SIMPLE_CONCAT4_EX(a, b, c, d)
-
-#define SSRJSON_SIMPLE_CONCAT5_EX(a, b, c, d, e) a##b##c##d##e
-#define SSRJSON_SIMPLE_CONCAT5(a, b, c, d, e) SSRJSON_SIMPLE_CONCAT3_EX(a, b, c, d, e)
+#define ssrjson_simple_concat2_ex(a, b) a##b
+#define ssrjson_simple_concat2(a, b) ssrjson_simple_concat2_ex(a, b)
 
 #define SSRJSON_MAX(x, y) ((x) > (y) ? (x) : (y))
 #define SSRJSON_MIN(x, y) ((x) < (y) ? (x) : (y))
 
 #ifdef _MSC_VER
-#    define SSRJSON_ALIGNED_ALLOC(_align, _size) _aligned_malloc(_size, _align)
-#    define SSRJSON_ALIGNED_FREE(_ptr) _aligned_free(_ptr)
+#    define ssrjson_aligned_alloc(_align, _size) _aligned_malloc(_size, _align)
+#    define ssrjson_aligned_free(_ptr) _aligned_free(_ptr)
 #else
-#    define SSRJSON_ALIGNED_ALLOC(_align, _size) aligned_alloc(_align, _size)
-#    define SSRJSON_ALIGNED_FREE(_ptr) free(_ptr)
+#    define ssrjson_aligned_alloc(_align, _size) aligned_alloc(_align, _size)
+#    define ssrjson_aligned_free(_ptr) free(_ptr)
 #endif
 
 /* String type macros */
@@ -407,10 +382,10 @@ __extension__ typedef unsigned __int128 u128;
 #define _Quote (34)
 #define _Slash (92)
 #define _MinusOne (-1)
-#define ControlMax (32)
+#define _ControlMax (32)
 
 /* Default padding. */
-#define TAIL_PADDING (512 / 8)
+#define _TailPadding (512 / 8)
 
 /* Tool macros for calculating how long the buffer should be reserved to. */
 #define max_json_bytes_per_unicode (6) // per unicode can be JSON encoded to at most 6 bytes

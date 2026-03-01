@@ -66,7 +66,7 @@ force_inline void long_back_cvt(_dst_t *dst, const _src_t *src, usize count) {
     static const usize batch_count = COMPILE_SIMD_BITS / 8 / sizeof(_src_t);
     static const usize batch4_count = COMPILE_SIMD_BITS / 8 / sizeof(_src_t) * 4;
     if (sizeof(_dst_t) > sizeof(_src_t)) {
-        usize align_offset = SSRJSON_CAST(uintptr_t, dst) & (batch_bytes - 1);
+        usize align_offset = ssrjson_cast(uintptr_t, dst) & (batch_bytes - 1);
         assert((align_offset % sizeof(_dst_t)) == 0);
         usize not_aligned_count = align_offset / sizeof(_dst_t);
         not_aligned_count = not_aligned_count > count ? count : not_aligned_count;
@@ -102,7 +102,7 @@ force_inline void long_cvt(_dst_t *dst, const _src_t *src, usize count) {
     static const usize batch4_count = COMPILE_SIMD_BITS / 8 / sizeof(_src_t) * 4;
     //
 #if COMPILE_WRITE_UCS_LEVEL > COMPILE_READ_UCS_LEVEL
-    usize align_offset = SSRJSON_CAST(uintptr_t, dst) & (batch_bytes - 1);
+    usize align_offset = ssrjson_cast(uintptr_t, dst) & (batch_bytes - 1);
     assert((align_offset % sizeof(_dst_t)) == 0);
     usize not_aligned_count = align_offset / sizeof(_dst_t);
     if (not_aligned_count) {

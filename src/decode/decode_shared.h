@@ -80,7 +80,7 @@ typedef union {
     u64 union_value;
 } EscapeInfo;
 
-#define _DECODE_UNICODE_ERR SSRJSON_CAST(u32, -1)
+#define _DECODE_UNICODE_ERR ssrjson_cast(u32, -1)
 
 #define DECODE_LOOPSTATE_CONTINUE 0
 #define DECODE_LOOPSTATE_END 1
@@ -99,7 +99,7 @@ extern PyObject *JSONDecodeError;
 typedef XXH64_hash_t decode_keyhash_t;
 
 force_inline u64 make_key_hint(usize real_len, int kind) {
-    u64 ret = SSRJSON_CAST(u64, real_len) | (SSRJSON_CAST(u64, kind) << 32);
+    u64 ret = ssrjson_cast(u64, real_len) | (ssrjson_cast(u64, kind) << 32);
     return ret;
 }
 
@@ -143,7 +143,7 @@ force_inline PyObject *get_key_cache(const void *unicode_str, decode_keyhash_t h
     if (!cache.key) return NULL;
     u64 key_hint = make_key_hint(real_len, kind);
     Py_ssize_t cache_offset = kind ? sizeof(PyCompactUnicodeObject) : sizeof(PyASCIIObject);
-    if (likely(key_hint == cache.key_hint && (ssrjson_memcmp_neq_le64(SSRJSON_CAST(u8 *, unicode_str), SSRJSON_CAST(u8 *, cache.key) + cache_offset, real_len) == 0))) {
+    if (likely(key_hint == cache.key_hint && (ssrjson_memcmp_neq_le64(ssrjson_cast(u8 *, unicode_str), ssrjson_cast(u8 *, cache.key) + cache_offset, real_len) == 0))) {
         // SSRJSON_TRACE_CACHE_HIT();
         Py_INCREF(cache.key);
         return cache.key;

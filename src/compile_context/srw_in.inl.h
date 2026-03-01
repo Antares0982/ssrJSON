@@ -27,7 +27,7 @@
 #include "sw_in.inl.h"
 
 // Name creation macros.
-#define MAKE_SRW_NAME(_x_) SSRJSON_CONCAT4(_x_, _src_t, _dst_t, COMPILE_SIMD_BITS)
+#define MAKE_SRW_NAME(_x_) ssrjson_concat4(_x_, _src_t, _dst_t, COMPILE_SIMD_BITS)
 
 #define trailing_copy_with_cvt MAKE_SRW_NAME(trailing_copy_with_cvt)
 #define encode_trailing_copy_with_cvt MAKE_SRW_NAME(encode_trailing_copy_with_cvt)

@@ -54,10 +54,10 @@ void _tls_decode_buffer_destructor(void *ptr) {
         DecoderTLSData *tls_data_ptr = (DecoderTLSData *)ptr;
         if (tls_data_ptr->cur_buffer) {
             if (tls_data_ptr->cur_buffer->next) {
-                SSRJSON_ALIGNED_FREE(tls_data_ptr->cur_buffer->next);
+                ssrjson_aligned_free(tls_data_ptr->cur_buffer->next);
                 tls_data_ptr->cur_buffer->next = NULL;
             }
-            SSRJSON_ALIGNED_FREE(tls_data_ptr->cur_buffer);
+            ssrjson_aligned_free(tls_data_ptr->cur_buffer);
             tls_data_ptr->cur_buffer = NULL;
         }
 #endif

@@ -71,7 +71,7 @@ restart:;
         writer += real_done_count;
         src = last_batch_start + done_count + 1;
         u8 unicode = last_batch_start[done_count];
-        assume(!(unicode >= ControlMax && unicode < 0x80 && unicode != _Slash && unicode != _Quote));
+        assume(!(unicode >= _ControlMax && unicode < 0x80 && unicode != _Slash && unicode != _Quote));
         writer = encode_one_special_ucs1(writer, unicode);
         if (len) goto restart;
     }
