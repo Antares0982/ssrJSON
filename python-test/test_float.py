@@ -19,6 +19,7 @@
 #  SOFTWARE.
 
 import json
+import math
 import random
 
 import pytest
@@ -94,9 +95,7 @@ templates = [
 
 
 class TestFloat:
-    def test_float000(
-        self,
-    ):
+    def test_float000(self):
         for _ in range(1000):
             s = generate_special_float_string()
             f = float(s)
@@ -107,3 +106,32 @@ class TestFloat:
                 y = ssrjson.loads(template.replace("@", s))
                 assert y == ssrjson.loads(template.replace("@", s).encode("utf-8"))
                 assert y["b"] == x
+
+    def test_dtoa_api(self):
+        """
+        Testing fixed point notation, scientific notation, and special float values.
+        In range [1e-4, 1e16), Python json encodes floats in fixed point notation,
+        otherwise in scientific notation.
+        The dtoa API is expected to produce the same output as Python json
+        for the same input float.
+        """
+        assert ssrjson.dumps(math.inf) == json.dumps(math.inf) == "Infinity"
+        assert ssrjson.dumps(-math.inf) == json.dumps(-math.inf) == "-Infinity"
+        assert ssrjson.dumps(math.nan) == json.dumps(math.nan) == "NaN"
+        assert ssrjson.dumps(-math.nan) == json.dumps(-math.nan) == "NaN"
+        assert ssrjson.dumps(1.0) == json.dumps(1.0) == "1.0"
+        assert ssrjson.dumps(-1.0) == json.dumps(-1.0) == "-1.0"
+        assert ssrjson.dumps(0.0) == json.dumps(0.0) == "0.0"
+        assert ssrjson.dumps(-0.0) == json.dumps(-0.0) == "-0.0"
+        assert ssrjson.dumps(10.0) == json.dumps(10.0) == "10.0"
+        assert ssrjson.dumps(1e-5) == json.dumps(1e-5) == "1e-05"
+        assert ssrjson.dumps(-1e-5) == json.dumps(-1e-5) == "-1e-05"
+        assert ssrjson.dumps(1e-4) == json.dumps(1e-4) == "0.0001"
+        assert (
+            ssrjson.dumps(1e-4 - 1e-15)
+            == json.dumps(1e-4 - 1e-15)
+            == "9.9999999999e-05"
+        )
+        assert ssrjson.dumps(1e16) == json.dumps(1e16) == "1e+16"
+        assert ssrjson.dumps(1e16 - 2) == json.dumps(1e16 - 2) == "9999999999999998.0"
+        assert ssrjson.dumps(1e20) == json.dumps(1e20) == "1e+20"

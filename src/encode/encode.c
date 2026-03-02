@@ -275,10 +275,10 @@ force_inline PyObject *ssrjson_dumps_single_float(PyObject *val, bool to_bytes_o
     u8 buffer[32];
     u8 *buffer_end;
     double v = PyFloat_AS_DOUBLE(val);
-    if (unlikely(isinf(v) || isnan(v))) {
-        return _ssrjson_dumps_single_inf_nan(v, to_bytes_obj);
-    }
-    buffer_end = zmij_write_f64(v, buffer);
+    // if (unlikely(isinf(v) || isnan(v))) {
+    //     return _ssrjson_dumps_single_inf_nan(v, to_bytes_obj);
+    // }
+    buffer_end = xjb64(v, buffer);
     usize size = buffer_end - buffer;
     assert(size < 64);
     PyObject *unicode;
