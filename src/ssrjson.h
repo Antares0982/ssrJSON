@@ -209,6 +209,7 @@
 #    endif
 #endif
 
+/* Shortcuts for inline and noinline */
 #define force_inline static ssrjson_inline
 #define force_noinline ssrjson_noinline
 /* For functions only used in one SIMD compile unit. */
@@ -217,6 +218,8 @@
 #else
 #    define internal_simd_noinline static ssrjson_noinline
 #endif
+
+/* Shortcuts for likely and unlikely */
 #define likely ssrjson_likely
 #define unlikely ssrjson_unlikely
 
