@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "decode/decode_shared.h"
 #    include "decode/str/tools.h"
 #    ifndef COMPILE_READ_UCS_LEVEL
@@ -32,7 +32,7 @@
 
 /* noinline this to reduce binary size */
 
-force_inline EscapeInfo do_decode_escape(const _src_t *const src, const _src_t *src_end) {
+force_inline EscapeInfo do_decode_escape(const src_t *const src, const src_t *src_end) {
     // escape
     EscapeInfo ret;
 #define RETURN_ESCAPE(_val_, _size_) \
@@ -94,7 +94,7 @@ force_inline EscapeInfo do_decode_escape(const _src_t *const src, const _src_t *
 #undef RETURN_ESCAPE
 }
 
-internal_simd_noinline EscapeInfo do_decode_escape_noinline(const _src_t *const src, const _src_t *src_end) {
+internal_simd_noinline EscapeInfo do_decode_escape_noinline(const src_t *const src, const src_t *src_end) {
     return do_decode_escape(src, src_end);
 }
 

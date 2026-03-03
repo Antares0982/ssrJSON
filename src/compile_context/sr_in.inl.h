@@ -28,20 +28,21 @@
 #include "s_in.inl.h"
 
 /* The count of unicode that can be read in one SIMD register. */
-#define READ_BATCH_COUNT (COMPILE_SIMD_BITS / 8 / sizeof(_src_t))
+#define READ_BATCH_COUNT (COMPILE_SIMD_BITS / 8 / sizeof(src_t))
 
-// Name creation macros.
-#define MAKE_SR_NAME(_x_) ssrjson_concat3(_x_, _src_t, COMPILE_SIMD_BITS)
+/* Generate function names with SIMD level and reader type. */
+#define make_sr_name(_x_) ssrjson_concat3(_x_, src_t, COMPILE_SIMD_BITS)
 #ifdef COMPILE_UCS_LEVEL
-#    define MAKE_S_UCS_NAME(_x_) ssrjson_concat3(_x_, __UCS_NAME, COMPILE_SIMD_BITS)
+/* Generate function names with SIMD level and unicode type. */
+#    define make_s_ucs_name(_x_) ssrjson_concat3(_x_, __UCS_NAME, COMPILE_SIMD_BITS)
 #endif
 
 /*
  * The very basic vector type (aligned/unaligned), 
  * that can be presented by a SIMD register.
  */
-#define vector_a MAKE_SR_NAME(vector_a)
-#define vector_u MAKE_SR_NAME(vector_u)
+#define vector_a make_sr_name(vector_a)
+#define vector_u make_sr_name(vector_u)
 
 
 #if !SSRJSON_X86 || COMPILE_READ_UCS_LEVEL == 4
@@ -57,46 +58,46 @@
 /*
  * Names using SR context.
  */
-#define unionvector_a_x4 ssrjson_concat2(MAKE_SR_NAME(unionvector_a), x4)
-#define unionvector_u_x4 ssrjson_concat2(MAKE_SR_NAME(unionvector_u), x4)
+#define unionvector_a_x4 ssrjson_concat2(make_sr_name(unionvector_a), x4)
+#define unionvector_u_x4 ssrjson_concat2(make_sr_name(unionvector_u), x4)
 //
-#define get_bitmask_from MAKE_SR_NAME(get_bitmask_from)
-#define get_escape_mask MAKE_SR_NAME(get_escape_mask)
-#define escape_mask_to_bitmask MAKE_SR_NAME(escape_mask_to_bitmask)
-#define escape_mask_to_done_count MAKE_SR_NAME(escape_mask_to_done_count)
-#define escape_mask_to_done_count_no_eq0 MAKE_SR_NAME(escape_mask_to_done_count_no_eq0)
-#define escape_mask_to_done_count_track_max MAKE_SR_NAME(escape_mask_to_done_count_track_max)
-#define joined4_escape_mask_to_done_count MAKE_SR_NAME(joined4_escape_mask_to_done_count)
-#define joined4_escape_mask_to_done_count_track_max MAKE_SR_NAME(joined4_escape_mask_to_done_count_track_max)
-#define broadcast MAKE_SR_NAME(broadcast)
-#define unsigned_saturate_minus MAKE_SR_NAME(unsigned_saturate_minus)
+#define get_bitmask_from make_sr_name(get_bitmask_from)
+#define get_escape_mask make_sr_name(get_escape_mask)
+#define escape_mask_to_bitmask make_sr_name(escape_mask_to_bitmask)
+#define escape_mask_to_done_count make_sr_name(escape_mask_to_done_count)
+#define escape_mask_to_done_count_no_eq0 make_sr_name(escape_mask_to_done_count_no_eq0)
+#define escape_mask_to_done_count_track_max make_sr_name(escape_mask_to_done_count_track_max)
+#define joined4_escape_mask_to_done_count make_sr_name(joined4_escape_mask_to_done_count)
+#define joined4_escape_mask_to_done_count_track_max make_sr_name(joined4_escape_mask_to_done_count_track_max)
+#define broadcast make_sr_name(broadcast)
+#define unsigned_saturate_minus make_sr_name(unsigned_saturate_minus)
 // signed_cmplt availability: SSE2
-#define signed_cmplt MAKE_SR_NAME(signed_cmplt)
+#define signed_cmplt make_sr_name(signed_cmplt)
 // signed_cmpgt availability: SSE2, AVX2
-#define signed_cmpgt MAKE_SR_NAME(signed_cmpgt)
-#define cmpeq MAKE_SR_NAME(cmpeq)
-#define get_escape_bitmask MAKE_SR_NAME(get_escape_bitmask)
-#define escape_bitmask_to_done_count MAKE_SR_NAME(escape_bitmask_to_done_count)
-#define escape_bitmask_to_done_count_track_max MAKE_SR_NAME(escape_bitmask_to_done_count_track_max)
-#define joined4_escape_bitmask_to_done_count MAKE_SR_NAME(joined4_escape_bitmask_to_done_count)
-#define joined4_escape_bitmask_to_done_count_track_max MAKE_SR_NAME(joined4_escape_bitmask_to_done_count_track_max)
-#define cmpeq_bitmask MAKE_SR_NAME(cmpeq_bitmask)
-#define cmpneq_bitmask MAKE_SR_NAME(cmpneq_bitmask)
-#define unsigned_cmple_bitmask MAKE_SR_NAME(unsigned_cmple_bitmask)
-#define unsigned_cmplt_bitmask MAKE_SR_NAME(unsigned_cmplt_bitmask)
-#define unsigned_cmpge_bitmask MAKE_SR_NAME(unsigned_cmpge_bitmask)
-#define unsigned_cmpgt_bitmask MAKE_SR_NAME(unsigned_cmpgt_bitmask)
-#define signed_cmpgt_bitmask MAKE_SR_NAME(signed_cmpgt_bitmask)
-#define get_high_mask MAKE_SR_NAME(get_high_mask)
-#define high_mask MAKE_SR_NAME(high_mask)
-#define get_low_mask MAKE_SR_NAME(get_low_mask)
-#define low_mask MAKE_SR_NAME(low_mask)
-#define maskz_loadu MAKE_SR_NAME(maskz_loadu)
-#define fast_skip_spaces MAKE_SR_NAME(fast_skip_spaces)
-#define checkmax MAKE_SR_NAME(checkmax)
-#define unsigned_max MAKE_SR_NAME(unsigned_max)
-#define unsigned_max4 MAKE_SR_NAME(unsigned_max4)
-#define _CheckerMasks MAKE_SR_NAME(_CheckerMasks)
+#define signed_cmpgt make_sr_name(signed_cmpgt)
+#define cmpeq make_sr_name(cmpeq)
+#define get_escape_bitmask make_sr_name(get_escape_bitmask)
+#define escape_bitmask_to_done_count make_sr_name(escape_bitmask_to_done_count)
+#define escape_bitmask_to_done_count_track_max make_sr_name(escape_bitmask_to_done_count_track_max)
+#define joined4_escape_bitmask_to_done_count make_sr_name(joined4_escape_bitmask_to_done_count)
+#define joined4_escape_bitmask_to_done_count_track_max make_sr_name(joined4_escape_bitmask_to_done_count_track_max)
+#define cmpeq_bitmask make_sr_name(cmpeq_bitmask)
+#define cmpneq_bitmask make_sr_name(cmpneq_bitmask)
+#define unsigned_cmple_bitmask make_sr_name(unsigned_cmple_bitmask)
+#define unsigned_cmplt_bitmask make_sr_name(unsigned_cmplt_bitmask)
+#define unsigned_cmpge_bitmask make_sr_name(unsigned_cmpge_bitmask)
+#define unsigned_cmpgt_bitmask make_sr_name(unsigned_cmpgt_bitmask)
+#define signed_cmpgt_bitmask make_sr_name(signed_cmpgt_bitmask)
+#define get_high_mask make_sr_name(get_high_mask)
+#define high_mask make_sr_name(high_mask)
+#define get_low_mask make_sr_name(get_low_mask)
+#define low_mask make_sr_name(low_mask)
+#define maskz_loadu make_sr_name(maskz_loadu)
+#define fast_skip_spaces make_sr_name(fast_skip_spaces)
+#define checkmax make_sr_name(checkmax)
+#define unsigned_max make_sr_name(unsigned_max)
+#define unsigned_max4 make_sr_name(unsigned_max4)
+#define _CheckerMasks make_sr_name(_CheckerMasks)
 //
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
 #    define anymask_t avx512_bitmask_t
@@ -128,8 +129,8 @@
 #endif
 
 #ifdef COMPILE_UCS_LEVEL
-#    define __check_vector_max_char_internal MAKE_S_UCS_NAME(__check_vector_max_char_internal)
-#    define check_vector_max_char MAKE_S_UCS_NAME(check_vector_max_char)
+#    define __check_vector_max_char_internal make_s_ucs_name(__check_vector_max_char_internal)
+#    define check_vector_max_char make_s_ucs_name(check_vector_max_char)
 #endif
 
 #endif // SSRJSON_COMPILE_CONTEXT_SR

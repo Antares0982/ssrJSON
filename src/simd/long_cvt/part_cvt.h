@@ -23,7 +23,7 @@
 #ifndef SSRJSON_SIMD_LONG_CVT_PART_CVT_H
 #define SSRJSON_SIMD_LONG_CVT_PART_CVT_H
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "simd/simd_impl.h"
 #    include "ssrjson.h"
 #    ifndef COMPILE_SIMD_BITS

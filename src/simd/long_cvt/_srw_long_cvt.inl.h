@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "ssrjson.h"
 #    ifndef SSRJSON_SIMD_LONG_CVT_H
 #        include "part_back_cvt.h"
@@ -38,40 +38,40 @@
 #endif
 #include "compile_context/srw_in.inl.h"
 
-force_inline void MAKE_SRW_NAME(__small_back_cvt)(_dst_t **dst_addr, const _src_t **src_addr, usize count, usize max_power2) {
+force_inline void make_srw_name(__small_back_cvt)(dst_t **dst_addr, const src_t **src_addr, usize count, usize max_power2) {
     assert((max_power2 & (max_power2 - 1)) == 0);
     assert(max_power2 > 0 && max_power2 <= 64 && count < max_power2);
-    if ((count & 1) && 1 < max_power2) MAKE_RW_NAME(__partial_back_cvt_1)(dst_addr, src_addr);
-    if ((count & 2) && 2 < max_power2) MAKE_RW_NAME(__partial_back_cvt_2)(dst_addr, src_addr);
-    if ((count & 4) && 4 < max_power2) MAKE_RW_NAME(__partial_back_cvt_4)(dst_addr, src_addr);
-    if ((count & 8) && 8 < max_power2) MAKE_RW_NAME(__partial_back_cvt_8)(dst_addr, src_addr);
-    if ((count & 16) && 16 < max_power2) MAKE_RW_NAME(__partial_back_cvt_16)(dst_addr, src_addr);
-    if ((count & 32) && 32 < max_power2) MAKE_RW_NAME(__partial_back_cvt_32)(dst_addr, src_addr);
+    if ((count & 1) && 1 < max_power2) make_rw_name(__partial_back_cvt_1)(dst_addr, src_addr);
+    if ((count & 2) && 2 < max_power2) make_rw_name(__partial_back_cvt_2)(dst_addr, src_addr);
+    if ((count & 4) && 4 < max_power2) make_rw_name(__partial_back_cvt_4)(dst_addr, src_addr);
+    if ((count & 8) && 8 < max_power2) make_rw_name(__partial_back_cvt_8)(dst_addr, src_addr);
+    if ((count & 16) && 16 < max_power2) make_rw_name(__partial_back_cvt_16)(dst_addr, src_addr);
+    if ((count & 32) && 32 < max_power2) make_rw_name(__partial_back_cvt_32)(dst_addr, src_addr);
 }
 
-force_inline void MAKE_SRW_NAME(__small_cvt)(_dst_t **dst_addr, const _src_t **src_addr, usize count, usize max_power2) {
+force_inline void make_srw_name(__small_cvt)(dst_t **dst_addr, const src_t **src_addr, usize count, usize max_power2) {
     assert((max_power2 & (max_power2 - 1)) == 0);
     assert(max_power2 > 0 && max_power2 <= 64 && count < max_power2);
-    if ((count & 1) && 1 < max_power2) MAKE_RW_NAME(__partial_cvt_1)(dst_addr, src_addr);
-    if ((count & 2) && 2 < max_power2) MAKE_RW_NAME(__partial_cvt_2)(dst_addr, src_addr);
-    if ((count & 4) && 4 < max_power2) MAKE_RW_NAME(__partial_cvt_4)(dst_addr, src_addr);
-    if ((count & 8) && 8 < max_power2) MAKE_RW_NAME(__partial_cvt_8)(dst_addr, src_addr);
-    if ((count & 16) && 16 < max_power2) MAKE_RW_NAME(__partial_cvt_16)(dst_addr, src_addr);
-    if ((count & 32) && 32 < max_power2) MAKE_RW_NAME(__partial_cvt_32)(dst_addr, src_addr);
+    if ((count & 1) && 1 < max_power2) make_rw_name(__partial_cvt_1)(dst_addr, src_addr);
+    if ((count & 2) && 2 < max_power2) make_rw_name(__partial_cvt_2)(dst_addr, src_addr);
+    if ((count & 4) && 4 < max_power2) make_rw_name(__partial_cvt_4)(dst_addr, src_addr);
+    if ((count & 8) && 8 < max_power2) make_rw_name(__partial_cvt_8)(dst_addr, src_addr);
+    if ((count & 16) && 16 < max_power2) make_rw_name(__partial_cvt_16)(dst_addr, src_addr);
+    if ((count & 32) && 32 < max_power2) make_rw_name(__partial_cvt_32)(dst_addr, src_addr);
 }
 
-force_inline void long_back_cvt(_dst_t *dst, const _src_t *src, usize count) {
+force_inline void long_back_cvt(dst_t *dst, const src_t *src, usize count) {
     // 16, 32 or 64
     static const usize batch_bytes = COMPILE_SIMD_BITS / 8;
-    static const usize batch_count = COMPILE_SIMD_BITS / 8 / sizeof(_src_t);
-    static const usize batch4_count = COMPILE_SIMD_BITS / 8 / sizeof(_src_t) * 4;
-    if (sizeof(_dst_t) > sizeof(_src_t)) {
+    static const usize batch_count = COMPILE_SIMD_BITS / 8 / sizeof(src_t);
+    static const usize batch4_count = COMPILE_SIMD_BITS / 8 / sizeof(src_t) * 4;
+    if (sizeof(dst_t) > sizeof(src_t)) {
         usize align_offset = ssrjson_cast(uintptr_t, dst) & (batch_bytes - 1);
-        assert((align_offset % sizeof(_dst_t)) == 0);
-        usize not_aligned_count = align_offset / sizeof(_dst_t);
+        assert((align_offset % sizeof(dst_t)) == 0);
+        usize not_aligned_count = align_offset / sizeof(dst_t);
         not_aligned_count = not_aligned_count > count ? count : not_aligned_count;
         if (not_aligned_count) {
-            MAKE_SRW_NAME(__small_back_cvt)(&dst, &src, not_aligned_count, batch_bytes / sizeof(_dst_t));
+            make_srw_name(__small_back_cvt)(&dst, &src, not_aligned_count, batch_bytes / sizeof(dst_t));
             count -= not_aligned_count;
         }
     }
@@ -91,25 +91,25 @@ force_inline void long_back_cvt(_dst_t *dst, const _src_t *src, usize count) {
         cvt_to_dst(dst, *(vector_u *)src);
     }
     if (count) {
-        MAKE_SRW_NAME(__small_back_cvt)(&dst, &src, count, batch_count);
+        make_srw_name(__small_back_cvt)(&dst, &src, count, batch_count);
     }
 }
 
-force_inline void long_cvt(_dst_t *dst, const _src_t *src, usize count) {
+force_inline void long_cvt(dst_t *dst, const src_t *src, usize count) {
     // 16, 32 or 64
     static const usize batch_bytes = COMPILE_SIMD_BITS / 8;
-    static const usize batch_count = COMPILE_SIMD_BITS / 8 / sizeof(_src_t);
-    static const usize batch4_count = COMPILE_SIMD_BITS / 8 / sizeof(_src_t) * 4;
+    static const usize batch_count = COMPILE_SIMD_BITS / 8 / sizeof(src_t);
+    static const usize batch4_count = COMPILE_SIMD_BITS / 8 / sizeof(src_t) * 4;
     //
 #if COMPILE_WRITE_UCS_LEVEL > COMPILE_READ_UCS_LEVEL
     usize align_offset = ssrjson_cast(uintptr_t, dst) & (batch_bytes - 1);
-    assert((align_offset % sizeof(_dst_t)) == 0);
-    usize not_aligned_count = align_offset / sizeof(_dst_t);
+    assert((align_offset % sizeof(dst_t)) == 0);
+    usize not_aligned_count = align_offset / sizeof(dst_t);
     if (not_aligned_count) {
-        not_aligned_count = batch_bytes / sizeof(_dst_t) - not_aligned_count;
+        not_aligned_count = batch_bytes / sizeof(dst_t) - not_aligned_count;
         assert(not_aligned_count);
         not_aligned_count = not_aligned_count > count ? count : not_aligned_count;
-        MAKE_SRW_NAME(__small_cvt)(&dst, &src, not_aligned_count, batch_bytes / sizeof(_dst_t));
+        make_srw_name(__small_cvt)(&dst, &src, not_aligned_count, batch_bytes / sizeof(dst_t));
         count -= not_aligned_count;
     }
 #endif
@@ -130,7 +130,7 @@ force_inline void long_cvt(_dst_t *dst, const _src_t *src, usize count) {
         count -= batch_count;
     }
     if (count) {
-        MAKE_SRW_NAME(__small_cvt)(&dst, &src, count, batch_count);
+        make_srw_name(__small_cvt)(&dst, &src, count, batch_count);
     }
 }
 

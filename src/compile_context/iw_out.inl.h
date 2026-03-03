@@ -25,8 +25,8 @@
 #include "w_out.inl.h"
 //
 #undef __INDENT_NAME
-#undef MAKE_I_NAME
-#undef MAKE_IW_NAME
+#undef make_i_name
+#undef make_iw_name
 //
 #undef write_unicode_indent
 #undef unicode_indent_writer

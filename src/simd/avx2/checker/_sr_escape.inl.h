@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef COMPILE_READ_UCS_LEVEL
 #        include "simd/union_vector.h"
 #        define COMPILE_READ_UCS_LEVEL 1
@@ -37,7 +37,7 @@ force_inline const void *read_head_mask_table_8(Py_ssize_t row);
 #include "compile_context/sr_in.inl.h"
 
 force_inline vector_a get_high_mask(usize count) {
-    const vector_a *mask_ptr = read_tail_mask_table_8(32 - count * sizeof(_src_t));
+    const vector_a *mask_ptr = read_tail_mask_table_8(32 - count * sizeof(src_t));
     return *mask_ptr;
 }
 
@@ -46,7 +46,7 @@ force_inline vector_a high_mask(vector_a x, usize count) {
 }
 
 force_inline vector_a get_low_mask(usize count) {
-    const vector_a *mask_ptr = read_head_mask_table_8(count * sizeof(_src_t));
+    const vector_a *mask_ptr = read_head_mask_table_8(count * sizeof(src_t));
     return *mask_ptr;
 }
 

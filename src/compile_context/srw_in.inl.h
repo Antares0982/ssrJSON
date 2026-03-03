@@ -26,18 +26,18 @@
 #include "sr_in.inl.h"
 #include "sw_in.inl.h"
 
-// Name creation macros.
-#define MAKE_SRW_NAME(_x_) ssrjson_concat4(_x_, _src_t, _dst_t, COMPILE_SIMD_BITS)
+/* Generate function names with SIMD level, reader type and writer type. */
+#define make_srw_name(_x_) ssrjson_concat4(_x_, src_t, dst_t, COMPILE_SIMD_BITS)
 
-#define trailing_copy_with_cvt MAKE_SRW_NAME(trailing_copy_with_cvt)
-#define encode_trailing_copy_with_cvt MAKE_SRW_NAME(encode_trailing_copy_with_cvt)
-#define cvt_to_dst MAKE_SRW_NAME(cvt_to_dst)
-#define _addr_cvt MAKE_SRW_NAME(_addr_cvt)
-#define _addr_cvt4 MAKE_SRW_NAME(_addr_cvt4)
-#define encode_unicode_loop MAKE_SRW_NAME(encode_unicode_loop)
-#define encode_unicode_loop4 MAKE_SRW_NAME(encode_unicode_loop4)
-#define encode_unicode_impl MAKE_SRW_NAME(encode_unicode_impl)
-#define encode_unicode_impl_no_key MAKE_SRW_NAME(encode_unicode_impl_no_key)
-#define long_cvt MAKE_SRW_NAME(long_cvt)
-#define long_back_cvt MAKE_SRW_NAME(long_back_cvt)
+#define trailing_copy_with_cvt make_srw_name(trailing_copy_with_cvt)
+#define encode_trailing_copy_with_cvt make_srw_name(encode_trailing_copy_with_cvt)
+#define cvt_to_dst make_srw_name(cvt_to_dst)
+#define _addr_cvt make_srw_name(_addr_cvt)
+#define _addr_cvt4 make_srw_name(_addr_cvt4)
+#define encode_unicode_loop make_srw_name(encode_unicode_loop)
+#define encode_unicode_loop4 make_srw_name(encode_unicode_loop4)
+#define encode_unicode_impl make_srw_name(encode_unicode_impl)
+#define encode_unicode_impl_no_key make_srw_name(encode_unicode_impl_no_key)
+#define long_cvt make_srw_name(long_cvt)
+#define long_back_cvt make_srw_name(long_back_cvt)
 #endif // SSRJSON_COMPILE_CONTEXT_SRW

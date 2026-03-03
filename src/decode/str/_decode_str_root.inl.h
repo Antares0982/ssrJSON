@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef COMPILE_SIMD_BITS
 #        define COMPILE_CONTEXT_DECODE
 #        include "decode/decode_float_wrap.h"
@@ -38,7 +38,7 @@
 
 #include "compile_context/sr_in.inl.h"
 
-force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, Py_ssize_t len, _src_t **buffer_head_addr, bool *need_dealloc);
+force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, Py_ssize_t len, src_t **buffer_head_addr, bool *need_dealloc);
 
 /*
  * Required macros:
@@ -56,13 +56,13 @@ force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, 
     } while (0)
 
 /** Read JSON document (accept all style, but optimized for pretty). */
-internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const _src_t *dat, Py_ssize_t len, PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
-    static _src_t _CommaReturn[2] = {',', '\n'};
-    static _src_t _CommaSpace[2] = {',', ' '};
-    static _src_t _ColonSpace[2] = {':', ' '};
+internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const src_t *dat, Py_ssize_t len, PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+    static src_t _CommaReturn[2] = {',', '\n'};
+    static src_t _CommaSpace[2] = {',', ' '};
+    static src_t _ColonSpace[2] = {':', ' '};
 
-    const _src_t *cur = dat;
-    const _src_t *const end = cur + len;
+    const src_t *cur = dat;
+    const src_t *const end = cur + len;
     // container stack info
     DecodeCtnWithSize *ctn = NULL;
     DecodeCtnWithSize *ctn_start = NULL;
@@ -73,7 +73,7 @@ internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context,
     decode_obj_stack_ptr_t decode_obj_stack_end = NULL;
     // init
     if (!init_decode_ctn_stack_info(decoder_context, &ctn_start, &ctn, &ctn_end) || !init_decode_obj_stack_info(decoder_context, &decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end)) goto failed_cleanup;
-    _src_t *string_buffer_head;
+    src_t *string_buffer_head;
     bool need_dealloc = false;
     if (unlikely(!check_and_reserve_str_buffer(decoder_context, len, &string_buffer_head, &need_dealloc))) {
         goto fail_alloc;
@@ -456,14 +456,14 @@ success:;
 
     return obj;
 
-#define return_err(_pos, _type, _msg)                                                                     \
-    do {                                                                                                  \
-        if (_type == JSONDecodeError) {                                                                   \
-            PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, ((_src_t *)_pos) - (_src_t *)dat); \
-        } else {                                                                                          \
-            PyErr_SetString(_type, _msg);                                                                 \
-        }                                                                                                 \
-        goto failed_cleanup;                                                                              \
+#define return_err(_pos, _type, _msg)                                                                   \
+    do {                                                                                                \
+        if (_type == JSONDecodeError) {                                                                 \
+            PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, ((src_t *)_pos) - (src_t *)dat); \
+        } else {                                                                                        \
+            PyErr_SetString(_type, _msg);                                                               \
+        }                                                                                               \
+        goto failed_cleanup;                                                                            \
     } while (0)
 
 fail_string:

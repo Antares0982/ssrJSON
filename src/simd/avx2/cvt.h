@@ -106,7 +106,7 @@ force_inline void cvt_to_dst_u32_u16_256(u16 *dst, vector_a_u32_256 y) {
  * `avx2_trailing_cvt` Series.
  * Copy `[src, src_end)` to `dst` with conversion. 
  * Assuming that 16 bytes before `src_end` are readable,
- * and `32 * sizeof(_dst_t) / sizeof(_src_t)`
+ * and `32 * sizeof(dst_t) / sizeof(src_t)`
  * bytes after `dst` are writable.
  *============================================================================*/
 

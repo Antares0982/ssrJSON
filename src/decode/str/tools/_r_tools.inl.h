@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef COMPILE_READ_UCS_LEVEL
 #        include "decode/decode_shared.h"
 #        include "simd/simd_impl.h"
@@ -30,7 +30,7 @@
 
 #include "compile_context/r_in.inl.h"
 
-force_inline bool verify_escape_hex(const _src_t *src, const _src_t *src_end, int offset) {
+force_inline bool verify_escape_hex(const src_t *src, const src_t *src_end, int offset) {
     if (unlikely(src + 4 + offset > src_end)) {
         PyErr_SetString(JSONDecodeError, "Unexpected ending when reading escaped sequence in string");
         return false;
@@ -73,7 +73,7 @@ extern const u8 hex_conv_table[256];
  
  This requires the string has 4-byte zero padding.
  */
-force_inline bool to_hex(const _src_t *cur, u16 *val) {
+force_inline bool to_hex(const src_t *cur, u16 *val) {
     u16 c0, c1, c2, c3, t0, t1;
     assert(cur[0] <= U8MAX);
     assert(cur[1] <= U8MAX);
@@ -90,10 +90,10 @@ force_inline bool to_hex(const _src_t *cur, u16 *val) {
 }
 
 /** Read 'true' literal, '*cur' should be 't'. */
-force_inline bool _read_true(const _src_t **restrict ptr, const _src_t *restrict end) {
-    _src_t *cur = (_src_t *)*ptr;
-    ssrjson_align(sizeof(_src_t) * 4) static const _src_t t[4] = {'t', 'r', 'u', 'e'};
-    if (likely(end >= cur + 4 && memcmp(cur, t, 4 * sizeof(_src_t)) == 0)) {
+force_inline bool _read_true(const src_t **restrict ptr, const src_t *restrict end) {
+    src_t *cur = (src_t *)*ptr;
+    ssrjson_align(sizeof(src_t) * 4) static const src_t t[4] = {'t', 'r', 'u', 'e'};
+    if (likely(end >= cur + 4 && memcmp(cur, t, 4 * sizeof(src_t)) == 0)) {
         *ptr = cur + 4;
         return true;
     }
@@ -101,11 +101,11 @@ force_inline bool _read_true(const _src_t **restrict ptr, const _src_t *restrict
 }
 
 /** Read 'false' literal, '*cur' should be 'f'. */
-force_inline bool _read_false(const _src_t **restrict ptr, const _src_t *restrict end) {
+force_inline bool _read_false(const src_t **restrict ptr, const src_t *restrict end) {
     // the first 'f' is already checked
-    _src_t *cur = (_src_t *)*ptr;
-    ssrjson_align(sizeof(_src_t) * 4) static const _src_t t[4] = {'a', 'l', 's', 'e'};
-    if (likely(end >= cur + 4 && memcmp(cur + 1, t, 4 * sizeof(_src_t)) == 0)) {
+    src_t *cur = (src_t *)*ptr;
+    ssrjson_align(sizeof(src_t) * 4) static const src_t t[4] = {'a', 'l', 's', 'e'};
+    if (likely(end >= cur + 4 && memcmp(cur + 1, t, 4 * sizeof(src_t)) == 0)) {
         *ptr = cur + 5;
         return true;
     }
@@ -113,10 +113,10 @@ force_inline bool _read_false(const _src_t **restrict ptr, const _src_t *restric
 }
 
 /** Read 'null' literal, '*cur' should be 'n'. */
-force_inline bool _read_null(const _src_t **restrict ptr, const _src_t *restrict end) {
-    _src_t *cur = (_src_t *)*ptr;
-    ssrjson_align(sizeof(_src_t) * 4) static const _src_t t[4] = {'n', 'u', 'l', 'l'};
-    if (likely(end >= cur + 4 && memcmp(cur, t, 4 * sizeof(_src_t)) == 0)) {
+force_inline bool _read_null(const src_t **restrict ptr, const src_t *restrict end) {
+    src_t *cur = (src_t *)*ptr;
+    ssrjson_align(sizeof(src_t) * 4) static const src_t t[4] = {'n', 'u', 'l', 'l'};
+    if (likely(end >= cur + 4 && memcmp(cur, t, 4 * sizeof(src_t)) == 0)) {
         *ptr = cur + 4;
         return true;
     }
@@ -124,14 +124,14 @@ force_inline bool _read_null(const _src_t **restrict ptr, const _src_t *restrict
 }
 
 /** Read 'Infinity' literal (ignoring case). */
-force_inline bool _read_inf(const _src_t **ptr, const _src_t *end) {
-#define r_inf_vector ssrjson_concat4(vector, a, _src_t, READ_BIT_SIZEx8)
-#define r_inf_vector_u ssrjson_concat4(vector, u, _src_t, READ_BIT_SIZEx8)
+force_inline bool _read_inf(const src_t **ptr, const src_t *end) {
+#define r_inf_vector ssrjson_concat4(vector, a, src_t, READ_BIT_SIZEx8)
+#define r_inf_vector_u ssrjson_concat4(vector, u, src_t, READ_BIT_SIZEx8)
     if (unlikely(end < *ptr + 8)) {
         return false;
     }
-    r_inf_vector _mask = {~(_src_t)0x20, ~(_src_t)0x20, ~(_src_t)0x20, ~(_src_t)0x20,
-                          ~(_src_t)0x20, ~(_src_t)0x20, ~(_src_t)0x20, ~(_src_t)0x20};
+    r_inf_vector _mask = {~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20,
+                          ~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20};
     r_inf_vector _template = {'I', 'N', 'F', 'I', 'N', 'I', 'T', 'Y'};
     r_inf_vector data;
     data = *(r_inf_vector_u *)(*ptr);
@@ -146,14 +146,14 @@ force_inline bool _read_inf(const _src_t **ptr, const _src_t *end) {
 }
 
 /** Read 'NaN' literal (ignoring case). */
-force_inline bool _read_nan(const _src_t **restrict ptr, const _src_t *restrict end) {
-#define r_nan_vector ssrjson_concat4(vector, a, _src_t, READ_BIT_SIZEx4)
-#define r_nan_vector_u ssrjson_concat4(vector, u, _src_t, READ_BIT_SIZEx4)
+force_inline bool _read_nan(const src_t **restrict ptr, const src_t *restrict end) {
+#define r_nan_vector ssrjson_concat4(vector, a, src_t, READ_BIT_SIZEx4)
+#define r_nan_vector_u ssrjson_concat4(vector, u, src_t, READ_BIT_SIZEx4)
     if (unlikely(end < *ptr + 3)) {
         return false;
     }
-    // it is safe to load *end, so here we load `4 * sizeof(_src_t)` bytes
-    r_nan_vector _mask = {~(_src_t)0x20, ~(_src_t)0x20, ~(_src_t)0x20, 0};
+    // it is safe to load *end, so here we load `4 * sizeof(src_t)` bytes
+    r_nan_vector _mask = {~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20, 0};
     r_nan_vector _template = {'N', 'A', 'N', 0};
     r_nan_vector data = *(r_nan_vector_u *)(*ptr);
     data = data & _mask;
@@ -167,7 +167,7 @@ force_inline bool _read_nan(const _src_t **restrict ptr, const _src_t *restrict 
 }
 
 /** Read 'Infinity' or 'NaN' literal (ignoring case). */
-force_inline PyObject *loads_inf_or_nan(bool sign, const _src_t **ptr, const _src_t *end) {
+force_inline PyObject *loads_inf_or_nan(bool sign, const src_t **ptr, const src_t *end) {
     if (_read_inf(ptr, end)) {
         return PyFloat_FromDouble(sign ? -fabs(Py_HUGE_VAL) : fabs(Py_HUGE_VAL));
     }

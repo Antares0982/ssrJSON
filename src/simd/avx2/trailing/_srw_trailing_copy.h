@@ -22,7 +22,7 @@
 
 /* This file is unused but left here intentionally for future use. */
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "simd/avx2/checker.h"
 #    include "simd/avx2/common.h"
 #    include "simd/avx2/cvt.h"
@@ -41,12 +41,12 @@
 #include "compile_context/srw_in.inl.h"
 
 // unused
-force_inline void trailing_copy_with_cvt(_dst_t **dst_addr, const _src_t *src, usize len) {
+force_inline void trailing_copy_with_cvt(dst_t **dst_addr, const src_t *src, usize len) {
     // use 128-bits trailing impl
     if (len >= READ_BATCH_COUNT / 2) {
-#define half_vec_t ssrjson_concat4(vector, a, _src_t, 128)
-#define half_vec_u_t ssrjson_concat4(vector, u, _src_t, 128)
-#define half_cvt ssrjson_concat5(cvt_to, dst, _src_t, _dst_t, 128)
+#define half_vec_t ssrjson_concat4(vector, a, src_t, 128)
+#define half_vec_u_t ssrjson_concat4(vector, u, src_t, 128)
+#define half_cvt ssrjson_concat5(cvt_to, dst, src_t, dst_t, 128)
         half_vec_t half_vec = *(half_vec_u_t *)src;
         half_cvt(*dst_addr, half_vec);
         *dst_addr += READ_BATCH_COUNT / 2;
@@ -57,7 +57,7 @@ force_inline void trailing_copy_with_cvt(_dst_t **dst_addr, const _src_t *src, u
 #undef half_vec_u_t
 #undef half_vec_t
     }
-    ssrjson_concat5(trailing_copy_with, cvt, _src_t, _dst_t, 128)(dst_addr, src, len);
+    ssrjson_concat5(trailing_copy_with, cvt, src_t, dst_t, 128)(dst_addr, src, len);
 }
 
 #undef COMPILE_SIMD_BITS

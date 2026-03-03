@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef COMPILE_UCS_LEVEL
 #        include "cache_key.h"
 #        include "copy_to_new.h"
@@ -39,26 +39,26 @@
 // long cvt function choosing.
 #if COMPILE_UCS_LEVEL == 1
 #    define long_cvt_noinline_to_u8 memcpy
-#    define long_cvt_noinline_to_u16 SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, _src_t, u16))
-#    define long_cvt_noinline_to_u32 SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, _src_t, u32))
+#    define long_cvt_noinline_to_u16 SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, src_t, u16))
+#    define long_cvt_noinline_to_u32 SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, src_t, u32))
 #elif COMPILE_UCS_LEVEL == 2
 #    define long_cvt_noinline_to_u16(_d_, _s_, _cnt_) memcpy((_d_), (_s_), 2 * (_cnt_))
-#    define long_cvt_noinline_to_u32 SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, _src_t, u32))
+#    define long_cvt_noinline_to_u32 SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, src_t, u32))
 #elif COMPILE_UCS_LEVEL == 4
 #    define long_cvt_noinline_to_u32(_d_, _s_, _cnt_) memcpy((_d_), (_s_), 4 * (_cnt_))
 #endif
-#define decode_str_copy_loop4_to_u8 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop4), u8)
-#define decode_str_copy_loop4_to_u16 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop4), u16)
-#define decode_str_copy_loop4_to_u32 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop4), u32)
-#define decode_str_copy_loop_to_u8 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop), u8)
-#define decode_str_copy_loop_to_u16 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop), u16)
-#define decode_str_copy_loop_to_u32 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_loop), u32)
+#define decode_str_copy_loop4_to_u8 ssrjson_concat2(make_ucs_name(decode_str_copy_loop4), u8)
+#define decode_str_copy_loop4_to_u16 ssrjson_concat2(make_ucs_name(decode_str_copy_loop4), u16)
+#define decode_str_copy_loop4_to_u32 ssrjson_concat2(make_ucs_name(decode_str_copy_loop4), u32)
+#define decode_str_copy_loop_to_u8 ssrjson_concat2(make_ucs_name(decode_str_copy_loop), u8)
+#define decode_str_copy_loop_to_u16 ssrjson_concat2(make_ucs_name(decode_str_copy_loop), u16)
+#define decode_str_copy_loop_to_u32 ssrjson_concat2(make_ucs_name(decode_str_copy_loop), u32)
 
-#define decode_str_copy_trailing_to_u8 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_trailing), u8)
-#define decode_str_copy_trailing_to_u16 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_trailing), u16)
-#define decode_str_copy_trailing_to_u32 ssrjson_concat2(MAKE_UCS_NAME(decode_str_copy_trailing), u32)
+#define decode_str_copy_trailing_to_u8 ssrjson_concat2(make_ucs_name(decode_str_copy_trailing), u8)
+#define decode_str_copy_trailing_to_u16 ssrjson_concat2(make_ucs_name(decode_str_copy_trailing), u16)
+#define decode_str_copy_trailing_to_u32 ssrjson_concat2(make_ucs_name(decode_str_copy_trailing), u32)
 
-force_inline int decode_str_fast_loop4(const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
+force_inline int decode_str_fast_loop4(const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
     int ret;
     //
     unionvector_a_x4 vec;
@@ -71,7 +71,7 @@ force_inline int decode_str_fast_loop4(const _src_t **src_addr, const _src_t *sr
     return ret;
 }
 
-force_inline int decode_str_fast_loop(const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
+force_inline int decode_str_fast_loop(const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
     int ret;
     //
     vector_a vec;
@@ -83,7 +83,7 @@ force_inline int decode_str_fast_loop(const _src_t **src_addr, const _src_t *src
     return ret;
 }
 
-force_inline int decode_str_fast_trailing(const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escape_info_addr, vector_a *maxvec_addr) {
+force_inline int decode_str_fast_trailing(const src_t **src_addr, const src_t *src_end, EscapeInfo *escape_info_addr, vector_a *maxvec_addr) {
     int ret;
     //
     vector_a vec;
@@ -96,8 +96,8 @@ force_inline int decode_str_fast_trailing(const _src_t **src_addr, const _src_t 
 }
 
 // fast path unicode maker
-force_inline PyObject *make_unicode_from_src(const _src_t *start, usize count, bool is_key, vector_a maxvec, void *temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
-    const _src_t upper_bound = (COMPILE_UCS_LEVEL == 1) ? 0x7f : ((COMPILE_UCS_LEVEL == 2) ? 0xff : 0xffff);
+force_inline PyObject *make_unicode_from_src(const src_t *start, usize count, bool is_key, vector_a maxvec, void *temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+    const src_t upper_bound = (COMPILE_UCS_LEVEL == 1) ? 0x7f : ((COMPILE_UCS_LEVEL == 2) ? 0xff : 0xffff);
 
     PyObject *ret;
     decode_keyhash_t hash;
@@ -150,7 +150,7 @@ force_inline PyObject *make_unicode_from_src(const _src_t *start, usize count, b
             dst_void = temp_dst;
             __ssrjson_short_memcpy_small_first(&temp_dst, &temp_src, count * tpsize, 64);
         } else {
-            MAKE_UCS_NAME(copy_to_new_unicode)(&dst_void, ret, need_cvt, start, count, kind);
+            make_ucs_name(copy_to_new_unicode)(&dst_void, ret, need_cvt, start, count, kind);
         }
         if (should_cache) {
             add_key_cache(hash, ret, count * tpsize, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
@@ -165,9 +165,9 @@ done:;
 }
 
 internal_simd_noinline PyObject *decode_str_with_escape(
-        const _src_t *src_start,
-        const _src_t **src_addr,
-        const _src_t *src_end,
+        const src_t *src_start,
+        const src_t **src_addr,
+        const src_t *src_end,
         void *temp_buffer,
         bool is_key,
         EscapeInfo in_escape_info,
@@ -175,7 +175,7 @@ internal_simd_noinline PyObject *decode_str_with_escape(
 #define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
 #define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
     //
-    const _src_t *src = *src_addr;
+    const src_t *src = *src_addr;
     //
     int decode_state_size;
     u32 max_escape = 0;
@@ -581,8 +581,8 @@ failed:;
 }
 
 internal_simd_noinline PyObject *decode_str(
-        const _src_t **src_addr,
-        const _src_t *const src_end,
+        const src_t **src_addr,
+        const src_t *const src_end,
         void *temp_buffer,
         bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
@@ -616,8 +616,8 @@ internal_simd_noinline PyObject *decode_str(
         }                                   \
     }
 
-    const _src_t *src = *src_addr;
-    const _src_t *const original_src = src;
+    const src_t *src = *src_addr;
+    const src_t *const original_src = src;
 
     vector_a maxvec = setzero();
 

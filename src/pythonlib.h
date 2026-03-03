@@ -86,8 +86,6 @@ const char *_update_simd_features(void);
 PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
 
 #if BUILD_MULTI_LIB
-
-
 #    define MAKE_FORWARD_PYFASTFUNCTION_IMPL(_func_name_)                                                    \
         PyObject *_func_name_(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames) { \
             assert(ssrjson_concat2(_func_name_, interface));                                                 \
@@ -129,12 +127,6 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
             _ret_type_ ssrjson_concat2(_func_name_, neon)(__VA_ARGS__);         \
             typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__); \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
-// #        define long_cvt_noinline_u16_u32_interface long_cvt_noinline_u16_u32_neon
-// #        define long_cvt_noinline_u8_u32_interface long_cvt_noinline_u8_u32_neon
-// #        define long_cvt_noinline_u8_u16_interface long_cvt_noinline_u8_u16_neon
-// #        define long_cvt_noinline_u32_u16_interface long_cvt_noinline_u32_u16_neon
-// #        define long_cvt_noinline_u32_u8_interface long_cvt_noinline_u32_u8_neon
-// #        define long_cvt_noinline_u16_u8_interface long_cvt_noinline_u16_u8_neon
 #    endif // SSRJSON_X86
 
 

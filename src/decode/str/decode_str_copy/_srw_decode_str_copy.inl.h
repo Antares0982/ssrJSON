@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef COMPILE_UCS_LEVEL
 #        include "decode/str/decoder_impl_wrap.h"
 #        include "simd/simd_impl.h"
@@ -34,7 +34,7 @@
 #define COMPILE_READ_UCS_LEVEL COMPILE_UCS_LEVEL
 #include "compile_context/srw_in.inl.h"
 
-force_inline int decode_str_copy_loop4(_dst_t **dst_addr, const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
+force_inline int decode_str_copy_loop4(dst_t **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
     int ret;
     //
     unionvector_a_x4 vec;
@@ -42,7 +42,7 @@ force_inline int decode_str_copy_loop4(_dst_t **dst_addr, const _src_t **src_add
     anymask_t check_mask_total;
     //
     _decode_str_loop4_read_src_impl(*src_addr, &vec, check_mask, &check_mask_total);
-    _dst_t *const dst = *dst_addr;
+    dst_t *const dst = *dst_addr;
     cvt_to_dst(dst + 0 * READ_BATCH_COUNT, vec.x[0]);
     cvt_to_dst(dst + 1 * READ_BATCH_COUNT, vec.x[1]);
     cvt_to_dst(dst + 2 * READ_BATCH_COUNT, vec.x[2]);
@@ -52,21 +52,21 @@ force_inline int decode_str_copy_loop4(_dst_t **dst_addr, const _src_t **src_add
     return ret;
 }
 
-force_inline int decode_str_copy_loop(_dst_t **dst_addr, const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
+force_inline int decode_str_copy_loop(dst_t **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
     int ret;
     //
     vector_a vec;
     anymask_t check_mask;
     //
     _decode_str_loop_read_src_impl(*src_addr, &vec, &check_mask);
-    _dst_t *const dst = *dst_addr;
+    dst_t *const dst = *dst_addr;
     cvt_to_dst(*dst_addr, vec);
     usize moved_count = _decode_str_loop_decoder_impl(src_addr, src_end, check_mask, &ret, true, maxvec_addr, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
 }
 
-force_inline int decode_str_copy_trailing(_dst_t **dst_addr, const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escape_info_addr, vector_a *maxvec_addr) {
+force_inline int decode_str_copy_trailing(dst_t **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escape_info_addr, vector_a *maxvec_addr) {
     int ret;
     //
     vector_a vec;

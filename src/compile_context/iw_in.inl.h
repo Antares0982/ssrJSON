@@ -26,7 +26,7 @@
 #include "w_in.inl.h"
 
 // fake include and definition to deceive clangd
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "ssrjson.h"
 #    ifndef COMPILE_INDENT_LEVEL
 #        define COMPILE_INDENT_LEVEL 2
@@ -45,26 +45,28 @@
 
 #define __INDENT_NAME ssrjson_simple_concat2(indent, COMPILE_INDENT_LEVEL)
 
-#define MAKE_I_NAME(_x_) ssrjson_concat2(_x_, __INDENT_NAME)
-#define MAKE_IW_NAME(_x_) ssrjson_concat3(_x_, __INDENT_NAME, _dst_t)
+/* Generate function names with indent level. */
+#define make_i_name(_x_) ssrjson_concat2(_x_, __INDENT_NAME)
+/* Generate function names with indent level and writer type. */
+#define make_iw_name(_x_) ssrjson_concat3(_x_, __INDENT_NAME, dst_t)
 
 /*
  * Write indents to unicode buffer. Need to reserve space before calling this function.
  */
-#define write_unicode_indent MAKE_IW_NAME(write_unicode_indent)
+#define write_unicode_indent make_iw_name(write_unicode_indent)
 
 /*
  * Write indents to unicode buffer. Will reserve space if needed.
  */
-#define unicode_indent_writer MAKE_IW_NAME(unicode_indent_writer)
+#define unicode_indent_writer make_iw_name(unicode_indent_writer)
 
-#define bytes_buffer_append_key MAKE_I_NAME(bytes_buffer_append_key)
-#define bytes_buffer_append_str MAKE_I_NAME(bytes_buffer_append_str)
-#define bytes_buffer_append_str_dict MAKE_I_NAME(bytes_buffer_append_str_dict)
-#define bytes_buffer_append_str_list MAKE_I_NAME(bytes_buffer_append_str_list)
-#define bytes_buffer_append_nonascii_key_write_cache MAKE_I_NAME(bytes_buffer_append_nonascii_key_write_cache)
-#define bytes_buffer_append_nonascii_key_no_write_cache MAKE_I_NAME(bytes_buffer_append_nonascii_key_no_write_cache)
-#define encode_bytes_process_val MAKE_I_NAME(encode_bytes_process_val)
-#define ssrjson_dumps_to_bytes_obj MAKE_I_NAME(ssrjson_dumps_to_bytes_obj)
+#define bytes_buffer_append_key make_i_name(bytes_buffer_append_key)
+#define bytes_buffer_append_str make_i_name(bytes_buffer_append_str)
+#define bytes_buffer_append_str_dict make_i_name(bytes_buffer_append_str_dict)
+#define bytes_buffer_append_str_list make_i_name(bytes_buffer_append_str_list)
+#define bytes_buffer_append_nonascii_key_write_cache make_i_name(bytes_buffer_append_nonascii_key_write_cache)
+#define bytes_buffer_append_nonascii_key_no_write_cache make_i_name(bytes_buffer_append_nonascii_key_no_write_cache)
+#define encode_bytes_process_val make_i_name(encode_bytes_process_val)
+#define ssrjson_dumps_to_bytes_obj make_i_name(ssrjson_dumps_to_bytes_obj)
 
 #endif // SSRJSON_COMPILE_CONTEXT_IW

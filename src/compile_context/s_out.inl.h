@@ -24,7 +24,7 @@
 //
 #undef SIMD_BITS_DOUBLE
 //
-#undef MAKE_S_NAME
+#undef make_s_name
 //
 #undef broadcast_u8
 #undef broadcast_u16

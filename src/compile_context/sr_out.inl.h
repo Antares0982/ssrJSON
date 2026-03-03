@@ -27,9 +27,9 @@
 //
 #undef READ_BATCH_COUNT
 //
-#undef MAKE_SR_NAME
+#undef make_sr_name
 //
-#undef MAKE_S_UCS_NAME
+#undef make_s_ucs_name
 //
 #undef vector_a
 #undef vector_u

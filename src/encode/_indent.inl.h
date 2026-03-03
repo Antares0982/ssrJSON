@@ -20,14 +20,14 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "encode/encode_shared.h"
 #    include "utils/unicode.h"
 #endif
 
 #include "compile_context/iw_in.inl.h"
 
-force_inline ssrjson_nofail _dst_t *write_unicode_indent(_dst_t *writer, Py_ssize_t _cur_nested_depth) {
+force_inline ssrjson_nofail dst_t *write_unicode_indent(dst_t *writer, Py_ssize_t _cur_nested_depth) {
 #if COMPILE_INDENT_LEVEL > 0
     *writer++ = '\n';
     usize cur_nested_depth = (usize)_cur_nested_depth;
@@ -44,10 +44,10 @@ force_inline ssrjson_nofail _dst_t *write_unicode_indent(_dst_t *writer, Py_ssiz
 }
 
 // forward declaration
-force_inline _dst_t *unicode_buffer_reserve(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, usize size);
+force_inline dst_t *unicode_buffer_reserve(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, usize size);
 
-force_inline _dst_t *unicode_indent_writer(
-        _dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, ssrjson_compiletime bool is_in_obj, ssrjson_compiletime Py_ssize_t additional_reserve_count) {
+force_inline dst_t *unicode_indent_writer(
+        dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, ssrjson_compiletime bool is_in_obj, ssrjson_compiletime Py_ssize_t additional_reserve_count) {
     // `is_in_obj` and `additional_reserve_count` must be known at compile time.
     if (ssrjson_consteval(!is_in_obj && COMPILE_INDENT_LEVEL != 0)) {
         writer = unicode_buffer_reserve(writer, unicode_buffer_info, get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + additional_reserve_count);

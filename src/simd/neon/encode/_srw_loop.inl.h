@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "simd/neon/checker.h"
 #    include "simd/neon/common.h"
 #    include "simd/neon/cvt.h"
@@ -36,24 +36,24 @@
 
 #include "compile_context/srw_in.inl.h"
 
-extern const _dst_t ControlEscapeTable[(_Slash + 1) * 8];
+extern const dst_t ControlEscapeTable[(_Slash + 1) * 8];
 extern const Py_ssize_t _ControlJump[_Slash + 1];
 
-force_inline void _addr_cvt(_dst_t *restrict dst, const _src_t *restrict src) {
+force_inline void _addr_cvt(dst_t *restrict dst, const src_t *restrict src) {
     for (usize i = 0; i < READ_BATCH_COUNT; ++i) {
-        dst[i] = (_dst_t)src[i];
+        dst[i] = (dst_t)src[i];
     }
 }
 
-force_inline void _addr_cvt4(_dst_t *restrict dst, const _src_t *restrict src) {
+force_inline void _addr_cvt4(dst_t *restrict dst, const src_t *restrict src) {
     for (usize i = 0; i < READ_BATCH_COUNT * 4; ++i) {
-        dst[i] = (_dst_t)src[i];
+        dst[i] = (dst_t)src[i];
     }
 }
 
-force_inline ssrjson_nofail _dst_t *encode_unicode_loop4(register _dst_t *dst, const _src_t **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail dst_t *encode_unicode_loop4(register dst_t *dst, const src_t **src_addr, usize *len_addr) {
     register usize len = *len_addr;
-    register const _src_t *src = *src_addr;
+    register const src_t *src = *src_addr;
     while (len >= READ_BATCH_COUNT * 4) {
         union {
             vector_a x[4];
@@ -70,13 +70,13 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop4(register _dst_t *dst, c
             len -= 4 * READ_BATCH_COUNT;
         } else {
             usize done_count = joined4_escape_mask_to_done_count(escape_union_vec.x[0], escape_union_vec.x[1], escape_union_vec.x[2], escape_union_vec.x[3]);
-            const _src_t *escape_pos = src + done_count;
+            const src_t *escape_pos = src + done_count;
             src += done_count + 1;
-            _src_t escape_unicode = *escape_pos;
+            src_t escape_unicode = *escape_pos;
             assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < _ControlMax);
             dst += done_count;
             len -= done_count + 1;
-            memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(_dst_t));
+            memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(dst_t));
             dst += _ControlJump[escape_unicode];
         }
     }
@@ -85,9 +85,9 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop4(register _dst_t *dst, c
     return dst;
 }
 
-force_inline ssrjson_nofail _dst_t *encode_unicode_loop(register _dst_t *dst, const _src_t **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail dst_t *encode_unicode_loop(register dst_t *dst, const src_t **src_addr, usize *len_addr) {
     register usize len = *len_addr;
-    register const _src_t *src = *src_addr;
+    register const src_t *src = *src_addr;
     while (len >= READ_BATCH_COUNT) {
         vector_a x = *(vector_u *)src;
         vector_a escape_mask = get_escape_mask(x);
@@ -98,13 +98,13 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop(register _dst_t *dst, co
             len -= READ_BATCH_COUNT;
         } else {
             u32 done_count = escape_mask_to_done_count(escape_mask);
-            const _src_t *escape_pos = src + done_count;
+            const src_t *escape_pos = src + done_count;
             src += done_count + 1;
-            _src_t escape_unicode = *escape_pos;
+            src_t escape_unicode = *escape_pos;
             assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < _ControlMax);
             dst += done_count;
             len -= done_count + 1;
-            memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(_dst_t));
+            memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(dst_t));
             dst += _ControlJump[escape_unicode];
         }
     }
@@ -113,41 +113,41 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop(register _dst_t *dst, co
     return dst;
 }
 
-force_inline ssrjson_nofail _dst_t *encode_trailing_copy_with_cvt(register _dst_t *dst, const _src_t *src, usize copy_len) {
-    assert(copy_len * sizeof(_src_t) < 16);
-    const _src_t *const load_start = src + copy_len - 16 / sizeof(_src_t);
+force_inline ssrjson_nofail dst_t *encode_trailing_copy_with_cvt(register dst_t *dst, const src_t *src, usize copy_len) {
+    assert(copy_len * sizeof(src_t) < 16);
+    const src_t *const load_start = src + copy_len - 16 / sizeof(src_t);
     const vector_a vec = *(vector_u *)load_start;
     vector_a old_escape_mask = get_escape_mask(vec);
 restart:;
     vector_a escape_mask = high_mask(old_escape_mask, copy_len);
-    vector_a vec_shifted = runtime_byte_rshift_128(vec, 16 - copy_len * sizeof(_src_t));
-    _addr_cvt4(dst, (const _src_t *)&vec_shifted);
+    vector_a vec_shifted = runtime_byte_rshift_128(vec, 16 - copy_len * sizeof(src_t));
+    _addr_cvt4(dst, (const src_t *)&vec_shifted);
     if (likely(testz(escape_mask))) {
         dst += copy_len;
     } else {
         usize done_count = escape_mask_to_done_count(escape_mask);
         usize real_done_count = done_count + copy_len - READ_BATCH_COUNT;
         dst += real_done_count;
-        const _src_t *escape_ptr = src + real_done_count;
+        const src_t *escape_ptr = src + real_done_count;
         src += real_done_count + 1;
         copy_len -= real_done_count + 1;
         usize unicode = *escape_ptr;
         assert(unicode < _ControlMax || unicode == _Slash || unicode == _Quote);
-        memcpy(dst, ControlEscapeTable + unicode * 8, 8 * sizeof(_dst_t));
+        memcpy(dst, ControlEscapeTable + unicode * 8, 8 * sizeof(dst_t));
         dst += _ControlJump[unicode];
         if (copy_len) goto restart;
     }
     return dst;
 }
 
-force_inline ssrjson_nofail _dst_t *encode_unicode_impl(_dst_t *dst, const _src_t *src, usize len, bool is_key) {
+force_inline ssrjson_nofail dst_t *encode_unicode_impl(dst_t *dst, const src_t *src, usize len, bool is_key) {
     if (!is_key) dst = encode_unicode_loop4(dst, &src, &len);
     dst = encode_unicode_loop(dst, &src, &len);
     if (len) dst = encode_trailing_copy_with_cvt(dst, src, len);
     return dst;
 }
 
-force_inline ssrjson_nofail _dst_t *encode_unicode_impl_no_key(_dst_t *dst, const _src_t *src, usize len) {
+force_inline ssrjson_nofail dst_t *encode_unicode_impl_no_key(dst_t *dst, const src_t *src, usize len) {
     return encode_unicode_impl(dst, src, len, false);
 }
 

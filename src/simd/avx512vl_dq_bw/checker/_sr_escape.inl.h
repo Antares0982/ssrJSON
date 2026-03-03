@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef COMPILE_READ_UCS_LEVEL
 #        include "simd/avx512vl_dq_bw/common.h"
 #        include "simd/mask_table.h"
@@ -37,7 +37,7 @@
 /* High mask functions for AVX512 are not used. */
 
 // force_inline vector_a get_high_mask(usize count) {
-//     const vector_a *mask_ptr = read_tail_mask_table_8(64 - count * sizeof(_src_t));
+//     const vector_a *mask_ptr = read_tail_mask_table_8(64 - count * sizeof(src_t));
 //     return *mask_ptr;
 // }
 
@@ -46,7 +46,7 @@
 // }
 
 force_inline vector_a get_low_mask(usize count) {
-    const vector_a *mask_ptr = read_head_mask_table_8(count * sizeof(_src_t));
+    const vector_a *mask_ptr = read_head_mask_table_8(count * sizeof(src_t));
     return *mask_ptr;
 }
 

@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef COMPILE_READ_UCS_LEVEL
 #        include "decode/decode_shared.h"
 #        include "simd/union_vector.h"
@@ -40,7 +40,7 @@ force_inline void unsigned_max4(vector_a *max_vec_addr, unionvector_a_x4 vec) {
 
 /* Read src. */
 force_inline void _decode_str_loop4_read_src_impl(
-        const _src_t *src,
+        const src_t *src,
         unionvector_a_x4 *out_vec,
         anymask_t *out_check_mask_arr4,
         anymask_t *out_check_mask_total) {
@@ -54,7 +54,7 @@ force_inline void _decode_str_loop4_read_src_impl(
 }
 
 force_inline void _decode_str_loop_read_src_impl(
-        const _src_t *src,
+        const src_t *src,
         vector_a *out_vec,
         anymask_t *out_check_mask) {
     *out_vec = *ssrjson_cast(vector_u *, src);
@@ -62,8 +62,8 @@ force_inline void _decode_str_loop_read_src_impl(
 }
 
 force_inline void _decode_str_trailing_read_src_impl(
-        const _src_t *src,
-        const _src_t *src_end,
+        const src_t *src,
+        const src_t *src_end,
         vector_a *out_vec,
         anymask_t *out_check_mask) {
     usize trailing_len = src_end - src;
@@ -78,19 +78,19 @@ force_inline void _decode_str_trailing_read_src_impl(
     *out_check_mask = high_mask(get_escape_mask(vec), trailing_len);
 #elif SSRJSON_X86
     vector_a vec = *(vector_u *)(src_end - READ_BATCH_COUNT);
-    *out_vec = runtime_byte_rshift_128(vec, (READ_BATCH_COUNT - trailing_len) * sizeof(_src_t));
+    *out_vec = runtime_byte_rshift_128(vec, (READ_BATCH_COUNT - trailing_len) * sizeof(src_t));
     *out_check_mask = low_mask(get_escape_mask(*out_vec), trailing_len);
 #elif SSRJSON_AARCH
     vector_a vec = *(vector_u *)(src_end - READ_BATCH_COUNT);
-    *out_vec = runtime_byte_rshift_128(vec, (READ_BATCH_COUNT - trailing_len) * sizeof(_src_t));
+    *out_vec = runtime_byte_rshift_128(vec, (READ_BATCH_COUNT - trailing_len) * sizeof(src_t));
     *out_check_mask = low_mask(get_escape_mask(*out_vec), trailing_len);
 #endif
 }
 
 /* String decoder. */
 force_inline usize _decode_str_loop4_decoder_impl(
-        const _src_t **src_addr,
-        const _src_t *src_end,
+        const src_t **src_addr,
+        const src_t *src_end,
         anymask_t *check_mask_arr4,
         anymask_t check_mask_total,
         int *ret_addr,
@@ -98,7 +98,7 @@ force_inline usize _decode_str_loop4_decoder_impl(
         vector_a *track_max,
         unionvector_a_x4 src_vecs,
         EscapeInfo *escapeval_addr) {
-    const _src_t *src = *src_addr;
+    const src_t *src = *src_addr;
     usize done_count;
     if (testz_escape_mask(check_mask_total)) {
         src += 4 * READ_BATCH_COUNT;
@@ -114,7 +114,7 @@ force_inline usize _decode_str_loop4_decoder_impl(
             done_count = joined4_escape_anymask_to_done_count(check_mask_arr4[0], check_mask_arr4[1], check_mask_arr4[2], check_mask_arr4[3]);
         }
         src += done_count;
-        _src_t unicode = *src;
+        src_t unicode = *src;
         if (unicode == _Quote) {
             *ret_addr = DECODE_LOOPSTATE_END;
         } else if (unicode == _Slash) {
@@ -137,8 +137,8 @@ force_inline usize _decode_str_loop4_decoder_impl(
 }
 
 force_inline usize _decode_str_loop_decoder_impl(
-        const _src_t **src_addr,
-        const _src_t *src_end,
+        const src_t **src_addr,
+        const src_t *src_end,
         anymask_t check_mask,
         int *ret_addr,
         bool inline_escape, // immediate
@@ -146,7 +146,7 @@ force_inline usize _decode_str_loop_decoder_impl(
         vector_a src_vec,
         EscapeInfo *escapeval_addr) {
     usize done_count;
-    const _src_t *src = *src_addr;
+    const src_t *src = *src_addr;
     if (testz_escape_mask(check_mask)) {
         done_count = READ_BATCH_COUNT;
         src += READ_BATCH_COUNT;
@@ -161,7 +161,7 @@ force_inline usize _decode_str_loop_decoder_impl(
             done_count = escape_anymask_to_done_count(check_mask);
         }
         src += done_count;
-        _src_t unicode = *src;
+        src_t unicode = *src;
         if (unicode == _Quote) {
             *ret_addr = DECODE_LOOPSTATE_END;
         } else if (unicode == _Slash) {
@@ -184,8 +184,8 @@ force_inline usize _decode_str_loop_decoder_impl(
 }
 
 force_inline usize _decode_str_trailing_decoder_impl(
-        const _src_t **src_addr,
-        const _src_t *src_end,
+        const src_t **src_addr,
+        const src_t *src_end,
         anymask_t check_mask,
         int *ret_addr,
         bool inline_escape, // immediate
@@ -198,7 +198,7 @@ force_inline usize _decode_str_trailing_decoder_impl(
 #    define BACK_LOAD 0
 #endif
     usize done_count;
-    const _src_t *src = *src_addr;
+    const src_t *src = *src_addr;
     usize trailing_len = src_end - src;
     if (unlikely(testz_escape_mask(check_mask))) {
         // err, no string ending in src
@@ -215,7 +215,7 @@ force_inline usize _decode_str_trailing_decoder_impl(
             done_count -= READ_BATCH_COUNT - trailing_len;
         }
         src += done_count;
-        _src_t unicode = *src;
+        src_t unicode = *src;
         if (unicode == _Quote) {
             *ret_addr = DECODE_LOOPSTATE_END;
         } else if (unicode == _Slash) {

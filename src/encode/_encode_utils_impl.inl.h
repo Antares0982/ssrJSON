@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef COMPILE_CONTEXT_ENCODE
 #        define COMPILE_CONTEXT_ENCODE
 #    endif
@@ -35,16 +35,16 @@
 
 #include "compile_context/sw_in.inl.h"
 
-#define _elevate_u8_copy MAKE_W_NAME(_elevate_u8_copy)
+#define _elevate_u8_copy make_w_name(_elevate_u8_copy)
 
 extern u8 *xjb64(double value, u8 *buffer);
 /*
  * (PRIVATE)
  * Convert the u8 buffer to the buffer.
- * The space (32 * sizeof(_dst_t)) must be reserved before calling this function.
+ * The space (32 * sizeof(dst_t)) must be reserved before calling this function.
  */
 #if COMPILE_WRITE_UCS_LEVEL > 1
-force_inline ssrjson_nofail void _elevate_u8_copy(_dst_t *writer, const u8 *buffer) {
+force_inline ssrjson_nofail void _elevate_u8_copy(dst_t *writer, const u8 *buffer) {
 #    if COMPILE_WRITE_UCS_LEVEL == 2
     __partial_cvt_32_u8_u16(&writer, &buffer);
 #    else // COMPILE_WRITE_UCS_LEVEL == 4
@@ -55,9 +55,9 @@ force_inline ssrjson_nofail void _elevate_u8_copy(_dst_t *writer, const u8 *buff
 
 /*
  * Write a u64 number to the buffer.
- * The space (32 * sizeof(_dst_t)) must be reserved before calling this function.
+ * The space (32 * sizeof(dst_t)) must be reserved before calling this function.
  */
-force_inline ssrjson_nofail _dst_t *u64_to_unicode(register _dst_t *writer, u64 val, usize sign) {
+force_inline ssrjson_nofail dst_t *u64_to_unicode(register dst_t *writer, u64 val, usize sign) {
     assert(sign <= 1);
 #if COMPILE_WRITE_UCS_LEVEL == 1
     u8 *buffer = writer;
@@ -78,9 +78,9 @@ force_inline ssrjson_nofail _dst_t *u64_to_unicode(register _dst_t *writer, u64 
 
 /*
  * Write a f64 number to the buffer.
- * The space (32 * sizeof(_dst_t)) must be reserved before calling this function.
+ * The space (32 * sizeof(dst_t)) must be reserved before calling this function.
  */
-force_inline ssrjson_nofail _dst_t *f64_to_unicode(register _dst_t *writer, double d) {
+force_inline ssrjson_nofail dst_t *f64_to_unicode(register dst_t *writer, double d) {
 #if COMPILE_WRITE_UCS_LEVEL == 1
     u8 *buffer = writer;
 #else
@@ -98,15 +98,15 @@ force_inline ssrjson_nofail _dst_t *f64_to_unicode(register _dst_t *writer, doub
 }
 
 /* Intended for a dtoa that does not support Inf/NaN writing, like zmij (Rust impl) */
-force_inline ssrjson_nofail _dst_t *inf_nan_to_unicode(register _dst_t *writer, double d) {
+force_inline ssrjson_nofail dst_t *inf_nan_to_unicode(register dst_t *writer, double d) {
     if (isinf(d)) {
         bool sign = d < 0;
         *writer = '-';
-        static const _dst_t _Inf[9] = {'I', 'n', 'f', 'i', 'n', 'i', 't', 'y', 0};
+        static const dst_t _Inf[9] = {'I', 'n', 'f', 'i', 'n', 'i', 't', 'y', 0};
         memcpy(writer + sign, _Inf, sizeof(_Inf));
         writer += sign + 8;
     } else {
-        static const _dst_t _NaN[4] = {'N', 'a', 'N', 0};
+        static const dst_t _NaN[4] = {'N', 'a', 'N', 0};
         memcpy(writer, _NaN, sizeof(_NaN));
         writer += 3;
     }

@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef COMPILE_CONTEXT_ENCODE
 #        define COMPILE_CONTEXT_ENCODE
 #    endif
@@ -247,7 +247,7 @@ static force_noinline EncodeUnicodeWriter unicode_buffer_append_str_list(EncodeU
     return unicode_buffer_append_str(val, writer, unicode_buffer_info, unicode_info, cur_nested_depth, false);
 }
 
-force_inline _dst_t *unicode_buffer_append_long(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
+force_inline dst_t *unicode_buffer_append_long(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
     assert(PyLong_CheckExact(val));
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 64);
 
@@ -280,7 +280,7 @@ force_inline _dst_t *unicode_buffer_append_long(_dst_t *writer, EncodeUnicodeBuf
     return writer;
 }
 
-force_inline ssrjson_nofail _dst_t *write_unicode_false(_dst_t *writer) {
+force_inline ssrjson_nofail dst_t *write_unicode_false(dst_t *writer) {
     // ucs case       -> 1, 2, 4
     // expected bytes -> 6,12,24
     // written bytes  -> 8,16,24/32
@@ -292,7 +292,7 @@ force_inline ssrjson_nofail _dst_t *write_unicode_false(_dst_t *writer) {
     *writer++ = 's';
     *writer++ = 'e';
     *writer++ = ',';
-    _dst_t *writer2 = writer;
+    dst_t *writer2 = writer;
 #if COMPILE_UCS_LEVEL < 4
     *writer2++ = 0;
     *writer2++ = 0;
@@ -305,12 +305,12 @@ force_inline ssrjson_nofail _dst_t *write_unicode_false(_dst_t *writer) {
     return writer;
 }
 
-force_inline _dst_t *unicode_buffer_append_false(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
+force_inline dst_t *unicode_buffer_append_false(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 8);
     return write_unicode_false(writer);
 }
 
-force_inline ssrjson_nofail _dst_t *write_unicode_true(_dst_t *writer) {
+force_inline ssrjson_nofail dst_t *write_unicode_true(dst_t *writer) {
     // ucs case       -> 1, 2, 4
     // expected bytes -> 5,10,20
     // written bytes  -> 8,16,24/32
@@ -321,7 +321,7 @@ force_inline ssrjson_nofail _dst_t *write_unicode_true(_dst_t *writer) {
     *writer++ = 'u';
     *writer++ = 'e';
     *writer++ = ',';
-    _dst_t *writer2 = writer;
+    dst_t *writer2 = writer;
 #if COMPILE_UCS_LEVEL < 4
     *writer2++ = 0;
     *writer2++ = 0;
@@ -336,12 +336,12 @@ force_inline ssrjson_nofail _dst_t *write_unicode_true(_dst_t *writer) {
     return writer;
 }
 
-force_inline _dst_t *unicode_buffer_append_true(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
+force_inline dst_t *unicode_buffer_append_true(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 8);
     return write_unicode_true(writer);
 }
 
-force_inline ssrjson_nofail _dst_t *write_unicode_null(_dst_t *writer) {
+force_inline ssrjson_nofail dst_t *write_unicode_null(dst_t *writer) {
     // ucs case       -> 1, 2, 4
     // expected bytes -> 5,10,20
     // written bytes  -> 8,16,24/32
@@ -352,7 +352,7 @@ force_inline ssrjson_nofail _dst_t *write_unicode_null(_dst_t *writer) {
     *writer++ = 'l';
     *writer++ = 'l';
     *writer++ = ',';
-    _dst_t *writer2 = writer;
+    dst_t *writer2 = writer;
 #if COMPILE_UCS_LEVEL < 4
     *writer2++ = 0;
     *writer2++ = 0;
@@ -367,12 +367,12 @@ force_inline ssrjson_nofail _dst_t *write_unicode_null(_dst_t *writer) {
     return writer;
 }
 
-force_inline _dst_t *unicode_buffer_append_null(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
+force_inline dst_t *unicode_buffer_append_null(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 8);
     return write_unicode_null(writer);
 }
 
-force_inline _dst_t *unicode_buffer_append_float(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
+force_inline dst_t *unicode_buffer_append_float(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 32);
     double v = PyFloat_AS_DOUBLE(val);
     // if (unlikely(isinf(v) || isnan(v))) {
@@ -384,7 +384,7 @@ force_inline _dst_t *unicode_buffer_append_float(_dst_t *writer, EncodeUnicodeBu
     return writer;
 }
 
-force_inline ssrjson_nofail _dst_t *write_unicode_empty_arr(_dst_t *writer) {
+force_inline ssrjson_nofail dst_t *write_unicode_empty_arr(dst_t *writer) {
     // reserve count = 4
     *writer++ = '[';
     *writer++ = ']';
@@ -395,23 +395,23 @@ force_inline ssrjson_nofail _dst_t *write_unicode_empty_arr(_dst_t *writer) {
     return writer;
 }
 
-force_inline _dst_t *unicode_buffer_append_empty_arr(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
+force_inline dst_t *unicode_buffer_append_empty_arr(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 4);
     return write_unicode_empty_arr(writer);
 }
 
-force_inline ssrjson_nofail _dst_t *write_unicode_arr_begin(_dst_t *writer) {
+force_inline ssrjson_nofail dst_t *write_unicode_arr_begin(dst_t *writer) {
     // reserve count = 1
     *writer++ = '[';
     return writer;
 }
 
-force_inline _dst_t *unicode_buffer_append_arr_begin(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
+force_inline dst_t *unicode_buffer_append_arr_begin(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 1);
     return write_unicode_arr_begin(writer);
 }
 
-force_inline ssrjson_nofail _dst_t *write_unicode_empty_obj(_dst_t *writer) {
+force_inline ssrjson_nofail dst_t *write_unicode_empty_obj(dst_t *writer) {
     // reserve count = 4
     *writer++ = '{';
     *writer++ = '}';
@@ -422,30 +422,30 @@ force_inline ssrjson_nofail _dst_t *write_unicode_empty_obj(_dst_t *writer) {
     return writer;
 }
 
-force_inline _dst_t *unicode_buffer_append_empty_obj(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
+force_inline dst_t *unicode_buffer_append_empty_obj(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 4);
     return write_unicode_empty_obj(writer);
 }
 
-force_inline ssrjson_nofail _dst_t *write_unicode_obj_begin(_dst_t *writer) {
+force_inline ssrjson_nofail dst_t *write_unicode_obj_begin(dst_t *writer) {
     // reserve count = 1
     *writer++ = '{';
     return writer;
 }
 
-force_inline _dst_t *unicode_buffer_append_obj_begin(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
+force_inline dst_t *unicode_buffer_append_obj_begin(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 1);
     return write_unicode_obj_begin(writer);
 }
 
-force_inline ssrjson_nofail _dst_t *write_unicode_obj_end(_dst_t *writer) {
+force_inline ssrjson_nofail dst_t *write_unicode_obj_end(dst_t *writer) {
     // reserve count = 2
     *writer++ = '}';
     *writer++ = ',';
     return writer;
 }
 
-force_inline _dst_t *unicode_buffer_append_obj_end(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth) {
+force_inline dst_t *unicode_buffer_append_obj_end(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth) {
     // remove last comma
     writer--;
     // this is not a *value*, the indent is always needed. i.e. `is_in_obj` should always pass false
@@ -453,14 +453,14 @@ force_inline _dst_t *unicode_buffer_append_obj_end(_dst_t *writer, EncodeUnicode
     return write_unicode_obj_end(writer);
 }
 
-force_inline ssrjson_nofail _dst_t *write_unicode_arr_end(_dst_t *writer) {
+force_inline ssrjson_nofail dst_t *write_unicode_arr_end(dst_t *writer) {
     // reserve count = 2
     *writer++ = ']';
     *writer++ = ',';
     return writer;
 }
 
-force_inline _dst_t *unicode_buffer_append_arr_end(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth) {
+force_inline dst_t *unicode_buffer_append_arr_end(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth) {
     // remove last comma
     writer--;
     // this is not a *value*, the indent is always needed. i.e. `is_in_obj` should always pass false

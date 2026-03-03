@@ -25,7 +25,7 @@
 #include "iw_out.inl.h"
 #include "srw_out.inl.h"
 //
-#undef MAKE_SIRW_NAME
+#undef make_sirw_name
 //
 #undef unicode_buffer_append_key_internal
 #undef unicode_buffer_append_str_internal
@@ -33,7 +33,7 @@
 #undef STR_WRITER_IMPL
 #undef KEY_WRITER_IMPL
 //
-#undef MAKE_IU_NAME
+#undef make_iu_name
 //
 #undef prepare_unicode_write
 #undef unicode_buffer_append_key

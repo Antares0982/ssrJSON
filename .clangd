@@ -1,4 +1,4 @@
 CompileFlags:
-  Add: [-DSSRJSON_CLANGD_DUMMY, -DDISABLE_INTERNAL_NOINLINE=0]
+  Add: [-DSSRJSON_CLANGD_CHECKING, -DDISABLE_INTERNAL_NOINLINE=0]
 Diagnostics:
   Suppress: [undefined-internal, unused-includes]

@@ -25,9 +25,9 @@
 #undef WRITE_BIT_SIZE
 #undef _CAST_WRITER
 //
-#undef _dst_t
+#undef dst_t
 //
-#undef MAKE_W_NAME
+#undef make_w_name
 //
 #undef unicode_buffer_reserve
 #undef u64_to_unicode

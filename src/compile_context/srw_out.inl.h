@@ -26,7 +26,7 @@
 #include "sr_out.inl.h"
 #include "sw_out.inl.h"
 //
-#undef MAKE_SRW_NAME
+#undef make_srw_name
 //
 #undef trailing_copy_with_cvt
 #undef encode_trailing_copy_with_cvt

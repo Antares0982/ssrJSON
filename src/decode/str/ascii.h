@@ -38,7 +38,7 @@
 //
 #include "compile_context/sr_in.inl.h"
 
-force_inline PyObject *make_unicode_from_src_ascii(const _src_t *start, usize count, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+force_inline PyObject *make_unicode_from_src_ascii(const src_t *start, usize count, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     PyObject *ret;
     decode_keyhash_t hash;
     bool should_cache = is_key && count <= 64;
@@ -67,7 +67,7 @@ done:;
 }
 
 /* Slow path unicode maker, which never caches. */
-force_inline PyObject *make_unicode_ucs1(const _src_t *start, usize count, bool is_key) {
+force_inline PyObject *make_unicode_ucs1(const src_t *start, usize count, bool is_key) {
     assert(count);
     PyObject *ret;
     bool should_hash = is_key;
@@ -131,7 +131,7 @@ done:;
     return ret;
 }
 
-force_inline int decode_str_fast_loop4_ascii(const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_fast_loop4_ascii(const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
     int ret;
     //
     unionvector_a_x4 vec;
@@ -144,7 +144,7 @@ force_inline int decode_str_fast_loop4_ascii(const _src_t **src_addr, const _src
     return ret;
 }
 
-force_inline int decode_str_fast_loop_ascii(const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_fast_loop_ascii(const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
     int ret;
     //
     vector_a vec;
@@ -156,7 +156,7 @@ force_inline int decode_str_fast_loop_ascii(const _src_t **src_addr, const _src_
     return ret;
 }
 
-force_inline int decode_str_fast_trailing_ascii(const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escape_info_addr) {
+force_inline int decode_str_fast_trailing_ascii(const src_t **src_addr, const src_t *src_end, EscapeInfo *escape_info_addr) {
     int ret;
     //
     vector_a vec;
@@ -168,7 +168,7 @@ force_inline int decode_str_fast_trailing_ascii(const _src_t **src_addr, const _
     return ret;
 }
 
-force_inline int decode_str_copy_loop4_ascii_u8(u8 **dst_addr, const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop4_ascii_u8(u8 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
     int ret;
     //
     unionvector_a_x4 vec;
@@ -182,7 +182,7 @@ force_inline int decode_str_copy_loop4_ascii_u8(u8 **dst_addr, const _src_t **sr
     return ret;
 }
 
-force_inline int decode_str_copy_loop_ascii_u8(u8 **dst_addr, const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop_ascii_u8(u8 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
     int ret;
     //
     vector_a vec;
@@ -195,7 +195,7 @@ force_inline int decode_str_copy_loop_ascii_u8(u8 **dst_addr, const _src_t **src
     return ret;
 }
 
-force_inline int decode_str_copy_trailing_ascii_u8(u8 **dst_addr, const _src_t **src_addr, const _src_t *src_end,
+force_inline int decode_str_copy_trailing_ascii_u8(u8 **dst_addr, const src_t **src_addr, const src_t *src_end,
                                                    EscapeInfo *escape_info_addr) {
     int ret;
     //
@@ -214,7 +214,7 @@ force_inline int decode_str_copy_trailing_ascii_u8(u8 **dst_addr, const _src_t *
     return ret;
 }
 
-force_inline int decode_str_copy_trailing_ascii_u16(u16 **dst_addr, const _src_t **src_addr, const _src_t *src_end,
+force_inline int decode_str_copy_trailing_ascii_u16(u16 **dst_addr, const src_t **src_addr, const src_t *src_end,
                                                     EscapeInfo *escape_info_addr) {
     int ret;
     //
@@ -225,7 +225,7 @@ force_inline int decode_str_copy_trailing_ascii_u16(u16 **dst_addr, const _src_t
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 256
     avx2_trailing_cvt_u8_u16(*src_addr, src_end, *dst_addr);
 #else
-    MAKE_S_NAME(cvt_to_dst_u8_u16)(*dst_addr, vec);
+    make_s_name(cvt_to_dst_u8_u16)(*dst_addr, vec);
 #endif
     usize done_count = _decode_str_trailing_decoder_impl(src_addr, src_end, check_mask, &ret, false, NULL, vec, escape_info_addr);
     *dst_addr += done_count;
@@ -234,8 +234,8 @@ force_inline int decode_str_copy_trailing_ascii_u16(u16 **dst_addr, const _src_t
 }
 
 force_inline int decode_str_copy_trailing_ascii_u32(u32 **dst_addr,
-                                                    const _src_t **src_addr,
-                                                    const _src_t *src_end,
+                                                    const src_t **src_addr,
+                                                    const src_t *src_end,
                                                     EscapeInfo *escape_info_addr) {
     int ret;
     //
@@ -246,7 +246,7 @@ force_inline int decode_str_copy_trailing_ascii_u32(u32 **dst_addr,
 #if SSRJSON_X86 && COMPILE_SIMD_BITS == 256
     avx2_trailing_cvt_u8_u32(*src_addr, src_end, *dst_addr);
 #else
-    MAKE_S_NAME(cvt_to_dst_u8_u32)(*dst_addr, vec);
+    make_s_name(cvt_to_dst_u8_u32)(*dst_addr, vec);
 #endif
     usize done_count = _decode_str_trailing_decoder_impl(src_addr, src_end, check_mask, &ret, false, NULL, vec, escape_info_addr);
     *dst_addr += done_count;
@@ -287,7 +287,7 @@ force_inline int process_escape_ascii_u8(EscapeInfo escape_info, u8 **u8writer_a
     }
 }
 
-force_inline int decode_str_copy_loop4_ascii_u16(u16 **dst_addr, const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop4_ascii_u16(u16 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
     int ret;
     //
     unionvector_a_x4 vec;
@@ -297,21 +297,21 @@ force_inline int decode_str_copy_loop4_ascii_u16(u16 **dst_addr, const _src_t **
     _decode_str_loop4_read_src_impl(*src_addr, &vec, check_mask, &check_mask_total);
     u16 *dst = *dst_addr;
     for (int i = 0; i < 4; ++i) {
-        MAKE_S_NAME(cvt_to_dst_u8_u16)((dst + i * READ_BATCH_COUNT), vec.x[i]);
+        make_s_name(cvt_to_dst_u8_u16)((dst + i * READ_BATCH_COUNT), vec.x[i]);
     }
     usize moved_count = _decode_str_loop4_decoder_impl(src_addr, src_end, check_mask, check_mask_total, &ret, false, NULL, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
 }
 
-force_inline int decode_str_copy_loop_ascii_u16(u16 **dst_addr, const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop_ascii_u16(u16 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
     int ret;
     //
     vector_a vec;
     anymask_t check_mask;
     //
     _decode_str_loop_read_src_impl(*src_addr, &vec, &check_mask);
-    MAKE_S_NAME(cvt_to_dst_u8_u16)(*dst_addr, vec);
+    make_s_name(cvt_to_dst_u8_u16)(*dst_addr, vec);
     usize moved_count = _decode_str_loop_decoder_impl(src_addr, src_end, check_mask, &ret, false, NULL, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
@@ -337,7 +337,7 @@ force_inline int process_escape_ascii_u16(EscapeInfo escape_info, u16 **u16write
     }
 }
 
-force_inline int decode_str_copy_loop4_ascii_u32(u32 **dst_addr, const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop4_ascii_u32(u32 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
     int ret;
     //
     unionvector_a_x4 vec;
@@ -347,21 +347,21 @@ force_inline int decode_str_copy_loop4_ascii_u32(u32 **dst_addr, const _src_t **
     _decode_str_loop4_read_src_impl(*src_addr, &vec, check_mask, &check_mask_total);
     u32 *dst = *dst_addr;
     for (int i = 0; i < 4; ++i) {
-        MAKE_S_NAME(cvt_to_dst_u8_u32)((dst + i * READ_BATCH_COUNT), vec.x[i]);
+        make_s_name(cvt_to_dst_u8_u32)((dst + i * READ_BATCH_COUNT), vec.x[i]);
     }
     usize moved_count = _decode_str_loop4_decoder_impl(src_addr, src_end, check_mask, check_mask_total, &ret, false, NULL, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
 }
 
-force_inline int decode_str_copy_loop_ascii_u32(u32 **dst_addr, const _src_t **src_addr, const _src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop_ascii_u32(u32 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
     int ret;
     //
     vector_a vec;
     anymask_t check_mask;
     //
     _decode_str_loop_read_src_impl(*src_addr, &vec, &check_mask);
-    MAKE_S_NAME(cvt_to_dst_u8_u32)(*dst_addr, vec);
+    make_s_name(cvt_to_dst_u8_u32)(*dst_addr, vec);
     usize moved_count = _decode_str_loop_decoder_impl(src_addr, src_end, check_mask, &ret, false, NULL, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
@@ -376,16 +376,16 @@ force_inline void process_escape_ascii_u32(EscapeInfo escape_info, u32 **u32writ
 }
 
 internal_simd_noinline PyObject *decode_str_with_escape_ascii(
-        const _src_t *src_start,
-        const _src_t **src_addr,
-        const _src_t *src_end,
+        const src_t *src_start,
+        const src_t **src_addr,
+        const src_t *src_end,
         void *temp_buffer,
         bool is_key,
         EscapeInfo in_escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
 #define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
     //
-    const _src_t *src = *src_addr;
+    const src_t *src = *src_addr;
     //
     int decode_state_size;
     u8 *u8writer = NULL;
@@ -725,8 +725,8 @@ failed:;
 }
 
 force_inline PyObject *decode_str_ascii(
-        const _src_t **src_addr,
-        const _src_t *const src_end,
+        const src_t **src_addr,
+        const src_t *const src_end,
         void *temp_buffer,
         bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
@@ -760,8 +760,8 @@ force_inline PyObject *decode_str_ascii(
     }
 
 
-    const _src_t *src = *src_addr;
-    const _src_t *const original_src = src;
+    const src_t *src = *src_addr;
+    const src_t *const original_src = src;
 
     if (!is_key) {
         while (CAN_LOOP4()) {
@@ -820,8 +820,8 @@ failed:;
 #undef CAN_LOOP
 }
 
-internal_simd_noinline PyObject *decode_str_ascii_not_key(const _src_t **src_addr,
-                                                          const _src_t *const src_end,
+internal_simd_noinline PyObject *decode_str_ascii_not_key(const src_t **src_addr,
+                                                          const src_t *const src_end,
                                                           void *temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     return decode_str_ascii(src_addr, src_end, temp_buffer, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 }

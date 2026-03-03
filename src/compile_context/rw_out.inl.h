@@ -25,11 +25,11 @@
 #include "r_out.inl.h"
 #include "w_out.inl.h"
 //
-#undef MAKE_RW_NAME
+#undef make_rw_name
 //
 #undef avx2_trailing_cvt
 //
-#undef MAKE_UCS_W_NAME
+#undef make_ucs_w_name
 //
 #undef decode_str_copy_loop4
 #undef decode_str_copy_loop

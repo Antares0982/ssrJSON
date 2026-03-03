@@ -23,6 +23,13 @@
 #ifndef SSRJSON_SIMD_DETECT_H
 #define SSRJSON_SIMD_DETECT_H
 
+#ifndef SSRJSON_X86
+#    define SSRJSON_X86 0
+#endif
+#ifndef SSRJSON_AARCH
+#    define SSRJSON_AARCH 0
+#endif
+
 #define HAS_AVX512 0
 #define HAS_AVX2 0
 #define HAS_SSE4_2 0

@@ -25,7 +25,7 @@
  *   READ_ROOT_IMPL, points to the function name
  *   DECODE_READ_PRETTY, true/false
  */
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef DECODE_READ_PRETTY
 #        define COMPILE_CONTEXT_DECODE 1
 #        include "decode/decode_float_wrap.h"

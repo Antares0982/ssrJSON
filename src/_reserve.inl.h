@@ -20,23 +20,23 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "encode/encode_shared.h"
 #    include "utils/unicode.h"
 #endif
 
 #include "compile_context/w_in.inl.h"
 
-force_inline _dst_t *unicode_buffer_reserve(_dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, usize size) {
-    _dst_t *target_ptr = writer + size;
-    if (unlikely(target_ptr > ssrjson_cast(_dst_t *, unicode_buffer_info->end))) {
+force_inline dst_t *unicode_buffer_reserve(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, usize size) {
+    dst_t *target_ptr = writer + size;
+    if (unlikely(target_ptr > ssrjson_cast(dst_t *, unicode_buffer_info->end))) {
         u8 *old_head = (u8 *)unicode_buffer_info->head;
         usize target_size = ssrjson_cast(u8 *, target_ptr) - ssrjson_cast(u8 *, unicode_buffer_info->head);
         EncodeUnicodeBufferInfo new_info = _unicode_buffer_reserve(*unicode_buffer_info, target_size);
         return_if_unlikely(!new_info.head);
         usize u8offset = ssrjson_cast(u8 *, writer) - old_head;
         *unicode_buffer_info = new_info;
-        writer = ssrjson_cast(_dst_t *, ssrjson_cast(u8 *, unicode_buffer_info->head) + u8offset);
+        writer = ssrjson_cast(dst_t *, ssrjson_cast(u8 *, unicode_buffer_info->head) + u8offset);
     }
     return writer;
 }

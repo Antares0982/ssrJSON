@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "encode/bytes/encode_utf8.h"
 #    include "encode/encode_impl_wrap.h"
 #    include "encode/encode_shared.h"

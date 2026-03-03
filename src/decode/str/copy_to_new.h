@@ -46,7 +46,7 @@ force_inline void copy_to_new_unicode_ucs2(void **dst_addr, PyObject *ret, bool 
     } else {
         u8 *dst = (kind == 0) ? PYUNICODE_ASCII_START(ret) : PYUNICODE_UCS1_START(ret);
         *dst_addr = dst;
-        MAKE_S_NAME(long_cvt_u16_u8)(dst, src, count);
+        make_s_name(long_cvt_u16_u8)(dst, src, count);
     }
 }
 
@@ -59,7 +59,7 @@ force_inline void copy_to_new_unicode_ucs4(void **dst_addr, PyObject *ret, bool 
         if (kind <= 1) {
             u8 *dst = (kind == 0) ? PYUNICODE_ASCII_START(ret) : PYUNICODE_UCS1_START(ret);
             *dst_addr = dst;
-            MAKE_S_NAME(long_cvt_u32_u8)(dst, src, count);
+            make_s_name(long_cvt_u32_u8)(dst, src, count);
         } else {
             // this should be unlikely, use noinline version
             u16 *dst = PYUNICODE_UCS2_START(ret);

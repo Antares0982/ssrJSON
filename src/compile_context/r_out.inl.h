@@ -28,12 +28,12 @@
 #undef READ_BIT_SIZEx8
 #undef AVX512BITMASK_SIZE
 //
-#undef _src_t
+#undef src_t
 #undef avx512_bitmask_t
-#undef MAKE_R_NAME
+#undef make_r_name
 //
 #undef __UCS_NAME
-#undef MAKE_UCS_NAME
+#undef make_ucs_name
 //
 #undef cmpeq_2chars
 #undef verify_escape_hex

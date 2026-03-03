@@ -27,7 +27,7 @@
 /** Set a bigint with floating point number string. */
 force_inline void bigint_set_buf(
         bigint *big, u64 sig, i32 *exp,
-        const _src_t *sig_cut, const _src_t *sig_end, const _src_t *dot_pos) {
+        const src_t *sig_cut, const src_t *sig_end, const src_t *dot_pos) {
 
     if (unlikely(!sig_cut)) {
         /* no digit cut, set significant part only */
@@ -36,8 +36,8 @@ force_inline void bigint_set_buf(
 
     } else {
         /* some digits were cut, read them from 'sig_cut' to 'sig_end' */
-        const _src_t *hdr = sig_cut;
-        const _src_t *cur = hdr;
+        const src_t *hdr = sig_cut;
+        const src_t *cur = hdr;
         u32 len = 0;
         u64 val = 0;
         bool dig_big_cut = false;
@@ -79,7 +79,7 @@ force_inline void bigint_set_buf(
 
 void bigint_set_buf_noinline(
         bigint *big, u64 sig, i32 *exp,
-        const _src_t *sig_cut, const _src_t *sig_end, const _src_t *dot_pos)
+        const src_t *sig_cut, const src_t *sig_end, const src_t *dot_pos)
 #if BIGINT_IMPL
 {
     bigint_set_buf(big, sig, exp, sig_cut, sig_end, dot_pos);

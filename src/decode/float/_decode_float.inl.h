@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef COMPILE_READ_UCS_LEVEL
 #        include "bigint.h"
 #        include "decode/float/decode_float_utils.h"
@@ -31,30 +31,30 @@
 
 #include "compile_context/r_in.inl.h"
 
-force_inline bool digi_is_digit(_src_t d) {
+force_inline bool digi_is_digit(src_t d) {
     return d <= U8MAX && _digi_is_digit((u8)d);
 }
 
-force_inline bool digi_is_digit_or_fp(_src_t d) {
+force_inline bool digi_is_digit_or_fp(src_t d) {
     return d <= U8MAX && _digi_is_digit_or_fp((u8)d);
 }
 
-force_inline bool digi_is_exp(_src_t d) {
+force_inline bool digi_is_exp(src_t d) {
     return d <= U8MAX && _digi_is_exp((u8)d);
 }
 
-force_inline bool digi_is_sign(_src_t d) {
+force_inline bool digi_is_sign(src_t d) {
     return d <= U8MAX && _digi_is_sign((u8)d);
 }
 
-force_inline bool digi_is_fp(_src_t d) {
+force_inline bool digi_is_fp(src_t d) {
     return d <= U8MAX && _digi_is_fp((u8)d);
 }
 
-#define DIGI_IS_NONZERO MAKE_R_NAME(digi_is_nonzero)
+#define DIGI_IS_NONZERO make_r_name(digi_is_nonzero)
 
 ////////////////
-force_inline bool DIGI_IS_NONZERO(_src_t d) {
+force_inline bool DIGI_IS_NONZERO(src_t d) {
     return d <= U8MAX && _digi_is_nonzero((u8)d);
 }
 
@@ -70,7 +70,7 @@ force_inline bool DIGI_IS_NONZERO(_src_t d) {
     number is infinite, the return value is based on flag.
  3. This function (with inline attribute) may generate a lot of instructions.
  */
-internal_simd_noinline PyObject *loads_number(const _src_t **ptr, const _src_t *buffer_end) {
+internal_simd_noinline PyObject *loads_number(const src_t **ptr, const src_t *buffer_end) {
 #define return_err(_end, _msg)                                                  \
     do {                                                                        \
         PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, _end - hdr); \
@@ -115,22 +115,22 @@ internal_simd_noinline PyObject *loads_number(const _src_t **ptr, const _src_t *
         return_f64_bin(F64_RAW_INF); \
     } while (false)
 
-    const _src_t *sig_cut = NULL; /* significant part cutting position for long number */
-    const _src_t *sig_end = NULL; /* significant part ending position */
-    const _src_t *dot_pos = NULL; /* decimal point position */
+    const src_t *sig_cut = NULL; /* significant part cutting position for long number */
+    const src_t *sig_end = NULL; /* significant part ending position */
+    const src_t *dot_pos = NULL; /* decimal point position */
 
     u64 sig = 0; /* significant part of the number */
     i32 exp = 0; /* exponent part of the number */
 
-    bool exp_sign;     /* temporary exponent sign from literal part */
-    i64 exp_sig = 0;   /* temporary exponent number from significant part */
-    i64 exp_lit = 0;   /* temporary exponent number from exponent literal part */
-    u64 num;           /* temporary number for reading */
-    const _src_t *tmp; /* temporary cursor for reading */
+    bool exp_sign;    /* temporary exponent sign from literal part */
+    i64 exp_sig = 0;  /* temporary exponent number from significant part */
+    i64 exp_lit = 0;  /* temporary exponent number from exponent literal part */
+    u64 num;          /* temporary number for reading */
+    const src_t *tmp; /* temporary cursor for reading */
 
-    const _src_t *hdr = *ptr;
-    const _src_t *cur = *ptr;
-    const _src_t **end = ptr;
+    const src_t *hdr = *ptr;
+    const src_t *cur = *ptr;
+    const src_t **end = ptr;
     bool sign;
 
     sign = (*hdr == '-');

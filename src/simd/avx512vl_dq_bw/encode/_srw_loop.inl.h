@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "simd/avx512vl_dq_bw/checker.h"
 #    include "simd/avx512vl_dq_bw/common.h"
 #    include "simd/avx512vl_dq_bw/cvt.h"
@@ -37,12 +37,12 @@
 
 #include "compile_context/srw_in.inl.h"
 
-extern const _dst_t ControlEscapeTable[(_Slash + 1) * 8];
+extern const dst_t ControlEscapeTable[(_Slash + 1) * 8];
 extern const Py_ssize_t _ControlJump[_Slash + 1];
 
-force_inline ssrjson_nofail _dst_t *encode_unicode_loop4(register _dst_t *dst, const _src_t **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail dst_t *encode_unicode_loop4(register dst_t *dst, const src_t **src_addr, usize *len_addr) {
     register usize len = *len_addr;
-    register const _src_t *src = *src_addr;
+    register const src_t *src = *src_addr;
     while (len >= READ_BATCH_COUNT * 4) {
         union {
             vector_a x[4];
@@ -63,13 +63,13 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop4(register _dst_t *dst, c
             len -= 4 * READ_BATCH_COUNT;
         } else {
             usize done_count = joined4_escape_bitmask_to_done_count(escape_union_vec.x[0], escape_union_vec.x[1], escape_union_vec.x[2], escape_union_vec.x[3]);
-            const _src_t *escape_pos = src + done_count;
+            const src_t *escape_pos = src + done_count;
             src += done_count + 1;
-            _src_t escape_unicode = *escape_pos;
+            src_t escape_unicode = *escape_pos;
             assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < _ControlMax);
             dst += done_count;
             len -= done_count + 1;
-            memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(_dst_t));
+            memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(dst_t));
             dst += _ControlJump[escape_unicode];
         }
     }
@@ -78,9 +78,9 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop4(register _dst_t *dst, c
     return dst;
 }
 
-force_inline ssrjson_nofail _dst_t *encode_unicode_loop(register _dst_t *dst, const _src_t **src_addr, usize *len_addr) {
+force_inline ssrjson_nofail dst_t *encode_unicode_loop(register dst_t *dst, const src_t **src_addr, usize *len_addr) {
     register usize len = *len_addr;
-    register const _src_t *src = *src_addr;
+    register const src_t *src = *src_addr;
     while (len >= READ_BATCH_COUNT) {
         vector_a x = *(vector_u *)src;
         avx512_bitmask_t escape_mask = get_escape_bitmask(x);
@@ -91,13 +91,13 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop(register _dst_t *dst, co
             len -= READ_BATCH_COUNT;
         } else {
             u32 done_count = escape_bitmask_to_done_count(escape_mask);
-            const _src_t *escape_pos = src + done_count;
+            const src_t *escape_pos = src + done_count;
             src += done_count + 1;
-            _src_t escape_unicode = *escape_pos;
+            src_t escape_unicode = *escape_pos;
             assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < _ControlMax);
             dst += done_count;
             len -= done_count + 1;
-            memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(_dst_t));
+            memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(dst_t));
             dst += _ControlJump[escape_unicode];
         }
     }
@@ -106,7 +106,7 @@ force_inline ssrjson_nofail _dst_t *encode_unicode_loop(register _dst_t *dst, co
     return dst;
 }
 
-force_inline ssrjson_nofail _dst_t *encode_trailing_copy_with_cvt(register _dst_t *dst, const _src_t *src, usize len) {
+force_inline ssrjson_nofail dst_t *encode_trailing_copy_with_cvt(register dst_t *dst, const src_t *src, usize len) {
     vector_a vec;
     usize maskz = len_to_maskz(len);
     vec = maskz_loadu(maskz, src);
@@ -118,13 +118,13 @@ restart:;
         dst += len;
     } else {
         u32 done_count = escape_bitmask_to_done_count(bitmask);
-        const _src_t *escape_pos = src + done_count;
+        const src_t *escape_pos = src + done_count;
         src += done_count + 1;
         len -= done_count + 1;
-        _src_t escape_unicode = *escape_pos;
+        src_t escape_unicode = *escape_pos;
         assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < _ControlMax);
         dst += done_count;
-        memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(_dst_t));
+        memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(dst_t));
         dst += _ControlJump[escape_unicode];
         if (len) {
             // no need to compute bitmask again
@@ -136,14 +136,14 @@ restart:;
     return dst;
 }
 
-force_inline ssrjson_nofail _dst_t *encode_unicode_impl(_dst_t *dst, const _src_t *src, usize len, bool is_key) {
+force_inline ssrjson_nofail dst_t *encode_unicode_impl(dst_t *dst, const src_t *src, usize len, bool is_key) {
     if (!is_key) dst = encode_unicode_loop4(dst, &src, &len);
     dst = encode_unicode_loop(dst, &src, &len);
     if (len) dst = encode_trailing_copy_with_cvt(dst, src, len);
     return dst;
 }
 
-force_inline ssrjson_nofail _dst_t *encode_unicode_impl_no_key(_dst_t *dst, const _src_t *src, usize len) {
+force_inline ssrjson_nofail dst_t *encode_unicode_impl_no_key(dst_t *dst, const src_t *src, usize len) {
     return encode_unicode_impl(dst, src, len, false);
 }
 

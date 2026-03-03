@@ -20,7 +20,7 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef COMPILE_CONTEXT_ENCODE
 #        define COMPILE_CONTEXT_ENCODE
 #    endif
@@ -40,7 +40,7 @@
 /* Macro IN */
 #include "compile_context/sirw_in.inl.h"
 
-force_inline _dst_t *unicode_buffer_append_key_internal(const _src_t *str_data, usize len, _dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth) {
+force_inline dst_t *unicode_buffer_append_key_internal(const src_t *str_data, usize len, dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth) {
     static_assert(COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL, "COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL");
     {
         // write_unicode_indent and '"' writes `get_indent_char_count() + 1` unicodes
@@ -70,8 +70,8 @@ force_inline _dst_t *unicode_buffer_append_key_internal(const _src_t *str_data, 
     return writer;
 }
 
-force_inline _dst_t *unicode_buffer_append_str_internal(const _src_t *str_data, usize len, _dst_t *writer,
-                                                        EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
+force_inline dst_t *unicode_buffer_append_str_internal(const src_t *str_data, usize len, dst_t *writer,
+                                                       EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     static_assert(COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL, "COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL");
     //
     const usize reserve_count_in_encoding = max_json_bytes_per_unicode * len;

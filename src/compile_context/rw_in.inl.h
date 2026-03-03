@@ -28,18 +28,19 @@
 #include "w_in.inl.h"
 
 
-// Name creation macro.
-#define MAKE_RW_NAME(_x_) ssrjson_concat3(_x_, _src_t, _dst_t)
+/* Generate function names with reader type and writer type. */
+#define make_rw_name(_x_) ssrjson_concat3(_x_, src_t, dst_t)
 
-#define avx2_trailing_cvt MAKE_RW_NAME(avx2_trailing_cvt)
+#define avx2_trailing_cvt make_rw_name(avx2_trailing_cvt)
 
 #ifdef COMPILE_UCS_LEVEL
-#    define MAKE_UCS_W_NAME(_x_) MAKE_W_NAME(MAKE_UCS_NAME(_x_))
+/* Generate function names with unicode type and writer type. */
+#    define make_ucs_w_name(_x_) make_w_name(make_ucs_name(_x_))
 // some decoder impls
-#    define decode_str_copy_loop4 MAKE_UCS_W_NAME(decode_str_copy_loop4)
-#    define decode_str_copy_loop MAKE_UCS_W_NAME(decode_str_copy_loop)
-#    define decode_str_copy_trailing MAKE_UCS_W_NAME(decode_str_copy_trailing)
-#    define process_escape MAKE_UCS_W_NAME(process_escape)
+#    define decode_str_copy_loop4 make_ucs_w_name(decode_str_copy_loop4)
+#    define decode_str_copy_loop make_ucs_w_name(decode_str_copy_loop)
+#    define decode_str_copy_trailing make_ucs_w_name(decode_str_copy_trailing)
+#    define process_escape make_ucs_w_name(process_escape)
 #endif
 
 #endif // SSRJSON_COMPILE_CONTEXT_RW

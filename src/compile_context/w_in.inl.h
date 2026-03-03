@@ -24,7 +24,7 @@
 #define SSRJSON_COMPILE_CONTEXT_W
 
 // fake include and definition to deceive clangd
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "ssrjson.h"
 #    ifndef COMPILE_WRITE_UCS_LEVEL
 #        define COMPILE_WRITE_UCS_LEVEL 1
@@ -48,18 +48,18 @@
 #endif
 
 // The destination type.
-#define _dst_t ssrjson_simple_concat2(u, WRITE_BIT_SIZE)
+#define dst_t ssrjson_simple_concat2(u, WRITE_BIT_SIZE)
 
-// Name creation macro.
-#define MAKE_W_NAME(_x_) ssrjson_concat2(_x_, _dst_t)
+/* Generate function names with writer type. */
+#define make_w_name(_x_) ssrjson_concat2(_x_, dst_t)
 
 /*
  * Names using W context.
  */
-#define unicode_buffer_reserve MAKE_W_NAME(unicode_buffer_reserve)
-#define u64_to_unicode MAKE_W_NAME(u64_to_unicode)
-#define f64_to_unicode MAKE_W_NAME(f64_to_unicode)
-#define inf_nan_to_unicode MAKE_W_NAME(inf_nan_to_unicode)
-#define ControlEscapeTable MAKE_W_NAME(ControlEscapeTable)
+#define unicode_buffer_reserve make_w_name(unicode_buffer_reserve)
+#define u64_to_unicode make_w_name(u64_to_unicode)
+#define f64_to_unicode make_w_name(f64_to_unicode)
+#define inf_nan_to_unicode make_w_name(inf_nan_to_unicode)
+#define ControlEscapeTable make_w_name(ControlEscapeTable)
 
 #endif // SSRJSON_COMPILE_CONTEXT_W

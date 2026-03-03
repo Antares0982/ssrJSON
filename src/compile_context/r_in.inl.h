@@ -24,7 +24,7 @@
 #define SSRJSON_COMPILE_CONTEXT_R
 
 // fake include and definition to deceive clangd
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "ssrjson.h"
 #    ifndef COMPILE_READ_UCS_LEVEL
 #        define COMPILE_READ_UCS_LEVEL 1
@@ -57,13 +57,13 @@
 #endif
 
 // The source type.
-#define _src_t ssrjson_simple_concat2(u, READ_BIT_SIZE)
+#define src_t ssrjson_simple_concat2(u, READ_BIT_SIZE)
 
 // Other type definitions.
 #define avx512_bitmask_t ssrjson_simple_concat2(u, AVX512BITMASK_SIZE)
 
-// Name creation macro.
-#define MAKE_R_NAME(_x_) ssrjson_concat2(_x_, _src_t)
+/* Generate function names with reader type. */
+#define make_r_name(_x_) ssrjson_concat2(_x_, src_t)
 
 #ifdef COMPILE_UCS_LEVEL
 #    if COMPILE_UCS_LEVEL == 0
@@ -71,51 +71,56 @@
 #    else
 #        define __UCS_NAME ssrjson_simple_concat2(ucs, COMPILE_UCS_LEVEL)
 #    endif
-#    define MAKE_UCS_NAME(_x_) ssrjson_concat2(_x_, __UCS_NAME)
+/* Generate function names with unicode type. */
+#    define make_ucs_name(_x_) ssrjson_concat2(_x_, __UCS_NAME)
 #endif
+
 /*
  * Names using R context.
  */
-#define cmpeq_2chars MAKE_R_NAME(cmpeq_2chars)
-#define verify_escape_hex MAKE_R_NAME(verify_escape_hex)
-#define to_hex MAKE_R_NAME(to_hex)
-#define _read_true MAKE_R_NAME(_read_true)
-#define _read_false MAKE_R_NAME(_read_false)
-#define _read_null MAKE_R_NAME(_read_null)
-#define _read_inf MAKE_R_NAME(_read_inf)
-#define _read_nan MAKE_R_NAME(_read_nan)
-#define loads_inf_or_nan MAKE_R_NAME(loads_inf_or_nan)
-#define do_decode_escape MAKE_R_NAME(do_decode_escape)
-#define do_decode_escape_noinline MAKE_R_NAME(do_decode_escape_noinline)
-#define _decode_str_loop4_read_src_impl MAKE_R_NAME(_decode_str_loop4_read_src_impl)
-#define _decode_str_loop_read_src_impl MAKE_R_NAME(_decode_str_loop_read_src_impl)
-#define _decode_str_trailing_read_src_impl MAKE_R_NAME(_decode_str_trailing_read_src_impl)
-#define _decode_str_loop4_decoder_impl MAKE_R_NAME(_decode_str_loop4_decoder_impl)
-#define _decode_str_loop_decoder_impl MAKE_R_NAME(_decode_str_loop_decoder_impl)
-#define _decode_str_trailing_decoder_impl MAKE_R_NAME(_decode_str_trailing_decoder_impl)
-#define loads_number MAKE_R_NAME(loads_number)
-#define digi_is_digit MAKE_R_NAME(digi_is_digit)
-#define digi_is_digit_or_fp MAKE_R_NAME(digi_is_digit_or_fp)
-#define digi_is_exp MAKE_R_NAME(digi_is_exp)
-#define digi_is_sign MAKE_R_NAME(digi_is_sign)
-#define digi_is_fp MAKE_R_NAME(digi_is_fp)
-#define bigint_set_buf MAKE_R_NAME(bigint_set_buf)
-#define bigint_set_buf_noinline MAKE_R_NAME(bigint_set_buf_noinline)
+#define cmpeq_2chars make_r_name(cmpeq_2chars)
+#define verify_escape_hex make_r_name(verify_escape_hex)
+#define to_hex make_r_name(to_hex)
+#define _read_true make_r_name(_read_true)
+#define _read_false make_r_name(_read_false)
+#define _read_null make_r_name(_read_null)
+#define _read_inf make_r_name(_read_inf)
+#define _read_nan make_r_name(_read_nan)
+#define loads_inf_or_nan make_r_name(loads_inf_or_nan)
+#define do_decode_escape make_r_name(do_decode_escape)
+#define do_decode_escape_noinline make_r_name(do_decode_escape_noinline)
+#define _decode_str_loop4_read_src_impl make_r_name(_decode_str_loop4_read_src_impl)
+#define _decode_str_loop_read_src_impl make_r_name(_decode_str_loop_read_src_impl)
+#define _decode_str_trailing_read_src_impl make_r_name(_decode_str_trailing_read_src_impl)
+#define _decode_str_loop4_decoder_impl make_r_name(_decode_str_loop4_decoder_impl)
+#define _decode_str_loop_decoder_impl make_r_name(_decode_str_loop_decoder_impl)
+#define _decode_str_trailing_decoder_impl make_r_name(_decode_str_trailing_decoder_impl)
+#define loads_number make_r_name(loads_number)
+#define digi_is_digit make_r_name(digi_is_digit)
+#define digi_is_digit_or_fp make_r_name(digi_is_digit_or_fp)
+#define digi_is_exp make_r_name(digi_is_exp)
+#define digi_is_sign make_r_name(digi_is_sign)
+#define digi_is_fp make_r_name(digi_is_fp)
+#define bigint_set_buf make_r_name(bigint_set_buf)
+#define bigint_set_buf_noinline make_r_name(bigint_set_buf_noinline)
 
+/*
+ * Names using UCS context.
+ */
 #ifdef COMPILE_UCS_LEVEL
-#    define decode MAKE_UCS_NAME(decode)
-#    define should_loads_pretty MAKE_UCS_NAME(should_loads_pretty)
-#    define loads_root_pretty MAKE_UCS_NAME(loads_root_pretty)
-#    define loads_root_minify MAKE_UCS_NAME(loads_root_minify)
-#    define loads_root_single MAKE_UCS_NAME(loads_root_single)
-#    define check_and_reserve_str_buffer MAKE_UCS_NAME(check_and_reserve_str_buffer)
-#    define get_unicode_buffer_final_len MAKE_UCS_NAME(get_unicode_buffer_final_len)
-#    define decode_str MAKE_UCS_NAME(decode_str)
-#    define decode_str_with_escape MAKE_UCS_NAME(decode_str_with_escape)
-#    define make_unicode_from_src MAKE_UCS_NAME(make_unicode_from_src)
-#    define decode_str_fast_loop4 MAKE_UCS_NAME(decode_str_fast_loop4)
-#    define decode_str_fast_loop MAKE_UCS_NAME(decode_str_fast_loop)
-#    define decode_str_fast_trailing MAKE_UCS_NAME(decode_str_fast_trailing)
-#    define get_cache_key_hash_and_size MAKE_UCS_NAME(get_cache_key_hash_and_size)
+#    define decode make_ucs_name(decode)
+#    define should_loads_pretty make_ucs_name(should_loads_pretty)
+#    define loads_root_pretty make_ucs_name(loads_root_pretty)
+#    define loads_root_minify make_ucs_name(loads_root_minify)
+#    define loads_root_single make_ucs_name(loads_root_single)
+#    define check_and_reserve_str_buffer make_ucs_name(check_and_reserve_str_buffer)
+#    define get_unicode_buffer_final_len make_ucs_name(get_unicode_buffer_final_len)
+#    define decode_str make_ucs_name(decode_str)
+#    define decode_str_with_escape make_ucs_name(decode_str_with_escape)
+#    define make_unicode_from_src make_ucs_name(make_unicode_from_src)
+#    define decode_str_fast_loop4 make_ucs_name(decode_str_fast_loop4)
+#    define decode_str_fast_loop make_ucs_name(decode_str_fast_loop)
+#    define decode_str_fast_trailing make_ucs_name(decode_str_fast_trailing)
+#    define get_cache_key_hash_and_size make_ucs_name(get_cache_key_hash_and_size)
 #endif
 #endif // SSRJSON_COMPILE_CONTEXT_R

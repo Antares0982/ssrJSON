@@ -24,7 +24,7 @@
 #define SSRJSON_COMPILE_CONTEXT_S
 
 // fake include and definition to deceive clangd
-#ifdef SSRJSON_CLANGD_DUMMY
+#ifdef SSRJSON_CLANGD_CHECKING
 #    include "ssrjson.h"
 #    ifndef COMPILE_SIMD_BITS
 #        define COMPILE_SIMD_BITS 256
@@ -44,40 +44,40 @@
 #    error "COMPILE_SIMD_BITS must be 128, 256 or 512"
 #endif
 
-// Name creation macro.
-#define MAKE_S_NAME(_x_) ssrjson_concat2(_x_, COMPILE_SIMD_BITS)
+/* Generate function names with SIMD level. */
+#define make_s_name(_x_) ssrjson_concat2(_x_, COMPILE_SIMD_BITS)
 
 /*
  * Names using S context.
  */
-#define broadcast_u8 MAKE_S_NAME(broadcast_u8)
-#define broadcast_u16 MAKE_S_NAME(broadcast_u16)
-#define broadcast_u32 MAKE_S_NAME(broadcast_u32)
-#define setzero MAKE_S_NAME(setzero)
-#define cvt_u16_to_u32 MAKE_S_NAME(cvt_u16_to_u32)
-#define cvt_u8_to_u16 MAKE_S_NAME(cvt_u8_to_u16)
-#define cvt_u8_to_u32 MAKE_S_NAME(cvt_u8_to_u32)
-#define rshift_u16 MAKE_S_NAME(rshift_u16)
-#define rshift_u32 MAKE_S_NAME(rshift_u32)
-#define lshift_u16 MAKE_S_NAME(lshift_u16)
-#define lshift_u32 MAKE_S_NAME(lshift_u32)
-#define get_bitmask_from_u8 MAKE_S_NAME(get_bitmask_from_u8)
-#define testz MAKE_S_NAME(testz)
-#define bytes_write_ucs1_trailing MAKE_S_NAME(bytes_write_ucs1_trailing)
-#define bytes_write_ucs2_trailing MAKE_S_NAME(bytes_write_ucs2_trailing)
-#define bytes_write_ucs4_trailing MAKE_S_NAME(bytes_write_ucs4_trailing)
-#define bytes_write_ucs1_raw_utf8_trailing MAKE_S_NAME(bytes_write_ucs1_raw_utf8_trailing)
-#define bytes_write_ucs2_raw_utf8_trailing MAKE_S_NAME(bytes_write_ucs2_raw_utf8_trailing)
-#define bytes_write_ucs4_raw_utf8_trailing MAKE_S_NAME(bytes_write_ucs4_raw_utf8_trailing)
-#define __excess_bytes_write_ucs1_trailing MAKE_S_NAME(__excess_bytes_write_ucs1_trailing)
-#define __excess_bytes_write_ucs2_trailing MAKE_S_NAME(__excess_bytes_write_ucs2_trailing)
-#define __excess_bytes_write_ucs4_trailing MAKE_S_NAME(__excess_bytes_write_ucs4_trailing)
-#define __excess_bytes_write_ucs1_raw_utf8_trailing MAKE_S_NAME(__excess_bytes_write_ucs1_raw_utf8_trailing)
-#define __excess_bytes_write_ucs2_raw_utf8_trailing MAKE_S_NAME(__excess_bytes_write_ucs2_raw_utf8_trailing)
-#define __excess_bytes_write_ucs4_raw_utf8_trailing MAKE_S_NAME(__excess_bytes_write_ucs4_raw_utf8_trailing)
-#define fast_skip_spaces_u8 MAKE_S_NAME(fast_skip_spaces_u8)
-#define fast_skip_spaces_u16 MAKE_S_NAME(fast_skip_spaces_u16)
-#define fast_skip_spaces_u32 MAKE_S_NAME(fast_skip_spaces_u32)
+#define broadcast_u8 make_s_name(broadcast_u8)
+#define broadcast_u16 make_s_name(broadcast_u16)
+#define broadcast_u32 make_s_name(broadcast_u32)
+#define setzero make_s_name(setzero)
+#define cvt_u16_to_u32 make_s_name(cvt_u16_to_u32)
+#define cvt_u8_to_u16 make_s_name(cvt_u8_to_u16)
+#define cvt_u8_to_u32 make_s_name(cvt_u8_to_u32)
+#define rshift_u16 make_s_name(rshift_u16)
+#define rshift_u32 make_s_name(rshift_u32)
+#define lshift_u16 make_s_name(lshift_u16)
+#define lshift_u32 make_s_name(lshift_u32)
+#define get_bitmask_from_u8 make_s_name(get_bitmask_from_u8)
+#define testz make_s_name(testz)
+#define bytes_write_ucs1_trailing make_s_name(bytes_write_ucs1_trailing)
+#define bytes_write_ucs2_trailing make_s_name(bytes_write_ucs2_trailing)
+#define bytes_write_ucs4_trailing make_s_name(bytes_write_ucs4_trailing)
+#define bytes_write_ucs1_raw_utf8_trailing make_s_name(bytes_write_ucs1_raw_utf8_trailing)
+#define bytes_write_ucs2_raw_utf8_trailing make_s_name(bytes_write_ucs2_raw_utf8_trailing)
+#define bytes_write_ucs4_raw_utf8_trailing make_s_name(bytes_write_ucs4_raw_utf8_trailing)
+#define __excess_bytes_write_ucs1_trailing make_s_name(__excess_bytes_write_ucs1_trailing)
+#define __excess_bytes_write_ucs2_trailing make_s_name(__excess_bytes_write_ucs2_trailing)
+#define __excess_bytes_write_ucs4_trailing make_s_name(__excess_bytes_write_ucs4_trailing)
+#define __excess_bytes_write_ucs1_raw_utf8_trailing make_s_name(__excess_bytes_write_ucs1_raw_utf8_trailing)
+#define __excess_bytes_write_ucs2_raw_utf8_trailing make_s_name(__excess_bytes_write_ucs2_raw_utf8_trailing)
+#define __excess_bytes_write_ucs4_raw_utf8_trailing make_s_name(__excess_bytes_write_ucs4_raw_utf8_trailing)
+#define fast_skip_spaces_u8 make_s_name(fast_skip_spaces_u8)
+#define fast_skip_spaces_u16 make_s_name(fast_skip_spaces_u16)
+#define fast_skip_spaces_u32 make_s_name(fast_skip_spaces_u32)
 //
 #define STR_WRITER_NOINDENT_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_str_internal, r_t, w_t, indent0, COMPILE_SIMD_BITS)
 #define KEY_WRITER_NOINDENT_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_key_internal, r_t, w_t, indent0, COMPILE_SIMD_BITS)
