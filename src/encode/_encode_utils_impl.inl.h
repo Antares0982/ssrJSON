@@ -84,7 +84,7 @@ force_inline ssrjson_nofail dst_t *f64_to_unicode(register dst_t *writer, double
 #if COMPILE_WRITE_UCS_LEVEL == 1
     u8 *buffer = writer;
 #else
-    u8 _buffer[32];
+    u8 _buffer[ssrjson_dtoa_write_length];
     u8 *buffer = _buffer;
 #endif
     u8 *buffer_end = xjb64(d, buffer);
@@ -92,6 +92,7 @@ force_inline ssrjson_nofail dst_t *f64_to_unicode(register dst_t *writer, double
     return buffer_end;
 #else
     Py_ssize_t write_len = buffer_end - buffer;
+    assert(write_len <= ssrjson_dtoa_output_maxlen);
     _elevate_u8_copy(writer, buffer);
     return writer + write_len;
 #endif

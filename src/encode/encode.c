@@ -270,7 +270,7 @@ force_inline PyObject *_ssrjson_dumps_single_inf_nan(double v, ssrjson_compileti
 }
 
 force_inline PyObject *ssrjson_dumps_single_float(PyObject *val, ssrjson_compiletime bool to_bytes_obj) {
-    u8 buffer[32];
+    u8 buffer[ssrjson_dtoa_write_length];
     u8 *buffer_end;
     double v = PyFloat_AS_DOUBLE(val);
     if (!ssrjson_dtoa_handle_inf_nan && unlikely(isinf(v) || isnan(v))) {
@@ -278,7 +278,7 @@ force_inline PyObject *ssrjson_dumps_single_float(PyObject *val, ssrjson_compile
     }
     buffer_end = xjb64(v, buffer);
     usize size = buffer_end - buffer;
-    assert(size <= 32);
+    assert(size <= ssrjson_dtoa_output_maxlen);
     PyObject *unicode;
     if (ssrjson_consteval(to_bytes_obj)) {
         unicode = PyObject_Malloc(PYBYTES_START_OFFSET + size + 1);

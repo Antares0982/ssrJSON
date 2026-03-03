@@ -133,6 +133,8 @@
 #endif
 
 #define ssrjson_dtoa_handle_inf_nan 1
+#define ssrjson_dtoa_write_length 33
+#define ssrjson_dtoa_output_maxlen 32
 
 /** compiler version (MSVC) */
 #ifdef _MSC_VER
