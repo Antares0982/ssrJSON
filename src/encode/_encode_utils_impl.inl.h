@@ -103,7 +103,7 @@ force_inline ssrjson_nofail dst_t *inf_nan_to_unicode(register dst_t *writer, do
     if (isinf(d)) {
         bool sign = d < 0;
         *writer = '-';
-        static const dst_t _Inf[9] = {'I', 'n', 'f', 'i', 'n', 'i', 't', 'y', 0};
+        static const dst_t _Inf[8] = {'I', 'n', 'f', 'i', 'n', 'i', 't', 'y'};
         memcpy(writer + sign, _Inf, sizeof(_Inf));
         writer += sign + 8;
     } else {
