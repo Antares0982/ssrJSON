@@ -89,9 +89,18 @@ If you decide to disable it, ssrJSON will not write cache; but if the cache alre
 
 By default, writing cache is enabled globally. You can use `ssrjson.write_utf8_cache` to control this behavior globally, or pass `is_write_cache` to `ssrjson.dumps_to_bytes` in each call.
 
-### Żmij
+### xjb64
 
-Tests and comparisons reveals that the [Żmij](https://github.com/vitaut/zmij) algorithm significantly outperforms other algorithms in terms of performance. ssrJSON project adopts the [Rust implementation of Żmij algorithm](https://github.com/dtolnay/zmij) (using static lib).
+Tests and comparisons reveals that the [xjb64](https://github.com/xjb714/xjb) algorithm significantly outperforms other algorithms in terms of performance and is more compatible. ssrJSON project adopts a slightly modified version to fit the standard behavior of Python's json module.
+
+<table>
+    <tr>
+<td ><center><img src="https://raw.githubusercontent.com/xjb714/xjb/915722455470ec8eb9a323663e24a333284b5e52/bench_result/random_double_m1.svg"  >ramdom double on Apple M1</br> compiler: apple clang 17.0.0</center></td>
+    </tr>
+    <tr>
+        <td ><center><img src="https://raw.githubusercontent.com/xjb714/xjb/915722455470ec8eb9a323663e24a333284b5e52/bench_result/random_double_7840h.svg"  >ramdom double on AMD R7-7840H</br> compiler: icpx 2025.0.4</center> </td>
+    </tr>
+</table>
 
 ### JSON Module compatibility
 
@@ -269,7 +278,7 @@ ssrjson.JSONEncodeError: convert value to unsigned long long failed
 
 ### Floats
 
-For floating-point encoding, ssrJSON employs Rust version of the [Żmij](https://github.com/dtolnay/zmij) algorithm. Żmij is a highly efficient algorithm for converting floating-point to strings.
+For floating-point encoding, ssrJSON employs the [xjb64](https://github.com/xjb714/xjb) algorithm. xjb64 is a highly efficient algorithm for converting floating-point to strings.
 
 Encoding and decoding `math.inf` are supported. `ssrjson.dumps` outputs the same result as `json.dumps`. The input of `ssrjson.loads` should be `"infinity"` with lower or upper cases (for each character), and cannot be `"inf"`.
 
@@ -278,16 +287,24 @@ Encoding and decoding `math.inf` are supported. `ssrjson.dumps` outputs the same
 'Infinity'
 >>> ssrjson.dumps(math.inf)
 'Infinity'
+>>> json.dumps(-math.inf)
+'-Infinity'
+>>> ssrjson.dumps(-math.inf)
+'-Infinity'
 >>> ssrjson.loads("[infinity, Infinity, InFiNiTy, INFINITY]")  # allowed but not recommended to write `InFiNiTy` in JSON
 [inf, inf, inf, inf]
 ```
 
-The case of `math.nan` is similar.
+The case of `math.nan` is similar. Note that NaN never has a sign.
 
 ```python
 >>> json.dumps(math.nan)
 'NaN'
 >>> ssrjson.dumps(math.nan)
+'NaN'
+>>> json.dumps(-math.nan)
+'NaN'
+>>> ssrjson.dumps(-math.nan)
 'NaN'
 >>> ssrjson.loads("[nan, Nan, NaN, NAN]")  # allowed but not recommended to write `Nan` in JSON
 [nan, nan, nan, nan]
@@ -310,7 +327,7 @@ We would like to express our gratitude to the outstanding libraries and their au
 - [CPython](https://github.com/python/cpython)
 - [yyjson](https://github.com/ibireme/yyjson): ssrJSON draws extensively from yyjson’s highly optimized implementations, including the core decoding logic, the decoding of bytes objects, the integer encoding and number decoding routines.
 - [orjson](https://github.com/ijl/orjson): ssrJSON references parts of orjson’s SIMD-based ASCII string encoding and decoding algorithms, as well as the key caching mechanism. Additionally, ssrJSON utilizes orjson’s pytest framework for testing purposes.
-- [Żmij](https://github.com/dtolnay/zmij): ssrJSON employs Żmij for high-performance floating-point encoding.
+- [xjb64](https://github.com/xjb714/xjb): ssrJSON employs xjb64 for high-performance floating-point encoding.
 - [xxHash](https://github.com/Cyan4973/xxHash): ssrJSON leverages xxHash to efficiently compute hash values for key caching.
 - [klib](https://github.com/attractivechaos/klib): ssrJSON uses khash to implement circular detection in free-threading build.
 
