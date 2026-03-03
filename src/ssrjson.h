@@ -132,6 +132,8 @@
 #    define ssrjson_nofail
 #endif
 
+#define ssrjson_dtoa_handle_inf_nan 1
+
 /** compiler version (MSVC) */
 #ifdef _MSC_VER
 #    define SSRJSON_MSC_VER _MSC_VER
