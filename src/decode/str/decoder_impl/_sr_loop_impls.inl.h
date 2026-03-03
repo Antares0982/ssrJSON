@@ -94,7 +94,7 @@ force_inline usize _decode_str_loop4_decoder_impl(
         anymask_t *check_mask_arr4,
         anymask_t check_mask_total,
         int *ret_addr,
-        bool inline_escape, // immediate
+        ssrjson_compiletime bool inline_escape,
         vector_a *track_max,
         unionvector_a_x4 src_vecs,
         EscapeInfo *escapeval_addr) {
@@ -104,11 +104,11 @@ force_inline usize _decode_str_loop4_decoder_impl(
         src += 4 * READ_BATCH_COUNT;
         done_count = 4 * READ_BATCH_COUNT;
         *ret_addr = DECODE_LOOPSTATE_CONTINUE;
-        if (track_max) { // compile time determined
+        if (ssrjson_consteval(track_max)) {
             unsigned_max4(track_max, src_vecs);
         }
     } else {
-        if (track_max) { // compile time determined
+        if (ssrjson_consteval(track_max)) {
             done_count = joined4_escape_anymask_to_done_count_track_max(check_mask_arr4[0], check_mask_arr4[1], check_mask_arr4[2], check_mask_arr4[3], track_max, src_vecs);
         } else {
             done_count = joined4_escape_anymask_to_done_count(check_mask_arr4[0], check_mask_arr4[1], check_mask_arr4[2], check_mask_arr4[3]);
@@ -118,7 +118,7 @@ force_inline usize _decode_str_loop4_decoder_impl(
         if (unicode == _Quote) {
             *ret_addr = DECODE_LOOPSTATE_END;
         } else if (unicode == _Slash) {
-            if (inline_escape) { // compile time determined
+            if (ssrjson_consteval(inline_escape)) {
                 *escapeval_addr = do_decode_escape(src, src_end);
             } else {
                 *escapeval_addr = do_decode_escape_noinline(src, src_end);
@@ -141,7 +141,7 @@ force_inline usize _decode_str_loop_decoder_impl(
         const src_t *src_end,
         anymask_t check_mask,
         int *ret_addr,
-        bool inline_escape, // immediate
+        ssrjson_compiletime bool inline_escape,
         vector_a *track_max,
         vector_a src_vec,
         EscapeInfo *escapeval_addr) {
@@ -151,11 +151,11 @@ force_inline usize _decode_str_loop_decoder_impl(
         done_count = READ_BATCH_COUNT;
         src += READ_BATCH_COUNT;
         *ret_addr = DECODE_LOOPSTATE_CONTINUE;
-        if (track_max) { // compile time determined
+        if (ssrjson_consteval(track_max)) {
             *track_max = unsigned_max(*track_max, src_vec);
         }
     } else {
-        if (track_max) { // compile time determined
+        if (ssrjson_consteval(track_max)) {
             done_count = escape_anymask_to_done_count_track_max(check_mask, track_max, src_vec);
         } else {
             done_count = escape_anymask_to_done_count(check_mask);
@@ -165,7 +165,7 @@ force_inline usize _decode_str_loop_decoder_impl(
         if (unicode == _Quote) {
             *ret_addr = DECODE_LOOPSTATE_END;
         } else if (unicode == _Slash) {
-            if (inline_escape) { // compile time determined
+            if (ssrjson_consteval(inline_escape)) {
                 *escapeval_addr = do_decode_escape(src, src_end);
             } else {
                 *escapeval_addr = do_decode_escape_noinline(src, src_end);
@@ -188,7 +188,7 @@ force_inline usize _decode_str_trailing_decoder_impl(
         const src_t *src_end,
         anymask_t check_mask,
         int *ret_addr,
-        bool inline_escape, // immediate
+        ssrjson_compiletime bool inline_escape,
         vector_a *track_max,
         vector_a src_vec,
         EscapeInfo *escapeval_addr) {
@@ -208,10 +208,10 @@ force_inline usize _decode_str_trailing_decoder_impl(
         *ret_addr = DECODE_LOOPSTATE_INVALID;
     } else {
         done_count = escape_anymask_to_done_count(check_mask);
-        if (track_max) { // compile time determined
+        if (ssrjson_consteval(track_max)) {
             *track_max = unsigned_max(*track_max, low_mask(src_vec, done_count));
         }
-        if (BACK_LOAD) { // compile time determined
+        if (ssrjson_consteval(BACK_LOAD)) {
             done_count -= READ_BATCH_COUNT - trailing_len;
         }
         src += done_count;
@@ -219,7 +219,7 @@ force_inline usize _decode_str_trailing_decoder_impl(
         if (unicode == _Quote) {
             *ret_addr = DECODE_LOOPSTATE_END;
         } else if (unicode == _Slash) {
-            if (inline_escape) { // compile time determined
+            if (ssrjson_consteval(inline_escape)) {
                 *escapeval_addr = do_decode_escape(src, src_end);
             } else {
                 *escapeval_addr = do_decode_escape_noinline(src, src_end);

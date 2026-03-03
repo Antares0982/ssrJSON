@@ -688,7 +688,7 @@ arr_val_begin:;
 success:;
     assert(cur_nested_depth == 0);
     // remove trailing comma
-    (writer)--;
+    writer--;
     usize final_len = get_bytes_buffer_final_len(writer, _unicode_buffer_info.head);
     goto_fail_if_unlikely(!resize_to_fit_pybytes(&_unicode_buffer_info, final_len));
     init_pybytes(_unicode_buffer_info.head, final_len);
@@ -716,25 +716,6 @@ fail:;
         }
     }
     kh_destroy(ptr_set, pyobj_set);
-    // if (ctn_stack) {
-    //     for (Py_ssize_t i = cur_nested_depth; i > 0; --i) {
-    //         PyObject *child;
-    //         bool child_is_tuple = false;
-    //         if (i == cur_nested_depth) {
-    //             child = cur_obj;
-    //             child_is_tuple = cur_is_tuple;
-    //         } else {
-    //             child = ctn_stack[i + 1].ctn;
-    //             Py_ssize_t _tmp_index;
-    //             EncodeContainerType _child_type;
-    //             extract_index_and_type(&ctn_stack[i + 1], &_tmp_index, &_child_type);
-    //             child_is_tuple = (_child_type == EncodeContainerType_Tuple);
-    //         }
-    //         if (child && !child_is_tuple) {
-    //             PyMutex_Unlock((PyMutex *)&((PyObject *)child)->ob_mutex);
-    //         }
-    //     }
-    // }
 #endif
     if (_unicode_buffer_info.head) {
         PyObject_Free(_unicode_buffer_info.head);
