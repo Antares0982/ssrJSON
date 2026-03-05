@@ -45,7 +45,7 @@ Numbers ([mesh.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c
 ![](pics/mesh.json_dumps_to_bytes.v0.0.9.svg)
 ![](pics/mesh.json_load&dump.v0.0.9.svg)
 
-`ssrjson.dumps()` is about 4x-27x as fast as `json.dumps()` (Python3.14, x86-64, AVX2). `ssrjson.loads()` is about 2x-8x as fast as `json.loads()` for `str` input and is about 2x-8x as fast as `json.loads()` for `bytes` input (Python3.14, x86-64, AVX2). ssrJSON also provides `ssrjson.dumps_to_bytes()`, which encode Python objects directly to UTF-8 encoded `bytes` object using SIMD instructions.
+`ssrjson.dumps()` is about 4x-31x as fast as `json.dumps()` (Python3.14, x86-64, AVX2). `ssrjson.loads()` is about 2x-8x as fast as `json.loads()` for `str` input and is about 2x-8x as fast as `json.loads()` for `bytes` input (Python3.14, x86-64, AVX2). ssrJSON also provides `ssrjson.dumps_to_bytes()`, which encode Python objects directly to UTF-8 encoded `bytes` object using SIMD instructions.
 
 Details of benchmarking can be found in the [ssrjson-benchmark](https://github.com/Nambers/ssrJSON-benchmark) project. If you wish to run the benchmark tests yourself, you can execute the following commands:
 
@@ -91,7 +91,7 @@ By default, writing cache is enabled globally. You can use `ssrjson.write_utf8_c
 
 ### xjb64
 
-Tests and comparisons reveals that the [xjb64](https://github.com/xjb714/xjb) algorithm significantly outperforms other algorithms in terms of performance and is more compatible. ssrJSON project adopts a slightly modified version to fit the standard behavior of Python's json module.
+ssrJSON employs xjb64 as float-to-string algorithm. Tests and comparisons reveals that the [xjb64](https://github.com/xjb714/xjb) algorithm significantly outperforms other algorithms in terms of performance and is more compatible. ssrJSON project adopts a slightly modified version to fit the standard behavior of Python's json module.
 
 <table>
     <tr>
