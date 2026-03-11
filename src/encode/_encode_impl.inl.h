@@ -66,7 +66,7 @@ force_inline ssrjson_nofail EncodeUnicodeWriter prepare_unicode_write(PyObject *
     unsigned int r_kind_val = PyUnicode_KIND(obj);
     *read_pykind = r_kind_val;
     bool is_ascii = PyUnicode_IS_ASCII(obj);
-    *src_addr = is_ascii ? PYUNICODE_ASCII_START(obj) : PYUNICODE_UCS1_START(obj);
+    *src_addr = is_ascii ? ssrjson_pyunicode_ascii_start(obj) : ssrjson_pyunicode_ucs1_start(obj);
 
 #if COMPILE_UCS_LEVEL == 4
     *write_kind = 4;
@@ -142,7 +142,7 @@ static force_noinline EncodeUnicodeWriter unicode_buffer_append_key(PyObject *ke
     usize len;
     unsigned int pykind, write_kind;
     const void *src_voidp;
-    assert(ssrjson_cast(PyASCIIObject *, key)->state.compact);
+    assert(ssrjson_pyascii_cast(key)->state.compact);
     writer = prepare_unicode_write(key, writer, unicode_buffer_info, unicode_info, &len, &pykind, &write_kind, &src_voidp);
 
     switch (write_kind) {
@@ -211,7 +211,7 @@ force_inline EncodeUnicodeWriter unicode_buffer_append_str(PyObject *val, Encode
     usize len;
     unsigned int kind, write_kind;
     const void *src_voidp;
-    assert(ssrjson_cast(PyASCIIObject *, val)->state.compact);
+    assert(ssrjson_pyascii_cast(val)->state.compact);
     writer = prepare_unicode_write(val, writer, unicode_buffer_info, unicode_info, &len, &kind, &write_kind, &src_voidp);
 
     switch (write_kind) {
@@ -572,7 +572,7 @@ force_inline EncodeUnicodeWriter encode_process_val(
                         *jump_flag_out = JumpFlag_Fail;
                         return NULL;
                     }
-                    PyMutex_Lock(&ssrjson_cast(PyObject *, val)->ob_mutex);
+                    PyMutex_Lock(&ssrjson_pyobj_cast(val)->ob_mutex);
                 }
 #endif
                 ctn_size_grow();
@@ -604,7 +604,7 @@ force_inline EncodeUnicodeWriter encode_process_val(
                         *jump_flag_out = JumpFlag_Fail;
                         return NULL;
                     }
-                    PyMutex_Lock(&ssrjson_cast(PyObject *, val)->ob_mutex);
+                    PyMutex_Lock(&ssrjson_pyobj_cast(val)->ob_mutex);
                 }
 #endif
                 ctn_size_grow();
@@ -724,7 +724,7 @@ ssrjson_dumps_obj(
             int ret;
             kh_put(ptr_set, pyobj_set, (u64)cur_obj, &ret);
             assert(ret == 1);
-            PyMutex_Lock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Lock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
         }
 #    endif
         assert(!cur_nested_depth);
@@ -748,7 +748,7 @@ ssrjson_dumps_obj(
             int ret;
             kh_put(ptr_set, pyobj_set, (u64)cur_obj, &ret);
             assert(ret == 1);
-            PyMutex_Lock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Lock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
         }
 #    endif
         assert(!cur_nested_depth);
@@ -887,7 +887,7 @@ dict_pair_begin:;
             khiter_t k = kh_get(ptr_set, pyobj_set, (u64)cur_obj);
             assert(k != kh_end(pyobj_set));
             kh_del(ptr_set, pyobj_set, k);
-            PyMutex_Unlock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
         }
 #endif
 
@@ -988,7 +988,7 @@ arr_val_begin:;
             khiter_t k = kh_get(ptr_set, pyobj_set, (u64)cur_obj);
             assert(k != kh_end(pyobj_set));
             kh_del(ptr_set, pyobj_set, k);
-            PyMutex_Unlock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
         }
 #endif
 
@@ -1045,7 +1045,7 @@ success:;
         assert(size == (toplevel_locked_obj ? 1 : 0));
 #    endif
         if (likely(toplevel_locked_obj)) {
-            PyMutex_Unlock(&ssrjson_cast(PyObject *, toplevel_locked_obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_pyobj_cast(toplevel_locked_obj)->ob_mutex);
         }
         kh_destroy(ptr_set, pyobj_set);
     }
@@ -1058,31 +1058,10 @@ fail:;
     for (khiter_t k = kh_begin(pyobj_set); k != kh_end(pyobj_set); ++k) {
         if (kh_exist(pyobj_set, k)) {
             PyObject *obj = (PyObject *)kh_key(pyobj_set, k);
-            PyMutex_Unlock(&ssrjson_cast(PyObject *, obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_pyobj_cast(obj)->ob_mutex);
         }
     }
     kh_destroy(ptr_set, pyobj_set);
-
-    /* unwind: unlock any locked non-tuple children based on stored stack and cur_is_tuple */
-    // if (ctn_stack) {
-    //     for (Py_ssize_t i = cur_nested_depth; i > 0; --i) {
-    //         PyObject *child;
-    //         bool child_is_tuple = false;
-    //         if (i == cur_nested_depth) {
-    //             child = cur_obj;
-    //             child_is_tuple = cur_is_tuple;
-    //         } else {
-    //             child = ctn_stack[i + 1].ctn;
-    //             Py_ssize_t _tmp_index;
-    //             EncodeContainerType _child_type;
-    //             extract_index_and_type(&ctn_stack[i + 1], &_tmp_index, &_child_type);
-    //             child_is_tuple = (_child_type == EncodeContainerType_Tuple);
-    //         }
-    //         if (child && !child_is_tuple) {
-    //             PyMutex_Unlock(&ssrjson_cast(PyObject *, child)->ob_mutex);
-    //         }
-    //     }
-    // }
 
 #endif
     if (_unicode_buffer_info.head) {

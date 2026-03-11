@@ -57,8 +57,8 @@
 #define WRITER_AS_U16(_writer_) (*ssrjson_cast(u16 **, &(_writer_)))
 #define WRITER_AS_U32(_writer_) (*ssrjson_cast(u32 **, &(_writer_)))
 
-#define GET_VEC_ASCII_START(_unicode_buffer_info_) (ssrjson_cast(PyASCIIObject *, (_unicode_buffer_info_)->head) + 1)
-#define GET_VEC_COMPACT_START(_unicode_buffer_info_) (ssrjson_cast(PyCompactUnicodeObject *, (_unicode_buffer_info_)->head) + 1)
+#define GET_VEC_ASCII_START(_unicode_buffer_info_) (ssrjson_pyascii_cast((_unicode_buffer_info_)->head) + 1)
+#define GET_VEC_COMPACT_START(_unicode_buffer_info_) (ssrjson_pycompactunicode_cast((_unicode_buffer_info_)->head) + 1)
 
 /*==============================================================================
  * Global Vars
@@ -194,7 +194,7 @@ force_inline EncodePyTypes ssrjson_type_check(PyObject *val) {
 }
 
 force_inline void init_pybytes(PyObject *in_new_bytes, usize final_len) {
-    PyBytesObject *new_bytes = ssrjson_cast(PyBytesObject *, in_new_bytes);
+    PyBytesObject *new_bytes = ssrjson_pybytes_cast(in_new_bytes);
     PyObject_Init(in_new_bytes, &PyBytes_Type);
     new_bytes->ob_base.ob_size = (Py_ssize_t)final_len;
 #if PY_MINOR_VERSION < 11

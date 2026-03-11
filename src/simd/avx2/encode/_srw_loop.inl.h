@@ -138,13 +138,13 @@ restart:;
         if (len) goto restart;
     }
     // finally the excess written count is max(READ_BATCH_COUNT - max_json_bytes_per_unicode, 2)
-    // calculate in usize: SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode
+    // calculate in usize: ssrjson_max(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode
     // the conclusion works for all SIMD features: NEON, SSE, AVX2, AVX512
     assert(dst > dst_old);
     return dst;
 }
 
-// excess written count = SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode >= 2
+// excess written count = ssrjson_max(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode >= 2
 force_inline ssrjson_nofail dst_t *encode_unicode_impl(dst_t *dst, const src_t *src, usize len, bool is_key) {
     if (!is_key) dst = encode_unicode_loop4(dst, &src, &len);
     dst = encode_unicode_loop(dst, &src, &len);

@@ -59,7 +59,7 @@ force_inline ssrjson_nofail u8 *bytes_write_utf8(u8 *writer, const u8 *src, usiz
 /* ASCII src. */
 force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usize len, bool is_key) {
     // reuse the unicode encode loop.
-    // excess written bytes = SSRJSON_MAX(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode >= 2
+    // excess written bytes = ssrjson_max(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode >= 2
     if (!is_key) writer = encode_unicode_loop4(writer, &src, &len);
     writer = encode_unicode_loop(writer, &src, &len);
     if (len) writer = encode_trailing_copy_with_cvt(writer, src, len);

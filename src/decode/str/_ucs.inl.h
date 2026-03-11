@@ -146,7 +146,7 @@ force_inline PyObject *make_unicode_from_src(const src_t *start, usize count, bo
         void *dst_void;
         if (need_size_cvt && should_cache) {
             const u8 *temp_src = temp_buffer;
-            u8 *temp_dst = kind ? PYUNICODE_UCS1_START(ret) : PYUNICODE_ASCII_START(ret);
+            u8 *temp_dst = kind ? ssrjson_pyunicode_ucs1_start(ret) : ssrjson_pyunicode_ascii_start(ret);
             dst_void = temp_dst;
             __ssrjson_short_memcpy_small_first(&temp_dst, &temp_src, count * tpsize, 64);
         } else {
@@ -156,8 +156,8 @@ force_inline PyObject *make_unicode_from_src(const src_t *start, usize count, bo
             add_key_cache(hash, ret, count * tpsize, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         }
         if (should_hash) {
-            assert(count && ssrjson_cast(PyASCIIObject *, ret)->hash == -1);
-            make_hash(ssrjson_cast(PyASCIIObject *, ret), dst_void, count * tpsize);
+            assert(count && ssrjson_pyascii_cast(ret)->hash == -1);
+            make_hash(ssrjson_pyascii_cast(ret), dst_void, count * tpsize);
         }
     }
 done:;

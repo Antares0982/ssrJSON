@@ -132,7 +132,7 @@ static force_noinline u8 *bytes_buffer_append_nonascii_str_write_cache(u8 *write
 }
 
 static force_noinline u8 *bytes_buffer_append_nonascii_str_no_write_cache(u8 *writer, int src_pykind, const void *src_voidp, usize len, PyObject *str) {
-    assert(ssrjson_cast(PyASCIIObject *, str)->state.compact);
+    assert(ssrjson_pyascii_cast(str)->state.compact);
     const u8 *utf8_cache;
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);

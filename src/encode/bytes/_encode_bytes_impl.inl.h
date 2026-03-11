@@ -101,7 +101,7 @@ force_inline u8 *bytes_buffer_append_nonascii_key_write_cache(u8 *writer, int sr
 }
 
 static force_noinline u8 *bytes_buffer_append_nonascii_key_no_write_cache(u8 *writer, int src_pykind, const void *src_voidp, usize len, PyObject *str) {
-    assert(ssrjson_cast(PyASCIIObject *, str)->state.compact);
+    assert(ssrjson_pyascii_cast(str)->state.compact);
     const u8 *utf8_cache;
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
@@ -142,7 +142,7 @@ static force_noinline u8 *bytes_buffer_append_key(u8 *writer, PyObject *key, Enc
     int src_pykind = PyUnicode_KIND(key);
     bool is_ascii = PyUnicode_IS_ASCII(key);
     usize len = PyUnicode_GET_LENGTH(key);
-    const void *src_voidp = is_ascii ? PYUNICODE_ASCII_START(key) : PYUNICODE_UCS1_START(key);
+    const void *src_voidp = is_ascii ? ssrjson_pyunicode_ascii_start(key) : ssrjson_pyunicode_ucs1_start(key);
     // write_unicode_indent and '"' writes `get_indent_char_count() + 1` bytes
     // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
     // excess `16 - max_json_bytes_per_unicode` bytes written in bytes_write_utf8 or bytes_write_ascii (see comments in AVX2 impl of encode_unicode_impl)
@@ -151,9 +151,9 @@ static force_noinline u8 *bytes_buffer_append_key(u8 *writer, PyObject *key, Enc
     const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
     const usize reserve_bytes_in_encoding = max_json_bytes_per_unicode * len;
     usize excess_bytes_in_encoding = 16 - max_json_bytes_per_unicode;                                     // ascii
-    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs1_trailing); // ucs1
-    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs2_trailing); // ucs2
-    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs4_trailing); // ucs4
+    excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs1_trailing); // ucs1
+    excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs2_trailing); // ucs2
+    excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs4_trailing); // ucs4
     assert(excess_bytes_in_encoding >= 4);
     const usize excess_bytes_after = excess_bytes_in_encoding;
     writer = unicode_buffer_reserve(writer, unicode_buffer_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after);
@@ -187,13 +187,13 @@ force_inline u8 *bytes_buffer_append_str(PyObject *str,
     int src_pykind = PyUnicode_KIND(str);
     bool is_ascii = PyUnicode_IS_ASCII(str);
     usize len = PyUnicode_GET_LENGTH(str);
-    const void *src_voidp = is_ascii ? PYUNICODE_ASCII_START(str) : PYUNICODE_UCS1_START(str);
+    const void *src_voidp = is_ascii ? ssrjson_pyunicode_ascii_start(str) : ssrjson_pyunicode_ucs1_start(str);
     //
     const usize reserve_bytes_in_encoding = max_json_bytes_per_unicode * len;
     usize excess_bytes_in_encoding = 16 - max_json_bytes_per_unicode;                                     // ascii
-    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs1_trailing); // ucs1
-    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs2_trailing); // ucs2
-    excess_bytes_in_encoding = SSRJSON_MAX(excess_bytes_in_encoding, __excess_bytes_write_ucs4_trailing); // ucs4
+    excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs1_trailing); // ucs1
+    excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs2_trailing); // ucs2
+    excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs4_trailing); // ucs4
     assert(excess_bytes_in_encoding >= 4);
     const usize excess_bytes_after = excess_bytes_in_encoding;
     if (ssrjson_consteval(is_in_obj)) {
@@ -332,7 +332,7 @@ force_inline u8 *encode_bytes_process_val(
                         *jump_flag_out = JumpFlag_Fail;
                         return NULL;
                     }
-                    PyMutex_Lock(&ssrjson_cast(PyObject *, val)->ob_mutex);
+                    PyMutex_Lock(&ssrjson_pyobj_cast(val)->ob_mutex);
                 }
 #endif
                 ctn_size_grow();
@@ -363,7 +363,7 @@ force_inline u8 *encode_bytes_process_val(
                         *jump_flag_out = JumpFlag_Fail;
                         return NULL;
                     }
-                    PyMutex_Lock(&ssrjson_cast(PyObject *, val)->ob_mutex);
+                    PyMutex_Lock(&ssrjson_pyobj_cast(val)->ob_mutex);
                 }
 #endif
                 ctn_size_grow();
@@ -464,7 +464,7 @@ ssrjson_dumps_to_bytes_obj(PyObject *in_obj, int is_write_cache) {
             int ret;
             kh_put(ptr_set, pyobj_set, (u64)cur_obj, &ret);
             assert(ret == 1);
-            PyMutex_Lock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Lock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
         }
 #endif
         // NOTE: ctn_stack[0] is always invalid
@@ -486,7 +486,7 @@ ssrjson_dumps_to_bytes_obj(PyObject *in_obj, int is_write_cache) {
             int ret;
             kh_put(ptr_set, pyobj_set, (u64)cur_obj, &ret);
             assert(ret == 1);
-            PyMutex_Lock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Lock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
         }
 #endif
         assert(!cur_nested_depth);
@@ -569,7 +569,7 @@ dict_pair_begin:;
             khiter_t k = kh_get(ptr_set, pyobj_set, (u64)cur_obj);
             assert(k != kh_end(pyobj_set));
             kh_del(ptr_set, pyobj_set, k);
-            PyMutex_Unlock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
         }
 #endif
 
@@ -656,7 +656,7 @@ arr_val_begin:;
             khiter_t k = kh_get(ptr_set, pyobj_set, (u64)cur_obj);
             assert(k != kh_end(pyobj_set));
             kh_del(ptr_set, pyobj_set, k);
-            PyMutex_Unlock(&ssrjson_cast(PyObject *, cur_obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
         }
 #endif
 
@@ -699,7 +699,7 @@ success:;
         assert(size == (toplevel_locked_obj ? 1 : 0));
 #    endif
         if (likely(toplevel_locked_obj)) {
-            PyMutex_Unlock(&ssrjson_cast(PyObject *, toplevel_locked_obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_pyobj_cast(toplevel_locked_obj)->ob_mutex);
         }
         kh_destroy(ptr_set, pyobj_set);
     }
@@ -712,7 +712,7 @@ fail:;
     for (khiter_t k = kh_begin(pyobj_set); k != kh_end(pyobj_set); ++k) {
         if (kh_exist(pyobj_set, k)) {
             PyObject *obj = (PyObject *)kh_key(pyobj_set, k);
-            PyMutex_Unlock(&ssrjson_cast(PyObject *, obj)->ob_mutex);
+            PyMutex_Unlock(&ssrjson_pyobj_cast(obj)->ob_mutex);
         }
     }
     kh_destroy(ptr_set, pyobj_set);

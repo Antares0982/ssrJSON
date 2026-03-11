@@ -52,14 +52,14 @@ force_inline PyObject *make_unicode_from_src_ascii(const src_t *start, usize cou
     }
     ret = create_empty_unicode(count, 0);
     if (likely(ret)) {
-        u8 *const target = PYUNICODE_ASCII_START(ret);
+        u8 *const target = ssrjson_pyunicode_ascii_start(ret);
         ssrjson_memcpy(target, start, count);
         if (should_cache) {
             add_key_cache(hash, ret, count, 0 DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         }
         if (should_hash) {
-            assert(count && ssrjson_cast(PyASCIIObject *, ret)->hash == -1);
-            make_hash(ssrjson_cast(PyASCIIObject *, ret), start, count);
+            assert(count && ssrjson_pyascii_cast(ret)->hash == -1);
+            make_hash(ssrjson_pyascii_cast(ret), start, count);
         }
     }
 done:;
@@ -73,11 +73,11 @@ force_inline PyObject *make_unicode_ucs1(const src_t *start, usize count, bool i
     bool should_hash = is_key;
     ret = create_empty_unicode(count, 1);
     if (likely(ret)) {
-        u8 *const target = PYUNICODE_UCS1_START(ret);
+        u8 *const target = ssrjson_pyunicode_ucs1_start(ret);
         memcpy(target, start, count); // not use inline version
         if (should_hash) {
-            assert(count && ssrjson_cast(PyASCIIObject *, ret)->hash == -1);
-            make_hash(ssrjson_cast(PyASCIIObject *, ret), start, count);
+            assert(count && ssrjson_pyascii_cast(ret)->hash == -1);
+            make_hash(ssrjson_pyascii_cast(ret), start, count);
         }
     }
 done:;
@@ -91,15 +91,15 @@ force_inline PyObject *make_unicode_ucs2(void *src_buffer, usize u8count, usize 
     bool should_hash = is_key;
     ret = create_empty_unicode(total_count, 2);
     if (likely(ret)) {
-        u16 *const target = PYUNICODE_UCS2_START(ret);
+        u16 *const target = ssrjson_pyunicode_ucs2_start(ret);
         // not use inline version
         if (u8count) {
             SIMD_NAME_MODIFIER(long_cvt_noinline_u8_u16)(target, src_buffer, u8count);
         }
         memcpy(target + u8count, ssrjson_cast(u16 *, src_buffer) + u8count, (total_count - u8count) * 2);
         if (should_hash) {
-            assert(total_count && ssrjson_cast(PyASCIIObject *, ret)->hash == -1);
-            make_hash(ssrjson_cast(PyASCIIObject *, ret), target, total_count * 2);
+            assert(total_count && ssrjson_pyascii_cast(ret)->hash == -1);
+            make_hash(ssrjson_pyascii_cast(ret), target, total_count * 2);
         }
     }
 done:;
@@ -113,7 +113,7 @@ force_inline PyObject *make_unicode_ucs4(void *src_buffer, usize u8count, usize 
     bool should_hash = is_key;
     ret = create_empty_unicode(total_count, 4);
     if (likely(ret)) {
-        u32 *const target = PYUNICODE_UCS4_START(ret);
+        u32 *const target = ssrjson_pyunicode_ucs4_start(ret);
         // not use inline version
         if (u8count) {
             SIMD_NAME_MODIFIER(long_cvt_noinline_u8_u32)(target, src_buffer, u8count);
@@ -123,8 +123,8 @@ force_inline PyObject *make_unicode_ucs4(void *src_buffer, usize u8count, usize 
         }
         memcpy(target + u8count + u16count, ssrjson_cast(u32 *, src_buffer) + u8count + u16count, (total_count - u8count - u16count) * 4);
         if (should_hash) {
-            assert(total_count && ssrjson_cast(PyASCIIObject *, ret)->hash == -1);
-            make_hash(ssrjson_cast(PyASCIIObject *, ret), target, total_count * 4);
+            assert(total_count && ssrjson_pyascii_cast(ret)->hash == -1);
+            make_hash(ssrjson_pyascii_cast(ret), target, total_count * 4);
         }
     }
 done:;

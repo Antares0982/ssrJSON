@@ -65,7 +65,7 @@ force_inline ssrjson_nofail dst_t *u64_to_unicode(register dst_t *writer, u64 va
     u8 _buffer[64];
     u8 *buffer = _buffer;
 #endif
-    if (sign) *buffer = '-';
+    *buffer = '-';
     u8 *buffer_end = write_u64(val, buffer + sign);
 #if COMPILE_WRITE_UCS_LEVEL == 1
     return buffer_end;

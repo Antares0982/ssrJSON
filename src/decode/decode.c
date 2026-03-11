@@ -119,7 +119,7 @@ force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int ki
     }
 success:
     if (is_key) {
-        PyASCIIObject *ascii_obj = ssrjson_cast(PyASCIIObject *, obj);
+        PyASCIIObject *ascii_obj = ssrjson_pyascii_cast(obj);
         if (len) {
             assert(ascii_obj->hash == -1);
             make_hash(ascii_obj, unicode_str, real_len);
@@ -422,8 +422,8 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
 
     //
     if (PyUnicode_Check(s)) {
-        PyASCIIObject *ascii_head = ssrjson_cast(PyASCIIObject *, s);
-        PyUnicodeObject *in_unicode = ssrjson_cast(PyUnicodeObject *, s);
+        PyASCIIObject *ascii_head = ssrjson_pyascii_cast(s);
+        PyUnicodeObject *in_unicode = ssrjson_pyunicode_cast(s);
         int pyunicode_kind = ascii_head->state.ascii ? 0 : ascii_head->state.kind;
         switch (pyunicode_kind) {
             case SSRJSON_STRING_TYPE_ASCII: {

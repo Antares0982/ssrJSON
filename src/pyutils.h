@@ -59,9 +59,9 @@ extern PyTypeObject *PyNone_Type;
 // Initialize a PyUnicode object with the given size and kind.
 force_inline void init_pyunicode(void *head, Py_ssize_t size, int kind) {
     u8 *const u8head = ssrjson_cast(u8 *, head);
-    PyCompactUnicodeObject *unicode = ssrjson_cast(PyCompactUnicodeObject *, head);
-    PyASCIIObject *ascii = ssrjson_cast(PyASCIIObject *, head);
-    PyObject_Init(ssrjson_cast(PyObject *, head), &PyUnicode_Type);
+    PyCompactUnicodeObject *unicode = ssrjson_pycompactunicode_cast(head);
+    PyASCIIObject *ascii = ssrjson_pyascii_cast(head);
+    PyObject_Init(ssrjson_pyobj_cast(head), &PyUnicode_Type);
     void *data = ssrjson_cast(void *, u8head + (kind ? UNICODE_OFFSET : ASCII_OFFSET));
     //
     ascii->length = size;
@@ -145,15 +145,15 @@ force_noinline void init_pyunicode_noinline(void *head, Py_ssize_t size, int kin
 
 force_inline const u8 *pyunicode_get_utf8_cache(PyObject *unicode) {
 #if !SSRJSON_GIL_ENABLED
-    return __c11_atomic_load((const _Atomic(void *) *)&ssrjson_cast(PyCompactUnicodeObject *, unicode)->utf8, memory_order_acquire);
+    return __c11_atomic_load((const _Atomic(void *) *)&ssrjson_pycompactunicode_cast(unicode)->utf8, memory_order_acquire);
 #else
     return (const u8 *)ssrjson_pycompactunicode_cast(unicode)->utf8;
 #endif
 }
 
 force_inline void get_utf8_cache(PyObject *unicode, const u8 **utf8_cache_out, usize *utf8_length_out) {
-    assert(ssrjson_cast(PyASCIIObject *, unicode)->state.compact);
-    assert(!ssrjson_cast(PyASCIIObject *, unicode)->state.ascii);
+    assert(ssrjson_pyascii_cast(unicode)->state.compact);
+    assert(!ssrjson_pyascii_cast(unicode)->state.ascii);
     *utf8_cache_out = (const u8 *)pyunicode_get_utf8_cache(unicode);
     *utf8_length_out = (usize)ssrjson_pycompactunicode_cast(unicode)->utf8_length;
 }
@@ -216,12 +216,12 @@ force_inline void parse_ascii(PyObject *unicode, bool *is_ascii_out, const u8 **
     usize char_count;
     is_ascii = PyUnicode_IS_ASCII(unicode);
     if (likely(is_ascii)) {
-        is_compact = ssrjson_cast(PyASCIIObject *, unicode)->state.compact;
+        is_compact = ssrjson_pyascii_cast(unicode)->state.compact;
         char_count = (usize)PyUnicode_GET_LENGTH(unicode);
         if (likely(is_compact)) {
-            char_data = PYUNICODE_ASCII_START(unicode);
+            char_data = ssrjson_pyunicode_ascii_start(unicode);
         } else {
-            char_data = ssrjson_cast(PyUnicodeObject *, unicode)->data.any;
+            char_data = ssrjson_pyunicode_cast(unicode)->data.any;
         }
     }
 

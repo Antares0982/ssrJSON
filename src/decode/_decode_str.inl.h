@@ -195,14 +195,14 @@ force_inline bool should_loads_pretty(const src_t *buffer, const src_t *end) {
 internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnicodeObject *in_unicode, PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     // some checks
     assert(in_unicode);
-    PyASCIIObject *ascii_head = ssrjson_cast(PyASCIIObject *, in_unicode);
+    PyASCIIObject *ascii_head = ssrjson_pyascii_cast(in_unicode);
     assert((ascii_head->state.ascii ? 0 : ascii_head->state.kind) == COMPILE_UCS_LEVEL);
     if (unlikely(!ascii_head->length)) {
         PyErr_Format(JSONDecodeError, "input data is empty");
         return NULL;
     }
 #if COMPILE_UCS_LEVEL > 0
-    const src_t *buffer = ssrjson_cast(src_t *, ssrjson_cast(PyCompactUnicodeObject *, in_unicode) + 1);
+    const src_t *buffer = ssrjson_cast(src_t *, ssrjson_pycompactunicode_cast(in_unicode) + 1);
 #else
     const src_t *buffer = ssrjson_cast(src_t *, ascii_head + 1);
 #endif

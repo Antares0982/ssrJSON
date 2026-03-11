@@ -25,10 +25,10 @@
 
 #include "ssrjson.h"
 
-#define PYUNICODE_ASCII_START(_obj_) ssrjson_cast(u8 *, ssrjson_cast(PyASCIIObject *, (_obj_)) + 1)
-#define PYUNICODE_UCS1_START(_obj_) ssrjson_cast(u8 *, ssrjson_cast(PyCompactUnicodeObject *, (_obj_)) + 1)
-#define PYUNICODE_UCS2_START(_obj_) ssrjson_cast(u16 *, ssrjson_cast(PyCompactUnicodeObject *, (_obj_)) + 1)
-#define PYUNICODE_UCS4_START(_obj_) ssrjson_cast(u32 *, ssrjson_cast(PyCompactUnicodeObject *, (_obj_)) + 1)
+#define ssrjson_pyunicode_ascii_start(_obj_) ssrjson_cast(u8 *, ssrjson_pyascii_cast((_obj_)) + 1)
+#define ssrjson_pyunicode_ucs1_start(_obj_) ssrjson_cast(u8 *, ssrjson_pycompactunicode_cast((_obj_)) + 1)
+#define ssrjson_pyunicode_ucs2_start(_obj_) ssrjson_cast(u16 *, ssrjson_pycompactunicode_cast((_obj_)) + 1)
+#define ssrjson_pyunicode_ucs4_start(_obj_) ssrjson_cast(u32 *, ssrjson_pycompactunicode_cast((_obj_)) + 1)
 
 force_noinline void init_pyunicode_noinline(void *, Py_ssize_t size, int kind);
 

@@ -285,8 +285,11 @@ force_inline int get_cpuid_max(void) {
 #endif
 
 #define ssrjson_cast(type, expr) ((type)(expr))
+#define ssrjson_pyobj_cast(expr) ssrjson_cast(PyObject *, (expr))
 #define ssrjson_pyascii_cast(expr) ssrjson_cast(PyASCIIObject *, (expr))
 #define ssrjson_pycompactunicode_cast(expr) ssrjson_cast(PyCompactUnicodeObject *, (expr))
+#define ssrjson_pyunicode_cast(expr) ssrjson_cast(PyUnicodeObject *, (expr))
+#define ssrjson_pybytes_cast(expr) ssrjson_cast(PyBytesObject *, (expr))
 
 /*==============================================================================
  * Macros
@@ -333,8 +336,8 @@ force_inline int get_cpuid_max(void) {
 #define ssrjson_simple_concat2_ex(a, b) a##b
 #define ssrjson_simple_concat2(a, b) ssrjson_simple_concat2_ex(a, b)
 
-#define SSRJSON_MAX(x, y) ((x) > (y) ? (x) : (y))
-#define SSRJSON_MIN(x, y) ((x) < (y) ? (x) : (y))
+#define ssrjson_max(x, y) ((x) > (y) ? (x) : (y))
+#define ssrjson_min(x, y) ((x) < (y) ? (x) : (y))
 
 #ifdef _MSC_VER
 #    define ssrjson_aligned_alloc(_align, _size) _aligned_malloc(_size, _align)
@@ -343,12 +346,6 @@ force_inline int get_cpuid_max(void) {
 #    define ssrjson_aligned_alloc(_align, _size) aligned_alloc(_align, _size)
 #    define ssrjson_aligned_free(_ptr) free(_ptr)
 #endif
-
-/* String type macros */
-#define SSRJSON_STRING_TYPE_ASCII 0
-#define SSRJSON_STRING_TYPE_LATIN1 1
-#define SSRJSON_STRING_TYPE_UCS2 2
-#define SSRJSON_STRING_TYPE_UCS4 4
 
 #ifndef SSRJSON_HAS_IEEE_754
 /* IEEE 754 floating-point binary representation */
@@ -385,6 +382,7 @@ __extension__ typedef unsigned __int128 u128;
         }                       \
     } while (0)
 
+
 /* Some constants. */
 #define _Quote (34)
 #define _Slash (92)
@@ -393,6 +391,12 @@ __extension__ typedef unsigned __int128 u128;
 
 /* Default padding. */
 #define _TailPadding (512 / 8)
+
+/* String type macros. */
+#define SSRJSON_STRING_TYPE_ASCII 0  // ASCII string, 1 byte per character, u8, [0, 0x7F]
+#define SSRJSON_STRING_TYPE_LATIN1 1 // UCS1 string (Latin-1), 1 byte per character, u8, [0, 0xFF]
+#define SSRJSON_STRING_TYPE_UCS2 2   // UCS2 string, 2 bytes per character, u16, [0, 0xFFFF]
+#define SSRJSON_STRING_TYPE_UCS4 4   // UCS4 string, 4 bytes per character, u32, [0, 0x10FFFF]
 
 /* Tool macros for calculating how long the buffer should be reserved to. */
 #define max_json_bytes_per_unicode (6) // per unicode can be JSON encoded to at most 6 bytes
@@ -738,8 +742,8 @@ force_inline void split_tail_len_two_parts(usize tail_len, usize check_count, us
 force_inline usize get_tail_len_parts_by_index(usize tail_len, usize batch_count, usize parts, usize index) {
     usize small_batch = batch_count / parts;
     assert(batch_count == small_batch * parts);
-    usize ret = SSRJSON_MIN(tail_len, (index + 1) * small_batch);
-    ret = SSRJSON_MAX(ret, index * small_batch);
+    usize ret = ssrjson_min(tail_len, (index + 1) * small_batch);
+    ret = ssrjson_max(ret, index * small_batch);
     ret -= index * small_batch;
     return ret;
 }

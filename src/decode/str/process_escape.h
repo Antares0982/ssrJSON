@@ -36,7 +36,7 @@ force_inline int process_escape_ucs1_u8(
     u32 escape_val;
     usize escape_len;
     escape_val = escape_info.escape_val;
-    *max_escapeval_addr = SSRJSON_MAX(*max_escapeval_addr, escape_val);
+    *max_escapeval_addr = ssrjson_max(*max_escapeval_addr, escape_val);
     assert(escape_val != _DECODE_UNICODE_ERR);
     if (escape_val < 0x100) {
         *(*u8writer_addr)++ = (u8)escape_val;
@@ -70,7 +70,7 @@ force_inline int process_escape_ucs1_u16(
     u32 escape_val;
     usize escape_len;
     escape_val = escape_info.escape_val;
-    *max_escapeval_addr = SSRJSON_MAX(*max_escapeval_addr, escape_val);
+    *max_escapeval_addr = ssrjson_max(*max_escapeval_addr, escape_val);
     assert(escape_val != _DECODE_UNICODE_ERR);
     if (escape_val < 0x10000) {
         *(*u16writer_addr)++ = (u16)escape_val;
@@ -95,7 +95,7 @@ force_inline int process_escape_ucs2_u16(
     u32 escape_val;
     usize escape_len;
     escape_val = escape_info.escape_val;
-    *max_escapeval_addr = SSRJSON_MAX(*max_escapeval_addr, escape_val);
+    *max_escapeval_addr = ssrjson_max(*max_escapeval_addr, escape_val);
     assert(escape_val != _DECODE_UNICODE_ERR);
     if (escape_val < 0x10000) {
         *(*u16writer_addr)++ = (u16)escape_val;
@@ -117,7 +117,7 @@ force_inline void process_escape_to_u32(
     u32 escape_val;
     usize escape_len;
     escape_val = escape_info.escape_val;
-    *max_escapeval_addr = SSRJSON_MAX(*max_escapeval_addr, escape_val);
+    *max_escapeval_addr = ssrjson_max(*max_escapeval_addr, escape_val);
     assert(escape_val != _DECODE_UNICODE_ERR);
     *(*u32writer_addr)++ = escape_val;
 }
