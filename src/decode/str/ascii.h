@@ -203,7 +203,7 @@ force_inline int decode_str_copy_trailing_ascii_u8(u8 **dst_addr, const src_t **
     anymask_t check_mask;
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
-#if SSRJSON_X86 && _CompileVectorBits == 256
+#if SSRJSON_IS_X64 && _CompileVectorBits == 256
     avx2_trailing_cvt_u8_u8(*src_addr, src_end, *dst_addr);
 #else
     *(vector_u *)(*dst_addr) = vec;
@@ -222,7 +222,7 @@ force_inline int decode_str_copy_trailing_ascii_u16(u16 **dst_addr, const src_t 
     anymask_t check_mask;
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
-#if SSRJSON_X86 && _CompileVectorBits == 256
+#if SSRJSON_IS_X64 && _CompileVectorBits == 256
     avx2_trailing_cvt_u8_u16(*src_addr, src_end, *dst_addr);
 #else
     make_s_name(cvt_to_dst_u8_u16)(*dst_addr, vec);
@@ -243,7 +243,7 @@ force_inline int decode_str_copy_trailing_ascii_u32(u32 **dst_addr,
     anymask_t check_mask;
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
-#if SSRJSON_X86 && _CompileVectorBits == 256
+#if SSRJSON_IS_X64 && _CompileVectorBits == 256
     avx2_trailing_cvt_u8_u32(*src_addr, src_end, *dst_addr);
 #else
     make_s_name(cvt_to_dst_u8_u32)(*dst_addr, vec);

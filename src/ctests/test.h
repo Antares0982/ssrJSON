@@ -114,12 +114,12 @@ force_inline u32 get_random_4bytes_u32(void) {
 }
 
 /* DECLARE_TEST macro. */
-#if BUILD_MULTI_LIB && SSRJSON_X86
+#if BUILD_MULTI_LIB && SSRJSON_IS_X64
 #    define DECLARE_TEST(_name)   \
         int _name##_sse4_2(void); \
         int _name##_avx2(void);   \
         int _name##_avx512(void);
-#elif BUILD_MULTI_LIB && SSRJSON_AARCH
+#elif BUILD_MULTI_LIB && SSRJSON_IS_AARCH64
 #    define DECLARE_TEST(_name) int _name##_neon(void);
 #else
 #    define DECLARE_TEST(_name) int _name(void);

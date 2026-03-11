@@ -68,19 +68,19 @@ force_inline void _decode_str_trailing_read_src_impl(
         anymask_t *out_check_mask) {
     usize trailing_len = src_end - src;
     assert(trailing_len < READ_BATCH_COUNT);
-#if SSRJSON_X86 && _CompileVectorBits == 512
+#if SSRJSON_IS_X64 && _CompileVectorBits == 512
     usize maskz = len_to_maskz(src_end - src);
     *out_vec = maskz_loadu(maskz, src);
     *out_check_mask = maskz & get_escape_bitmask(*out_vec);
-#elif SSRJSON_X86 && _CompileVectorBits == 256
+#elif SSRJSON_IS_X64 && _CompileVectorBits == 256
     vector_a vec = *(vector_u *)(src_end - READ_BATCH_COUNT);
     *out_vec = high_mask(vec, trailing_len);
     *out_check_mask = high_mask(get_escape_mask(vec), trailing_len);
-#elif SSRJSON_X86
+#elif SSRJSON_IS_X64
     vector_a vec = *(vector_u *)(src_end - READ_BATCH_COUNT);
     *out_vec = runtime_byte_rshift_128(vec, (READ_BATCH_COUNT - trailing_len) * sizeof(src_t));
     *out_check_mask = low_mask(get_escape_mask(*out_vec), trailing_len);
-#elif SSRJSON_AARCH
+#elif SSRJSON_IS_AARCH64
     vector_a vec = *(vector_u *)(src_end - READ_BATCH_COUNT);
     *out_vec = runtime_byte_rshift_128(vec, (READ_BATCH_COUNT - trailing_len) * sizeof(src_t));
     *out_check_mask = low_mask(get_escape_mask(*out_vec), trailing_len);
@@ -192,7 +192,7 @@ force_inline usize _decode_str_trailing_decoder_impl(
         vector_a *track_max,
         vector_a src_vec,
         EscapeInfo *escapeval_addr) {
-#if SSRJSON_X86 && _CompileVectorBits == 256
+#if SSRJSON_IS_X64 && _CompileVectorBits == 256
 #    define BACK_LOAD 1
 #else
 #    define BACK_LOAD 0

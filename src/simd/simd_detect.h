@@ -23,11 +23,11 @@
 #ifndef SSRJSON_SIMD_DETECT_H
 #define SSRJSON_SIMD_DETECT_H
 
-#ifndef SSRJSON_X86
-#    define SSRJSON_X86 0
+#ifndef SSRJSON_IS_X64
+#    define SSRJSON_IS_X64 0
 #endif
-#ifndef SSRJSON_AARCH
-#    define SSRJSON_AARCH 0
+#ifndef SSRJSON_IS_AARCH64
+#    define SSRJSON_IS_AARCH64 0
 #endif
 
 #define HAS_AVX512 0
@@ -37,7 +37,7 @@
 #define USING_AVX2 0
 #define USING_SSE4_2 0
 
-#if SSRJSON_X86
+#if SSRJSON_IS_X64
 #    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
 #        define SIMD_FEATURE_NAME avx512
 #        undef USING_AVX512
@@ -87,7 +87,7 @@
 #    else
 #        define WRITE_SUPPORT_MASK_WRITE 0
 #    endif
-#elif SSRJSON_AARCH
+#elif SSRJSON_IS_AARCH64
 #    define SIMD_FEATURE_NAME neon
 #    define WRITE_SUPPORT_MASK_WRITE 0
 #    define USING_AVX512 0
@@ -106,12 +106,12 @@
 #    define SIMD_NAME_MODIFIER(x) x
 #endif
 
-#if SSRJSON_X86
+#if SSRJSON_IS_X64
 #    include <immintrin.h>
 #    if defined(_MSC_VER)
 #        include <intrin.h>
 #    endif
-#elif SSRJSON_AARCH
+#elif SSRJSON_IS_AARCH64
 #    include <arm_neon.h>
 #    include <assert.h>
 static_assert(__LITTLE_ENDIAN__, "currently only little endian is supported");

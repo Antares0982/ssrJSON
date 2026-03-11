@@ -116,7 +116,7 @@ typedef __declspec(align(4)) struct {
     u32 v[16];
 } vector_u_u32_512;
 
-#elif SSRJSON_AARCH
+#elif SSRJSON_IS_AARCH64
 #    include <arm_neon.h>
 // smaller than 128
 typedef u8 vector_a_u8_32 __attribute__((__vector_size__(4), __aligned__(4)));

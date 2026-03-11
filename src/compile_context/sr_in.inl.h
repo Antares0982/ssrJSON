@@ -45,7 +45,7 @@
 #define vector_u make_sr_name(vector_u)
 
 
-#if !SSRJSON_X86 || COMPILE_READ_UCS_LEVEL == 4
+#if !SSRJSON_IS_X64 || COMPILE_READ_UCS_LEVEL == 4
 // x86: for bit size < 512, we don't have cmp_epu8,
 // the mask is calculated by subs_epu8.
 // so we have to cmpeq with zero to get the real bit mask.
@@ -99,7 +99,7 @@
 #define unsigned_max4 make_sr_name(unsigned_max4)
 #define _CheckerMasks make_sr_name(_CheckerMasks)
 //
-#if SSRJSON_X86 && _CompileVectorBits == 512
+#if SSRJSON_IS_X64 && _CompileVectorBits == 512
 #    define anymask_t avx512_bitmask_t
 #    define get_escape_anymask get_escape_bitmask
 #    define testz_escape_mask(_x_) ((_x_) == 0)
@@ -108,7 +108,7 @@
 #    define escape_anymask_to_done_count_track_max escape_bitmask_to_done_count_track_max
 #    define joined4_escape_anymask_to_done_count joined4_escape_bitmask_to_done_count
 #    define joined4_escape_anymask_to_done_count_track_max joined4_escape_bitmask_to_done_count_track_max
-#elif SSRJSON_X86
+#elif SSRJSON_IS_X64
 #    define anymask_t vector_a
 #    define get_escape_anymask get_escape_mask
 #    define testz_escape_mask testz
@@ -117,7 +117,7 @@
 #    define escape_anymask_to_done_count_track_max escape_mask_to_done_count_track_max
 #    define joined4_escape_anymask_to_done_count joined4_escape_mask_to_done_count
 #    define joined4_escape_anymask_to_done_count_track_max joined4_escape_mask_to_done_count_track_max
-#elif SSRJSON_AARCH
+#elif SSRJSON_IS_AARCH64
 #    define anymask_t vector_a
 #    define get_escape_anymask get_escape_mask
 #    define testz_escape_mask testz

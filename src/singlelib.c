@@ -44,7 +44,7 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
         if (err) goto fail;                          \
     } while (0)
 
-#if SSRJSON_X86
+#if SSRJSON_IS_X64
     err = PyDict_SetItemString(ret, "multi_lib", Py_False);
     if (err) goto fail;
     err = PyDict_SetItemString(ret, "free_threading", SSRJSON_GIL_ENABLED ? Py_False : Py_True);
@@ -61,7 +61,7 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
 #    else
     DICT_SET_STRING_ITEM("simd", "SSE2");
 #    endif
-#elif SSRJSON_AARCH
+#elif SSRJSON_IS_AARCH64
     DICT_SET_STRING_ITEM("simd", "NEON");
 #endif
     return ret;
@@ -77,7 +77,7 @@ const char *_update_simd_features(void) {
 #else
 
     PLATFORM_SIMD_LEVEL simd_feature = get_simd_feature();
-#    if SSRJSON_X86
+#    if SSRJSON_IS_X64
 #        if HAS_AVX512
     // compile support 512 bits
     if (simd_feature < X86SIMDFeatureLevelAVX512) {
@@ -98,7 +98,7 @@ const char *_update_simd_features(void) {
 #        else
     return NULL;
 #        endif
-#    elif SSRJSON_AARCH
+#    elif SSRJSON_IS_AARCH64
     return NULL;
 #    else
     // unknown platform

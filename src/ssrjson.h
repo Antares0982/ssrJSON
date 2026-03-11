@@ -247,7 +247,7 @@
 #endif
 
 /* x86: check cpu features */
-#if SSRJSON_X86
+#if SSRJSON_IS_X64
 #    if defined(_MSC_VER)
 #        define cpuid_count(info, leaf, count) __cpuidex(info, (leaf), (count))
 #        define cpuid(info, x) __cpuid(info, (x))

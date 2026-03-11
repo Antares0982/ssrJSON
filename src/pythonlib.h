@@ -24,7 +24,7 @@
 #define SSRJSON_PYTHONLIB_H
 
 #include "ssrjson.h"
-#if SSRJSON_X86
+#if SSRJSON_IS_X64
 
 typedef enum X86SIMDFeatureLevel {
     X86SIMDFeatureLevelSSE2 = 0,
@@ -69,7 +69,7 @@ force_inline X86SIMDFeatureLevel get_simd_feature(void) {
 
     return X86SIMDFeatureLevelSSE2;
 }
-#elif SSRJSON_AARCH
+#elif SSRJSON_IS_AARCH64
 
 typedef enum AARCH64SIMDFeatureLevel {
     AARCH64SIMDFeatureLevelNEON = 0,
@@ -104,7 +104,7 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
         SET_INTERFACE(long_cvt_noinline_u32_u16, _feature_name_); \
         SET_INTERFACE(long_cvt_noinline_u32_u8, _feature_name_);  \
         SET_INTERFACE(long_cvt_noinline_u16_u8, _feature_name_);
-#    if SSRJSON_X86
+#    if SSRJSON_IS_X64
 #        define DECLARE_MULTILIB_PYFASTFUNCTION(_func_name_)                                                                                    \
             PyObject *ssrjson_concat2(_func_name_, avx512)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);       \
             PyObject *ssrjson_concat2(_func_name_, avx2)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);         \
@@ -118,7 +118,7 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
             typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__); \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 
-#    elif SSRJSON_AARCH
+#    elif SSRJSON_IS_AARCH64
 #        define DECLARE_MULTILIB_PYFASTFUNCTION(_func_name_)                                                                                    \
             PyObject *ssrjson_concat2(_func_name_, neon)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);         \
             typedef PyObject *(*ssrjson_concat2(_func_name_, t))(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
@@ -127,7 +127,7 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
             _ret_type_ ssrjson_concat2(_func_name_, neon)(__VA_ARGS__);         \
             typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__); \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
-#    endif // SSRJSON_X86
+#    endif // SSRJSON_IS_X64
 
 
 DECLARE_MULTILIB_PYFASTFUNCTION(ssrjson_Dumps)

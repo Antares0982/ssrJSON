@@ -28,7 +28,7 @@
 #include "vector_types.h"
 //
 
-#if SSRJSON_X86
+#if SSRJSON_IS_X64
 #    if __AVX512VL__ && __AVX512DQ__ && __AVX512BW__
 #        include "avx512vl_dq_bw/full.h"
 #    endif
@@ -50,7 +50,7 @@
 #    include "sse2/full.h"
 
 
-#elif SSRJSON_AARCH
+#elif SSRJSON_IS_AARCH64
 
 #    include "neon/full.h"
 

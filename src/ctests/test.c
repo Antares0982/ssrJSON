@@ -31,7 +31,7 @@
 //
 #include "compile_context/s_in.inl.h"
 
-#if BUILD_MULTI_LIB && SSRJSON_X86
+#if BUILD_MULTI_LIB && SSRJSON_IS_X64
 #    if _CompileVectorBits == 512
 #        define GUARDED_SIMD                         \
             do {                                     \
@@ -51,10 +51,10 @@
 
 
 int SIMD_NAME_MODIFIER(test_cvt_u8_to_u16)(void) {
-#if SSRJSON_AARCH
+#if SSRJSON_IS_AARCH64
     u8 input[16];
     u16 dst[8];
-#elif SSRJSON_X86
+#elif SSRJSON_IS_X64
 #    if _CompileVectorBits == 512
     GUARDED_SIMD;
     u8 input[32];
@@ -89,10 +89,10 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u16)(void) {
 }
 
 int SIMD_NAME_MODIFIER(test_cvt_u8_to_u32)(void) {
-#if SSRJSON_AARCH
+#if SSRJSON_IS_AARCH64
     u8 input[16];
     u32 dst[4];
-#elif SSRJSON_X86
+#elif SSRJSON_IS_X64
 #    if _CompileVectorBits == 512
     GUARDED_SIMD;
     u8 input[16];
@@ -128,10 +128,10 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u32)(void) {
 }
 
 int SIMD_NAME_MODIFIER(test_cvt_u16_to_u32)(void) {
-#if SSRJSON_AARCH
+#if SSRJSON_IS_AARCH64
     u16 input[8];
     u32 dst[4];
-#elif SSRJSON_X86
+#elif SSRJSON_IS_X64
 
 #    if _CompileVectorBits == 512
     GUARDED_SIMD;
@@ -181,7 +181,7 @@ force_inline int _test_ucs2_encode_ssse3(void) {
 #endif
 
 int SIMD_NAME_MODIFIER(test_ucs2_encode_3bytes_utf8)(void) {
-#if SSRJSON_AARCH
+#if SSRJSON_IS_AARCH64
     u16 input[8];
     u8 output[24];
     for (usize i = 0; i < count_of(input); ++i) {
@@ -223,7 +223,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_3bytes_utf8)(void) {
 }
 
 int SIMD_NAME_MODIFIER(test_ucs2_encode_2bytes_utf8)(void) {
-#if SSRJSON_AARCH
+#if SSRJSON_IS_AARCH64
     u16 input[8];
     u8 output[16];
     for (usize i = 0; i < count_of(input); ++i) {
@@ -275,7 +275,7 @@ force_inline int _test_ucs4_encode_ssse3(void) {
 #endif
 
 int SIMD_NAME_MODIFIER(test_ucs4_encode_3bytes_utf8)(void) {
-#if SSRJSON_AARCH
+#if SSRJSON_IS_AARCH64
     u32 input[4];
     u8 output[12];
     for (usize i = 0; i < count_of(input); ++i) {
@@ -314,7 +314,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_3bytes_utf8)(void) {
 }
 
 int SIMD_NAME_MODIFIER(test_ucs4_encode_2bytes_utf8)(void) {
-#if SSRJSON_AARCH
+#if SSRJSON_IS_AARCH64
     u32 input[4];
     u8 output[8];
     for (usize i = 0; i < count_of(input); ++i) {

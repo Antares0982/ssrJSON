@@ -36,7 +36,7 @@ IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u32_u16)
 IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u32_u8)
 IMPL_MULTILIB_FUNCTION_INTERFACE(long_cvt_noinline_u16_u8)
 
-#if SSRJSON_X86
+#if SSRJSON_IS_X64
 
 
 int CurrentSIMDFeatureLevel = -1;
@@ -126,7 +126,7 @@ fail:;
     Py_DECREF(ret);
     return NULL;
 }
-#elif SSRJSON_AARCH // SSRJSON_X86
+#elif SSRJSON_IS_AARCH64 // SSRJSON_IS_X64
 const char *_update_simd_features(void) {
     BATCH_SET_INTERFACE(neon);
     return NULL;
@@ -163,6 +163,6 @@ fail:;
     return NULL;
 }
 
-#else // SSRJSON_X86
+#else // SSRJSON_IS_X64
 static_assert(false, "multilib not supported on this platform");
 #endif

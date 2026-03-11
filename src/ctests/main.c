@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#if SSRJSON_X86
+#if SSRJSON_IS_X64
 bool _SupportAVX512 = false;
 bool _SupportAVX2 = false;
 
@@ -76,14 +76,14 @@ bool wrap_run_test(int (*func)(void), const char *name, TestCounter *counter) {
 }
 
 #define RUN_ONE_TEST(_name) wrap_run_test(_name, #_name, &counter)
-#if BUILD_MULTI_LIB && SSRJSON_X86
+#if BUILD_MULTI_LIB && SSRJSON_IS_X64
 #    define RUN_TESTS(_name)              \
         do {                              \
             RUN_ONE_TEST(_name##_avx512); \
             RUN_ONE_TEST(_name##_avx2);   \
             RUN_ONE_TEST(_name##_sse4_2); \
         } while (0)
-#elif BUILD_MULTI_LIB && SSRJSON_AARCH
+#elif BUILD_MULTI_LIB && SSRJSON_IS_AARCH64
 #    define RUN_TESTS(_name)            \
         do {                            \
             RUN_ONE_TEST(_name##_neon); \
@@ -105,7 +105,7 @@ bool show_test_counter(TestCounter *counter) {
 }
 
 bool run_c_tests(void) {
-#if SSRJSON_X86
+#if SSRJSON_IS_X64
     bool support_avx512 = _SupportAVX512;
     bool support_avx2 = _SupportAVX2;
 #endif
@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
         goto done;
     }
     srand((u32)time(NULL));
-#if SSRJSON_X86
+#if SSRJSON_IS_X64
     check_avx2();
     check_avx512();
 #endif
