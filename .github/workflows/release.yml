@@ -8,6 +8,9 @@ on:
         default: true
         type: boolean
 
+permissions:
+  contents: write
+
 jobs:
   Build-Tarball:
     runs-on: ubuntu-latest
@@ -389,8 +392,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      with:
-        token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
 
     - name: Read dry-run input
       run: |
@@ -426,15 +427,6 @@ jobs:
       if: env.DRY_RUN == 'true'
       run: echo "Dry run mode, skipping release and tag steps."
 
-    - name: Import GPG key
-      id: import-gpg
-      uses: crazy-max/ghaction-import-gpg@v6
-      with:
-        gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-        passphrase: ${{ secrets.PASSPHRASE }}
-        git_user_signingkey: true
-        git_commit_gpgsign: true
-
     - name: Install twine
       run: |
         python -m pip install twine
@@ -445,21 +437,20 @@ jobs:
       env:
         TAG_VERSION: ${{ env.VERSION }}
       run: |
-        git config --global user.email "${{ steps.import-gpg.outputs.email }}"
-        git config --global user.name "${{ steps.import-gpg.outputs.name }}"
-        git tag $TAG_VERSION
-        git push origin $TAG_VERSION
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git tag "$TAG_VERSION"
+        git push origin "$TAG_VERSION"
 
     - name: Create GitHub Release and upload artifacts
       if: env.DRY_RUN == 'false'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ env.VERSION }}
         name: Release ${{ env.VERSION }}
+        generate_release_notes: true
         files: |
           ./artifacts/*
-      env:
-        GITHUB_TOKEN: ${{ secrets.ACTION_GITHUB_TOKEN }}
 
     - name: Publish to PyPI
       if: env.DRY_RUN == 'false'
