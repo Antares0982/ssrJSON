@@ -45,6 +45,6 @@
 #include "_encode_utils_impl.inl.h"
 #undef COMPILE_WRITE_UCS_LEVEL
 
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // ENCODE_UTILS_IMPL_WRAP_H

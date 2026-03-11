@@ -36,7 +36,7 @@
 #    endif
 #endif
 //
-#define COMPILE_SIMD_BITS 256
+#define _CompileVectorBits 256
 
 #include "compile_context/srw_in.inl.h"
 
@@ -60,5 +60,5 @@ force_inline void trailing_copy_with_cvt(dst_t **dst_addr, const src_t *src, usi
     ssrjson_concat5(trailing_copy_with, cvt, src_t, dst_t, 128)(dst_addr, src, len);
 }
 
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 #include "compile_context/srw_out.inl.h"

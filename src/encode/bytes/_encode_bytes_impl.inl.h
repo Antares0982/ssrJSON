@@ -734,4 +734,4 @@ fail_keytype:;
 #undef COMPILE_UCS_LEVEL
 #undef COMPILE_READ_UCS_LEVEL
 #undef COMPILE_WRITE_UCS_LEVEL
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits

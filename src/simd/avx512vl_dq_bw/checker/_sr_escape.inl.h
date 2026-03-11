@@ -31,7 +31,7 @@
 #    endif
 #endif
 
-#define COMPILE_SIMD_BITS 512
+#define _CompileVectorBits 512
 #include "compile_context/sr_in.inl.h"
 
 /* High mask functions for AVX512 are not used. */
@@ -142,4 +142,4 @@ force_inline usize joined4_escape_bitmask_to_done_count_track_max(avx512_bitmask
 }
 
 #include "compile_context/sr_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits

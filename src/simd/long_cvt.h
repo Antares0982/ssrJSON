@@ -28,22 +28,22 @@
 #include "compile_feature_check.h"
 #include "long_cvt/part_back_cvt.h"
 #include "long_cvt/part_cvt.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
-#define COMPILE_SIMD_BITS 128
+#define _CompileVectorBits 128
 #include "long_cvt/_s_long_cvt_wrap.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #ifdef SSRJSON_SIMD_AVX2_CVT_H
-#    define COMPILE_SIMD_BITS 256
+#    define _CompileVectorBits 256
 #    include "long_cvt/_s_long_cvt_wrap.inl.h"
-#    undef COMPILE_SIMD_BITS
+#    undef _CompileVectorBits
 #endif
 
 #ifdef SSRJSON_SIMD_AVX512VLDQBW_CVT_H
-#    define COMPILE_SIMD_BITS 512
+#    define _CompileVectorBits 512
 #    include "long_cvt/_s_long_cvt_wrap.inl.h"
-#    undef COMPILE_SIMD_BITS
+#    undef _CompileVectorBits
 #endif
 
 #endif // SSRJSON_SIMD_LONG_CVT_H

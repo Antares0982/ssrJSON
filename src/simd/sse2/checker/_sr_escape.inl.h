@@ -29,7 +29,7 @@
 //
 #include "simd/sse2/common.h"
 //
-#define COMPILE_SIMD_BITS 128
+#define _CompileVectorBits 128
 #include "compile_context/sr_in.inl.h"
 #include "simd/mask_table.h"
 
@@ -105,4 +105,4 @@ force_inline usize joined4_escape_mask_to_done_count(vector_a mask1,
 }
 
 #include "compile_context/sr_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits

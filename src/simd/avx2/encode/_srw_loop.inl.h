@@ -32,7 +32,7 @@
 #    endif
 #endif
 //
-#define COMPILE_SIMD_BITS 256
+#define _CompileVectorBits 256
 
 #include "compile_context/srw_in.inl.h"
 
@@ -157,4 +157,4 @@ internal_simd_noinline ssrjson_nofail dst_t *encode_unicode_impl_no_key(dst_t *d
 }
 
 #include "compile_context/srw_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits

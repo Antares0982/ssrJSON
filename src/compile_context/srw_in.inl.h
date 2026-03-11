@@ -27,7 +27,7 @@
 #include "sw_in.inl.h"
 
 /* Generate function names with SIMD level, reader type and writer type. */
-#define make_srw_name(_x_) ssrjson_concat4(_x_, src_t, dst_t, COMPILE_SIMD_BITS)
+#define make_srw_name(_x_) ssrjson_concat4(_x_, src_t, dst_t, _CompileVectorBits)
 
 #define trailing_copy_with_cvt make_srw_name(trailing_copy_with_cvt)
 #define encode_trailing_copy_with_cvt make_srw_name(encode_trailing_copy_with_cvt)

@@ -57,6 +57,6 @@
 #undef COMPILE_WRITE_UCS_LEVEL
 #undef COMPILE_UCS_LEVEL
 
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // SSRJSON_DECODE_STR_DECODE_STR_COPY_H

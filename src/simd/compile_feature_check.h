@@ -21,9 +21,9 @@
  *============================================================================*/
 
 #if USING_AVX512
-#    define COMPILE_SIMD_BITS 512
+#    define _CompileVectorBits 512
 #elif USING_AVX2
-#    define COMPILE_SIMD_BITS 256
+#    define _CompileVectorBits 256
 #else
-#    define COMPILE_SIMD_BITS 128
+#    define _CompileVectorBits 128
 #endif

@@ -78,7 +78,7 @@ force_inline void check_ascii_in_ucs1_and_get_done_countx4(unionvector_a_x4 vec,
     vector_a t1 = checker_masks[0];
     vector_a t2 = checker_masks[1];
     vector_a t3 = checker_masks[2];
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     struct {
         u64 x[4];
     } m;
@@ -129,7 +129,7 @@ force_inline void check_ascii_in_ucs1_and_get_done_countx4(unionvector_a_x4 vec,
 
 force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
     vector_a t = broadcast(0);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     struct {
         u64 x[4];
     } m;
@@ -175,7 +175,7 @@ force_inline void check_ascii_in_ucs1_and_get_done_count(vector_a vec, bool *out
     vector_a t1 = checker_masks[0];
     vector_a t2 = checker_masks[1];
     vector_a t3 = checker_masks[2];
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     u64 m;
 
     m = cmpeq_bitmask(vec, t1) |
@@ -195,7 +195,7 @@ force_inline void check_ascii_in_ucs1_and_get_done_count(vector_a vec, bool *out
 
 force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
     vector_a t = broadcast(0);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     u64 m;
 
     m = signed_cmpgt_bitmask(t, vec);
@@ -445,7 +445,7 @@ force_inline void check_ascii_in_ucs2_and_get_done_countx4(unionvector_a_x4 vec,
     vector_a t2 = checker_masks[1];
     vector_a t3 = checker_masks[2];
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     struct {
         u32 x[4];
     } m;
@@ -506,7 +506,7 @@ force_inline void check_ascii_in_ucs2_and_get_done_countx4(unionvector_a_x4 vec,
 force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     struct {
         u32 x[4];
     } m;
@@ -563,7 +563,7 @@ force_inline void check_ascii_in_ucs2_and_get_done_count(vector_a vec, bool *out
     vector_a t2 = checker_masks[1];
     vector_a t3 = checker_masks[2];
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     u32 m;
     m = cmpeq_bitmask(vec, t1) |
         cmpeq_bitmask(vec, t2) |
@@ -586,7 +586,7 @@ force_inline void check_ascii_in_ucs2_and_get_done_count(vector_a vec, bool *out
 force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     u32 m;
     m = signed_cmpgt_bitmask(t3, vec) |
         signed_cmpgt_bitmask(vec, t4);
@@ -748,7 +748,7 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop_raw_utf8(u8 *dst, cons
 force_inline void check_2bytes_in_ucs2_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
     vector_a t1 = broadcast(0x80);
     vector_a t2 = broadcast(0x7ff);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     u32 m;
     m = unsigned_cmpgt_bitmask(t1, vec) | unsigned_cmpgt_bitmask(vec, t2);
 #elif SSRJSON_X86
@@ -777,9 +777,9 @@ force_inline ssrjson_nofail u8 *_2bytes_in_ucs2_encode_loop(u8 *dst, const u16 *
 
     // write
 #if SSRJSON_X86
-#    if COMPILE_SIMD_BITS == 512
+#    if _CompileVectorBits == 512
     ucs2_encode_2bytes_utf8_avx512(dst, vec);
-#    elif COMPILE_SIMD_BITS == 256
+#    elif _CompileVectorBits == 256
     ucs2_encode_2bytes_utf8_avx2(dst, vec);
 #    else
     ucs2_encode_2bytes_utf8_sse2(dst, vec);
@@ -812,7 +812,7 @@ force_inline void check_3bytes_in_ucs2_and_get_done_count(vector_a vec, bool *ou
     vector_a t2 = broadcast(0xd7ff);
     vector_a t3 = broadcast(0xe000);
 
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     u32 m;
 
     m = unsigned_cmplt_bitmask(vec, t1) |
@@ -841,7 +841,7 @@ force_inline void check_3bytes_in_ucs4_and_get_done_count(vector_a vec, bool *ou
     vector_a t3 = broadcast(0xe000);
     vector_a t4 = broadcast(0xffff);
 
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     u32 m;
     m = unsigned_cmpgt_bitmask(t1, vec) | (unsigned_cmpgt_bitmask(vec, t2) & unsigned_cmpgt_bitmask(t3, vec)) | unsigned_cmpgt_bitmask(vec, t4);
 #elif SSRJSON_X86
@@ -940,7 +940,7 @@ force_inline u8 *bytes_write_ucs2(u8 *writer, const u16 *src, usize len, bool is
             assert(!CAN_LOOP);
             break;
         } else {
-#if COMPILE_SIMD_BITS >= 256 || __SSSE3__
+#if _CompileVectorBits >= 256 || __SSSE3__
             bool continuous;
             while (CAN_LOOP) {
                 writer = _3bytes_in_ucs2_encode_loop(writer, &src, &len, &continuous);
@@ -1007,7 +1007,7 @@ force_inline u8 *bytes_write_ucs2_raw_utf8(u8 *writer, const u16 *src, usize len
             assert(!CAN_LOOP);
             break;
         } else {
-#if COMPILE_SIMD_BITS >= 256 || __SSSE3__
+#if _CompileVectorBits >= 256 || __SSSE3__
             bool continuous;
             while (CAN_LOOP) {
                 writer = _3bytes_in_ucs2_encode_loop(writer, &src, &len, &continuous);
@@ -1053,7 +1053,7 @@ force_inline void check_ascii_in_ucs4_and_get_done_countx4(unionvector_a_x4 vec,
     vector_a t2 = checker_masks[1];
     vector_a t3 = checker_masks[2];
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     struct {
         u32 x[4];
     } m;
@@ -1114,7 +1114,7 @@ force_inline void check_ascii_in_ucs4_and_get_done_countx4(unionvector_a_x4 vec,
 force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     struct {
         u32 x[4];
     } m;
@@ -1247,7 +1247,7 @@ force_inline void check_ascii_in_ucs4_and_get_done_count(vector_a vec, bool *out
     vector_a t2 = checker_masks[1];
     vector_a t3 = checker_masks[2];
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     u32 m;
     m = cmpeq_bitmask(vec, t1) |
         cmpeq_bitmask(vec, t2) |
@@ -1270,7 +1270,7 @@ force_inline void check_ascii_in_ucs4_and_get_done_count(vector_a vec, bool *out
 force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     u32 m;
     m = signed_cmpgt_bitmask(t3, vec) |
         signed_cmpgt_bitmask(vec, t4);
@@ -1355,7 +1355,7 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop_raw_utf8(u8 *dst, cons
 force_inline void check_2bytes_in_ucs4_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
     vector_a t1 = broadcast(0x80);
     vector_a t2 = broadcast(0x7ff);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
     u32 m;
     m = unsigned_cmpgt_bitmask(t1, vec) | unsigned_cmpgt_bitmask(vec, t2);
 #elif SSRJSON_X86
@@ -1384,9 +1384,9 @@ force_inline ssrjson_nofail u8 *_2bytes_in_ucs4_encode_loop(u8 *dst, const u32 *
 
     // write
 #if SSRJSON_X86
-#    if COMPILE_SIMD_BITS == 512
+#    if _CompileVectorBits == 512
     ucs4_encode_2bytes_utf8_avx512(dst, vec);
-#    elif COMPILE_SIMD_BITS == 256
+#    elif _CompileVectorBits == 256
     ucs4_encode_2bytes_utf8_avx2(dst, vec);
 #    else
     ucs4_encode_2bytes_utf8_sse2(dst, vec);
@@ -1496,7 +1496,7 @@ force_inline u8 *bytes_write_ucs4(u8 *writer, const u32 *src, usize len, bool is
             assert(!CAN_LOOP);
             break;
         } else if (unicode < 0x10000) {
-#if COMPILE_SIMD_BITS >= 256 || __SSSE3__
+#if _CompileVectorBits >= 256 || __SSSE3__
             bool continuous;
             while (CAN_LOOP) {
                 writer = _3bytes_in_ucs4_encode_loop(writer, &src, &len, &continuous);
@@ -1565,7 +1565,7 @@ force_inline u8 *bytes_write_ucs4_raw_utf8(u8 *writer, const u32 *src, usize len
             assert(!CAN_LOOP);
             break;
         } else if (unicode < 0x10000) {
-#if COMPILE_SIMD_BITS >= 256 || __SSSE3__
+#if _CompileVectorBits >= 256 || __SSSE3__
             bool continuous;
             while (CAN_LOOP) {
                 writer = _3bytes_in_ucs4_encode_loop(writer, &src, &len, &continuous);

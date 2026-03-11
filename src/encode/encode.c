@@ -172,7 +172,7 @@ static force_noinline PyObject *ssrjson_dumps_single_unicode_to_bytes(PyObject *
 }
 
 #include "compile_context/s_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 force_inline PyObject *ssrjson_dumps_single_long(PyObject *val, ssrjson_compiletime bool to_bytes_obj) {
     PyObject *ret;

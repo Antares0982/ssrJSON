@@ -203,7 +203,7 @@ force_inline int decode_str_copy_trailing_ascii_u8(u8 **dst_addr, const src_t **
     anymask_t check_mask;
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 256
+#if SSRJSON_X86 && _CompileVectorBits == 256
     avx2_trailing_cvt_u8_u8(*src_addr, src_end, *dst_addr);
 #else
     *(vector_u *)(*dst_addr) = vec;
@@ -222,7 +222,7 @@ force_inline int decode_str_copy_trailing_ascii_u16(u16 **dst_addr, const src_t 
     anymask_t check_mask;
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 256
+#if SSRJSON_X86 && _CompileVectorBits == 256
     avx2_trailing_cvt_u8_u16(*src_addr, src_end, *dst_addr);
 #else
     make_s_name(cvt_to_dst_u8_u16)(*dst_addr, vec);
@@ -243,7 +243,7 @@ force_inline int decode_str_copy_trailing_ascii_u32(u32 **dst_addr,
     anymask_t check_mask;
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 256
+#if SSRJSON_X86 && _CompileVectorBits == 256
     avx2_trailing_cvt_u8_u32(*src_addr, src_end, *dst_addr);
 #else
     make_s_name(cvt_to_dst_u8_u32)(*dst_addr, vec);
@@ -828,7 +828,7 @@ internal_simd_noinline PyObject *decode_str_ascii_not_key(const src_t **src_addr
 
 #include "compile_context/sr_out.inl.h"
 //
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 #undef COMPILE_READ_UCS_LEVEL
 #undef COMPILE_UCS_LEVEL
 

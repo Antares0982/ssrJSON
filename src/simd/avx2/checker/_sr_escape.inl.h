@@ -33,7 +33,7 @@
 force_inline const void *read_tail_mask_table_8(Py_ssize_t row);
 force_inline const void *read_head_mask_table_8(Py_ssize_t row);
 
-#define COMPILE_SIMD_BITS 256
+#define _CompileVectorBits 256
 #include "compile_context/sr_in.inl.h"
 
 force_inline vector_a get_high_mask(usize count) {
@@ -159,4 +159,4 @@ force_inline usize joined4_escape_mask_to_done_count_track_max(vector_a mask1,
 }
 
 #include "compile_context/sr_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits

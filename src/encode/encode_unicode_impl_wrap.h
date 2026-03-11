@@ -151,6 +151,6 @@
 
 #undef COMPILE_INDENT_LEVEL
 
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // SSRJSON_ENCODE_UNICODE_IMPL_WRAP_H

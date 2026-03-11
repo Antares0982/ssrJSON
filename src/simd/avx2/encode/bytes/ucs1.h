@@ -33,7 +33,7 @@
 //
 #define COMPILE_READ_UCS_LEVEL 1
 #define COMPILE_WRITE_UCS_LEVEL 1
-#define COMPILE_SIMD_BITS 256
+#define _CompileVectorBits 256
 #include "compile_context/srw_in.inl.h"
 
 #define __readbefore_bytes_write_ucs1_trailing_256 (32)
@@ -113,7 +113,7 @@ restart:;
 }
 
 #include "compile_context/srw_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 #undef COMPILE_WRITE_UCS_LEVEL
 #undef COMPILE_READ_UCS_LEVEL
 

@@ -32,8 +32,8 @@
 #    ifndef COMPILE_WRITE_UCS_LEVEL
 #        define COMPILE_WRITE_UCS_LEVEL 2
 #    endif
-#    ifndef COMPILE_SIMD_BITS
-#        define COMPILE_SIMD_BITS 256
+#    ifndef _CompileVectorBits
+#        define _CompileVectorBits 256
 #    endif
 #endif
 #include "compile_context/srw_in.inl.h"
@@ -62,9 +62,9 @@ force_inline void make_srw_name(__small_cvt)(dst_t **dst_addr, const src_t **src
 
 force_inline void long_back_cvt(dst_t *dst, const src_t *src, usize count) {
     // 16, 32 or 64
-    static const usize batch_bytes = COMPILE_SIMD_BITS / 8;
-    static const usize batch_count = COMPILE_SIMD_BITS / 8 / sizeof(src_t);
-    static const usize batch4_count = COMPILE_SIMD_BITS / 8 / sizeof(src_t) * 4;
+    static const usize batch_bytes = _CompileVectorBits / 8;
+    static const usize batch_count = _CompileVectorBits / 8 / sizeof(src_t);
+    static const usize batch4_count = _CompileVectorBits / 8 / sizeof(src_t) * 4;
     if (sizeof(dst_t) > sizeof(src_t)) {
         usize align_offset = ssrjson_cast(uintptr_t, dst) & (batch_bytes - 1);
         assert((align_offset % sizeof(dst_t)) == 0);
@@ -97,9 +97,9 @@ force_inline void long_back_cvt(dst_t *dst, const src_t *src, usize count) {
 
 force_inline void long_cvt(dst_t *dst, const src_t *src, usize count) {
     // 16, 32 or 64
-    static const usize batch_bytes = COMPILE_SIMD_BITS / 8;
-    static const usize batch_count = COMPILE_SIMD_BITS / 8 / sizeof(src_t);
-    static const usize batch4_count = COMPILE_SIMD_BITS / 8 / sizeof(src_t) * 4;
+    static const usize batch_bytes = _CompileVectorBits / 8;
+    static const usize batch_count = _CompileVectorBits / 8 / sizeof(src_t);
+    static const usize batch4_count = _CompileVectorBits / 8 / sizeof(src_t) * 4;
     //
 #if COMPILE_WRITE_UCS_LEVEL > COMPILE_READ_UCS_LEVEL
     usize align_offset = ssrjson_cast(uintptr_t, dst) & (batch_bytes - 1);

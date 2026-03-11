@@ -33,7 +33,7 @@
 //
 #define COMPILE_READ_UCS_LEVEL 2
 #define COMPILE_WRITE_UCS_LEVEL 1
-#define COMPILE_SIMD_BITS 128
+#define _CompileVectorBits 128
 #include "compile_context/srw_in.inl.h"
 
 #define __reserve_ucs2_encode_3bytes_utf8_neon (24)
@@ -376,7 +376,7 @@ finished:;
 }
 
 #include "compile_context/srw_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 #undef COMPILE_WRITE_UCS_LEVEL
 #undef COMPILE_READ_UCS_LEVEL
 

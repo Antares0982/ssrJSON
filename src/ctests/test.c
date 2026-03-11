@@ -32,12 +32,12 @@
 #include "compile_context/s_in.inl.h"
 
 #if BUILD_MULTI_LIB && SSRJSON_X86
-#    if COMPILE_SIMD_BITS == 512
+#    if _CompileVectorBits == 512
 #        define GUARDED_SIMD                         \
             do {                                     \
                 if (!_SupportAVX512) return SKIPPED; \
             } while (0)
-#    elif COMPILE_SIMD_BITS == 256
+#    elif _CompileVectorBits == 256
 #        define GUARDED_SIMD                       \
             do {                                   \
                 if (!_SupportAVX2) return SKIPPED; \
@@ -55,11 +55,11 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u16)(void) {
     u8 input[16];
     u16 dst[8];
 #elif SSRJSON_X86
-#    if COMPILE_SIMD_BITS == 512
+#    if _CompileVectorBits == 512
     GUARDED_SIMD;
     u8 input[32];
     u16 dst[32];
-#    elif COMPILE_SIMD_BITS == 256
+#    elif _CompileVectorBits == 256
     GUARDED_SIMD;
     u8 input[16];
     u16 dst[16];
@@ -74,9 +74,9 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u16)(void) {
         RANDOM_FILL(input);
         GARBAGE_FILL(dst);
 //
-#if COMPILE_SIMD_BITS == 512
+#if _CompileVectorBits == 512
         *(vector_u_u16_512 *)dst = cvt_u8_to_u16(*(vector_u_u8_256 *)input);
-#elif COMPILE_SIMD_BITS == 256
+#elif _CompileVectorBits == 256
         *(vector_u_u16_256 *)dst = cvt_u8_to_u16(*(vector_u_u8_128 *)input);
 #else
         *(vector_u_u16_128 *)dst = cvt_u8_to_u16(*(vector_u_u8_128 *)input);
@@ -93,11 +93,11 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u32)(void) {
     u8 input[16];
     u32 dst[4];
 #elif SSRJSON_X86
-#    if COMPILE_SIMD_BITS == 512
+#    if _CompileVectorBits == 512
     GUARDED_SIMD;
     u8 input[16];
     u32 dst[16];
-#    elif COMPILE_SIMD_BITS == 256
+#    elif _CompileVectorBits == 256
     GUARDED_SIMD;
     u8 input[16];
     u32 dst[8];
@@ -113,9 +113,9 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u32)(void) {
         RANDOM_FILL(input);
         GARBAGE_FILL(dst);
         //
-#if COMPILE_SIMD_BITS == 512
+#if _CompileVectorBits == 512
         *(vector_u_u32_512 *)dst = cvt_u8_to_u32(*(vector_u_u8_128 *)input);
-#elif COMPILE_SIMD_BITS == 256
+#elif _CompileVectorBits == 256
         *(vector_u_u32_256 *)dst = cvt_u8_to_u32(*(vector_u_u8_128 *)input);
 #else
         *(vector_u_u32_128 *)dst = cvt_u8_to_u32(*(vector_u_u8_128 *)input);
@@ -133,11 +133,11 @@ int SIMD_NAME_MODIFIER(test_cvt_u16_to_u32)(void) {
     u32 dst[4];
 #elif SSRJSON_X86
 
-#    if COMPILE_SIMD_BITS == 512
+#    if _CompileVectorBits == 512
     GUARDED_SIMD;
     u16 input[16];
     u32 dst[16];
-#    elif COMPILE_SIMD_BITS == 256
+#    elif _CompileVectorBits == 256
     GUARDED_SIMD;
     u16 input[8];
     u32 dst[8];
@@ -154,9 +154,9 @@ int SIMD_NAME_MODIFIER(test_cvt_u16_to_u32)(void) {
         RANDOM_FILL(input);
         GARBAGE_FILL(dst);
         //
-#if COMPILE_SIMD_BITS == 512
+#if _CompileVectorBits == 512
         *(vector_u_u32_512 *)dst = cvt_u16_to_u32(*(vector_u_u16_256 *)input);
-#elif COMPILE_SIMD_BITS == 256
+#elif _CompileVectorBits == 256
         *(vector_u_u32_256 *)dst = cvt_u16_to_u32(*(vector_u_u16_128 *)input);
 #else
         *(vector_u_u32_128 *)dst = cvt_u16_to_u32(*(vector_u_u16_128 *)input);

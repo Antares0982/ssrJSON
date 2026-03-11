@@ -87,6 +87,6 @@
 #undef COMPILE_UCS_LEVEL
 
 #undef COMPILE_INDENT_LEVEL
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // ENCODE_IMPL_WRAP_H

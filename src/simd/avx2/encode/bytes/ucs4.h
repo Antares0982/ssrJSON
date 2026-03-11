@@ -34,7 +34,7 @@
 //
 #define COMPILE_READ_UCS_LEVEL 4
 #define COMPILE_WRITE_UCS_LEVEL 1
-#define COMPILE_SIMD_BITS 256
+#define _CompileVectorBits 256
 #include "compile_context/srw_in.inl.h"
 
 force_inline vector_a_u8_128 __ucs4_encode_2bytes_utf8_avx2_impl(vector_a y) {
@@ -467,7 +467,7 @@ finished:;
 }
 
 #include "compile_context/srw_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 #undef COMPILE_WRITE_UCS_LEVEL
 #undef COMPILE_READ_UCS_LEVEL
 

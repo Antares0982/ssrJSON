@@ -29,7 +29,7 @@
 #    endif
 #endif
 
-#define COMPILE_SIMD_BITS 256
+#define _CompileVectorBits 256
 #include "compile_context/sr_in.inl.h"
 
 force_inline void fast_skip_spaces(const src_t **cur_addr, const src_t *end) {
@@ -61,4 +61,4 @@ loop:;
 }
 
 #include "compile_context/sr_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits

@@ -28,13 +28,13 @@
 #include "s_in.inl.h"
 
 /* The count of unicode that can be read in one SIMD register. */
-#define READ_BATCH_COUNT (COMPILE_SIMD_BITS / 8 / sizeof(src_t))
+#define READ_BATCH_COUNT (_CompileVectorBits / 8 / sizeof(src_t))
 
 /* Generate function names with SIMD level and reader type. */
-#define make_sr_name(_x_) ssrjson_concat3(_x_, src_t, COMPILE_SIMD_BITS)
+#define make_sr_name(_x_) ssrjson_concat3(_x_, src_t, _CompileVectorBits)
 #ifdef COMPILE_UCS_LEVEL
 /* Generate function names with SIMD level and unicode type. */
-#    define make_s_ucs_name(_x_) ssrjson_concat3(_x_, __UCS_NAME, COMPILE_SIMD_BITS)
+#    define make_s_ucs_name(_x_) ssrjson_concat3(_x_, __UCS_NAME, _CompileVectorBits)
 #endif
 
 /*
@@ -99,7 +99,7 @@
 #define unsigned_max4 make_sr_name(unsigned_max4)
 #define _CheckerMasks make_sr_name(_CheckerMasks)
 //
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 512
+#if SSRJSON_X86 && _CompileVectorBits == 512
 #    define anymask_t avx512_bitmask_t
 #    define get_escape_anymask get_escape_bitmask
 #    define testz_escape_mask(_x_) ((_x_) == 0)

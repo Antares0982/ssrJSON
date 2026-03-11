@@ -21,7 +21,7 @@
  *============================================================================*/
 
 #ifdef SSRJSON_CLANGD_CHECKING
-#    ifndef COMPILE_SIMD_BITS
+#    ifndef _CompileVectorBits
 #        define COMPILE_CONTEXT_DECODE
 #        include "decode_str_root_wrap.h"
 //

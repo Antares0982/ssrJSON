@@ -40,6 +40,6 @@
 #define COMPILE_UCS_LEVEL 4
 #include "_ucs.inl.h"
 #undef COMPILE_UCS_LEVEL
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // SSRJSON_DECODE_STR_UCS_H

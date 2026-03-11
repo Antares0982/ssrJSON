@@ -117,6 +117,6 @@ force_inline void get_cache_key_hash_and_size_ucs4(const void **hash_string_ptr_
 }
 
 #include "compile_context/s_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // SSRJSON_DECODE_STR_CACHE_KEY_H

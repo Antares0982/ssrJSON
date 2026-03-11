@@ -43,6 +43,6 @@
 #include "decode/_decode_str.inl.h"
 #undef COMPILE_UCS_LEVEL
 
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // SSRJSON_DECODE_DECODE_STR_WRAP_H

@@ -26,5 +26,5 @@
 #include "s_in.inl.h"
 #include "w_in.inl.h"
 
-#define WRITE_BATCH_COUNT (COMPILE_SIMD_BITS / 8 / sizeof(dst_t))
+#define WRITE_BATCH_COUNT (_CompileVectorBits / 8 / sizeof(dst_t))
 #endif // SSRJSON_COMPILE_CONTEXT_SW

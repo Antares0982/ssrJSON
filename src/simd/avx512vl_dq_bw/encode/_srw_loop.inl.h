@@ -33,7 +33,7 @@
 
 #endif
 //
-#define COMPILE_SIMD_BITS 512
+#define _CompileVectorBits 512
 
 #include "compile_context/srw_in.inl.h"
 
@@ -148,4 +148,4 @@ force_inline ssrjson_nofail dst_t *encode_unicode_impl_no_key(dst_t *dst, const 
 }
 
 #include "compile_context/srw_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits

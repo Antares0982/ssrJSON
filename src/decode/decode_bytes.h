@@ -974,6 +974,6 @@ internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_co
     return ret;
 }
 
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // SSRJSON_DECODE_DECODE_BYTES_H

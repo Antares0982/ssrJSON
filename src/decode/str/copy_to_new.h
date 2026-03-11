@@ -69,7 +69,7 @@ force_inline void copy_to_new_unicode_ucs4(void **dst_addr, PyObject *ret, bool 
     }
 }
 
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 #include "compile_context/s_out.inl.h"
 
 #endif // SSRJSON_DECODE_STR_COPY_TO_NEW_H

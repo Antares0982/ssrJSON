@@ -26,13 +26,13 @@
 #include "srw_in.inl.h"
 
 /* Generate function names with SIMD level, indent level, reader type and writer type. */
-#define make_sirw_name(_x_) ssrjson_concat5(_x_, src_t, dst_t, __INDENT_NAME, COMPILE_SIMD_BITS)
+#define make_sirw_name(_x_) ssrjson_concat5(_x_, src_t, dst_t, __INDENT_NAME, _CompileVectorBits)
 
 #define unicode_buffer_append_key_internal make_sirw_name(_unicode_buffer_append_key_internal)
 #define unicode_buffer_append_str_internal make_sirw_name(_unicode_buffer_append_str_internal)
 //
-#define STR_WRITER_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_str_internal, r_t, w_t, __INDENT_NAME, COMPILE_SIMD_BITS)
-#define KEY_WRITER_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_key_internal, r_t, w_t, __INDENT_NAME, COMPILE_SIMD_BITS)
+#define STR_WRITER_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_str_internal, r_t, w_t, __INDENT_NAME, _CompileVectorBits)
+#define KEY_WRITER_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_key_internal, r_t, w_t, __INDENT_NAME, _CompileVectorBits)
 
 
 #ifdef COMPILE_UCS_LEVEL

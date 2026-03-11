@@ -73,7 +73,7 @@ force_inline int decode_str_copy_trailing(dst_t **dst_addr, const src_t **src_ad
     anymask_t check_mask;
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
-#if SSRJSON_X86 && COMPILE_SIMD_BITS == 256
+#if SSRJSON_X86 && _CompileVectorBits == 256
     avx2_trailing_cvt(*src_addr, src_end, *dst_addr);
 #else
     cvt_to_dst(*dst_addr, vec);

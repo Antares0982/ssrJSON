@@ -34,7 +34,7 @@
 #    endif
 #endif
 //
-#define COMPILE_SIMD_BITS 128
+#define _CompileVectorBits 128
 
 #include "compile_context/srw_in.inl.h"
 extern const Py_ssize_t _ControlJump[_Slash + 1];
@@ -51,5 +51,5 @@ force_inline void trailing_copy_with_cvt(dst_t **dst_addr, const src_t *src, usi
     *dst_addr = dst;
 }
 
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 #include "compile_context/srw_out.inl.h"

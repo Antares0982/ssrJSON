@@ -46,6 +46,6 @@
 #include "decoder_impl/_sr_loop_impls.inl.h"
 #undef COMPILE_READ_UCS_LEVEL
 
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // SSRJSON_DECODE_STR_DECODER_IMPL_WRAP_H

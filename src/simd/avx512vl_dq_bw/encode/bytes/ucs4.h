@@ -34,7 +34,7 @@
 //
 #define COMPILE_READ_UCS_LEVEL 4
 #define COMPILE_WRITE_UCS_LEVEL 1
-#define COMPILE_SIMD_BITS 512
+#define _CompileVectorBits 512
 #include "compile_context/srw_in.inl.h"
 
 #define __reserve_ucs4_encode_2bytes_utf8_avx512 (32)
@@ -541,7 +541,7 @@ finished:;
 }
 
 #include "compile_context/srw_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 #undef COMPILE_WRITE_UCS_LEVEL
 #undef COMPILE_READ_UCS_LEVEL
 

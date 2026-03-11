@@ -32,7 +32,7 @@
 //
 #define COMPILE_READ_UCS_LEVEL 1
 #define COMPILE_WRITE_UCS_LEVEL 1
-#define COMPILE_SIMD_BITS 128
+#define _CompileVectorBits 128
 #include "compile_context/srw_in.inl.h"
 
 /* See AVX2 code for more details. */
@@ -115,7 +115,7 @@ restart:;
 }
 
 #include "compile_context/srw_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 #undef COMPILE_WRITE_UCS_LEVEL
 #undef COMPILE_READ_UCS_LEVEL
 

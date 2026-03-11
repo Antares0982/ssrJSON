@@ -169,6 +169,6 @@ static force_noinline u8 *bytes_buffer_append_nonascii_str_no_write_cache(u8 *wr
 }
 
 #include "compile_context/s_out.inl.h"
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // SSRJSON_ENCODE_NON_ASCII_H

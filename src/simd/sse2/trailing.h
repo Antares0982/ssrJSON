@@ -28,7 +28,7 @@
 #include "checker.h"
 #include "cvt.h"
 
-#define COMPILE_SIMD_BITS 128
+#define _CompileVectorBits 128
 
 #define COMPILE_READ_UCS_LEVEL 1
 #define COMPILE_WRITE_UCS_LEVEL 1
@@ -66,6 +66,6 @@
 #undef COMPILE_READ_UCS_LEVEL
 #undef COMPILE_WRITE_UCS_LEVEL
 
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // SSRJSON_SIMD_SSE2_TRAILING_H

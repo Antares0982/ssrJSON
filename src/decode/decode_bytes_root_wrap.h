@@ -42,6 +42,6 @@
 #undef DECODE_READ_PRETTY
 #undef READ_ROOT_IMPL
 
-#undef COMPILE_SIMD_BITS
+#undef _CompileVectorBits
 
 #endif // SSRJSON_DECODE_DECODE_BYTES_ROOT_WRAP_H
