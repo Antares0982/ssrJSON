@@ -96,7 +96,7 @@ force_inline int decode_str_fast_trailing(const src_t **src_addr, const src_t *s
 }
 
 // fast path unicode maker
-force_inline PyObject *make_unicode_from_src(const src_t *start, usize count, bool is_key, vector_a maxvec, void *temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+force_inline PyObject *make_unicode_from_src(const src_t *start, usize count, ssrjson_compiletime bool is_key, vector_a maxvec, void *temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     const src_t upper_bound = (COMPILE_UCS_LEVEL == 1) ? 0x7f : ((COMPILE_UCS_LEVEL == 2) ? 0xff : 0xffff);
 
     PyObject *ret;
@@ -150,6 +150,7 @@ force_inline PyObject *make_unicode_from_src(const src_t *start, usize count, bo
             dst_void = temp_dst;
             __ssrjson_short_memcpy_small_first(&temp_dst, &temp_src, count * tpsize, 64);
         } else {
+            // always this case if `is_key` is false
             make_ucs_name(copy_to_new_unicode)(&dst_void, ret, need_cvt, start, count, kind);
         }
         if (should_cache) {
@@ -164,6 +165,8 @@ done:;
     return ret;
 }
 
+// slow path for string with escape. never cache.
+// `is_key` cannot be compile-time determined because of noinline.
 internal_simd_noinline PyObject *decode_str_with_escape(
         const src_t *src_start,
         const src_t **src_addr,
@@ -281,12 +284,10 @@ decode_loop_ucs1:;
         }
 #    define ON_ESCAPE process_escape_ucs1_u8(escape_info, &u8writer, &u16writer, &u32writer, &u8size, &max_escape, temp_buffer)
 
-        if (!is_key) {
-            while (CAN_LOOP4()) {
-                EscapeInfo escape_info;
-                int state_code = decode_str_copy_loop4_to_u8(&u8writer, &src, src_end, &escape_info, &maxvec);
-                LOOP_SWITCHER(state_code, ON_ESCAPE);
-            }
+        while (CAN_LOOP4()) {
+            EscapeInfo escape_info;
+            int state_code = decode_str_copy_loop4_to_u8(&u8writer, &src, src_end, &escape_info, &maxvec);
+            LOOP_SWITCHER(state_code, ON_ESCAPE);
         }
         while (CAN_LOOP()) {
             EscapeInfo escape_info;
@@ -378,12 +379,10 @@ decode_loop_ucs2:;
 #    else
 #        define ON_ESCAPE process_escape_ucs1_u16(escape_info, &u16writer, &u32writer, &u8size, &u16size, &max_escape, temp_buffer)
 #    endif
-        if (!is_key) {
-            while (CAN_LOOP4()) {
-                EscapeInfo escape_info;
-                int state_code = decode_str_copy_loop4_to_u16(&u16writer, &src, src_end, &escape_info, &maxvec);
-                LOOP_SWITCHER(state_code, ON_ESCAPE);
-            }
+        while (CAN_LOOP4()) {
+            EscapeInfo escape_info;
+            int state_code = decode_str_copy_loop4_to_u16(&u16writer, &src, src_end, &escape_info, &maxvec);
+            LOOP_SWITCHER(state_code, ON_ESCAPE);
         }
         while (CAN_LOOP()) {
             EscapeInfo escape_info;
@@ -459,12 +458,10 @@ decode_loop_ucs4:;
             }                                   \
         }                                       \
     }
-        if (!is_key) {
-            while (CAN_LOOP4()) {
-                EscapeInfo escape_info;
-                int state_code = decode_str_copy_loop4_to_u32(&u32writer, &src, src_end, &escape_info, &maxvec);
-                LOOP_SWITCHER(state_code);
-            }
+        while (CAN_LOOP4()) {
+            EscapeInfo escape_info;
+            int state_code = decode_str_copy_loop4_to_u32(&u32writer, &src, src_end, &escape_info, &maxvec);
+            LOOP_SWITCHER(state_code);
         }
         while (CAN_LOOP()) {
             EscapeInfo escape_info;
@@ -584,7 +581,7 @@ internal_simd_noinline PyObject *decode_str(
         const src_t **src_addr,
         const src_t *const src_end,
         void *temp_buffer,
-        bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+        ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
 #define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
 #define LOOP_SWITCHER(_status_code_)        \
@@ -621,7 +618,7 @@ internal_simd_noinline PyObject *decode_str(
 
     vector_a maxvec = setzero();
 
-    if (!is_key) {
+    if (ssrjson_consteval(!is_key)) {
         while (CAN_LOOP4()) {
             EscapeInfo escape_info;
             int status_code = decode_str_fast_loop4(&src, src_end, &escape_info, &maxvec);

@@ -58,7 +58,7 @@ size_t __hash_add_key_call_count = 0;
 #    define SSRJSON_TRACE_HASH_CONFLICT(_hash) (void)(0)
 #endif // SSRJSON_ENABLE_TRACE
 
-force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int kind, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int kind, ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     SSRJSON_TRACE_STR_LEN(len);
     PyObject *obj;
     decode_keyhash_t hash;
@@ -111,13 +111,13 @@ force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int ki
     }
 
     obj = create_empty_unicode(len, kind);
-    if (obj == NULL) return NULL;
+    if (unlikely(!obj)) return NULL;
     ssrjson_memcpy(ssrjson_cast(u8 *, obj) + offset, unicode_str, real_len);
     if (should_cache) {
         add_key_cache(hash, obj, real_len, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
     }
 success:
-    if (is_key) {
+    if (ssrjson_consteval(is_key)) {
         PyASCIIObject *ascii_obj = ssrjson_pyascii_cast(obj);
         if (len) {
             assert(ascii_obj->hash == -1);

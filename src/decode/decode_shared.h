@@ -369,13 +369,13 @@ force_inline bool ctn_grow_check(DecodeCtnWithSize **ctn_addr, DecodeCtnWithSize
     return ++(*ctn_addr) < ctn_end;
 }
 
-force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int type_flag, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
+force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int type_flag, ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
 force_inline bool _decoder_push_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                                     decode_obj_stack_ptr_t *decode_obj_stack_addr,
                                     decode_obj_stack_ptr_t *decode_obj_stack_end_addr, pyobj_ptr_t obj);
 
-force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
+force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
 force_inline bool decode_true(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                               decode_obj_stack_ptr_t *decode_obj_stack_addr,

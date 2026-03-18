@@ -478,12 +478,10 @@ decode_loop_ucs1:;
         }                                               \
     }
 #define ON_ESCAPE process_escape_ascii_u8(escape_info, &u8writer, &u16writer, &u32writer, &u8size, &is_ascii, temp_buffer)
-        if (!is_key) {
-            while (CAN_LOOP4()) {
-                EscapeInfo escape_info;
-                int state_code = decode_str_copy_loop4_ascii_u8(&u8writer, &src, src_end, &escape_info);
-                LOOP_SWITCHER(state_code, ON_ESCAPE);
-            }
+        while (CAN_LOOP4()) {
+            EscapeInfo escape_info;
+            int state_code = decode_str_copy_loop4_ascii_u8(&u8writer, &src, src_end, &escape_info);
+            LOOP_SWITCHER(state_code, ON_ESCAPE);
         }
         while (CAN_LOOP()) {
             EscapeInfo escape_info;
@@ -571,12 +569,10 @@ decode_loop_ucs2:;
         }                                               \
     }
 #define ON_ESCAPE process_escape_ascii_u16(escape_info, &u16writer, &u32writer, &u16size, u8size, temp_buffer)
-        if (!is_key) {
-            while (CAN_LOOP4()) {
-                EscapeInfo escape_info;
-                int state_code = decode_str_copy_loop4_ascii_u16(&u16writer, &src, src_end, &escape_info);
-                LOOP_SWITCHER(state_code, ON_ESCAPE);
-            }
+        while (CAN_LOOP4()) {
+            EscapeInfo escape_info;
+            int state_code = decode_str_copy_loop4_ascii_u16(&u16writer, &src, src_end, &escape_info);
+            LOOP_SWITCHER(state_code, ON_ESCAPE);
         }
         while (CAN_LOOP()) {
             EscapeInfo escape_info;
@@ -650,12 +646,10 @@ decode_loop_ucs4:;
             }                                   \
         }                                       \
     }
-        if (!is_key) {
-            while (CAN_LOOP4()) {
-                EscapeInfo escape_info;
-                int state_code = decode_str_copy_loop4_ascii_u32(&u32writer, &src, src_end, &escape_info);
-                LOOP_SWITCHER(state_code);
-            }
+        while (CAN_LOOP4()) {
+            EscapeInfo escape_info;
+            int state_code = decode_str_copy_loop4_ascii_u32(&u32writer, &src, src_end, &escape_info);
+            LOOP_SWITCHER(state_code);
         }
         while (CAN_LOOP()) {
             EscapeInfo escape_info;

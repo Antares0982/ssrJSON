@@ -41,7 +41,7 @@
  @param msg The error message pointer.
  @return Whether success.
  */
-force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     /*
      Each unicode code point is encoded as 1 to 4 bytes in UTF-8 encoding,
      we use 4-byte mask and pattern value to validate UTF-8 byte sequence,

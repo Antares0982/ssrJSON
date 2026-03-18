@@ -220,7 +220,7 @@ force_inline PyObject *ssrjson_dumps_single_long(PyObject *val, ssrjson_compilet
             return_if_unlikely(!ret);
             writer = ssrjson_cast(u8 *, ssrjson_pyascii_cast(ret) + 1);
         }
-        ssrjson_memcpy(writer, buffer, string_size);
+        memcpy(writer, buffer, string_size);
         writer[string_size] = 0;
     }
     return ret;

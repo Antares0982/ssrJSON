@@ -38,7 +38,7 @@
 #endif
 #include "compile_context/srw_in.inl.h"
 
-force_inline void make_srw_name(__small_back_cvt)(dst_t **dst_addr, const src_t **src_addr, usize count, usize max_power2) {
+force_inline void make_srw_name(__small_back_cvt)(dst_t **dst_addr, const src_t **src_addr, usize count, ssrjson_compiletime usize max_power2) {
     assert((max_power2 & (max_power2 - 1)) == 0);
     assert(max_power2 > 0 && max_power2 <= 64 && count < max_power2);
     if ((count & 1) && 1 < max_power2) make_rw_name(__partial_back_cvt_1)(dst_addr, src_addr);
@@ -49,7 +49,7 @@ force_inline void make_srw_name(__small_back_cvt)(dst_t **dst_addr, const src_t 
     if ((count & 32) && 32 < max_power2) make_rw_name(__partial_back_cvt_32)(dst_addr, src_addr);
 }
 
-force_inline void make_srw_name(__small_cvt)(dst_t **dst_addr, const src_t **src_addr, usize count, usize max_power2) {
+force_inline void make_srw_name(__small_cvt)(dst_t *restrict *dst_addr, const src_t *restrict *src_addr, usize count, ssrjson_compiletime usize max_power2) {
     assert((max_power2 & (max_power2 - 1)) == 0);
     assert(max_power2 > 0 && max_power2 <= 64 && count < max_power2);
     if ((count & 1) && 1 < max_power2) make_rw_name(__partial_cvt_1)(dst_addr, src_addr);
@@ -60,22 +60,24 @@ force_inline void make_srw_name(__small_cvt)(dst_t **dst_addr, const src_t **src
     if ((count & 32) && 32 < max_power2) make_rw_name(__partial_cvt_32)(dst_addr, src_addr);
 }
 
+#if COMPILE_WRITE_UCS_LEVEL > COMPILE_READ_UCS_LEVEL
+/* dst and src may overlap. */
 force_inline void long_back_cvt(dst_t *dst, const src_t *src, usize count) {
     // 16, 32 or 64
     static const usize batch_bytes = _CompileVectorBits / 8;
     static const usize batch_count = _CompileVectorBits / 8 / sizeof(src_t);
     static const usize batch4_count = _CompileVectorBits / 8 / sizeof(src_t) * 4;
-    if (sizeof(dst_t) > sizeof(src_t)) {
-        usize align_offset = ssrjson_cast(uintptr_t, dst) & (batch_bytes - 1);
-        assert((align_offset % sizeof(dst_t)) == 0);
-        usize not_aligned_count = align_offset / sizeof(dst_t);
-        not_aligned_count = not_aligned_count > count ? count : not_aligned_count;
-        if (not_aligned_count) {
-            make_srw_name(__small_back_cvt)(&dst, &src, not_aligned_count, batch_bytes / sizeof(dst_t));
-            count -= not_aligned_count;
-        }
+    // prealign dst. This can only be done when write ucs level > read ucs level (always true here)
+    usize align_offset = ssrjson_cast(uintptr_t, dst) & (batch_bytes - 1);
+    assert((align_offset % sizeof(dst_t)) == 0);
+    usize not_aligned_count = align_offset / sizeof(dst_t);
+    not_aligned_count = not_aligned_count > count ? count : not_aligned_count;
+    if (not_aligned_count) {
+        make_srw_name(__small_back_cvt)(&dst, &src, not_aligned_count, batch_bytes / sizeof(dst_t));
+        count -= not_aligned_count;
     }
     while (count >= batch4_count) {
+        dst = __builtin_assume_aligned(dst, _CompileVectorBits / 8);
         src -= batch4_count;
         dst -= batch4_count;
         count -= batch4_count;
@@ -85,6 +87,7 @@ force_inline void long_back_cvt(dst_t *dst, const src_t *src, usize count) {
         cvt_to_dst(dst + batch_count * 0, *(vector_u *)(src + batch_count * 0));
     }
     while (count >= batch_count) {
+        dst = __builtin_assume_aligned(dst, _CompileVectorBits / 8);
         src -= batch_count;
         dst -= batch_count;
         count -= batch_count;
@@ -94,14 +97,16 @@ force_inline void long_back_cvt(dst_t *dst, const src_t *src, usize count) {
         make_srw_name(__small_back_cvt)(&dst, &src, count, batch_count);
     }
 }
+#endif
 
-force_inline void long_cvt(dst_t *dst, const src_t *src, usize count) {
+force_inline void long_cvt(dst_t *restrict dst, const src_t *restrict src, usize count) {
     // 16, 32 or 64
     static const usize batch_bytes = _CompileVectorBits / 8;
     static const usize batch_count = _CompileVectorBits / 8 / sizeof(src_t);
     static const usize batch4_count = _CompileVectorBits / 8 / sizeof(src_t) * 4;
     //
 #if COMPILE_WRITE_UCS_LEVEL > COMPILE_READ_UCS_LEVEL
+    // prealign dst. This can only be done when write ucs level > read ucs level
     usize align_offset = ssrjson_cast(uintptr_t, dst) & (batch_bytes - 1);
     assert((align_offset % sizeof(dst_t)) == 0);
     usize not_aligned_count = align_offset / sizeof(dst_t);
@@ -115,6 +120,9 @@ force_inline void long_cvt(dst_t *dst, const src_t *src, usize count) {
 #endif
     //
     while (count >= batch4_count) {
+#if COMPILE_WRITE_UCS_LEVEL > COMPILE_READ_UCS_LEVEL
+        dst = __builtin_assume_aligned(dst, _CompileVectorBits / 8);
+#endif
         cvt_to_dst(dst + batch_count * 0, *(vector_u *)(src + batch_count * 0));
         cvt_to_dst(dst + batch_count * 1, *(vector_u *)(src + batch_count * 1));
         cvt_to_dst(dst + batch_count * 2, *(vector_u *)(src + batch_count * 2));
@@ -124,6 +132,9 @@ force_inline void long_cvt(dst_t *dst, const src_t *src, usize count) {
         count -= batch4_count;
     }
     while (count >= batch_count) {
+#if COMPILE_WRITE_UCS_LEVEL > COMPILE_READ_UCS_LEVEL
+        dst = __builtin_assume_aligned(dst, _CompileVectorBits / 8);
+#endif
         cvt_to_dst(dst, *(vector_u *)src);
         src += batch_count;
         dst += batch_count;

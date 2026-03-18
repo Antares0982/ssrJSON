@@ -32,6 +32,10 @@
 //
 #include "compile_context/s_in.inl.h"
 
+/*==============================================================================
+ * Fast path unicode copy for decoding string.
+ *============================================================================*/
+
 force_inline void copy_to_new_unicode_ucs1(void **dst_addr, PyObject *ret, bool need_cvt, const u8 *src, usize count, int kind) {
     u8 *dst = need_cvt ? ssrjson_pyunicode_ascii_start(ret) : ssrjson_pyunicode_ucs1_start(ret);
     *dst_addr = dst;
