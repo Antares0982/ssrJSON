@@ -37,6 +37,7 @@ clangStdenv.mkDerivation rec {
       patchelf --set-rpath /lib64 $out/ssrjson.so
     '')
     + ''
+      strip $out/ssrjson.so
       mv $out/ssrjson.so $out/ssrjson.cpython-3${pyver-abiname}-${abiflag}.so
     '';
   nativeBuildInputs = [
