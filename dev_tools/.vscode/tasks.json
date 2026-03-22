@@ -158,7 +158,7 @@
                     "executable": "nix",
                     "args": [
                         "develop",
-                        "--no-net",
+                        ".#benchmarkenv",
                         "-c",
                         "bash"
                     ]
