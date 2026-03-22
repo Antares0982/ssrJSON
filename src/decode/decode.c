@@ -22,7 +22,6 @@
 
 #define COMPILE_CONTEXT_DECODE
 
-#define XXH_INLINE_ALL
 #include "decode_bytes.h"
 #include "decode_bytes_root_wrap.h"
 #include "decode_shared.h"

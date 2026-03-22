@@ -26,7 +26,6 @@
 #include "simd/memcmp.h"
 #include "simd/simd_impl.h"
 #include "ssrjson.h"
-#include "xxhash.h"
 
 
 typedef pyobj_ptr_t *decode_obj_stack_ptr_t;

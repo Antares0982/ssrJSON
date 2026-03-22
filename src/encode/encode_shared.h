@@ -27,9 +27,6 @@
 #include "simd/simd_detect.h"
 #include "tls.h"
 #include "utils/unicode.h"
-#if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
-#    include "khash.h"
-#endif
 
 /*==============================================================================
  * Macros

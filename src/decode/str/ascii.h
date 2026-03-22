@@ -22,7 +22,6 @@
 
 #ifndef SSRJSON_DECODE_STR_ASCII_H
 #define SSRJSON_DECODE_STR_ASCII_H
-#include "xxhash.h"
 
 #include "decode/decode_shared.h"
 #include "decoder_impl_wrap.h"

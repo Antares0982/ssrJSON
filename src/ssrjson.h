@@ -405,6 +405,34 @@ __extension__ typedef unsigned __int128 u128;
 #define max_utf8_bytes_per_ucs4 (4)    // per UCS4 can be UTF-8 encoded to at most 4 bytes
 
 /*==============================================================================
+ * XXHash
+ *============================================================================*/
+#define XXH_INLINE_ALL // inline all functions
+#define XXH_NO_STREAM  // disable streaming API
+#include "xxhash.h"
+
+/*==============================================================================
+ * KHash
+ *============================================================================*/
+#if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
+force_inline void *wrapped_py_kcalloc(size_t num, size_t size) {
+    void *ret = PyMem_MALLOC(num * size);
+    if (unlikely(!ret)) {
+        return NULL;
+    }
+    memset(ret, 0, num * size);
+    return ret;
+}
+
+#    define kcalloc(N, Z) wrapped_py_kcalloc((N), (Z))
+#    define kmalloc(Z) PyMem_MALLOC((Z))
+#    define krealloc(P, Z) PyMem_REALLOC((P), (Z))
+#    define kfree(P) PyMem_FREE((P))
+#    include "khash.h"
+#endif
+
+
+/*==============================================================================
  * 128-bit Integer Utils
  * These functions are used by the floating-point number reader and writer.
  *============================================================================*/
