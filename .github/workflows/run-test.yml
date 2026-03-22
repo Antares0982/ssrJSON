@@ -24,11 +24,11 @@ jobs:
         pyver: ["10", "11", "12", "13", "14", "15", "14t"]
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Install nix
-      uses: cachix/install-nix-action@master
+      uses: cachix/install-nix-action@v31
     - name: Setup cachix
-      uses: cachix/cachix-action@master
+      uses: cachix/cachix-action@v17
       with:
         name: antares0982
     - name: Nix Develop
@@ -70,11 +70,11 @@ jobs:
         pyver: ["14t"]
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Install nix
-      uses: cachix/install-nix-action@master
+      uses: cachix/install-nix-action@v31
     - name: Setup cachix
-      uses: cachix/cachix-action@master
+      uses: cachix/cachix-action@v17
       with:
         name: antares0982
     - name: Nix Develop

@@ -8,11 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Install nix
-      uses: cachix/install-nix-action@master
+      uses: cachix/install-nix-action@v31
     - name: Setup cachix
-      uses: cachix/cachix-action@master
+      uses: cachix/cachix-action@v17
       with:
         name: antares0982
     - name: Run coverage test

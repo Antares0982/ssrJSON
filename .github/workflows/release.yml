@@ -19,13 +19,13 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install nix
-      uses: cachix/install-nix-action@master
+      uses: cachix/install-nix-action@v31
 
     - name: Setup cachix
-      uses: cachix/cachix-action@master
+      uses: cachix/cachix-action@v17
       with:
         name: antares0982
 
@@ -41,7 +41,7 @@ jobs:
         cat sha256sum.txt
 
     - name: Upload Tarball To Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ssrjson-tarball
         path: ${{ steps.build-tarball.outputs.ARTIFACT_NAME }}
@@ -56,10 +56,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Python 3.${{ matrix.pyver }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.${{ matrix.pyver }}
         allow-prereleases: true
@@ -94,19 +94,19 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Python 3.${{ matrix.pyver }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.${{ matrix.pyver }}
         allow-prereleases: true
 
     - name: Install nix
-      uses: cachix/install-nix-action@master
+      uses: cachix/install-nix-action@v31
 
     - name: Setup cachix
-      uses: cachix/cachix-action@master
+      uses: cachix/cachix-action@v17
       with:
         name: antares0982
 
@@ -130,7 +130,7 @@ jobs:
         python -c "import ssrjson;print(ssrjson.__file__)"
 
     - name: Upload Wheel To Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: linux-x86_64-ssrjson-wheel-python3${{ matrix.pyver }}
         path: ${{ steps.build-wheel.outputs.ARTIFACT_NAME }}
@@ -150,7 +150,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Prepare
       id: prepare
@@ -178,7 +178,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Prepare
       id: prepare
@@ -186,7 +186,7 @@ jobs:
         echo "PYTHONPATH=build-testing/lib/python3.${{ matrix.pyver }}/site-packages" >> $GITHUB_OUTPUT
 
     - name: Setup cachix
-      uses: cachix/cachix-action@master
+      uses: cachix/cachix-action@v17
       with:
         name: antares0982
 
@@ -202,7 +202,7 @@ jobs:
         cat sha256sum.txt
 
     - name: Upload Wheel To Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: linux-aarch64-ssrjson-wheel-python3${{ matrix.pyver }}
         path: ${{ steps.build-wheel.outputs.ARTIFACT_NAME }}
@@ -221,10 +221,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Python 3.${{ matrix.pyver }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.${{ matrix.pyver }}
         allow-prereleases: true
@@ -258,10 +258,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Python 3.${{ matrix.pyver }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.${{ matrix.pyver }}
         allow-prereleases: true
@@ -280,7 +280,7 @@ jobs:
         python -c "import ssrjson;print(ssrjson.__file__)"
 
     - name: Upload Wheel To Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: windows-ssrjson-wheel-python3${{ matrix.pyver }}
         path: dist/*.whl
@@ -300,10 +300,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Python 3.${{ matrix.pyver }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.${{ matrix.pyver }}
         allow-prereleases: true
@@ -340,10 +340,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Python 3.${{ matrix.pyver }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.${{ matrix.pyver }}
         allow-prereleases: true
@@ -368,7 +368,7 @@ jobs:
         python -m pip install $ARTIFACT_NAME
 
     - name: Upload Wheel To Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: macos-aarch64-ssrjson-wheel-python3${{ matrix.pyver }}
         path: ${{ steps.install-wheel.outputs.ARTIFACT_NAME }}
@@ -391,7 +391,7 @@ jobs:
       - MacOS-Build-And-Test-Wheel
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Read dry-run input
       run: |
@@ -418,7 +418,7 @@ jobs:
         echo "VERSION=$VERSION" >> $GITHUB_ENV
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.x'
         allow-prereleases: true
