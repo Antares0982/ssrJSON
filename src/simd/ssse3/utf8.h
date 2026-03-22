@@ -31,10 +31,5 @@
 #include "simd/sse2/common.h"
 #include "simd/ssse3/common.h"
 
-/*
- * Encode UCS2 string to UTF-8, using SSSE3.
- * Need: pshufb, palignr
- */
-
 
 #endif // SSRJSON_SIMD_SSSE3_UTF8_H

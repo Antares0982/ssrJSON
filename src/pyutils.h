@@ -163,7 +163,7 @@ force_inline void set_cache(PyObject *str, const u8 **utf8_cache_addr, usize *ut
     u8 *expected = NULL;
     if (!atomic_compare_exchange_strong((_Atomic(u8 *) *)&ssrjson_pycompactunicode_cast(str)->utf8, &expected, (u8 *)(*utf8_cache_addr))) {
         // already has an UTF-8 cache, free the allocated one
-        PyMem_Free((void *)*utf8_cache_addr);
+        SSRJSON_FREE((void *)*utf8_cache_addr);
         *utf8_cache_addr = expected;
         assert(*utf8_length_addr == (usize)ssrjson_pycompactunicode_cast(str)->utf8_length);
     } else {
@@ -176,7 +176,7 @@ force_inline void set_cache(PyObject *str, const u8 **utf8_cache_addr, usize *ut
 }
 
 force_inline void *pymem_malloc_wrapped(usize size) {
-    void *ptr = PyMem_Malloc(size);
+    void *ptr = SSRJSON_MALLOC(size);
     if (unlikely(!ptr)) {
         PyErr_NoMemory();
     }
@@ -184,7 +184,7 @@ force_inline void *pymem_malloc_wrapped(usize size) {
 }
 
 force_inline void pymem_free_wrapped(void *ptr) {
-    PyMem_Free(ptr);
+    SSRJSON_FREE(ptr);
 }
 
 force_inline void *pymem_realloc_wrapped(void *ptr, usize size) {

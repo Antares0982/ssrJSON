@@ -129,6 +129,19 @@
 #    define SSRJSON_FREE_THREADING_LOCKFREE 0
 #endif
 
+/* 
+ * malloc()/free(). Default to Python's memory allocator.
+ */
+#ifndef SSRJSON_MALLOC
+#    define SSRJSON_MALLOC(n) PyMem_Malloc((n))
+#endif
+#ifndef SSRJSON_REALLOC
+#    define SSRJSON_REALLOC(p, n) PyMem_Realloc((p), (n))
+#endif
+#ifndef SSRJSON_FREE
+#    define SSRJSON_FREE(p) PyMem_Free((p))
+#endif
+
 /** Type definition for primitive types. */
 typedef float f32;
 typedef double f64;

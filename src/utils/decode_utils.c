@@ -33,7 +33,7 @@ bool _decode_obj_stack_resize(
     decode_obj_stack_ptr_t decode_obj_stack = *decode_obj_stack_addr;
     decode_obj_stack_ptr_t decode_obj_stack_end = *decode_obj_stack_end_addr;
     if (likely(SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE == decode_obj_stack_end - decode_obj_stack)) {
-        void *new_buffer_void = malloc(sizeof(pyobj_ptr_t) * (SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1));
+        void *new_buffer_void = SSRJSON_MALLOC(sizeof(pyobj_ptr_t) * (SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1));
         decode_obj_stack_ptr_t new_buffer = new_buffer_void;
         if (unlikely(!new_buffer)) {
             PyErr_NoMemory();
@@ -50,7 +50,7 @@ bool _decode_obj_stack_resize(
             return false;
         }
         usize new_capacity = old_capacity << 1;
-        void *new_buffer_void = realloc(decode_obj_stack, sizeof(PyObject *) * new_capacity);
+        void *new_buffer_void = SSRJSON_REALLOC(decode_obj_stack, sizeof(PyObject *) * new_capacity);
         decode_obj_stack_ptr_t new_buffer = new_buffer_void;
         if (unlikely(!new_buffer)) {
             PyErr_NoMemory();

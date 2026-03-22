@@ -40,7 +40,16 @@
 #else
 #    error "Unknown thread model"
 #endif
-
+// malloc, free. Default to standard library.
+#ifndef SSRJSON_TLS_MALLOC
+#    define SSRJSON_TLS_MALLOC(size) malloc((size))
+#endif
+#ifndef SSRJSON_TLS_CALLOC
+#    define SSRJSON_TLS_CALLOC(count, size) calloc((count), (size))
+#endif
+#ifndef SSRJSON_TLS_FREE
+#    define SSRJSON_TLS_FREE(ptr) free((ptr))
+#endif
 
 /*==============================================================================
  * TLS related macros
@@ -68,8 +77,8 @@
 /*==============================================================================
  * TLS related API
  *============================================================================*/
-bool ssrjson_tls_init(void);
-bool ssrjson_tls_free(void);
+bool _ssrjson_library_tls_init(void);
+bool _ssrjson_library_tls_free(void);
 
 /*==============================================================================
  * Thread local decode buffer linked list, for object_hook
@@ -82,12 +91,12 @@ SSRJSON_DECLARE_TLS_SETTER(_DecoderBufferLinkedList_Key, _set_decoder_buffer_lin
 force_inline DecoderTLSData *tls_get_decoder_data(void) {
     void *value = _get_decoder_buffer_linked_list_pointer();
     if (unlikely(value == NULL)) {
-        value = malloc(sizeof(DecoderTLSData));
+        value = SSRJSON_TLS_MALLOC(sizeof(DecoderTLSData));
         if (unlikely(value == NULL)) return NULL;
         memset(value, 0, sizeof(DecoderTLSData));
         bool succ = _set_decoder_buffer_linked_list_pointer(value);
         if (unlikely(!succ)) {
-            free(value);
+            SSRJSON_TLS_FREE(value);
             return NULL;
         }
     }
@@ -107,12 +116,12 @@ SSRJSON_DECLARE_TLS_SETTER(_EncoderContainerBuffer_Key, _set_encoder_buffer_poin
 force_inline EncodeCtnWithIndex *get_encode_obj_stack_buffer(void) {
     void *value = _get_encoder_buffer_pointer();
     if (unlikely(value == NULL)) {
-        value = malloc(sizeof(EncodeCtnWithIndex) * SSRJSON_ENCODE_MAX_RECURSION);
+        value = SSRJSON_TLS_MALLOC(sizeof(EncodeCtnWithIndex) * SSRJSON_ENCODE_MAX_RECURSION);
         if (unlikely(value == NULL)) return NULL;
         // memset(value, 0, sizeof(DecoderTLSData));
         bool succ = _set_encoder_buffer_pointer(value);
         if (unlikely(!succ)) {
-            free(value);
+            SSRJSON_TLS_FREE(value);
             return NULL;
         }
     }
@@ -132,11 +141,11 @@ SSRJSON_DECLARE_TLS_SETTER(_DecoderKeyCache_Key, _set_decoder_key_cache_pointer)
 force_inline decode_cache_t *get_tls_decoder_key_cache(void) {
     void *value = _get_decoder_key_cache_pointer();
     if (unlikely(value == NULL)) {
-        value = calloc(SSRJSON_KEY_CACHE_SIZE, sizeof(decode_cache_t));
+        value = SSRJSON_TLS_CALLOC(SSRJSON_KEY_CACHE_SIZE, sizeof(decode_cache_t));
         if (unlikely(value == NULL)) return NULL;
         bool succ = _set_decoder_key_cache_pointer(value);
         if (unlikely(!succ)) {
-            free(value);
+            SSRJSON_TLS_FREE(value);
             return NULL;
         }
     }

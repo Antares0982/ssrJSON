@@ -792,14 +792,14 @@ internal_simd_noinline PyObject *loads_root_single_bytes(DecoderBuffers *decoder
         u8 *write_buffer;
         bool dynamic = false;
         if (unlikely(4 * len > SSRJSON_STRING_BUFFER_SIZE)) {
-            write_buffer = malloc(4 * len);
+            write_buffer = SSRJSON_MALLOC(4 * len);
             if (unlikely(!write_buffer)) goto fail_alloc;
             dynamic = true;
         } else {
             write_buffer = decoder_context->decoder_ctx_temp_buffer;
         }
         ret = loads_bytes_not_key(&cur, write_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
-        if (dynamic) free(write_buffer);
+        if (dynamic) SSRJSON_FREE(write_buffer);
         if (likely(ret)) goto single_end;
         goto fail_string;
     }

@@ -67,7 +67,7 @@ internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context,
         goto fail_alloc;
     }
     if (unlikely(4 * len > SSRJSON_STRING_BUFFER_SIZE)) {
-        string_buffer_head = malloc(4 * len);
+        string_buffer_head = SSRJSON_MALLOC(4 * len);
         if (!string_buffer_head) goto fail_alloc;
     }
     //
@@ -419,11 +419,11 @@ success:;
 #endif
     // free string buffer
     if (unlikely(string_buffer_head != decoder_context->decoder_ctx_temp_buffer)) {
-        free(string_buffer_head);
+        SSRJSON_FREE(string_buffer_head);
     }
     // free obj stack buffer if allocated dynamically
     if (unlikely(decode_obj_stack_end - decode_obj_stack > SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE)) {
-        free(decode_obj_stack);
+        SSRJSON_FREE(decode_obj_stack);
     }
 
     return obj;
@@ -485,11 +485,11 @@ failed_cleanup:
     }
     // free string buffer
     if (unlikely(string_buffer_head != decoder_context->decoder_ctx_temp_buffer)) {
-        free(string_buffer_head);
+        SSRJSON_FREE(string_buffer_head);
     }
     // free obj stack buffer if allocated dynamically
     if (unlikely(decode_obj_stack_end - decode_obj_stack > SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE)) {
-        free(decode_obj_stack);
+        SSRJSON_FREE(decode_obj_stack);
     }
     return NULL;
 #undef return_err

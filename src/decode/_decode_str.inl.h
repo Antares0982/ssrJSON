@@ -51,8 +51,7 @@ force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, 
     static_assert(((Py_ssize_t)SSRJSON_STRING_BUFFER_SIZE - _TailPadding * 2) > 4, "((Py_ssize_t)SSRJSON_STRING_BUFFER_SIZE - 128) > 4");
     Py_ssize_t new_buffer_size = 4 * len + 2 * _TailPadding;
     if (new_buffer_size > SSRJSON_STRING_BUFFER_SIZE) {
-        // malloc new buffer
-        u8 *new_buffer = (u8 *)malloc(new_buffer_size);
+        u8 *new_buffer = (u8 *)SSRJSON_MALLOC(new_buffer_size);
         if (!new_buffer) return false;
         *buffer_head_addr = (src_t *)(new_buffer + _TailPadding);
         *need_dealloc = true;
@@ -95,7 +94,7 @@ internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_conte
         cur++;
         ret = decode_str(&cur, end, string_buffer_head, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (need_dealloc) {
-            free((void *)((u8 *)string_buffer_head - _TailPadding));
+            SSRJSON_FREE((void *)((u8 *)string_buffer_head - _TailPadding));
         }
         if (likely(ret)) goto single_end;
         goto fail_string;

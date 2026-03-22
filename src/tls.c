@@ -48,6 +48,10 @@ TLS_KEY_TYPE _DecoderKeyCache_Key;
 /*==============================================================================
  * Thread local destructors
  *============================================================================*/
+void _tls_simple_destructor(void *ptr) {
+    SSRJSON_TLS_FREE(ptr);
+}
+
 void _tls_decode_buffer_destructor(void *ptr) {
     if (ptr) {
 #if !SSRJSON_GIL_ENABLED
@@ -61,7 +65,7 @@ void _tls_decode_buffer_destructor(void *ptr) {
             tls_data_ptr->cur_buffer = NULL;
         }
 #endif
-        free(ptr);
+        SSRJSON_TLS_FREE(ptr);
     }
 }
 
@@ -75,7 +79,7 @@ void _tls_decode_key_cache_destructor(void *ptr) {
                 Py_XDECREF(key_cache_arr[i].key);
             }
         }
-        free(ptr);
+        SSRJSON_TLS_FREE(ptr);
     }
 }
 #endif
@@ -83,17 +87,17 @@ void _tls_decode_key_cache_destructor(void *ptr) {
 /*==============================================================================
  * Thread local init/free
  *============================================================================*/
-bool ssrjson_tls_init(void) {
+bool _ssrjson_library_tls_init(void) {
     bool success = true;
     DO_TLS_INIT(_DecoderBufferLinkedList_Key, _tls_decode_buffer_destructor);
 #if !SSRJSON_GIL_ENABLED
-    DO_TLS_INIT(_EncoderContainerBuffer_Key, free);
+    DO_TLS_INIT(_EncoderContainerBuffer_Key, _tls_simple_destructor);
     DO_TLS_INIT(_DecoderKeyCache_Key, _tls_decode_key_cache_destructor);
 #endif
     return success;
 }
 
-bool ssrjson_tls_free(void) {
+bool _ssrjson_library_tls_free(void) {
     bool success = true;
     DO_TLS_FREE(_DecoderBufferLinkedList_Key);
 #if !SSRJSON_GIL_ENABLED
