@@ -295,14 +295,9 @@ force_inline u8 *encode_bytes_process_val(
             break;
         }
         case T_Bool: {
-            if (val == Py_False) {
-                writer = unicode_buffer_append_false(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj);
-                return_jump_fail_if_unlikely(!writer);
-            } else {
-                assert(val == Py_True);
-                writer = unicode_buffer_append_true(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj);
-                return_jump_fail_if_unlikely(!writer);
-            }
+            const bool is_false = (val == Py_False);
+            writer = unicode_buffer_append_bool(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, is_false);
+            return_jump_fail_if_unlikely(!writer);
             break;
         }
         case T_None: {
@@ -414,7 +409,7 @@ internal_simd_noinline PyObject *
 ssrjson_dumps_to_bytes_obj(PyObject *in_obj, int is_write_cache) {
 #define goto_fail_if_unlikely(_condition) \
     do {                                  \
-        if (unlikely(_condition)) {       \
+        if (unlikely((_condition))) {     \
             goto fail;                    \
         }                                 \
     } while (0)
@@ -448,15 +443,12 @@ ssrjson_dumps_to_bytes_obj(PyObject *in_obj, int is_write_cache) {
     // so is_in_obj always pass true
     if (PyDict_Check(cur_obj)) {
         if (unlikely(PyDict_GET_SIZE(cur_obj) == 0)) {
-            writer = unicode_buffer_append_empty_obj(writer, &_unicode_buffer_info, cur_nested_depth, true);
+            writer = unicode_buffer_append_empty_obj(writer, &_unicode_buffer_info, 0, true);
             assert(writer);
             goto success;
         }
-        {
-            writer = unicode_buffer_append_obj_begin(writer, &_unicode_buffer_info, cur_nested_depth, true);
-            assert(writer);
-        }
-        assert(!cur_nested_depth);
+        writer = unicode_buffer_append_obj_begin(writer, &_unicode_buffer_info, 0, true);
+        assert(writer && !cur_nested_depth);
         cur_nested_depth = 1;
 #if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
         {
@@ -472,14 +464,12 @@ ssrjson_dumps_to_bytes_obj(PyObject *in_obj, int is_write_cache) {
     } else if (PyList_Check(cur_obj)) {
         cur_list_size = PyList_GET_SIZE(cur_obj);
         if (unlikely(cur_list_size == 0)) {
-            writer = unicode_buffer_append_empty_arr(writer, &_unicode_buffer_info, cur_nested_depth, true);
+            writer = unicode_buffer_append_empty_arr(writer, &_unicode_buffer_info, 0, true);
             assert(writer);
             goto success;
         }
-        {
-            writer = unicode_buffer_append_arr_begin(writer, &_unicode_buffer_info, cur_nested_depth, true);
-            assert(writer);
-        }
+        writer = unicode_buffer_append_arr_begin(writer, &_unicode_buffer_info, 0, true);
+        assert(writer && !cur_nested_depth);
 #if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
         {
             toplevel_locked_obj = cur_obj;
@@ -489,7 +479,6 @@ ssrjson_dumps_to_bytes_obj(PyObject *in_obj, int is_write_cache) {
             PyMutex_Lock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
         }
 #endif
-        assert(!cur_nested_depth);
         cur_nested_depth = 1;
         // NOTE: ctn_stack[0] is always invalid
         cur_is_tuple = false;
@@ -500,15 +489,12 @@ ssrjson_dumps_to_bytes_obj(PyObject *in_obj, int is_write_cache) {
         }
         cur_list_size = PyTuple_GET_SIZE(cur_obj);
         if (unlikely(cur_list_size == 0)) {
-            writer = unicode_buffer_append_empty_arr(writer, &_unicode_buffer_info, cur_nested_depth, true);
+            writer = unicode_buffer_append_empty_arr(writer, &_unicode_buffer_info, 0, true);
             assert(writer);
             goto success;
         }
-        {
-            writer = unicode_buffer_append_arr_begin(writer, &_unicode_buffer_info, cur_nested_depth, true);
-            assert(writer);
-        }
-        assert(!cur_nested_depth);
+        writer = unicode_buffer_append_arr_begin(writer, &_unicode_buffer_info, 0, true);
+        assert(writer && !cur_nested_depth);
         cur_nested_depth = 1;
         cur_is_tuple = true;
         goto arr_val_begin;
@@ -560,7 +546,7 @@ dict_pair_begin:;
 
         writer = unicode_buffer_append_obj_end(writer, &_unicode_buffer_info, cur_nested_depth);
         goto_fail_if_unlikely(!writer);
-        if (unlikely(cur_nested_depth == 0)) {
+        if (cur_nested_depth == 0) {
             goto success;
         }
 
@@ -646,7 +632,7 @@ arr_val_begin:;
 
         writer = unicode_buffer_append_arr_end(writer, &_unicode_buffer_info, cur_nested_depth);
         goto_fail_if_unlikely(!writer);
-        if (unlikely(cur_nested_depth == 0)) {
+        if (cur_nested_depth == 0) {
             goto success;
         }
 

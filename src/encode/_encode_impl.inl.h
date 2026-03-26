@@ -280,65 +280,22 @@ force_inline dst_t *unicode_buffer_append_long(dst_t *writer, EncodeUnicodeBuffe
     return writer;
 }
 
-force_inline ssrjson_nofail dst_t *write_unicode_false(dst_t *writer) {
-    // ucs case       -> 1, 2, 4
-    // expected bytes -> 6,12,24
-    // written bytes  -> 8,16,24/32
-    // written count  -> 8, 8,6/8
-    // reserve count = 8
-    *writer++ = 'f';
-    *writer++ = 'a';
-    *writer++ = 'l';
-    *writer++ = 's';
-    *writer++ = 'e';
-    *writer++ = ',';
-    dst_t *writer2 = writer;
-#if COMPILE_UCS_LEVEL < 4
-    *writer2++ = 0;
-    *writer2++ = 0;
-#else // COMPILE_UCS_LEVEL == 4
-#    if __AVX__
-    *writer2++ = 0;
-    *writer2++ = 0;
-#    endif // __AVX__
-#endif     // COMPILE_UCS_LEVEL
+force_inline ssrjson_nofail dst_t *write_unicode_bool(dst_t *writer, bool is_false) {
+    // copy 24 bytes if bit vec size <= 128 and ucs level is 4
+    ssrjson_compiletime const usize copy_cnt = (_CompileVectorBits <= 128 && COMPILE_UCS_LEVEL == 4) ? 6 : 8;
+    static const dst_t true_buf[8] = {'t', 'r', 'u', 'e', ',', 0, 0, 0};
+    static const dst_t false_buf[8] = {'f', 'a', 'l', 's', 'e', ',', 0, 0};
+    const dst_t *copy_from = is_false ? false_buf : true_buf;
+    memcpy(writer, copy_from, copy_cnt * sizeof(dst_t));
+    writer += 5 + is_false;
     return writer;
 }
 
-force_inline dst_t *unicode_buffer_append_false(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
-    write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 8);
-    return write_unicode_false(writer);
-}
-
-force_inline ssrjson_nofail dst_t *write_unicode_true(dst_t *writer) {
-    // ucs case       -> 1, 2, 4
-    // expected bytes -> 5,10,20
-    // written bytes  -> 8,16,24/32
-    // written count  -> 8, 8,6/8
-    // reserve count = 8
-    *writer++ = 't';
-    *writer++ = 'r';
-    *writer++ = 'u';
-    *writer++ = 'e';
-    *writer++ = ',';
-    dst_t *writer2 = writer;
-#if COMPILE_UCS_LEVEL < 4
-    *writer2++ = 0;
-    *writer2++ = 0;
-    *writer2++ = 0;
-#else // COMPILE_UCS_LEVEL == 4
-    *writer2++ = 0;
-#    if __AVX__
-    *writer2++ = 0;
-    *writer2++ = 0;
-#    endif // __AVX__
-#endif     // COMPILE_UCS_LEVEL
-    return writer;
-}
-
-force_inline dst_t *unicode_buffer_append_true(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
-    write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 8);
-    return write_unicode_true(writer);
+force_inline dst_t *unicode_buffer_append_bool(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj, bool is_false) {
+    // copy 24 bytes if bit vec size <= 128 and ucs level is 4
+    ssrjson_compiletime const usize copy_cnt = (_CompileVectorBits <= 128 && COMPILE_UCS_LEVEL == 4) ? 6 : 8;
+    write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, copy_cnt);
+    return write_unicode_bool(writer, is_false);
 }
 
 force_inline ssrjson_nofail dst_t *write_unicode_null(dst_t *writer) {
@@ -535,14 +492,9 @@ force_inline EncodeUnicodeWriter encode_process_val(
             break;
         }
         case T_Bool: {
-            if (val == Py_False) {
-                _CAST_WRITER(writer) = unicode_buffer_append_false(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, is_in_obj);
-                return_jump_fail_if_unlikely(!writer);
-            } else {
-                assert(val == Py_True);
-                _CAST_WRITER(writer) = unicode_buffer_append_true(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, is_in_obj);
-                return_jump_fail_if_unlikely(!writer);
-            }
+            const bool is_false = (val == Py_False);
+            _CAST_WRITER(writer) = unicode_buffer_append_bool(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, is_false);
+            return_jump_fail_if_unlikely(!writer);
             break;
         }
         case T_None: {
@@ -710,14 +662,12 @@ ssrjson_dumps_obj(
     // so is_in_obj always pass true
     if (PyDict_Check(cur_obj)) {
         if (unlikely(PyDict_GET_SIZE(cur_obj) == 0)) {
-            _CAST_WRITER(writer) = unicode_buffer_append_empty_obj(_CAST_WRITER(writer), &_unicode_buffer_info, cur_nested_depth, true);
+            _CAST_WRITER(writer) = unicode_buffer_append_empty_obj(_CAST_WRITER(writer), &_unicode_buffer_info, 0, true);
             assert(writer);
             goto success;
         }
-        {
-            _CAST_WRITER(writer) = unicode_buffer_append_obj_begin(_CAST_WRITER(writer), &_unicode_buffer_info, cur_nested_depth, true);
-            assert(writer);
-        }
+        _CAST_WRITER(writer) = unicode_buffer_append_obj_begin(_CAST_WRITER(writer), &_unicode_buffer_info, 0, true);
+        assert(writer && !cur_nested_depth);
 #    if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
         {
             toplevel_locked_obj = cur_obj;
@@ -727,21 +677,18 @@ ssrjson_dumps_obj(
             PyMutex_Lock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
         }
 #    endif
-        assert(!cur_nested_depth);
         cur_nested_depth = 1;
         // NOTE: ctn_stack[0] is always invalid
         goto dict_pair_begin;
     } else if (PyList_Check(cur_obj)) {
         cur_list_size = PyList_GET_SIZE(cur_obj);
         if (unlikely(cur_list_size == 0)) {
-            _CAST_WRITER(writer) = unicode_buffer_append_empty_arr(_CAST_WRITER(writer), &_unicode_buffer_info, cur_nested_depth, true);
+            _CAST_WRITER(writer) = unicode_buffer_append_empty_arr(_CAST_WRITER(writer), &_unicode_buffer_info, 0, true);
             assert(writer);
             goto success;
         }
-        {
-            _CAST_WRITER(writer) = unicode_buffer_append_arr_begin(_CAST_WRITER(writer), &_unicode_buffer_info, cur_nested_depth, true);
-            assert(writer);
-        }
+        _CAST_WRITER(writer) = unicode_buffer_append_arr_begin(_CAST_WRITER(writer), &_unicode_buffer_info, 0, true);
+        assert(writer && !cur_nested_depth);
 #    if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
         {
             toplevel_locked_obj = cur_obj;
@@ -751,7 +698,6 @@ ssrjson_dumps_obj(
             PyMutex_Lock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
         }
 #    endif
-        assert(!cur_nested_depth);
         cur_nested_depth = 1;
         // NOTE: ctn_stack[0] is always invalid
         cur_is_tuple = false;
@@ -762,15 +708,12 @@ ssrjson_dumps_obj(
         }
         cur_list_size = PyTuple_GET_SIZE(cur_obj);
         if (unlikely(cur_list_size == 0)) {
-            _CAST_WRITER(writer) = unicode_buffer_append_empty_arr(_CAST_WRITER(writer), &_unicode_buffer_info, cur_nested_depth, true);
+            _CAST_WRITER(writer) = unicode_buffer_append_empty_arr(_CAST_WRITER(writer), &_unicode_buffer_info, 0, true);
             assert(writer);
             goto success;
         }
-        {
-            _CAST_WRITER(writer) = unicode_buffer_append_arr_begin(_CAST_WRITER(writer), &_unicode_buffer_info, cur_nested_depth, true);
-            assert(writer);
-        }
-        assert(!cur_nested_depth);
+        _CAST_WRITER(writer) = unicode_buffer_append_arr_begin(_CAST_WRITER(writer), &_unicode_buffer_info, 0, true);
+        assert(writer && !cur_nested_depth);
         cur_nested_depth = 1;
         cur_is_tuple = true;
         goto arr_val_begin;
@@ -877,7 +820,7 @@ dict_pair_begin:;
 
         _CAST_WRITER(writer) = unicode_buffer_append_obj_end(_CAST_WRITER(writer), &_unicode_buffer_info, cur_nested_depth);
         goto_fail_if_unlikely(!writer);
-        if (unlikely(cur_nested_depth == 0)) {
+        if (cur_nested_depth == 0) {
             goto success;
         }
 
@@ -979,7 +922,7 @@ arr_val_begin:;
 
         _CAST_WRITER(writer) = unicode_buffer_append_arr_end(_CAST_WRITER(writer), &_unicode_buffer_info, cur_nested_depth);
         goto_fail_if_unlikely(!writer);
-        if (unlikely(cur_nested_depth == 0)) {
+        if (cur_nested_depth == 0) {
             goto success;
         }
 

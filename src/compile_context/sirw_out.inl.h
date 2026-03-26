@@ -45,10 +45,8 @@
 #undef unicode_buffer_append_str_distribute2
 #undef unicode_buffer_append_str_distribute4
 #undef unicode_buffer_append_long
-#undef write_unicode_false
-#undef unicode_buffer_append_false
-#undef write_unicode_true
-#undef unicode_buffer_append_true
+#undef write_unicode_bool
+#undef unicode_buffer_append_bool
 #undef write_unicode_null
 #undef unicode_buffer_append_null
 #undef unicode_buffer_append_float
