@@ -207,7 +207,7 @@ force_inline EncodeUnicodeWriter unicode_buffer_append_str_distribute4(EncodeUni
     return writer;
 }
 
-force_inline EncodeUnicodeWriter unicode_buffer_append_str(PyObject *val, EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *unicode_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
+force_inline EncodeUnicodeWriter unicode_buffer_append_str(EncodeUnicodeWriter writer, PyObject *val, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *unicode_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     usize len;
     unsigned int kind, write_kind;
     const void *src_voidp;
@@ -237,14 +237,6 @@ force_inline EncodeUnicodeWriter unicode_buffer_append_str(PyObject *val, Encode
             return NULL;
         }
     }
-}
-
-static force_noinline EncodeUnicodeWriter unicode_buffer_append_str_dict(EncodeUnicodeWriter writer, PyObject *val, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *unicode_info, Py_ssize_t cur_nested_depth) {
-    return unicode_buffer_append_str(val, writer, unicode_buffer_info, unicode_info, cur_nested_depth, true);
-}
-
-static force_noinline EncodeUnicodeWriter unicode_buffer_append_str_list(EncodeUnicodeWriter writer, PyObject *val, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *unicode_info, Py_ssize_t cur_nested_depth) {
-    return unicode_buffer_append_str(val, writer, unicode_buffer_info, unicode_info, cur_nested_depth, false);
 }
 
 force_inline dst_t *unicode_buffer_append_long(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
@@ -460,11 +452,7 @@ force_inline EncodeUnicodeWriter encode_process_val(
 
     switch (obj_type) {
         case T_Unicode: {
-            if (ssrjson_consteval(is_in_obj)) {
-                writer = unicode_buffer_append_str_dict(writer, val, unicode_buffer_info, unicode_info_addr, *cur_nested_depth_addr);
-            } else {
-                writer = unicode_buffer_append_str_list(writer, val, unicode_buffer_info, unicode_info_addr, *cur_nested_depth_addr);
-            }
+            writer = unicode_buffer_append_str(writer, val, unicode_buffer_info, unicode_info_addr, *cur_nested_depth_addr, is_in_obj);
             return_jump_fail_if_unlikely(!writer);
 #if COMPILE_UCS_LEVEL < 1
             if (unlikely(unicode_info_addr->cur_ucs_type == 1)) {

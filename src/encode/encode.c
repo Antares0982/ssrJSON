@@ -99,7 +99,7 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, ssrjson_
     //
     bool success;
     if (ssrjson_consteval(to_bytes_obj)) {
-        WRITER_AS_U8(writer) = bytes_buffer_append_str_indent0(unicode, WRITER_AS_U8(writer), &_unicode_buffer_info, 0, true, is_write_cache);
+        WRITER_AS_U8(writer) = bytes_buffer_append_str_indent0(WRITER_AS_U8(writer), unicode, &_unicode_buffer_info, 0, true, is_write_cache);
         success = !!writer;
         WRITER_AS_U8(writer)
         --;

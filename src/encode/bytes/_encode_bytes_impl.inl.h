@@ -178,8 +178,7 @@ static force_noinline u8 *bytes_buffer_append_key(u8 *writer, PyObject *key, Enc
     }
 }
 
-force_inline u8 *bytes_buffer_append_str(PyObject *str,
-                                         u8 *writer,
+force_inline u8 *bytes_buffer_append_str(u8 *writer, PyObject *str,
                                          EncodeUnicodeBufferInfo *unicode_buffer_info,
                                          Py_ssize_t cur_nested_depth,
                                          ssrjson_compiletime bool is_in_obj,
@@ -232,20 +231,6 @@ force_inline u8 *bytes_buffer_append_str(PyObject *str,
     }
 }
 
-static force_noinline u8 *bytes_buffer_append_str_dict(u8 *writer, PyObject *str,
-                                                       EncodeUnicodeBufferInfo *unicode_buffer_info,
-                                                       Py_ssize_t cur_nested_depth,
-                                                       bool is_write_cache) {
-    return bytes_buffer_append_str(str, writer, unicode_buffer_info, cur_nested_depth, true, is_write_cache);
-}
-
-static force_noinline u8 *bytes_buffer_append_str_list(u8 *writer, PyObject *str,
-                                                       EncodeUnicodeBufferInfo *unicode_buffer_info,
-                                                       Py_ssize_t cur_nested_depth,
-                                                       bool is_write_cache) {
-    return bytes_buffer_append_str(str, writer, unicode_buffer_info, cur_nested_depth, false, is_write_cache);
-}
-
 force_inline u8 *encode_bytes_process_val(
         u8 *writer,
         EncodeValJumpFlag *jump_flag_out,
@@ -281,11 +266,7 @@ force_inline u8 *encode_bytes_process_val(
 
     switch (obj_type) {
         case T_Unicode: {
-            if (ssrjson_consteval(is_in_obj)) {
-                writer = bytes_buffer_append_str_dict(writer, val, unicode_buffer_info, *cur_nested_depth_addr, is_write_cache);
-            } else {
-                writer = bytes_buffer_append_str_list(writer, val, unicode_buffer_info, *cur_nested_depth_addr, is_write_cache);
-            }
+            writer = bytes_buffer_append_str(writer, val, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, is_write_cache);
             return_jump_fail_if_unlikely(!writer);
             break;
         }
