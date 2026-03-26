@@ -56,7 +56,7 @@ force_inline u8 *bytes_buffer_append_nonascii_key_write_cache(u8 *writer, int sr
             goto no_cache_encode;
         }
         if (unlikely(!write_key_cache_impl(src_voidp, src_pykind, len, &utf8_cache, &utf8_length))) return false;
-        set_cache(key, &utf8_cache, &utf8_length);
+        set_cache(key, &utf8_cache, utf8_length);
     }
     assert(utf8_cache);
     // Also see comment in bytes_write_utf8

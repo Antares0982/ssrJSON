@@ -415,7 +415,7 @@ __extension__ typedef unsigned __int128 u128;
  * KHash
  *============================================================================*/
 #if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
-force_inline void *wrapped_py_kcalloc(size_t num, size_t size) {
+force_inline void *ssrjson_wrapped_kcalloc(size_t num, size_t size) {
     void *ret = SSRJSON_MALLOC(num * size);
     if (unlikely(!ret)) {
         return NULL;
@@ -424,7 +424,7 @@ force_inline void *wrapped_py_kcalloc(size_t num, size_t size) {
     return ret;
 }
 
-#    define kcalloc(N, Z) wrapped_py_kcalloc((N), (Z))
+#    define kcalloc(N, Z) ssrjson_wrapped_kcalloc((N), (Z))
 #    define kmalloc(Z) SSRJSON_MALLOC((Z))
 #    define krealloc(P, Z) SSRJSON_REALLOC((P), (Z))
 #    define kfree(P) SSRJSON_FREE((P))

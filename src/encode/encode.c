@@ -88,11 +88,7 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, ssrjson_
         len = (usize)PyUnicode_GET_LENGTH(unicode);
         unicode_kind = PyUnicode_KIND(unicode);
         is_ascii = PyUnicode_IS_ASCII(unicode);
-        if (is_ascii) {
-            write_offset = sizeof(PyASCIIObject);
-        } else {
-            write_offset = sizeof(PyCompactUnicodeObject);
-        }
+        write_offset = is_ascii ? sizeof(PyASCIIObject) : sizeof(PyCompactUnicodeObject);
     }
     WRITER_AS_U8(writer) = ssrjson_cast(u8 *, _unicode_buffer_info.head) + write_offset;
     _unicode_buffer_info.end = ssrjson_cast(u8 *, _unicode_buffer_info.head) + SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE;
@@ -152,6 +148,7 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, ssrjson_
         resize_success = resize_to_fit_pyunicode(&_unicode_buffer_info, written_len, is_ascii ? 0 : unicode_kind);
     }
     if (unlikely(!resize_success)) {
+        // realloc failed when encoding, the original buffer is still valid
         PyObject_Free(_unicode_buffer_info.head);
         return NULL;
     }

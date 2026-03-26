@@ -95,7 +95,7 @@ static force_noinline u8 *bytes_buffer_append_nonascii_str_write_cache(u8 *write
     get_utf8_cache(str, &utf8_cache, &utf8_length);
     if (!utf8_cache) {
         if (unlikely(!write_str_cache_impl(src_voidp, src_pykind, len, &utf8_cache, &utf8_length))) return false;
-        set_cache(str, &utf8_cache, &utf8_length);
+        set_cache(str, &utf8_cache, utf8_length);
     }
     assert(utf8_cache);
 

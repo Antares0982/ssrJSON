@@ -68,32 +68,42 @@ force_inline ssrjson_nofail EncodeUnicodeWriter prepare_unicode_write(PyObject *
     bool is_ascii = PyUnicode_IS_ASCII(obj);
     *src_addr = is_ascii ? ssrjson_pyunicode_ascii_start(obj) : ssrjson_pyunicode_ucs1_start(obj);
 
+    // to eliminate redundant instructions when checking pykind
+    assume(r_kind_val == 1 || r_kind_val == 2 || r_kind_val == 4);
+
 #if COMPILE_UCS_LEVEL == 4
     *write_kind = 4;
 #elif COMPILE_UCS_LEVEL == 2
-    *write_kind = 2;
-    if (unlikely(r_kind_val == 4)) {
+    if (likely(r_kind_val & 3)) {
+        assume(r_kind_val == 1 || r_kind_val == 2);
+        *write_kind = 2;
+    } else {
+        assume(r_kind_val == 4);
         writer = memorize_ucs2_to_ucs4(writer, unicode_buffer_info, unicode_info);
         *write_kind = 4;
     }
 #elif COMPILE_UCS_LEVEL == 1
-    *write_kind = 1;
-    if (unlikely(r_kind_val == 2)) {
+    if (likely(r_kind_val == 1)) {
+        *write_kind = 1;
+    } else if (r_kind_val == 2) {
         writer = memorize_ucs1_to_ucs2(writer, unicode_buffer_info, unicode_info);
         *write_kind = 2;
-    } else if (unlikely(r_kind_val == 4)) {
+    } else {
+        assume(r_kind_val == 4);
         writer = memorize_ucs1_to_ucs4(writer, unicode_buffer_info, unicode_info);
         *write_kind = 4;
     }
 #elif COMPILE_UCS_LEVEL == 0
-    *write_kind = 0;
-    if (unlikely(r_kind_val == 2)) {
+    if (likely(r_kind_val == 1 && is_ascii)) {
+        *write_kind = 0;
+    } else if (r_kind_val == 2) {
         writer = memorize_ascii_to_ucs2(writer, unicode_buffer_info, unicode_info);
         *write_kind = 2;
-    } else if (unlikely(r_kind_val == 4)) {
+    } else if (r_kind_val == 4) {
         writer = memorize_ascii_to_ucs4(writer, unicode_buffer_info, unicode_info);
         *write_kind = 4;
-    } else if (unlikely(!is_ascii)) {
+    } else {
+        assume(r_kind_val == 1 && !is_ascii);
         writer = memorize_ascii_to_ucs1(writer, unicode_buffer_info, unicode_info);
         *write_kind = 1;
     }
