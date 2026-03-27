@@ -78,6 +78,7 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     int err;
     PyObject *ret = PyDict_New();
     if (!ret) return NULL;
+    // Only x86-64 has multiple SIMD levels
     err = PyDict_SetItemString(ret, "multi_lib", Py_True);
     if (err) goto fail;
     PyObject *write_cache_bool = _WriteUTF8CacheValue ? Py_True : Py_False;
@@ -140,7 +141,8 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     int err;
     PyObject *ret = PyDict_New();
     if (!ret) return NULL;
-    err = PyDict_SetItemString(ret, "multi_lib", Py_True);
+    // Only x86-64 has multiple SIMD levels
+    err = PyDict_SetItemString(ret, "multi_lib", Py_False);
     if (err) goto fail;
     PyObject *write_cache_bool = _WriteUTF8CacheValue ? Py_True : Py_False;
     err = PyDict_SetItemString(ret, "write_utf8_cache", write_cache_bool);

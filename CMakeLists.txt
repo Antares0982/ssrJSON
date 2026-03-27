@@ -17,7 +17,7 @@ option(BUILD_SSE4 "Force build sse4, non-shipping" OFF)
 option(BUILD_NATIVE "Force build with -march=native, non-shipping" OFF)
 option(SEARCH_PYTHON3_USE_ENV
        "Search python3 using environment variables without cmake way" OFF)
-option(USE_LTO "Use LTO" OFF)
+option(USE_LTO "Use LTO" ON)
 
 if(BUILD_SHIPPING_SIMD)
   if(BUILD_AVX512
