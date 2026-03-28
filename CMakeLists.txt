@@ -52,15 +52,23 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CompilerFeatures)
 
 if(NOT (CMAKE_C_COMPILER_ID MATCHES Clang))
-  message(FATAL_ERROR "CMAKE_C_COMPILER_ID must be Clang (got: ${CMAKE_C_COMPILER_ID})")
+  message(
+    FATAL_ERROR
+      "CMAKE_C_COMPILER_ID must be Clang (got: ${CMAKE_C_COMPILER_ID})")
 endif()
 if(WIN32)
   if(NOT (CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC"))
-    message(FATAL_ERROR "On Windows, only clang-cl is supported (frontend variant must be MSVC, got: ${CMAKE_C_COMPILER_FRONTEND_VARIANT})")
+    message(
+      FATAL_ERROR
+        "On Windows, only clang-cl is supported (frontend variant must be MSVC, got: ${CMAKE_C_COMPILER_FRONTEND_VARIANT})"
+    )
   endif()
 else()
   if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    message(FATAL_ERROR "On Linux/Apple, only clang is supported (clang-cl/MSVC frontend is not allowed)")
+    message(
+      FATAL_ERROR
+        "On Linux/Apple, only clang is supported (clang-cl/MSVC frontend is not allowed)"
+    )
   endif()
 endif()
 # ------------------------------------------------------------------------------
@@ -135,7 +143,7 @@ else()
                                                -fvisibility-inlines-hidden)
 endif()
 
-if(USE_LTO)
+if(USE_LTO AND NOT CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo)$")
   target_compile_options(commonBuild INTERFACE -flto)
   target_link_options(commonBuild INTERFACE -flto)
 endif()
@@ -396,7 +404,7 @@ endif()
 # Install
 if(APPLE)
   set_target_properties(ssrjson PROPERTIES SUFFIX ".so")
-  target_link_options(ssrjson PRIVATE "-flat_namespace" "-undefined" "suppress")
+  target_link_options(ssrjson PRIVATE "-undefined" "dynamic_lookup")
 elseif(WIN32)
   set_target_properties(ssrjson PROPERTIES SUFFIX ".pyd")
   target_link_libraries(ssrjson PRIVATE ${Python3_LIBRARIES})
