@@ -1,5 +1,0 @@
-{
-    "Python3_INCLUDE_DIRS": "@Python3_INCLUDE_DIRS@",
-    "Python3_LIBRARIES": "@Python3_LIBRARIES@",
-    "Python3_ROOT_DIR": "@Python3_ROOT_DIR@"
-}

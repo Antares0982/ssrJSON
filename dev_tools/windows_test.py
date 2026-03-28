@@ -58,30 +58,14 @@ def build(build_dir: str, build_type: str, asan: bool) -> None:
         os.rename(copy_src, copy_to)
 
 
-def find_exe(build_dir: str) -> str:
+def find_exe() -> str:
     return sys.executable
-    info_file = os.path.join(build_dir, "info.json")
-    with open(info_file, "rb") as f:
-        info = json.load(f)
-    python3_root = info.get("Python3_ROOT_DIR")
-    if not python3_root:
-        warnings.warn(
-            f"Python3_ROOT_DIR not set in info.json, fallback to sys.executable={sys.executable}"
-        )
-        return sys.executable
-    exe_path = os.path.join(python3_root, "python.exe")
-    if not os.path.exists(exe_path):
-        warnings.warn(
-            f"python.exe not found in Python3_ROOT_DIR={python3_root}, fallback to sys.executable={sys.executable}"
-        )
-        return sys.executable
-    return exe_path
 
 
 def test(build_dir: str):
     new_env = os.environ.copy()
     new_env["PYTHONPATH"] = os.path.join(os.curdir, build_dir)
-    cmd = [find_exe(build_dir), "-m", "pytest", "python-test"]
+    cmd = [find_exe(), "-m", "pytest", "python-test"]
     subprocess.run(cmd, check=True, env=new_env)
 
 

@@ -9,7 +9,7 @@ option(BUILD_FREE_THREADING "Build with free-threading support" OFF)
 option(FREE_THREADING_LOCKFREE "Use lock-free free-threading encoding" OFF)
 option(ASAN_ENABLED "Build with asan" OFF)
 option(BUILD_COVERAGE "Build with coverage" OFF)
-option(BUILD_TEST "Build tests" ON)
+option(BUILD_CTESTS "Build tests" ON)
 option(BUILD_SHIPPING_SIMD "Build all simd for shipping" ON)
 option(BUILD_AVX512 "Force build avx512, non-shipping" OFF)
 option(BUILD_AVX2 "Force build avx2, non-shipping" OFF)
@@ -18,6 +18,7 @@ option(BUILD_NATIVE "Force build with -march=native, non-shipping" OFF)
 option(SEARCH_PYTHON3_USE_ENV
        "Search python3 using environment variables without cmake way" OFF)
 option(USE_LTO "Use LTO" ON)
+option(BUILD_FUZZER "Build fuzzer" OFF)
 
 if(BUILD_SHIPPING_SIMD)
   if(BUILD_AVX512
@@ -49,20 +50,33 @@ endif()
 # Project Config
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(CompilerFeatures)
-include(XcodeProperty)
 
 if(NOT (CMAKE_C_COMPILER_ID MATCHES Clang))
-  message(FATAL_ERROR "CMAKE_C_COMPILER_ID must be Clang")
+  message(FATAL_ERROR "CMAKE_C_COMPILER_ID must be Clang (got: ${CMAKE_C_COMPILER_ID})")
+endif()
+if(WIN32)
+  if(NOT (CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC"))
+    message(FATAL_ERROR "On Windows, only clang-cl is supported (frontend variant must be MSVC, got: ${CMAKE_C_COMPILER_FRONTEND_VARIANT})")
+  endif()
+else()
+  if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    message(FATAL_ERROR "On Linux/Apple, only clang is supported (clang-cl/MSVC frontend is not allowed)")
+  endif()
 endif()
 # ------------------------------------------------------------------------------
 # Search Python Package
 if(SEARCH_PYTHON3_USE_ENV)
   set(Python3_INCLUDE_DIRS $ENV{Python3_INCLUDE_DIR})
   set(Python3_LIBRARIES $ENV{Python3_LIBRARY})
+  if(DEFINED ENV{Python3_EXECUTABLE})
+    set(Python3_EXECUTABLE $ENV{Python3_EXECUTABLE})
+  else()
+    find_program(Python3_EXECUTABLE NAMES python3 python REQUIRED)
+  endif()
 else()
   find_package(
     Python3
-    COMPONENTS Development
+    COMPONENTS Interpreter Development
     REQUIRED)
 endif()
 
@@ -114,7 +128,7 @@ if(BUILD_FREE_THREADING)
 endif()
 target_compile_definitions(commonBuild
                            INTERFACE BUILD_MULTI_LIB=${BUILD_MULTI_LIB})
-if(MSVC)
+if(WIN32)
   target_compile_options(commonBuild INTERFACE /FAcs)
 else()
   target_compile_options(commonBuild INTERFACE -fvisibility=hidden
@@ -134,14 +148,14 @@ endif()
 if(DEFINED PREDEFINED_VERSION)
   add_custom_target(
     update_version_header ALL
-    COMMAND python dev_tools/scm.py src/version.h.in --version
+    COMMAND ${Python3_EXECUTABLE} dev_tools/scm.py src/version.h.in --version
             ${PREDEFINED_VERSION}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Update SCM file")
 else()
   add_custom_target(
     update_version_header ALL
-    COMMAND python dev_tools/scm.py src/version.h.in
+    COMMAND ${Python3_EXECUTABLE} dev_tools/scm.py src/version.h.in
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Update SCM file")
 endif()
@@ -219,12 +233,6 @@ set(SRC_XJB src/xjb/xjb.cpp)
 add_library(xjb OBJECT ${SRC_XJB})
 target_link_libraries(xjb PUBLIC commonBuild)
 
-set(SRC_TEST src/ctests/tools.c src/ctests/main.c src/utils/float_tables.c)
-
-set(SRC_TEST_WITH_SIMD src/ctests/test.c)
-
-set(SRC_FUZZER src/ctests/fuzzer.c)
-
 # library ssrjson
 if(BUILD_MULTI_LIB)
   set(SRC_FILES ${SRC_FILES} src/multilib.c)
@@ -299,27 +307,12 @@ if(ASAN_ENABLED)
   target_link_libraries(ssrjson PRIVATE asan)
 endif()
 
-if(ASAN_ENABLED AND MSVC)
-  get_filename_component(MSVC_COMPILER_DIR "${CMAKE_C_COMPILER}" PATH)
-  set(ASAN_DLL_PATH "${MSVC_COMPILER_DIR}/clang_rt.asan_dynamic-x86_64.dll")
-
-  if(EXISTS "${ASAN_DLL_PATH}")
-    message(STATUS "Found AddressSanitizer runtime DLL at: ${ASAN_DLL_PATH}")
-
-    add_custom_command(
-      TARGET ssrjson
-      POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${ASAN_DLL_PATH}"
-              $<TARGET_FILE_DIR:ssrjson>
-      COMMENT "Copying AddressSanitizer runtime DLL to output directory")
-  else()
-    message(
-      WARNING "AddressSanitizer runtime DLL not found at: ${ASAN_DLL_PATH}")
-  endif()
+if(ASAN_ENABLED AND WIN32)
+  message(FATAL_ERROR "ASAN_ENABLED not supported on Windows")
 endif()
 
 # ------------------------------------------------------------------------------
-if(XCODE)
+if(APPLE)
   set(SSRJSON_FLAGS)
   list(
     APPEND
@@ -337,20 +330,7 @@ if(XCODE)
     list(APPEND SSRJSON_FLAGS "-fomit-frame-pointer")
   endif()
 
-  set_default_xcode_property(commonBuild)
-  set_xcode_deployment_version(commonBuild "10.13" "12.0" "12.0" "4.0")
-
-  set_xcode_property(commonBuild GCC_C_LANGUAGE_STANDARD "c17")
-  set_xcode_property(commonBuild CLANG_C_LANGUAGE_STANDARD "c17")
-
-  set_xcode_property(commonBuild OTHER_CFLAGS[variant=Debug] ${SSRJSON_FLAGS})
-  set_xcode_property(commonBuild OTHER_CFLAGS[variant=MinSizeRel]
-                     ${SSRJSON_FLAGS})
-  set_xcode_property(commonBuild OTHER_CFLAGS[variant=RelWithDebInfo]
-                     ${SSRJSON_FLAGS})
-  set_xcode_property(commonBuild OTHER_CFLAGS[variant=Release] ${SSRJSON_FLAGS})
-
-elseif(MSVC)
+elseif(WIN32)
   set(SSRJSON_FLAGS)
   list(
     APPEND
@@ -424,70 +404,6 @@ endif(APPLE)
 
 install(TARGETS ssrjson LIBRARY DESTINATION .)
 
-if(BUILD_TEST)
-  include(CTest)
-
-  if(BUILD_MULTI_LIB)
-    if("${TARGET_SIMD_ARCH}" STREQUAL "x86")
-      add_library(ssrjson_test_sse4 OBJECT ${SRC_TEST_WITH_SIMD})
-      target_link_libraries(ssrjson_test_sse4 PUBLIC commonBuild)
-      add_library(ssrjson_test_avx2 OBJECT ${SRC_TEST_WITH_SIMD})
-      target_link_libraries(ssrjson_test_avx2 PUBLIC commonBuild)
-      add_library(ssrjson_test_avx512 OBJECT ${SRC_TEST_WITH_SIMD})
-      target_link_libraries(ssrjson_test_avx512 PUBLIC commonBuild)
-
-      add_avx512_compile_option(ssrjson_test_avx512)
-      add_avx2_compile_option(ssrjson_test_avx2)
-      add_sse4_compile_option(ssrjson_test_sse4)
-
-      add_executable(
-        ssrjson_test
-        ${SRC_TEST} $<TARGET_OBJECTS:ssrjson_test_avx512>
-        $<TARGET_OBJECTS:ssrjson_test_avx2> $<TARGET_OBJECTS:ssrjson_test_sse4>)
-    elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
-      add_library(ssrjson_test_neon OBJECT ${SRC_TEST_WITH_SIMD})
-      target_link_libraries(ssrjson_test_neon PUBLIC commonBuild)
-      add_executable(ssrjson_test ${SRC_TEST}
-                                  $<TARGET_OBJECTS:ssrjson_test_neon>)
-    else()
-      message(FATAL_ERROR "TARGET_SIMD_ARCH=${TARGET_SIMD_ARCH} not supported")
-    endif()
-  else()
-    add_executable(ssrjson_test ${SRC_TEST} ${SRC_TEST_WITH_SIMD})
-  endif()
-
-  target_link_libraries(ssrjson_test PUBLIC commonBuild ${Python3_LIBRARIES})
-  install(TARGETS ssrjson_test RUNTIME DESTINATION .)
-  add_test(ssrjson_test ${CMAKE_CURRENT_BINARY_DIR}/ssrjson_test)
-
-  if((CMAKE_C_COMPILER_ID MATCHES Clang) AND NOT WIN32)
-    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/test_data/fuzzer/fuzzer.dict"
-         DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/test_data/fuzzer/ssrjson_fuzz.py"
-         DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-    file(GLOB TEST_DATA_FILES
-         "${CMAKE_CURRENT_SOURCE_DIR}/test_data/json/**/*.json")
-    file(COPY ${TEST_DATA_FILES}
-         DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/corpus")
-    add_executable(ssrjson_fuzzer ${SRC_FUZZER})
-    target_link_libraries(ssrjson_fuzzer PUBLIC commonBuild
-                                                ${Python3_LIBRARIES})
-
-    add_asan_compile_option(ssrjson_fuzzer)
-    target_compile_options(ssrjson_fuzzer PRIVATE -fsanitize=fuzzer -g -O1)
-    target_link_options(ssrjson_fuzzer PRIVATE -fsanitize=fuzzer)
-
-    if(ASAN_ENABLED)
-      add_asan_compile_option(ssrjson_fuzzer)
-    endif()
-
-    add_test(ssrjson_fuzzer ${CMAKE_CURRENT_BINARY_DIR}/ssrjson_fuzzer
-             -dict=fuzzer.dict -max_total_time=1800
-             ${CMAKE_CURRENT_BINARY_DIR}/corpus)
-    set_tests_properties(ssrjson_fuzzer
-                         PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0")
-  endif()
+if(BUILD_CTESTS)
+  include(CTests)
 endif()
-
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_data/templates/info.json"
-               "${CMAKE_CURRENT_BINARY_DIR}/info.json" @ONLY)

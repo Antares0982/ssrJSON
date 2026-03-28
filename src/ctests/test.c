@@ -356,9 +356,11 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_2bytes_utf8)(void) {
 int SIMD_NAME_MODIFIER(test_long_back_cvt_u8_u16)(void) {
     GUARDED_SIMD;
     for (usize _ = 0; _ < 10; _++) {
-        static const usize buffer_len = (1 << 11);
-        ssrjson_align(64) u8 buffer[buffer_len];
-        ssrjson_align(64) u8 buffer_reference[buffer_len];
+#define BUFFER_LEN (1 << 11)
+        static const usize buffer_len = BUFFER_LEN;
+        ssrjson_align(64) u8 buffer[BUFFER_LEN];
+        ssrjson_align(64) u8 buffer_reference[BUFFER_LEN];
+#undef BUFFER_LEN
         GARBAGE_FILL(buffer);
         usize random_u8_start_index = (rand() % buffer_len) & (~(usize)1);
         usize out_u16_length = (usize)rand() % ((buffer_len - random_u8_start_index) / 2);

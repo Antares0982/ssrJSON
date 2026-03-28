@@ -43,4 +43,4 @@ else
 fi
 
 cmake . -B $BUILD_DIR -DCMAKE_BUILD_TYPE=$TARGET_BUILD_TYPE -DPython3_ROOT_DIR=$Python3_ROOT_DIR -DBUILD_FREE_THREADING=$BUILD_FREE_THREADING
-cmake --build $BUILD_DIR -- -j $(nproc)
+cmake --build $BUILD_DIR -- -j
