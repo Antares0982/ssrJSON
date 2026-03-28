@@ -91,6 +91,9 @@ def convert_to_asm_command(entry: dict) -> tuple[list[str], Path, str]:
         elif arg == "-c":
             # Remove -c flag (not needed with -S)
             continue
+        elif arg in ("-flto", "-flto=thin", "-flto=full") or arg.startswith("-flto="):
+            # Remove LTO flags (incompatible with assembly output)
+            continue
         else:
             new_args.append(arg)
 
