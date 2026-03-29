@@ -217,7 +217,7 @@ force_inline EncodeUnicodeWriter unicode_buffer_append_str_distribute4(EncodeUni
     return writer;
 }
 
-force_inline EncodeUnicodeWriter unicode_buffer_append_str(EncodeUnicodeWriter writer, PyObject *val, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *unicode_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
+static force_noinline EncodeUnicodeWriter unicode_buffer_append_str(EncodeUnicodeWriter writer, PyObject *val, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *unicode_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     usize len;
     unsigned int kind, write_kind;
     const void *src_voidp;
@@ -230,8 +230,7 @@ force_inline EncodeUnicodeWriter unicode_buffer_append_str(EncodeUnicodeWriter w
 #endif
 #if COMPILE_UCS_LEVEL < 2
         case 1: {
-            const u8 *src = src_voidp;
-            return STR_WRITER_IMPL(u8, u8)(src, len, WRITER_AS_U8(writer), unicode_buffer_info, cur_nested_depth, is_in_obj);
+            return STR_WRITER_IMPL(u8, u8)(src_voidp, len, WRITER_AS_U8(writer), unicode_buffer_info, cur_nested_depth, is_in_obj);
         }
 #endif
 #if COMPILE_UCS_LEVEL < 4

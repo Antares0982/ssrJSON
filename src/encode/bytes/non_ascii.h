@@ -31,7 +31,7 @@
 //
 #include "compile_context/s_in.inl.h"
 
-force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize len, const u8 **utf8_cache_out, usize *utf8_length_out, bool is_key) {
+force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize len, const u8 **utf8_cache_out, usize *utf8_length_out, ssrjson_compiletime bool is_key) {
     // Alloc to max size
     void *new_buffer;
     u8 *writer;
@@ -80,21 +80,13 @@ fail:;
     return false;
 }
 
-static force_noinline bool write_key_cache_impl(const void *src_voidp, int src_pykind, usize len, const u8 **utf8_cache_out, usize *utf8_length_out) {
-    return write_cache_impl(src_voidp, src_pykind, len, utf8_cache_out, utf8_length_out, true);
-}
-
-static force_noinline bool write_str_cache_impl(const void *src_voidp, int src_pykind, usize len, const u8 **utf8_cache_out, usize *utf8_length_out) {
-    return write_cache_impl(src_voidp, src_pykind, len, utf8_cache_out, utf8_length_out, false);
-}
-
 static force_noinline u8 *bytes_buffer_append_nonascii_str_write_cache(u8 *writer, int src_pykind, const void *src_voidp, usize len, PyObject *str) {
     assert(ssrjson_pyascii_cast(str)->state.compact);
     const u8 *utf8_cache;
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
     if (!utf8_cache) {
-        if (unlikely(!write_str_cache_impl(src_voidp, src_pykind, len, &utf8_cache, &utf8_length))) return false;
+        if (unlikely(!write_cache_impl(src_voidp, src_pykind, len, &utf8_cache, &utf8_length, false))) return NULL;
         set_cache(str, &utf8_cache, utf8_length);
     }
     assert(utf8_cache);
@@ -113,12 +105,12 @@ static force_noinline u8 *bytes_buffer_append_nonascii_str_write_cache(u8 *write
             }
             case 2: {
                 writer = bytes_write_ucs2(writer, src_voidp, len, false);
-                if (unlikely(!writer)) return false;
+                if (unlikely(!writer)) return NULL;
                 break;
             }
             case 4: {
                 writer = bytes_write_ucs4(writer, src_voidp, len, false);
-                if (unlikely(!writer)) return false;
+                if (unlikely(!writer)) return NULL;
                 break;
             }
             default: {

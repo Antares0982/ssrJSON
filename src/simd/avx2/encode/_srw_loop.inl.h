@@ -152,7 +152,7 @@ force_inline ssrjson_nofail dst_t *encode_unicode_impl(dst_t *dst, const src_t *
     return dst;
 }
 
-internal_simd_noinline ssrjson_nofail dst_t *encode_unicode_impl_no_key(dst_t *dst, const src_t *src, usize len) {
+force_inline ssrjson_nofail dst_t *encode_unicode_impl_no_key(dst_t *dst, const src_t *src, usize len) {
     return encode_unicode_impl(dst, src, len, false);
 }
 

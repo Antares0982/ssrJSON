@@ -43,7 +43,7 @@
 //
 #include "compile_context/sirw_in.inl.h"
 
-force_inline u8 *bytes_buffer_append_nonascii_key_write_cache(u8 *writer, int src_pykind, const void *src_voidp, usize len, PyObject *key) {
+static force_noinline u8 *bytes_buffer_append_nonascii_key_write_cache(u8 *writer, int src_pykind, const void *src_voidp, usize len, PyObject *key) {
     assert(ssrjson_pyascii_cast(key)->state.compact);
     const u8 *utf8_cache;
     usize utf8_length;
@@ -55,7 +55,7 @@ force_inline u8 *bytes_buffer_append_nonascii_key_write_cache(u8 *writer, int sr
             // and 3 * 6 = 18 >= 16.
             goto no_cache_encode;
         }
-        if (unlikely(!write_key_cache_impl(src_voidp, src_pykind, len, &utf8_cache, &utf8_length))) return false;
+        if (unlikely(!write_cache_impl(src_voidp, src_pykind, len, &utf8_cache, &utf8_length, true))) return NULL;
         set_cache(key, &utf8_cache, utf8_length);
     }
     assert(utf8_cache);
@@ -74,6 +74,7 @@ force_inline u8 *bytes_buffer_append_nonascii_key_write_cache(u8 *writer, int sr
         switch (src_pykind) {
             case 1: {
                 writer = bytes_write_ucs1(writer, src_voidp, len, true);
+                // bytes_write_ucs1 does not fail
                 break;
             }
             case 2: {
@@ -83,7 +84,7 @@ force_inline u8 *bytes_buffer_append_nonascii_key_write_cache(u8 *writer, int sr
             }
             case 4: {
                 writer = bytes_write_ucs4(writer, src_voidp, len, true);
-                if (unlikely(!writer)) return false;
+                if (unlikely(!writer)) return NULL;
                 break;
             }
             default: {
@@ -112,6 +113,7 @@ static force_noinline u8 *bytes_buffer_append_nonascii_key_no_write_cache(u8 *wr
         switch (src_pykind) {
             case 1: {
                 writer = bytes_write_ucs1(writer, src_voidp, len, true);
+                // bytes_write_ucs1 does not fail
                 break;
             }
             case 2: {
@@ -138,7 +140,9 @@ static force_noinline u8 *bytes_buffer_append_nonascii_key_no_write_cache(u8 *wr
     return writer;
 }
 
-static force_noinline u8 *bytes_buffer_append_key(u8 *writer, PyObject *key, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_write_cache) {
+static force_noinline u8 *bytes_buffer_append_key(u8 *writer, PyObject *key,
+                                                  EncodeUnicodeBufferInfo *unicode_buffer_info,
+                                                  Py_ssize_t cur_nested_depth, bool is_write_cache) {
     int src_pykind = PyUnicode_KIND(key);
     bool is_ascii = PyUnicode_IS_ASCII(key);
     usize len = PyUnicode_GET_LENGTH(key);
@@ -178,11 +182,11 @@ static force_noinline u8 *bytes_buffer_append_key(u8 *writer, PyObject *key, Enc
     }
 }
 
-force_inline u8 *bytes_buffer_append_str(u8 *writer, PyObject *str,
-                                         EncodeUnicodeBufferInfo *unicode_buffer_info,
-                                         Py_ssize_t cur_nested_depth,
-                                         ssrjson_compiletime bool is_in_obj,
-                                         bool is_write_cache) {
+static force_noinline u8 *bytes_buffer_append_str(u8 *writer, PyObject *str,
+                                                  EncodeUnicodeBufferInfo *unicode_buffer_info,
+                                                  Py_ssize_t cur_nested_depth,
+                                                  ssrjson_compiletime bool is_in_obj,
+                                                  bool is_write_cache) {
     int src_pykind = PyUnicode_KIND(str);
     bool is_ascii = PyUnicode_IS_ASCII(str);
     usize len = PyUnicode_GET_LENGTH(str);
@@ -217,7 +221,7 @@ force_inline u8 *bytes_buffer_append_str(u8 *writer, PyObject *str,
     }
     *writer++ = '"';
     if (likely(is_ascii)) {
-        writer = bytes_write_ascii_not_key(writer, src_voidp, len);
+        writer = bytes_write_ascii(writer, src_voidp, len, false);
         *writer++ = '"';
         *writer++ = ',';
         return writer;

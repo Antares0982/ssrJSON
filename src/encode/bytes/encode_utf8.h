@@ -40,9 +40,9 @@
 
 /* UTF-8 src. */
 // forward declaration
-force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usize len, bool is_key);
+force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_key);
 
-force_inline ssrjson_nofail u8 *bytes_write_utf8(u8 *writer, const u8 *src, usize len, bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_utf8(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_key) {
     // UTF-8 trailing source case is a little different,
     // because the 16 bytes before `src_end` are not readable in general.
     // This function only impls the fast path that we can reuse the unicode encode loop,
@@ -52,22 +52,16 @@ force_inline ssrjson_nofail u8 *bytes_write_utf8(u8 *writer, const u8 *src, usiz
     // Other cases: SIMD register size is 16 bytes (SSE, NEON).
     assert(USING_AVX512 || len >= 16);
     // reuse the ascii encode loop.
-    writer = bytes_write_ascii(writer, src, len, is_key);
-    return writer;
+    return bytes_write_ascii(writer, src, len, is_key);
 }
 
 /* ASCII src. */
-force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usize len, bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_key) {
     // reuse the unicode encode loop.
     // excess written bytes = ssrjson_max(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode >= 2
-    if (!is_key) writer = encode_unicode_loop4(writer, &src, &len);
+    if (ssrjson_consteval(!is_key)) writer = encode_unicode_loop4(writer, &src, &len);
     writer = encode_unicode_loop(writer, &src, &len);
     if (len) writer = encode_trailing_copy_with_cvt(writer, src, len);
-    return writer;
-}
-
-force_inline ssrjson_nofail u8 *bytes_write_ascii_not_key(u8 *writer, const u8 *src, usize len) {
-    writer = bytes_write_ascii(writer, src, len, false);
     return writer;
 }
 
@@ -97,7 +91,7 @@ force_inline void check_ascii_in_ucs1_and_get_done_countx4(unionvector_a_x4 vec,
     m.x[3] = cmpeq_bitmask(vec.x[3], t1) |
              cmpeq_bitmask(vec.x[3], t2) |
              signed_cmpgt_bitmask(t3, vec.x[3]);
-#elif SSRJSON_IS_X64 || SSRJSON_IS_AARCH64
+#else
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
     unionvector_a_x4 m;
     vector_a r;
@@ -140,7 +134,7 @@ force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_countx4(unionvector_
     m.x[1] = signed_cmpgt_bitmask(t, vec.x[1]);
     m.x[2] = signed_cmpgt_bitmask(t, vec.x[2]);
     m.x[3] = signed_cmpgt_bitmask(t, vec.x[3]);
-#elif SSRJSON_IS_X64 || SSRJSON_IS_AARCH64
+#else
     unionvector_a_x4 m;
     vector_a r;
     m.x[0] = signed_cmpgt(t, vec.x[0]);
@@ -181,7 +175,7 @@ force_inline void check_ascii_in_ucs1_and_get_done_count(vector_a vec, bool *out
     m = cmpeq_bitmask(vec, t1) |
         cmpeq_bitmask(vec, t2) |
         signed_cmpgt_bitmask(t3, vec);
-#elif SSRJSON_IS_X64 || SSRJSON_IS_AARCH64
+#else
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
     vector_a m;
     m = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec);
@@ -199,7 +193,7 @@ force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_count(vector_a vec, 
     u64 m;
 
     m = signed_cmpgt_bitmask(t, vec);
-#elif SSRJSON_IS_X64 || SSRJSON_IS_AARCH64
+#else
     vector_a m;
     m = signed_cmpgt(t, vec);
 #endif
@@ -347,7 +341,7 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop_raw_utf8(u8 *dst, cons
     return dst;
 }
 
-force_inline ssrjson_nofail u8 *bytes_write_ucs1(u8 *writer, const u8 *src, usize len, bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -355,7 +349,7 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1(u8 *writer, const u8 *src, usiz
         unicode = *src;
         if (unicode < 128 && unicode >= _ControlMax && unicode != _Quote && unicode != _Slash) {
             bool continuous;
-            if (!is_key) {
+            if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs1_encode_loop4(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
@@ -388,7 +382,7 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1(u8 *writer, const u8 *src, usiz
 #undef CAN_LOOP4
 }
 
-force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8(u8 *writer, const u8 *src, usize len, bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -396,7 +390,7 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8(u8 *writer, const u8 *
         unicode = *src;
         if (unicode < 128) {
             bool continuous;
-            if (!is_key) {
+            if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs1_encode_loop4_raw_utf8(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
@@ -903,7 +897,7 @@ force_inline ssrjson_nofail u8 *_3bytes_in_ucs2_encode_loop(u8 *dst, const u16 *
 }
 
 /* Return false when src contains invalid character. */
-force_inline u8 *bytes_write_ucs2(u8 *writer, const u16 *src, usize len, bool is_key) {
+force_inline u8 *bytes_write_ucs2(u8 *writer, const u16 *src, usize len, ssrjson_compiletime bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -912,7 +906,7 @@ force_inline u8 *bytes_write_ucs2(u8 *writer, const u16 *src, usize len, bool is
         if (unicode < 128) {
             // ascii range
             bool continuous;
-            if (!is_key) {
+            if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs2_encode_loop4(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
@@ -970,7 +964,7 @@ force_inline u8 *bytes_write_ucs2(u8 *writer, const u16 *src, usize len, bool is
 #undef CAN_LOOP4
 }
 
-force_inline u8 *bytes_write_ucs2_raw_utf8(u8 *writer, const u16 *src, usize len, bool is_key) {
+force_inline u8 *bytes_write_ucs2_raw_utf8(u8 *writer, const u16 *src, usize len, ssrjson_compiletime bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -979,7 +973,7 @@ force_inline u8 *bytes_write_ucs2_raw_utf8(u8 *writer, const u16 *src, usize len
         if (unicode < 128) {
             // ascii range
             bool continuous;
-            if (!is_key) {
+            if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs2_encode_loop4_raw_utf8(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
@@ -1459,7 +1453,7 @@ force_inline ssrjson_nofail u8 *_3bytes_in_ucs4_encode_loop(u8 *dst, const u32 *
 }
 
 /* Return false when src contains invalid character. */
-force_inline u8 *bytes_write_ucs4(u8 *writer, const u32 *src, usize len, bool is_key) {
+force_inline u8 *bytes_write_ucs4(u8 *writer, const u32 *src, usize len, ssrjson_compiletime bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -1468,7 +1462,7 @@ force_inline u8 *bytes_write_ucs4(u8 *writer, const u32 *src, usize len, bool is
         if (unicode < 128) {
             // ascii range
             bool continuous;
-            if (!is_key) {
+            if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs4_encode_loop4(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
@@ -1528,7 +1522,7 @@ force_inline u8 *bytes_write_ucs4(u8 *writer, const u32 *src, usize len, bool is
 #undef CAN_LOOP4
 }
 
-force_inline u8 *bytes_write_ucs4_raw_utf8(u8 *writer, const u32 *src, usize len, bool is_key) {
+force_inline u8 *bytes_write_ucs4_raw_utf8(u8 *writer, const u32 *src, usize len, ssrjson_compiletime bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -1537,7 +1531,7 @@ force_inline u8 *bytes_write_ucs4_raw_utf8(u8 *writer, const u32 *src, usize len
         if (unicode < 128) {
             // ascii range
             bool continuous;
-            if (!is_key) {
+            if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs4_encode_loop4_raw_utf8(writer, &src, &len, &continuous);
                     if (unlikely(!continuous)) {
