@@ -35,7 +35,7 @@ clangStdenv.mkDerivation {
           "/licenses"
           "/src"
           "/cmake"
-          "/dev_tools/scm.py"
+          "/ci/scm.py"
         ];
       in
       lib.any (prefix: lib.hasPrefix prefix rel) allowed

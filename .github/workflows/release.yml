@@ -167,7 +167,7 @@ jobs:
       run: |
         ARTIFACT_NAME=dist/$(ls dist)
         echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c bash dev_tools/release-test.sh "$ARTIFACT_NAME" "${{ steps.prepare.outputs.PYTHONPATH }}"
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c bash ci/release-test.sh "$ARTIFACT_NAME" "${{ steps.prepare.outputs.PYTHONPATH }}"
 
   Linux-aarch64-Build-And-Test-Wheel:
     runs-on: [Linux, ARM64, nixos-arm64]
@@ -209,7 +209,7 @@ jobs:
 
     - name: Install Wheel & Run Tests
       run: |
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c bash dev_tools/release-test.sh "${{ steps.build-wheel.outputs.ARTIFACT_NAME }}" "${{ steps.prepare.outputs.PYTHONPATH }}"
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c bash ci/release-test.sh "${{ steps.build-wheel.outputs.ARTIFACT_NAME }}" "${{ steps.prepare.outputs.PYTHONPATH }}"
 
   Windows-Test-Tarball:
     runs-on: windows-latest
@@ -268,7 +268,7 @@ jobs:
 
     - name: Build Wheel
       run: |
-        .\dev_tools\build-package.bat
+        .\ci\build-package.bat
 
     - name: Install Wheel
       run: |
@@ -367,7 +367,7 @@ jobs:
 
     - name: Verify Wheel Compatibility
       run: |
-        bash dev_tools/macos_verify_wheel.sh ${{ steps.build-wheel.outputs.ARTIFACT_NAME }} python3.${{ matrix.pyver }}
+        bash ci/macos_verify_wheel.sh ${{ steps.build-wheel.outputs.ARTIFACT_NAME }} python3.${{ matrix.pyver }}
 
     - name: Install Wheel
       run: |

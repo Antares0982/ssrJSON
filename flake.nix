@@ -49,7 +49,7 @@
       packages = forAllSystems (
         pkgs:
         let
-          nixfiles = builtins.toPath ./dev_tools/nixfiles;
+          nixfiles = builtins.toPath ./ci/nixfiles;
           pkgs-legacy = import nixpkgs-legacy { inherit (pkgs.stdenv.hostPlatform) system; };
           versionUtils = pkgs.callPackage "${nixfiles}/version_utils.nix" { inherit pkgs-legacy; };
           pythonVerConfig = versionUtils.pythonVerConfig;

@@ -176,7 +176,7 @@
         {
             "label": "Run coverage test",
             "type": "shell",
-            "command": "${workspaceFolder}/dev_tools/coverage_test.sh",
+            "command": "${workspaceFolder}/ci/coverage_test.sh",
             "options": {
                 "shell": {
                     "executable": "nix",

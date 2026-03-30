@@ -20,8 +20,8 @@ jobs:
         name: antares0982
     - name: Run asan check
       run: |
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --asan
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./ci/linux_test.py --asan
     - name: Run asan check (lockfree)
       if: contains(matrix.pyver, 't')
       run: |
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --asan --lockfree
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./ci/linux_test.py --asan --lockfree

@@ -62,7 +62,7 @@ clangStdenv.mkDerivation {
           "/MANIFEST.in"
           "/pysrc"
           "/licenses"
-          "/dev_tools/check_glibc_version.py"
+          "/ci/check_glibc_version.py"
         ];
       in
       lib.any (prefix: lib.hasPrefix prefix rel) allowed
@@ -91,7 +91,7 @@ clangStdenv.mkDerivation {
       strip --strip-all ssrjson/$SSRJSON_SONAME
     ''
     + linuxOnlyString ''
-      python dev_tools/check_glibc_version.py ssrjson/$SSRJSON_SONAME ${targetGLIBCVerString}
+      python ci/check_glibc_version.py ssrjson/$SSRJSON_SONAME ${targetGLIBCVerString}
     ''
     + ''
       SSRJSON_USE_NIX_PREBUILT=1 python -m build --no-isolation

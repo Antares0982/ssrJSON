@@ -36,10 +36,10 @@ jobs:
         nix develop .#devenv-py3${{ matrix.pyver }} -c echo "Nix develop environment set up."
     - name: Release Test (Build Only)
       run: |
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --build-dir build-py3.${{ matrix.pyver }} --build-type Release --build-only
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./ci/linux_test.py --build-dir build-py3.${{ matrix.pyver }} --build-type Release --build-only
     - name: DEBUG Tests (Build and Run)
       run: |
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --build-dir build-py3.${{ matrix.pyver }} --build-type Debug
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./ci/linux_test.py --build-dir build-py3.${{ matrix.pyver }} --build-type Debug
     - name: Print Features
       id: "print_features"
       run: |
@@ -82,10 +82,10 @@ jobs:
         nix develop .#devenv-py3${{ matrix.pyver }} -c echo "Nix develop environment set up."
     - name: Release Test (Build Only)
       run: |
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --lockfree --build-dir build-py3.${{ matrix.pyver }} --build-type Release --build-only
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./ci/linux_test.py --lockfree --build-dir build-py3.${{ matrix.pyver }} --build-type Release --build-only
     - name: DEBUG Tests (Build and Run)
       run: |
-        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./dev_tools/linux_test.py --lockfree --build-dir build-py3.${{ matrix.pyver }} --build-type Debug
+        nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./ci/linux_test.py --lockfree --build-dir build-py3.${{ matrix.pyver }} --build-type Debug
     - name: Print Features
       id: "print_features"
       run: |

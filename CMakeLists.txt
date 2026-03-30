@@ -156,14 +156,14 @@ endif()
 if(DEFINED PREDEFINED_VERSION)
   add_custom_target(
     update_version_header ALL
-    COMMAND ${Python3_EXECUTABLE} dev_tools/scm.py src/version.h.in --version
+    COMMAND ${Python3_EXECUTABLE} ci/scm.py src/version.h.in --version
             ${PREDEFINED_VERSION}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Update SCM file")
 else()
   add_custom_target(
     update_version_header ALL
-    COMMAND ${Python3_EXECUTABLE} dev_tools/scm.py src/version.h.in
+    COMMAND ${Python3_EXECUTABLE} ci/scm.py src/version.h.in
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Update SCM file")
 endif()

@@ -32,7 +32,7 @@ clangStdenv.mkDerivation rec {
           "/cmake"
           "/pysrc"
           "/dev_tools/symbol_analyze.py"
-          "/dev_tools/scm.py"
+          "/ci/scm.py"
         ];
       in
       lib.any (prefix: lib.hasPrefix prefix rel) allowed
