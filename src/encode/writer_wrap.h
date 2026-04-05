@@ -20,37 +20,27 @@
  SOFTWARE.
  *============================================================================*/
 
-#undef SSRJSON_COMPILE_CONTEXT_SIRW
-//
-#include "iw_out.inl.h"
-#include "srw_out.inl.h"
-//
-#undef make_sirw_name
-//
-#undef unicode_buffer_append_key_internal
-#undef unicode_buffer_append_str_internal
-//
-#undef STR_WRITER_IMPL
-#undef KEY_WRITER_IMPL
-//
-#undef make_iu_name
-//
-#undef prepare_unicode_write
-#undef unicode_buffer_append_key
-#undef unicode_buffer_append_key_distribute2
-#undef unicode_buffer_append_key_distribute4
-#undef unicode_buffer_append_str
-#undef unicode_buffer_append_str_distribute2
-#undef unicode_buffer_append_str_distribute4
-#undef unicode_buffer_append_bool
-#undef unicode_buffer_append_null
-#undef unicode_buffer_append_float
-#undef unicode_buffer_append_empty_arr
-#undef unicode_buffer_append_arr_begin
-#undef unicode_buffer_append_arr_end
-#undef unicode_buffer_append_empty_obj
-#undef unicode_buffer_append_obj_begin
-#undef unicode_buffer_append_obj_end
-#undef ssrjson_dumps_obj
-//
-#undef encode_process_val
+#ifndef ENCODE_WRITER_WRAP_H
+#define ENCODE_WRITER_WRAP_H
+
+#include "encode_shared.h"
+
+// Macros push
+#include "simd/compile_feature_check.h"
+
+#define COMPILE_WRITE_UCS_LEVEL 1
+#include "_sw_writers.inl.h"
+#undef COMPILE_WRITE_UCS_LEVEL
+
+#define COMPILE_WRITE_UCS_LEVEL 2
+#include "_sw_writers.inl.h"
+#undef COMPILE_WRITE_UCS_LEVEL
+
+#define COMPILE_WRITE_UCS_LEVEL 4
+#include "_sw_writers.inl.h"
+#undef COMPILE_WRITE_UCS_LEVEL
+
+// Macros pop
+#undef _CompileVectorBits
+
+#endif // ENCODE_WRITER_WRAP_H

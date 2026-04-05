@@ -31,6 +31,19 @@
 //
 #undef unicode_buffer_reserve
 #undef u64_to_unicode
+#undef u32_to_unicode
+#undef u16_to_unicode
+#undef u8_to_unicode
 #undef f64_to_unicode
 #undef inf_nan_to_unicode
 #undef ControlEscapeTable
+//
+#undef write_unicode_bool
+#undef write_unicode_bool_numpy
+#undef write_unicode_null
+#undef write_unicode_empty_arr
+#undef write_unicode_arr_begin
+#undef write_unicode_arr_end
+#undef write_unicode_empty_obj
+#undef write_unicode_obj_begin
+#undef write_unicode_obj_end

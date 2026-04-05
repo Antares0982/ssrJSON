@@ -21,15 +21,15 @@
  *============================================================================*/
 
 #ifdef SSRJSON_CLANGD_CHECKING
-#    ifndef COMPILE_CONTEXT_ENCODE
-#        define COMPILE_CONTEXT_ENCODE
-#    endif
 #    ifndef COMPILE_INDENT_LEVEL
+#        define COMPILE_CONTEXT_ENCODE
 #        include "encode_shared.h"
 #        include "encode_unicode_impl_wrap.h"
 #        include "encode_utils_impl_wrap.h"
+#        include "ndarray/ndarray.h"
 #        include "states.h"
 #        include "tls.h"
+#        include "writer_wrap.h"
 #        define COMPILE_UCS_LEVEL 0
 #        define COMPILE_INDENT_LEVEL 0
 #        include "simd/compile_feature_check.h"
@@ -248,81 +248,9 @@ static force_noinline EncodeUnicodeWriter unicode_buffer_append_str(EncodeUnicod
     }
 }
 
-force_inline dst_t *unicode_buffer_append_long(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
-    assert(PyLong_CheckExact(val));
-    write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 64);
-
-    if (pylong_is_zero(val)) {
-        *writer++ = '0';
-        *writer++ = ',';
-    } else {
-        u64 v;
-        usize sign;
-        if (pylong_is_unsigned(val)) {
-            if (unlikely(!pylong_value_unsigned(val, &v))) {
-                PyErr_SetString(JSONEncodeError, "convert value to unsigned long long failed");
-                return NULL;
-            }
-            sign = 0;
-        } else {
-            i64 v2;
-            if (unlikely(!pylong_value_signed(val, &v2))) {
-                PyErr_SetString(JSONEncodeError, "convert value to long long failed");
-                return NULL;
-            }
-            assert(v2 <= 0);
-            v = -v2;
-            sign = 1;
-        }
-        writer = u64_to_unicode(writer, v, sign);
-        *writer++ = ',';
-    }
-    assert(check_unicode_writer_valid(writer, unicode_buffer_info));
-    return writer;
-}
-
-force_inline ssrjson_nofail dst_t *write_unicode_bool(dst_t *writer, bool is_false) {
-    // copy 24 bytes if bit vec size <= 128 and ucs level is 4
-    ssrjson_compiletime const usize copy_cnt = (_CompileVectorBits <= 128 && COMPILE_UCS_LEVEL == 4) ? 6 : 8;
-    static const dst_t true_buf[8] = {'t', 'r', 'u', 'e', ',', 0, 0, 0};
-    static const dst_t false_buf[8] = {'f', 'a', 'l', 's', 'e', ',', 0, 0};
-    const dst_t *copy_from = is_false ? false_buf : true_buf;
-    memcpy(writer, copy_from, copy_cnt * sizeof(dst_t));
-    writer += 5 + is_false;
-    return writer;
-}
-
 force_inline dst_t *unicode_buffer_append_bool(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj, bool is_false) {
-    // copy 24 bytes if bit vec size <= 128 and ucs level is 4
-    ssrjson_compiletime const usize copy_cnt = (_CompileVectorBits <= 128 && COMPILE_UCS_LEVEL == 4) ? 6 : 8;
-    write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, copy_cnt);
+    write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, _WriteBoolCopyCnt);
     return write_unicode_bool(writer, is_false);
-}
-
-force_inline ssrjson_nofail dst_t *write_unicode_null(dst_t *writer) {
-    // ucs case       -> 1, 2, 4
-    // expected bytes -> 5,10,20
-    // written bytes  -> 8,16,24/32
-    // written count  -> 8, 8,6/8
-    // reserve count = 8
-    *writer++ = 'n';
-    *writer++ = 'u';
-    *writer++ = 'l';
-    *writer++ = 'l';
-    *writer++ = ',';
-    dst_t *writer2 = writer;
-#if COMPILE_UCS_LEVEL < 4
-    *writer2++ = 0;
-    *writer2++ = 0;
-    *writer2++ = 0;
-#else // COMPILE_UCS_LEVEL == 4
-    *writer2++ = 0;
-#    if __AVX__
-    *writer2++ = 0;
-    *writer2++ = 0;
-#    endif // __AVX__
-#endif     // COMPILE_UCS_LEVEL
-    return writer;
 }
 
 force_inline dst_t *unicode_buffer_append_null(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
@@ -330,9 +258,8 @@ force_inline dst_t *unicode_buffer_append_null(dst_t *writer, EncodeUnicodeBuffe
     return write_unicode_null(writer);
 }
 
-force_inline dst_t *unicode_buffer_append_float(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, PyObject *val, bool is_in_obj) {
+force_inline dst_t *unicode_buffer_append_float(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, double v, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, ssrjson_dtoa_write_length);
-    double v = PyFloat_AS_DOUBLE(val);
     if (!ssrjson_dtoa_handle_inf_nan && unlikely(isinf(v) || isnan(v))) {
         writer = inf_nan_to_unicode(writer, v);
     } else {
@@ -342,26 +269,9 @@ force_inline dst_t *unicode_buffer_append_float(dst_t *writer, EncodeUnicodeBuff
     return writer;
 }
 
-force_inline ssrjson_nofail dst_t *write_unicode_empty_arr(dst_t *writer) {
-    // reserve count = 4
-    *writer++ = '[';
-    *writer++ = ']';
-    *writer++ = ',';
-#if COMPILE_UCS_LEVEL != 4
-    *writer = 0;
-#endif
-    return writer;
-}
-
 force_inline dst_t *unicode_buffer_append_empty_arr(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 4);
     return write_unicode_empty_arr(writer);
-}
-
-force_inline ssrjson_nofail dst_t *write_unicode_arr_begin(dst_t *writer) {
-    // reserve count = 1
-    *writer++ = '[';
-    return writer;
 }
 
 force_inline dst_t *unicode_buffer_append_arr_begin(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
@@ -369,38 +279,14 @@ force_inline dst_t *unicode_buffer_append_arr_begin(dst_t *writer, EncodeUnicode
     return write_unicode_arr_begin(writer);
 }
 
-force_inline ssrjson_nofail dst_t *write_unicode_empty_obj(dst_t *writer) {
-    // reserve count = 4
-    *writer++ = '{';
-    *writer++ = '}';
-    *writer++ = ',';
-#if COMPILE_UCS_LEVEL != 4
-    *writer = 0;
-#endif
-    return writer;
-}
-
 force_inline dst_t *unicode_buffer_append_empty_obj(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 4);
     return write_unicode_empty_obj(writer);
 }
 
-force_inline ssrjson_nofail dst_t *write_unicode_obj_begin(dst_t *writer) {
-    // reserve count = 1
-    *writer++ = '{';
-    return writer;
-}
-
 force_inline dst_t *unicode_buffer_append_obj_begin(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj) {
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, is_in_obj, 1);
     return write_unicode_obj_begin(writer);
-}
-
-force_inline ssrjson_nofail dst_t *write_unicode_obj_end(dst_t *writer) {
-    // reserve count = 2
-    *writer++ = '}';
-    *writer++ = ',';
-    return writer;
 }
 
 force_inline dst_t *unicode_buffer_append_obj_end(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth) {
@@ -409,13 +295,6 @@ force_inline dst_t *unicode_buffer_append_obj_end(dst_t *writer, EncodeUnicodeBu
     // this is not a *value*, the indent is always needed. i.e. `is_in_obj` should always pass false
     write_indent_return_if_fail(writer, unicode_buffer_info, cur_nested_depth, false, 2);
     return write_unicode_obj_end(writer);
-}
-
-force_inline ssrjson_nofail dst_t *write_unicode_arr_end(dst_t *writer) {
-    // reserve count = 2
-    *writer++ = ']';
-    *writer++ = ',';
-    return writer;
 }
 
 force_inline dst_t *unicode_buffer_append_arr_end(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth) {
@@ -483,11 +362,42 @@ force_inline EncodeUnicodeWriter encode_process_val(
 #endif
             break;
         }
-        case T_Long: {
-            _CAST_WRITER(writer) = unicode_buffer_append_long(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, val, is_in_obj);
-            return_jump_fail_if_unlikely(!writer);
+
+        t_long_zero:;
+            write_indent_return_if_fail(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, 2);
+            *_CAST_WRITER(writer)++ = '0';
+            *_CAST_WRITER(writer)++ = ',';
             break;
-        }
+
+            {
+                u64 value;
+                int sign;
+
+                case T_Long: {
+                    return_jump_fail_if_unlikely(!pylong_to_clong(val, &value, &sign));
+                    if (ssrjson_consteval(sign == -1)) goto t_long_zero;
+                t_long_nonzero:;
+                    write_indent_return_if_fail(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, 32);
+                    _CAST_WRITER(writer) = u64_to_unicode(_CAST_WRITER(writer), value, sign);
+                    *_CAST_WRITER(writer)++ = ',';
+                    break;
+                }
+
+                case T_NumpyInt64: {
+                    i64 v = PYOBJ_SCALAR_VALUE(val, i64);
+                    if (v == 0) goto t_long_zero;
+                    sign = v < 0;
+                    value = sign ? (u64)(-(i64)v) : (u64)v;
+                    goto t_long_nonzero;
+                }
+                case T_NumpyUint64: {
+                    u64 v = PYOBJ_SCALAR_VALUE(val, u64);
+                    if (v == 0) goto t_long_zero;
+                    value = v;
+                    sign = 0;
+                    goto t_long_nonzero;
+                }
+            }
         case T_Bool: {
             const bool is_false = (val == Py_False);
             _CAST_WRITER(writer) = unicode_buffer_append_bool(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, is_false);
@@ -499,11 +409,25 @@ force_inline EncodeUnicodeWriter encode_process_val(
             return_jump_fail_if_unlikely(!writer);
             break;
         }
-        case T_Float: {
-            _CAST_WRITER(writer) = unicode_buffer_append_float(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, val, is_in_obj);
-            return_jump_fail_if_unlikely(!writer);
-            break;
-        }
+            {
+                double v;
+
+                case T_Float: {
+                    v = PyFloat_AS_DOUBLE(val);
+                t_float:;
+                    _CAST_WRITER(writer) = unicode_buffer_append_float(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, v, is_in_obj);
+                    return_jump_fail_if_unlikely(!writer);
+                    break;
+                }
+                case T_NumpyFloat16: {
+                    v = f16_to_f64(PYOBJ_SCALAR_VALUE(val, u16));
+                    goto t_float;
+                }
+                case T_NumpyFloat32: {
+                    v = (double)PYOBJ_SCALAR_VALUE(val, float);
+                    goto t_float;
+                }
+            }
         case T_List: {
             Py_ssize_t this_list_size = PyList_GET_SIZE(val);
             if (unlikely(this_list_size == 0)) {
@@ -540,7 +464,6 @@ force_inline EncodeUnicodeWriter encode_process_val(
             if (unlikely(PyDict_GET_SIZE(val) == 0)) {
                 _CAST_WRITER(writer) = unicode_buffer_append_empty_obj(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, is_in_obj);
                 return_jump_fail_if_unlikely(!writer);
-
             } else {
                 _CAST_WRITER(writer) = unicode_buffer_append_obj_begin(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, is_in_obj);
                 return_jump_fail_if_unlikely(!writer);
@@ -587,12 +510,171 @@ force_inline EncodeUnicodeWriter encode_process_val(
             }
             break;
         }
+
+            {
+                u32 value;
+                int sign;
+
+                case T_NumpyUint32: {
+                    u32 v = PYOBJ_SCALAR_VALUE(val, u32);
+                    if (v == 0) goto t_long_zero;
+                    value = (u32)v;
+                    sign = 0;
+                    goto t_iu32_nonzero;
+                }
+                case T_NumpyInt32: {
+                    i32 v = PYOBJ_SCALAR_VALUE(val, i32);
+                    if (v == 0) goto t_long_zero;
+                    sign = v < 0;
+                    value = sign ? (u32)(-(i32)v) : (u32)v;
+                    goto t_iu32_nonzero;
+                }
+
+                t_iu32_nonzero:;
+                    write_indent_return_if_fail(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, 16);
+                    _CAST_WRITER(writer) = u32_to_unicode(_CAST_WRITER(writer), value, sign);
+                    *_CAST_WRITER(writer)++ = ',';
+                    break;
+            }
+
+            {
+                u16 value;
+                int sign;
+
+                case T_NumpyUint16: {
+                    u16 v = PYOBJ_SCALAR_VALUE(val, u16);
+                    if (v == 0) goto t_long_zero;
+                    value = (u16)v;
+                    sign = 0;
+                    goto t_iu16_nonzero;
+                }
+                case T_NumpyInt16: {
+                    i16 v = PYOBJ_SCALAR_VALUE(val, i16);
+                    if (v == 0) goto t_long_zero;
+                    sign = v < 0;
+                    value = sign ? (u16)(-(i16)v) : (u16)v;
+                    goto t_iu16_nonzero;
+                }
+
+                t_iu16_nonzero:;
+                    write_indent_return_if_fail(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, 8);
+                    _CAST_WRITER(writer) = u16_to_unicode(_CAST_WRITER(writer), value, sign);
+                    *_CAST_WRITER(writer)++ = ',';
+                    break;
+            }
+            {
+                u8 value;
+                int sign;
+
+                case T_NumpyUint8: {
+                    u8 v = PYOBJ_SCALAR_VALUE(val, u8);
+                    if (v == 0) goto t_long_zero;
+                    value = (u8)v;
+                    sign = 0;
+                    goto t_iu8_nonzero;
+                }
+                case T_NumpyInt8: {
+                    i8 v = PYOBJ_SCALAR_VALUE(val, i8);
+                    if (v == 0) goto t_long_zero;
+                    sign = v < 0;
+                    value = sign ? (u8)(-(i8)v) : (u8)v;
+                    goto t_iu8_nonzero;
+                }
+
+                t_iu8_nonzero:;
+                    write_indent_return_if_fail(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, 4);
+                    _CAST_WRITER(writer) = u8_to_unicode(_CAST_WRITER(writer), value, sign);
+                    *_CAST_WRITER(writer)++ = ',';
+                    break;
+            }
+
+        case T_NumpyBool: {
+            // Convert numpy bool to Python bool
+            int is_true = PyObject_IsTrue(val);
+            if (unlikely(is_true == -1)) {
+                *jump_flag_out = JumpFlag_Fail;
+                return NULL;
+            }
+            const bool is_false = !is_true;
+            _CAST_WRITER(writer) = unicode_buffer_append_bool(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, is_false);
+            return_jump_fail_if_unlikely(!writer);
+            break;
+        }
+        case T_NumpyArray: {
+            u8 *new_writer = u8_buffer_append_ndarray(ssrjson_cast(u8 *, writer), unicode_buffer_info, *cur_nested_depth_addr, val, is_in_obj);
+#if COMPILE_WRITE_UCS_LEVEL > 1
+            return_jump_fail_if_unlikely(!new_writer);
+            const usize written = new_writer - ssrjson_cast(u8 *, writer);
+            dst_t *target_ptr = _CAST_WRITER(writer) + written;
+            if (unlikely(target_ptr > ssrjson_cast(dst_t *, unicode_buffer_info->end))) {
+                usize target_u8_size = ssrjson_cast(u8 *, target_ptr) - ssrjson_cast(u8 *, unicode_buffer_info->head);
+                // reserve
+                EncodeUnicodeBufferInfo new_unicode_buffer_info = _unicode_buffer_reserve(*unicode_buffer_info, target_u8_size);
+                if (unlikely(!new_unicode_buffer_info.head)) {
+                    *jump_flag_out = JumpFlag_Fail;
+                    return NULL;
+                }
+                *unicode_buffer_info = new_unicode_buffer_info;
+                writer = ssrjson_cast(dst_t *, new_unicode_buffer_info.head) + target_u8_size - written;
+            }
+            // long back cvt
+            SIMD_NAME_MODIFIER(ssrjson_concat2(long_cvt_noinline_u8, dst_t))(_CAST_WRITER(writer), ssrjson_cast(u8 *, writer), written);
+#else
+            _CAST_WRITER(writer) = new_writer;
+            return_jump_fail_if_unlikely(!writer);
+#endif
+            break;
+
+            //             // Convert numpy array to Python list
+            //             PyObject *py_list = PySequence_List(val);
+            //             if (unlikely(!py_list)) {
+            //                 *jump_flag_out = JumpFlag_Fail;
+            //                 return NULL;
+            //             }
+            //             Py_ssize_t this_list_size = PyList_GET_SIZE(py_list);
+            //             if (unlikely(this_list_size == 0)) {
+            //                 _CAST_WRITER(writer) = unicode_buffer_append_empty_arr(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, is_in_obj);
+            //                 Py_DECREF(py_list);
+            //                 return_jump_fail_if_unlikely(!writer);
+            //             } else {
+            //                 _CAST_WRITER(writer) = unicode_buffer_append_arr_begin(_CAST_WRITER(writer), unicode_buffer_info, *cur_nested_depth_addr, is_in_obj);
+            //                 if (unlikely(!writer)) {
+            //                     Py_DECREF(py_list);
+            //                     *jump_flag_out = JumpFlag_Fail;
+            //                     return NULL;
+            //                 }
+            // #if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
+            //                 {
+            //                     int ret;
+            //                     kh_put(ptr_set, pyobj_set, (u64)py_list, &ret);
+            //                     if (unlikely(ret == 0)) {
+            //                         Py_DECREF(py_list);
+            //                         PyErr_SetString(JSONEncodeError, "Circular reference detected");
+            //                         *jump_flag_out = JumpFlag_Fail;
+            //                         return NULL;
+            //                     }
+            //                     PyMutex_Lock(&ssrjson_pyobj_cast(py_list)->ob_mutex);
+            //                 }
+            // #endif
+            //                 ctn_size_grow();
+            //                 EncodeCtnWithIndex *cur_write_ctn = ctn_stack + ((*cur_nested_depth_addr)++);
+            //                 cur_write_ctn->ctn = *cur_obj_addr;
+            //                 set_index_and_type(cur_write_ctn, *cur_pos_addr, get_encode_ctn_type(is_in_obj, is_in_tuple));
+            //                 *cur_obj_addr = py_list;
+            //                 *cur_pos_addr = 0;
+            //                 *cur_list_size_addr = this_list_size;
+            //                 *jump_flag_out = JumpFlag_ArrValBegin;
+            //                 return writer;
+            //             }
+            //             break;
+        }
         default: {
             PyErr_SetString(JSONEncodeError, "Unsupported type to encode");
             *jump_flag_out = JumpFlag_Fail;
             return NULL;
         }
     }
+    assert(check_unicode_writer_valid(_CAST_WRITER(writer), unicode_buffer_info));
 
     *jump_flag_out = JumpFlag_Default;
     return writer;

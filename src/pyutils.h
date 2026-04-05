@@ -121,14 +121,13 @@ force_inline void init_pyunicode(void *head, Py_ssize_t size, int kind) {
 // Create an empty unicode object with the given size and kind, like PyUnicode_New.
 // This is a force_inline function to avoid the overhead of function calls in performance-critical paths.
 force_inline PyObject *create_empty_unicode(usize size, int kind) {
-    if (unlikely(!size)) return PyUnicode_New(0, 0x7f);
+    if (unlikely(!size)) return PyUnicode_New(0, 0);
     assert(kind == 0 || kind == 1 || kind == 2 || kind == 4);
     usize offset = kind ? sizeof(PyCompactUnicodeObject) : sizeof(PyASCIIObject);
     usize tpsize = kind ? kind : 1;
     PyObject *str = PyObject_Malloc(offset + (size + 1) * tpsize);
-    if (likely(str)) {
-        init_pyunicode(str, size, kind);
-    }
+    return_if_no_memory(str);
+    init_pyunicode(str, size, kind);
     return str;
 }
 
@@ -234,5 +233,27 @@ force_inline void parse_ascii(PyObject *unicode, bool *is_ascii_out, const u8 **
 }
 
 extern ssrjson_align(64) u64 _PyFastType[8];
+
+/* np.float64 is omitted: it has always been a subclass of Python float,
+ * so PyType_IsSubtype(type, &PyFloat_Type) in slow_type_check() already
+ * handles it via the T_Float path. */
+typedef struct {
+    PyTypeObject *ndarray;
+    PyTypeObject *float32;
+    PyTypeObject *int64;
+    PyTypeObject *int32;
+    PyTypeObject *uint64;
+    PyTypeObject *uint32;
+    PyTypeObject *bool_;
+    PyTypeObject *float16;
+    PyTypeObject *int16;
+    PyTypeObject *int8;
+    PyTypeObject *uint16;
+    PyTypeObject *uint8;
+} ssrjson_align(64) NumpyTypes;
+
+#define NUMPY_TYPES_COUNT 12
+
+extern NumpyTypes _NumpyTypes;
 
 #endif // SSRJSON_PYUTILS_H

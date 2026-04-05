@@ -38,6 +38,7 @@ PyObject *ssrjson_Decode(PyObject *self, PyObject *const *args, Py_ssize_t nargs
 PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args);
 PyObject *ssrjson_strict_argparse(PyObject *self, PyObject *arg);
 PyObject *ssrjson_write_utf8_cache(PyObject *self, PyObject *arg);
+PyObject *ssrjson_setup_numpy_types(PyObject *self, PyObject *const *args, Py_ssize_t nargs);
 
 PyObject *JSONDecodeError = NULL;
 PyObject *JSONEncodeError = NULL;
@@ -91,6 +92,15 @@ static void module_free(void *m) {
         JSONEncodeError = NULL;
     }
 
+    // Cleanup numpy types
+    {
+        PyTypeObject **np = (PyTypeObject **)&_NumpyTypes;
+        for (int i = 0; i < NUMPY_TYPES_COUNT; i++) {
+            Py_XDECREF(np[i]);
+            np[i] = NULL;
+        }
+    }
+
     if (unlikely(!_ssrjson_library_tls_free())) {
         printf("ssrjson: failed to free TLS\n");
     }
@@ -141,6 +151,12 @@ PyMethodDef write_utf8_cache_func_def = {
         (PyCFunction)ssrjson_write_utf8_cache,
         METH_O,
         "write_utf8_cache(value)\n--\n\nSet whether to write UTF-8 cache when calling dumps_to_bytes(). Default is True."};
+
+PyMethodDef setup_numpy_types_func_def = {
+        "setup_numpy_types",
+        (PyCFunction)ssrjson_setup_numpy_types,
+        METH_FASTCALL,
+        "setup_numpy_types(numpy_module=None)\n--\n\nSetup numpy type support. Pass the numpy module or call without arguments to auto-import numpy."};
 
 const char *_getenv_write_cache(long *out_value) {
     const char *env = getenv("SSRJSON_WRITE_UTF8_CACHE");
@@ -237,6 +253,7 @@ static int ssrjson_exec(PyObject *module) {
     ADD_FUNC_CHECKED(suppress_api_warning_func_def);
     ADD_FUNC_CHECKED(strict_argparse_func_def);
     ADD_FUNC_CHECKED(write_utf8_cache_func_def);
+    ADD_FUNC_CHECKED(setup_numpy_types_func_def);
 
     Py_DECREF(module_string);
 
@@ -299,6 +316,83 @@ PyObject *ssrjson_write_utf8_cache(PyObject *self, PyObject *arg) {
     }
     _WriteUTF8CacheValue = value_is_true ? 1 : 0;
     Py_RETURN_NONE;
+}
+
+/* Fetch numpy type objects from `mod` and install them into _NumpyTypes.
+ * `mod` must be a borrowed reference; this function does NOT decref it. */
+force_inline PyObject *_setup_numpy_types_impl(PyObject *mod) {
+    // Order matches NumpyTypes struct layout.
+    // np.float64 is omitted: it is a subclass of Python float, handled by T_Float.
+    static const char *attr_names[] = {
+            "ndarray",
+            "float32",
+            "int64",
+            "int32",
+            "uint64",
+            "uint32",
+            "bool_",
+            "float16",
+            "int16",
+            "int8",
+            "uint16",
+            "uint8",
+    };
+
+    static_assert(sizeof(attr_names) / sizeof(attr_names[0]) == NUMPY_TYPES_COUNT, "attr_names count must match NumpyTypes fields");
+
+    NumpyTypes tmp = {0};
+    PyTypeObject **tp = (PyTypeObject **)&tmp;
+    int filled = 0;
+
+    for (int i = 0; i < NUMPY_TYPES_COUNT; i++) {
+        PyObject *obj = PyObject_GetAttrString(mod, attr_names[i]);
+        if (unlikely(!obj)) {
+            goto fail;
+        }
+        if (unlikely(!PyType_Check(obj))) {
+            PyErr_Format(PyExc_TypeError, "numpy.%s is not a type object", attr_names[i]);
+            Py_DECREF(obj);
+            goto fail;
+        }
+        tp[i] = (PyTypeObject *)obj;
+        filled = i + 1;
+    }
+
+    // Release old references then install new ones
+    PyTypeObject **np = (PyTypeObject **)&_NumpyTypes;
+    for (int i = 0; i < NUMPY_TYPES_COUNT; i++) {
+        Py_XDECREF(np[i]);
+    }
+    _NumpyTypes = tmp;
+
+    Py_RETURN_NONE;
+
+fail:
+    for (int j = 0; j < filled; j++) {
+        Py_DECREF(tp[j]);
+    }
+    return NULL;
+}
+
+PyObject *ssrjson_setup_numpy_types(PyObject *self, PyObject *const *args, Py_ssize_t nargs) {
+    if (nargs == 0) {
+        PyObject *mod = PyImport_ImportModule("numpy");
+        if (unlikely(!mod)) {
+            return NULL;
+        }
+        PyObject *ret = _setup_numpy_types_impl(mod);
+        Py_DECREF(mod);
+        return ret;
+    }
+    if (nargs == 1) {
+        if (unlikely(!PyModule_Check(args[0]))) {
+            PyErr_SetString(PyExc_TypeError, "setup_numpy_types() argument must be a module");
+            return NULL;
+        }
+        return _setup_numpy_types_impl(args[0]);
+    }
+    PyErr_SetString(PyExc_TypeError, "setup_numpy_types() takes at most 1 argument");
+    return NULL;
 }
 
 void handle_unexpected_kw(const char *func_name, PyObject *kwname) {

@@ -140,3 +140,6 @@ PyObject *make_unicode_down_ucs4_ucs2(void *raw_buffer, usize size, bool do_hash
 }
 
 ssrjson_align(64) u64 _PyFastType[8];
+
+// Numpy type pointers
+NumpyTypes _NumpyTypes = {0};

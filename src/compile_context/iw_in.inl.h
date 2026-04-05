@@ -51,9 +51,14 @@
 #define make_iw_name(_x_) ssrjson_concat3(_x_, __INDENT_NAME, dst_t)
 
 /*
+ * Write ndarray indents.
+ */
+#define ndarray_write_indent ssrjson_concat3(_write_unicode_indent, __INDENT_NAME, u8)
+
+/*
  * Write indents to unicode buffer. Need to reserve space before calling this function.
  */
-#define write_unicode_indent make_iw_name(write_unicode_indent)
+#define write_unicode_indent make_iw_name(_write_unicode_indent)
 
 /*
  * Write indents to unicode buffer. Will reserve space if needed.
@@ -66,5 +71,11 @@
 #define bytes_buffer_append_nonascii_key_no_write_cache make_i_name(bytes_buffer_append_nonascii_key_no_write_cache)
 #define encode_bytes_process_val make_i_name(encode_bytes_process_val)
 #define ssrjson_dumps_to_bytes_obj make_i_name(ssrjson_dumps_to_bytes_obj)
-
+#define ndarray_traverse_dispatch make_i_name(ndarray_traverse_dispatch)
+#define get_ndarray_reserve_cnt make_i_name(get_ndarray_reserve_cnt)
+#define u8_buffer_append_ndarray make_i_name(u8_buffer_append_ndarray)
+#define get_1darray_reserve_cnt make_i_name(get_1darray_reserve_cnt)
+#define get_ndarray_reserve_cnt_internal make_i_name(get_ndarray_reserve_cnt_internal)
+#define test_get_ndarray_reserve_cnt_reference make_i_name(test_get_ndarray_reserve_cnt_reference)
+#define test_ndarray_reserve_cnt make_i_name(test_ndarray_reserve_cnt)
 #endif // SSRJSON_COMPILE_CONTEXT_IW

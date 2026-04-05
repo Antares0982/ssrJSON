@@ -137,4 +137,9 @@ DECLARE_TEST(test_ucs4_encode_2bytes_utf8)
 DECLARE_TEST(test_long_back_cvt_u8_u16)
 DECLARE_TEST(test_long_cvt)
 
+/* ndarray reserve count tests (not SIMD-dependent, per indent level) */
+int test_ndarray_reserve_cnt_indent0(void);
+int test_ndarray_reserve_cnt_indent2(void);
+int test_ndarray_reserve_cnt_indent4(void);
+
 #endif // SSRJSON_CTESTS_TEST_H

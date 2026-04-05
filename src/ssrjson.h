@@ -228,7 +228,7 @@
 #define unlikely ssrjson_unlikely
 
 /* assembly */
-#define ssrjson_asm(x) // asm x
+#define ssrjson_asm(x) asm x
 
 /* assume for compiler */
 #ifdef NDEBUG
@@ -378,8 +378,16 @@ __extension__ typedef unsigned __int128 u128;
 #define return_if_unlikely(_x_) \
     do {                        \
         if (unlikely((_x_))) {  \
-            return false;       \
+            return 0;           \
         }                       \
+    } while (0)
+
+#define return_if_no_memory(_x_) \
+    do {                         \
+        if (unlikely(!(_x_))) {  \
+            PyErr_NoMemory();    \
+            return 0;            \
+        }                        \
     } while (0)
 
 

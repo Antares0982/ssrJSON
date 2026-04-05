@@ -28,6 +28,8 @@
 #undef make_i_name
 #undef make_iw_name
 //
+#undef ndarray_write_indent
+//
 #undef write_unicode_indent
 #undef unicode_indent_writer
 //
@@ -37,3 +39,10 @@
 #undef bytes_buffer_append_nonascii_key_no_write_cache
 #undef encode_bytes_process_val
 #undef ssrjson_dumps_to_bytes_obj
+#undef ndarray_traverse_dispatch
+#undef get_ndarray_reserve_cnt
+#undef u8_buffer_append_ndarray
+#undef get_1darray_reserve_cnt
+#undef get_ndarray_reserve_cnt_internal
+#undef test_get_ndarray_reserve_cnt_reference
+#undef test_ndarray_reserve_cnt

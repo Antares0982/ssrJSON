@@ -73,7 +73,7 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, ssrjson_
     EncodeUnicodeWriter writer;
     EncodeUnicodeBufferInfo _unicode_buffer_info; //, new_unicode_buffer_info;
     _unicode_buffer_info.head = PyObject_Malloc(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
-    return_if_unlikely(!_unicode_buffer_info.head);
+    return_if_no_memory(_unicode_buffer_info.head);
     //
     bool compact = ssrjson_pyascii_cast(unicode)->state.compact;
     assert(compact);
@@ -171,190 +171,237 @@ static force_noinline PyObject *ssrjson_dumps_single_unicode_to_bytes(PyObject *
 #include "compile_context/s_out.inl.h"
 #undef _CompileVectorBits
 
-force_inline PyObject *ssrjson_dumps_single_long(PyObject *val, ssrjson_compiletime bool to_bytes_obj) {
-    PyObject *ret;
-    if (pylong_is_zero(val)) {
-        if (ssrjson_consteval(to_bytes_obj)) {
-            ret = PyObject_Malloc(PYBYTES_START_OFFSET + 1 + 1);
-            return_if_unlikely(!ret);
-            init_pybytes(ret, 1);
-            PyBytesObject *b = ssrjson_pybytes_cast(ret);
-            b->ob_sval[0] = '0';
-            b->ob_sval[1] = 0;
-        } else {
-            ret = create_empty_unicode(1, 0);
-            return_if_unlikely(!ret);
-            u8 *writer = (u8 *)(((PyASCIIObject *)ret) + 1);
-            writer[0] = '0';
-            writer[1] = 0;
-        }
+force_inline PyObject *create_empty_pybytes(usize size) {
+    PyObject *bytes = PyObject_Malloc(PYBYTES_START_OFFSET + size + 1);
+    return_if_no_memory(bytes);
+    init_pybytes(bytes, size);
+    return bytes;
+}
+
+force_inline u8 *create_obj_and_get_writer(PyObject **obj_out, usize size, ssrjson_compiletime bool to_bytes_obj) {
+    u8 *writer;
+    PyObject *obj;
+    if (ssrjson_consteval(to_bytes_obj)) {
+        *obj_out = obj = create_empty_pybytes(size);
+        return_if_unlikely(!obj);
+        writer = ssrjson_cast(u8 *, ssrjson_pybytes_cast(obj)->ob_sval);
     } else {
-        u64 v;
-        usize sign = !pylong_is_unsigned(val);
-        if (sign) {
-            i64 v2;
-            if (unlikely(!pylong_value_signed(val, &v2))) {
-                PyErr_SetString(JSONEncodeError, "convert value to long long failed");
-                return NULL;
-            }
-            assert(v2 <= 0);
-            v = -v2;
-        } else {
-            if (unlikely(!pylong_value_unsigned(val, &v))) {
-                PyErr_SetString(JSONEncodeError, "convert value to unsigned long long failed");
-                return NULL;
-            }
-        }
-        u8 buffer[64];
-        *buffer = '-';
-        u8 *buffer_end = write_u64(v, buffer + sign);
-        usize string_size = buffer_end - buffer;
-        u8 *writer;
-        if (ssrjson_consteval(to_bytes_obj)) {
-            ret = PyObject_Malloc(PYBYTES_START_OFFSET + string_size + 1);
-            return_if_unlikely(!ret);
-            init_pybytes(ret, string_size);
-            writer = ssrjson_cast(u8 *, ssrjson_pybytes_cast(ret)->ob_sval);
-        } else {
-            ret = create_empty_unicode(string_size, 0);
-            return_if_unlikely(!ret);
-            writer = ssrjson_cast(u8 *, ssrjson_pyascii_cast(ret) + 1);
-        }
-        memcpy(writer, buffer, string_size);
-        writer[string_size] = 0;
+        *obj_out = obj = create_empty_unicode(size, 0);
+        return_if_unlikely(!obj);
+        writer = ssrjson_pyunicode_ascii_start(obj);
     }
-    return ret;
+    return writer;
+}
+
+force_inline PyObject *create_obj_from_buffer(const u8 *buffer, usize size, ssrjson_compiletime bool to_bytes_obj) {
+    assert(buffer[size] == 0);
+    PyObject *obj;
+    u8 *writer = create_obj_and_get_writer(&obj, size, to_bytes_obj);
+    if (likely(writer)) {
+        memcpy(writer, buffer, size + 1);
+    }
+    return obj;
+}
+
+force_inline PyObject *create_obj_from_literal(const char *literal, ssrjson_compiletime bool to_bytes_obj) {
+    return create_obj_from_buffer(ssrjson_cast(const u8 *, literal), strlen(literal), to_bytes_obj);
 }
 
 force_inline PyObject *_ssrjson_dumps_single_inf_nan(double v, ssrjson_compiletime bool to_bytes_obj) {
     if (isinf(v)) {
-        bool sign = v < 0;
-        usize length = 8 + sign;
-        PyObject *unicode;
-        u8 *writer;
-        if (ssrjson_consteval(to_bytes_obj)) {
-            unicode = PyObject_Malloc(PYBYTES_START_OFFSET + length + 1);
-            return_if_unlikely(!unicode);
-            init_pybytes(unicode, length);
-            writer = ssrjson_cast(u8 *, unicode) + PYBYTES_START_OFFSET;
-        } else {
-            unicode = create_empty_unicode(length, 0);
-            return_if_unlikely(!unicode);
-            writer = ssrjson_cast(u8 *, ssrjson_pyascii_cast(unicode) + 1);
-        }
+        const bool sign = v < 0;
+        const usize length = 8 + sign;
+        PyObject *obj;
+        u8 *const writer = create_obj_and_get_writer(&obj, length, to_bytes_obj);
+        return_if_unlikely(!writer);
         *writer = '-';
-        memcpy(writer + sign, "Infinity", 8);
-        writer[8 + sign] = 0;
-        return unicode;
+        memcpy(writer + sign, "Infinity", 9);
+        return obj;
     } else {
-        PyObject *unicode;
-        u8 *writer;
-        if (ssrjson_consteval(to_bytes_obj)) {
-            unicode = PyObject_Malloc(PYBYTES_START_OFFSET + 3 + 1);
-            return_if_unlikely(!unicode);
-            init_pybytes(unicode, 3);
-            writer = ssrjson_cast(u8 *, unicode) + PYBYTES_START_OFFSET;
-        } else {
-            unicode = create_empty_unicode(3, 0);
-            return_if_unlikely(!unicode);
-            writer = ssrjson_cast(u8 *, ssrjson_pyascii_cast(unicode) + 1);
-        }
-        memcpy(writer, "NaN", 4);
-        return unicode;
+        return create_obj_from_literal("NaN", to_bytes_obj);
     }
 }
 
-force_inline PyObject *ssrjson_dumps_single_float(PyObject *val, ssrjson_compiletime bool to_bytes_obj) {
+force_inline PyObject *ssrjson_dumps_single_float_from_f64(double v, ssrjson_compiletime bool to_bytes_obj) {
     u8 buffer[ssrjson_dtoa_write_length];
     u8 *buffer_end;
-    double v = PyFloat_AS_DOUBLE(val);
-    if (!ssrjson_dtoa_handle_inf_nan && unlikely(isinf(v) || isnan(v))) {
+    if (ssrjson_consteval(!ssrjson_dtoa_handle_inf_nan) && unlikely(isinf(v) || isnan(v))) {
         return _ssrjson_dumps_single_inf_nan(v, to_bytes_obj);
     }
     buffer_end = xjb64(v, buffer);
-    usize size = buffer_end - buffer;
-    assert(size <= ssrjson_dtoa_output_maxlen);
-    PyObject *unicode;
-    if (ssrjson_consteval(to_bytes_obj)) {
-        unicode = PyObject_Malloc(PYBYTES_START_OFFSET + size + 1);
-    } else {
-        unicode = create_empty_unicode(size, 0);
-    }
-    return_if_unlikely(!unicode);
-    if (ssrjson_consteval(to_bytes_obj)) {
-        init_pybytes(unicode, size);
-    }
-    char *write_pos;
-    if (ssrjson_consteval(to_bytes_obj)) {
-        write_pos = ssrjson_pybytes_cast(unicode)->ob_sval;
-    } else {
-        write_pos = ssrjson_cast(char *, ssrjson_pyascii_cast(unicode) + 1);
-    }
-    memcpy((void *)write_pos, buffer, size);
-    write_pos[size] = 0;
-    return unicode;
+    const usize string_size = buffer_end - buffer;
+    assert(string_size <= ssrjson_dtoa_output_maxlen);
+    buffer[string_size] = 0;
+    return create_obj_from_buffer(buffer, string_size, to_bytes_obj);
+}
+
+force_inline PyObject *ssrjson_dumps_single_float(PyObject *val, ssrjson_compiletime bool to_bytes_obj) {
+    return ssrjson_dumps_single_float_from_f64(PyFloat_AS_DOUBLE(val), to_bytes_obj);
+}
+
+force_inline PyObject *ssrjson_dumps_single_long_zero(ssrjson_compiletime bool to_bytes_obj) {
+    return create_obj_from_literal("0", to_bytes_obj);
+}
+
+force_inline PyObject *ssrjson_dumps_single_long_from_u64_nonzero(u64 v, bool sign, ssrjson_compiletime bool to_bytes_obj) {
+    PyObject *ret;
+    u8 buffer[32];
+    *buffer = '-';
+    u8 *buffer_end = write_u64(v, buffer + sign);
+    const usize string_size = buffer_end - buffer;
+    assert(string_size <= 21);
+    buffer[string_size] = 0;
+    return create_obj_from_buffer(buffer, string_size, to_bytes_obj);
+}
+
+force_inline PyObject *ssrjson_dumps_single_long_from_u32_nonzero(u32 v, bool sign, ssrjson_compiletime bool to_bytes_obj) {
+    PyObject *ret;
+    u8 buffer[16];
+    *buffer = '-';
+    u8 *buffer_end = write_u32(v, buffer + sign);
+    const usize string_size = buffer_end - buffer;
+    assert(string_size <= 11);
+    buffer[string_size] = 0;
+    return create_obj_from_buffer(buffer, string_size, to_bytes_obj);
+}
+
+force_inline PyObject *ssrjson_dumps_single_long_from_u16_nonzero(u16 v, bool sign, ssrjson_compiletime bool to_bytes_obj) {
+    PyObject *ret;
+    u8 buffer[8];
+    *buffer = '-';
+    u8 *buffer_end = write_u16(v, buffer + sign);
+    const usize string_size = buffer_end - buffer;
+    assert(string_size <= 6);
+    buffer[string_size] = 0;
+    return create_obj_from_buffer(buffer, string_size, to_bytes_obj);
+}
+
+force_inline PyObject *ssrjson_dumps_single_long_from_u8_nonzero(u8 v, bool sign, ssrjson_compiletime bool to_bytes_obj) {
+    PyObject *ret;
+    u8 buffer[8];
+    *buffer = '-';
+    u8 *buffer_end = write_u8(v, buffer + sign);
+    const usize string_size = buffer_end - buffer;
+    assert(string_size <= 4);
+    buffer[string_size] = 0;
+    return create_obj_from_buffer(buffer, string_size, to_bytes_obj);
+}
+
+static force_noinline PyObject *ssrjson_dumps_to_str_single_long_from_u64(u64 v, bool sign) {
+    if (v == 0) return ssrjson_dumps_single_long_zero(false);
+    return ssrjson_dumps_single_long_from_u64_nonzero(v, sign, false);
+}
+
+static force_noinline PyObject *ssrjson_dumps_to_bytes_single_long_from_u64(u64 v, bool sign) {
+    if (v == 0) return ssrjson_dumps_single_long_zero(true);
+    return ssrjson_dumps_single_long_from_u64_nonzero(v, sign, true);
+}
+
+static force_noinline PyObject *ssrjson_dumps_to_str_single_long_from_u32(u32 v, bool sign) {
+    if (v == 0) return ssrjson_dumps_single_long_zero(false);
+    return ssrjson_dumps_single_long_from_u32_nonzero(v, sign, false);
+}
+
+static force_noinline PyObject *ssrjson_dumps_to_bytes_single_long_from_u32(u32 v, bool sign) {
+    if (v == 0) return ssrjson_dumps_single_long_zero(true);
+    return ssrjson_dumps_single_long_from_u32_nonzero(v, sign, true);
+}
+
+static force_noinline PyObject *ssrjson_dumps_to_str_single_long_from_u16(u16 v, bool sign) {
+    if (v == 0) return ssrjson_dumps_single_long_zero(false);
+    return ssrjson_dumps_single_long_from_u16_nonzero(v, sign, false);
+}
+
+static force_noinline PyObject *ssrjson_dumps_to_bytes_single_long_from_u16(u16 v, bool sign) {
+    if (v == 0) return ssrjson_dumps_single_long_zero(true);
+    return ssrjson_dumps_single_long_from_u16_nonzero(v, sign, true);
+}
+
+static force_noinline PyObject *ssrjson_dumps_to_str_single_long_from_u8(u8 v, bool sign) {
+    if (v == 0) return ssrjson_dumps_single_long_zero(false);
+    return ssrjson_dumps_single_long_from_u8_nonzero(v, sign, false);
+}
+
+static force_noinline PyObject *ssrjson_dumps_to_bytes_single_long_from_u8(u8 v, bool sign) {
+    if (v == 0) return ssrjson_dumps_single_long_zero(true);
+    return ssrjson_dumps_single_long_from_u8_nonzero(v, sign, true);
+}
+
+force_inline PyObject *ssrjson_dumps_single_long(PyObject *val, ssrjson_compiletime bool to_bytes_obj) {
+    PyObject *ret;
+    u64 v;
+    int sign;
+
+    return_if_unlikely(!pylong_to_clong(val, &v, &sign));
+
+    if (ssrjson_consteval(sign == -1)) return ssrjson_dumps_single_long_zero(to_bytes_obj);
+    return ssrjson_dumps_single_long_from_u64_nonzero(v, sign, to_bytes_obj);
 }
 
 force_inline PyObject *ssrjson_dumps_single_constant(EncodePyTypes py_type, PyObject *obj, ssrjson_compiletime bool to_bytes_obj) {
-    PyObject *ret;
-    switch (py_type) {
-        case T_Bool: {
-            if (obj == Py_False) {
-                u8 *writer;
-                if (ssrjson_consteval(to_bytes_obj)) {
-                    ret = PyObject_Malloc(PYBYTES_START_OFFSET + 5 + 1);
-                    return_if_unlikely(!ret);
-                    init_pybytes(ret, 5);
-                    writer = ssrjson_cast(u8 *, ssrjson_pybytes_cast(ret)->ob_sval);
-                } else {
-                    ret = create_empty_unicode(5, 0);
-                    return_if_unlikely(!ret);
-                    writer = ssrjson_cast(u8 *, ssrjson_pyascii_cast(ret) + 1);
-                }
-                strcpy((char *)writer, "false");
-            } else {
-                u8 *writer;
-                if (ssrjson_consteval(to_bytes_obj)) {
-                    ret = PyObject_Malloc(PYBYTES_START_OFFSET + 4 + 1);
-                    return_if_unlikely(!ret);
-                    init_pybytes(ret, 4);
-                    writer = ssrjson_cast(u8 *, ssrjson_pybytes_cast(ret)->ob_sval);
-                } else {
-                    ret = create_empty_unicode(4, 0);
-                    return_if_unlikely(!ret);
-                    writer = ssrjson_cast(u8 *, ssrjson_pyascii_cast(ret) + 1);
-                }
-                strcpy((char *)writer, "true");
-            }
-            break;
-        }
-        case T_None: {
-            u8 *writer;
-            if (ssrjson_consteval(to_bytes_obj)) {
-                ret = PyObject_Malloc(PYBYTES_START_OFFSET + 4 + 1);
-                return_if_unlikely(!ret);
-                init_pybytes(ret, 4);
-                writer = ssrjson_cast(u8 *, ssrjson_pybytes_cast(ret)->ob_sval);
-            } else {
-                ret = create_empty_unicode(4, 0);
-                return_if_unlikely(!ret);
-                writer = ssrjson_cast(u8 *, ssrjson_pyascii_cast(ret) + 1);
-            }
-            strcpy((char *)writer, "null");
-            break;
-        }
-        default: {
-            ret = NULL;
-            ssrjson_unreachable();
-            break;
-        }
+    if (py_type == T_Bool) {
+        const bool is_false = (obj == Py_False);
+        return create_obj_from_literal(is_false ? "false" : "true", to_bytes_obj);
     }
-    return ret;
+    return create_obj_from_literal("null", to_bytes_obj);
 }
 
 force_inline void invalid_arg_warning(void) {
     fprintf(stderr, "Warning: some options are not supported in this version of ssrjson\n");
     _InvalidArgChecked = 1;
+}
+
+force_inline PyObject *ssrjson_dumps_single_ndarray(PyObject *obj, int indent_int, ssrjson_compiletime bool to_bytes_obj) {
+    EncodeUnicodeBufferInfo _unicode_buffer_info;
+    usize write_offset;
+    if (ssrjson_consteval(to_bytes_obj)) {
+        write_offset = PYBYTES_START_OFFSET;
+    } else {
+        write_offset = sizeof(PyASCIIObject);
+    }
+    _unicode_buffer_info.head = PyObject_Malloc(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
+    return_if_no_memory(_unicode_buffer_info.head);
+    u8 *writer = ssrjson_cast(u8 *, _unicode_buffer_info.head) + write_offset;
+    _unicode_buffer_info.end = ssrjson_cast(u8 *, _unicode_buffer_info.head) + SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE;
+
+    u8 *new_writer;
+    switch (indent_int) {
+        case 0:
+            new_writer = u8_buffer_append_ndarray_indent0(writer, &_unicode_buffer_info, 0, obj, true);
+            break;
+        case 2:
+            new_writer = u8_buffer_append_ndarray_indent2(writer, &_unicode_buffer_info, 0, obj, true);
+            break;
+        case 4:
+            new_writer = u8_buffer_append_ndarray_indent4(writer, &_unicode_buffer_info, 0, obj, true);
+            break;
+        default:
+            ssrjson_unreachable();
+    }
+    if (unlikely(!new_writer)) {
+        PyObject_Free(_unicode_buffer_info.head);
+        return NULL;
+    }
+    // remove trailing comma
+    new_writer--;
+    usize written_len = new_writer - ssrjson_cast(u8 *, _unicode_buffer_info.head) - write_offset;
+
+    bool resize_success;
+    if (ssrjson_consteval(to_bytes_obj)) {
+        resize_success = resize_to_fit_pybytes(&_unicode_buffer_info, written_len);
+    } else {
+        resize_success = resize_to_fit_pyunicode(&_unicode_buffer_info, written_len, 0);
+    }
+    if (unlikely(!resize_success)) {
+        PyObject_Free(_unicode_buffer_info.head);
+        return NULL;
+    }
+    if (ssrjson_consteval(to_bytes_obj)) {
+        init_pybytes(_unicode_buffer_info.head, written_len);
+    } else {
+        init_pyunicode_noinline(_unicode_buffer_info.head, written_len, 0);
+    }
+    return (PyObject *)_unicode_buffer_info.head;
 }
 
 force_inline bool encode_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **obj_out, PyObject **indent_out) {
@@ -487,6 +534,48 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Dumps)(PyObject *self,
         case T_Float: {
             goto dumps_float;
         }
+        case T_NumpyFloat16:
+            return ssrjson_dumps_single_float_from_f64(f16_to_f64(PYOBJ_SCALAR_VALUE(obj, u16)), false);
+        case T_NumpyFloat32:
+            return ssrjson_dumps_single_float_from_f64((double)PYOBJ_SCALAR_VALUE(obj, float), false);
+        case T_NumpyInt8: {
+            i16 v = (i16)PYOBJ_SCALAR_VALUE(obj, i8);
+            bool sign = v < 0;
+            return ssrjson_dumps_to_str_single_long_from_u8(sign ? (u8)(-v) : (u8)v, sign);
+        }
+        case T_NumpyInt16: {
+            i32 v = (i32)PYOBJ_SCALAR_VALUE(obj, i16);
+            bool sign = v < 0;
+            return ssrjson_dumps_to_str_single_long_from_u16(sign ? (u16)(-v) : (u16)v, sign);
+        }
+        case T_NumpyInt32: {
+            i64 v = (i64)PYOBJ_SCALAR_VALUE(obj, i32);
+            bool sign = v < 0;
+            return ssrjson_dumps_to_str_single_long_from_u32(sign ? (u32)(-v) : (u32)v, sign);
+        }
+        case T_NumpyInt64: {
+            i64 v = PYOBJ_SCALAR_VALUE(obj, i64);
+            bool sign = v < 0;
+            return ssrjson_dumps_to_str_single_long_from_u64(sign ? (u64)(-(i64)v) : (u64)v, sign);
+        }
+        case T_NumpyUint8:
+            return ssrjson_dumps_to_str_single_long_from_u8(PYOBJ_SCALAR_VALUE(obj, u8), 0);
+        case T_NumpyUint16:
+            return ssrjson_dumps_to_str_single_long_from_u16(PYOBJ_SCALAR_VALUE(obj, u16), 0);
+        case T_NumpyUint32:
+            return ssrjson_dumps_to_str_single_long_from_u32(PYOBJ_SCALAR_VALUE(obj, u32), 0);
+        case T_NumpyUint64:
+            return ssrjson_dumps_to_str_single_long_from_u64(PYOBJ_SCALAR_VALUE(obj, u64), 0);
+        case T_NumpyBool: {
+            // Convert numpy bool to Python bool
+            int is_true = PyObject_IsTrue(obj);
+            if (is_true == -1) return NULL;
+            obj = is_true ? Py_True : Py_False;
+            obj_type = T_Bool;
+            goto dumps_constant;
+        }
+        case T_NumpyArray:
+            return ssrjson_dumps_single_ndarray(obj, indent_int, false);
         default: {
             PyErr_SetString(JSONEncodeError, "Unsupported type to encode");
             return NULL;
@@ -667,6 +756,48 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_DumpsToBytes)(PyObject *self,
         case T_Float: {
             goto dumps_float;
         }
+        case T_NumpyFloat16:
+            return ssrjson_dumps_single_float_from_f64(f16_to_f64(PYOBJ_SCALAR_VALUE(obj, u16)), true);
+        case T_NumpyFloat32:
+            return ssrjson_dumps_single_float_from_f64((double)PYOBJ_SCALAR_VALUE(obj, float), true);
+        case T_NumpyInt8: {
+            i16 v = (i16)PYOBJ_SCALAR_VALUE(obj, i8);
+            bool sign = v < 0;
+            return ssrjson_dumps_to_bytes_single_long_from_u8(sign ? (u8)(-v) : (u8)v, sign);
+        }
+        case T_NumpyInt16: {
+            i32 v = (i32)PYOBJ_SCALAR_VALUE(obj, i16);
+            bool sign = v < 0;
+            return ssrjson_dumps_to_bytes_single_long_from_u16(sign ? (u16)(-v) : (u16)v, sign);
+        }
+        case T_NumpyInt32: {
+            i64 v = (i64)PYOBJ_SCALAR_VALUE(obj, i32);
+            bool sign = v < 0;
+            return ssrjson_dumps_to_bytes_single_long_from_u32(sign ? (u32)(-v) : (u32)v, sign);
+        }
+        case T_NumpyInt64: {
+            i64 v = PYOBJ_SCALAR_VALUE(obj, i64);
+            bool sign = v < 0;
+            return ssrjson_dumps_to_bytes_single_long_from_u64(sign ? (u64)(-(i64)v) : (u64)v, sign);
+        }
+        case T_NumpyUint8:
+            return ssrjson_dumps_to_bytes_single_long_from_u8(PYOBJ_SCALAR_VALUE(obj, u8), 0);
+        case T_NumpyUint16:
+            return ssrjson_dumps_to_bytes_single_long_from_u16(PYOBJ_SCALAR_VALUE(obj, u16), 0);
+        case T_NumpyUint32:
+            return ssrjson_dumps_to_bytes_single_long_from_u32(PYOBJ_SCALAR_VALUE(obj, u32), 0);
+        case T_NumpyUint64:
+            return ssrjson_dumps_to_bytes_single_long_from_u64(PYOBJ_SCALAR_VALUE(obj, u64), 0);
+        case T_NumpyBool: {
+            // Convert numpy bool to Python bool
+            int is_true = PyObject_IsTrue(obj);
+            if (is_true == -1) return NULL;
+            obj = is_true ? Py_True : Py_False;
+            obj_type = T_Bool;
+            goto dumps_constant;
+        }
+        case T_NumpyArray:
+            return ssrjson_dumps_single_ndarray(obj, indent_int, true);
         default: {
             PyErr_SetString(JSONEncodeError, "Unsupported type to encode");
             return NULL;

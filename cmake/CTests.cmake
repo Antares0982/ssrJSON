@@ -1,6 +1,7 @@
 include(CTest)
 
-set(SRC_TEST src/ctests/tools.c src/ctests/main.c src/utils/float_tables.c)
+set(SRC_TEST src/ctests/tools.c src/ctests/main.c src/utils/float_tables.c
+             src/utils/mask_table.c src/ctests/test_numpy_reserve.c)
 set(SRC_TEST_WITH_SIMD src/ctests/test.c)
 set(SRC_FUZZER src/ctests/fuzzer.c)
 
