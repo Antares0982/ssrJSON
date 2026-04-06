@@ -45,6 +45,7 @@
 #undef unicode_buffer_append_bool
 #undef unicode_buffer_append_null
 #undef unicode_buffer_append_float
+#undef unicode_buffer_append_f32
 #undef unicode_buffer_append_empty_arr
 #undef unicode_buffer_append_arr_begin
 #undef unicode_buffer_append_arr_end

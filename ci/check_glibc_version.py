@@ -60,11 +60,11 @@ def main():
     print(f"Maximum GLIBC version used by {lib_path}: 2.{max_version}")
     if max_version <= given_minor:
         print(
-            f"The dynamic library's GLIBC version is not higher than 2.{given_minor} ✔️"
+            f"The dynamic library's GLIBC version is not higher than 2.{given_minor}"
         )
         sys.exit(0)
     else:
-        print(f"The dynamic library's GLIBC version is higher than 2.{given_minor} ❌")
+        print(f"The dynamic library's GLIBC version is higher than 2.{given_minor}")
         sys.exit(2)
 
 

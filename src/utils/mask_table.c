@@ -316,8 +316,8 @@ ssrjson_align(64) const u32 _CheckerMasks_u32_512[3][16] = {
 //                       NDA_i8, NDA_u64, NDA_u32, NDA_u16, NDA_u8, NDA_bool, NDA_err}
 const usize _NdaElemWriteSizeTable[] = {
         ssrjson_dtoa_output_maxlen, // NDA_f64
-        ssrjson_dtoa_output_maxlen, // NDA_f32
-        ssrjson_dtoa_output_maxlen, // NDA_f16
+        ssrjson_ftoa_output_maxlen, // NDA_f32
+        ssrjson_ftoa_output_maxlen, // NDA_f16
         20,                         // NDA_i64: "-9223372036854775808"
         11,                         // NDA_i32: "-2147483648"
         6,                          // NDA_i16: "-32768"

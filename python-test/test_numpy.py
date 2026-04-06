@@ -1104,3 +1104,255 @@ class TestNumpyIndent:
         val = {"a": np.bool_(True), "b": np.bool_(False)}
         expected = ssrjson.dumps({"a": True, "b": False}, indent=4)
         assert ssrjson.dumps(val, indent=4) == expected
+
+
+class TestNumpyUCS:
+    """Test numpy ndarray with UCS-2/UCS-4 dict keys to exercise wider encoding paths."""
+
+    @pytest.fixture(autouse=True)
+    def setup_numpy(self):
+        if not HAS_NUMPY:
+            pytest.skip("numpy not installed")
+        ssrjson.setup_numpy_types(np)
+
+    def test_ucs2_key_with_ndarray_1d(self):
+        # U+00E9 (e-acute) forces UCS-2 internal representation
+        val = {"\u00e9": np.array([1, 2, 3])}
+        result = ssrjson.dumps(val)
+        loaded = ssrjson.loads(result)
+        assert loaded["\u00e9"] == [1, 2, 3]
+
+    def test_ucs2_key_with_ndarray_2d(self):
+        val = {"\u00e9": np.array([[1, 2], [3, 4]])}
+        result = ssrjson.dumps(val)
+        loaded = ssrjson.loads(result)
+        assert loaded["\u00e9"] == [[1, 2], [3, 4]]
+
+    def test_ucs4_key_with_ndarray_1d(self):
+        # U+1F600 (emoji) forces UCS-4 internal representation
+        val = {"\U0001f600": np.array([10, 20, 30])}
+        result = ssrjson.dumps(val)
+        loaded = ssrjson.loads(result)
+        assert loaded["\U0001f600"] == [10, 20, 30]
+
+    def test_ucs4_key_with_ndarray_2d(self):
+        val = {"\U0001f600": np.array([[1, 2], [3, 4]])}
+        result = ssrjson.dumps(val)
+        loaded = ssrjson.loads(result)
+        assert loaded["\U0001f600"] == [[1, 2], [3, 4]]
+
+    def test_ucs2_key_with_large_ndarray(self):
+        # Large array to force realloc in the UCS-2 encoding path
+        val = {"\u00e9": np.arange(10000, dtype=np.int64)}
+        result = ssrjson.dumps(val)
+        loaded = ssrjson.loads(result)
+        assert loaded["\u00e9"] == list(range(10000))
+
+    def test_ucs4_key_with_large_ndarray(self):
+        # Large array to force realloc in the UCS-4 encoding path
+        val = {"\U0001f600": np.arange(10000, dtype=np.int64)}
+        result = ssrjson.dumps(val)
+        loaded = ssrjson.loads(result)
+        assert loaded["\U0001f600"] == list(range(10000))
+
+    def test_ucs2_key_with_ndarray_float(self):
+        val = {"\u00e9": np.array([1.1, 2.2, 3.3], dtype=np.float64)}
+        result = ssrjson.dumps(val)
+        loaded = ssrjson.loads(result)
+        assert len(loaded["\u00e9"]) == 3
+
+    def test_ucs4_key_with_ndarray_float(self):
+        val = {"\U0001f600": np.array([1.1, 2.2], dtype=np.float32)}
+        result = ssrjson.dumps(val)
+        loaded = ssrjson.loads(result)
+        assert len(loaded["\U0001f600"]) == 2
+
+    def test_ucs2_key_with_ndarray_bool(self):
+        val = {"\u00e9": np.array([True, False, True], dtype=np.bool_)}
+        result = ssrjson.dumps(val)
+        loaded = ssrjson.loads(result)
+        assert loaded["\u00e9"] == [True, False, True]
+
+    def test_ucs2_key_with_ndarray_indent2(self):
+        val = {"\u00e9": np.array([1, 2, 3])}
+        expected = ssrjson.dumps({"\u00e9": [1, 2, 3]}, indent=2)
+        assert ssrjson.dumps(val, indent=2) == expected
+
+    def test_ucs4_key_with_ndarray_indent4(self):
+        val = {"\U0001f600": np.array([[1, 2], [3, 4]])}
+        expected = ssrjson.dumps({"\U0001f600": [[1, 2], [3, 4]]}, indent=4)
+        assert ssrjson.dumps(val, indent=4) == expected
+
+    def test_ucs2_key_with_large_ndarray_indent2(self):
+        val = {"\u00e9": np.arange(10000, dtype=np.int32)}
+        expected = ssrjson.dumps({"\u00e9": list(range(10000))}, indent=2)
+        assert ssrjson.dumps(val, indent=2) == expected
+
+    def test_ucs4_key_with_large_ndarray_indent4(self):
+        val = {"\U0001f600": np.arange(10000, dtype=np.int32)}
+        expected = ssrjson.dumps({"\U0001f600": list(range(10000))}, indent=4)
+        assert ssrjson.dumps(val, indent=4) == expected
+
+    def test_mixed_ucs_keys_with_ndarray(self):
+        val = {
+            "ascii": np.array([1, 2]),
+            "\u00e9": np.array([3, 4]),
+            "\U0001f600": np.array([5, 6]),
+        }
+        result = ssrjson.dumps(val)
+        loaded = ssrjson.loads(result)
+        assert loaded["ascii"] == [1, 2]
+        assert loaded["\u00e9"] == [3, 4]
+        assert loaded["\U0001f600"] == [5, 6]
+
+    def test_ucs2_key_with_ndarray_dumps_to_bytes(self):
+        val = {"\u00e9": np.array([1, 2, 3])}
+        result = ssrjson.dumps_to_bytes(val)
+        loaded = ssrjson.loads(result)
+        assert loaded["\u00e9"] == [1, 2, 3]
+
+    def test_ucs4_key_with_large_ndarray_dumps_to_bytes(self):
+        val = {"\U0001f600": np.arange(10000, dtype=np.int64)}
+        result = ssrjson.dumps_to_bytes(val)
+        loaded = ssrjson.loads(result)
+        assert loaded["\U0001f600"] == list(range(10000))
+
+
+class TestNumpyEdgeCases:
+    """Test edge cases: NaN/Inf, 0-d arrays, non-contiguous, Fortran-order."""
+
+    @pytest.fixture(autouse=True)
+    def setup_numpy(self):
+        if not HAS_NUMPY:
+            pytest.skip("numpy not installed")
+        ssrjson.setup_numpy_types(np)
+
+    # --- NaN / Inf for float scalars (outputs NaN/Infinity like Python json) ---
+
+    def test_float64_nan(self):
+        # np.float64 is a Python float subclass, follows standard float path
+        assert ssrjson.dumps(np.float64(float("nan"))) == "NaN"
+
+    def test_float64_inf(self):
+        assert ssrjson.dumps(np.float64(float("inf"))) == "Infinity"
+
+    def test_float64_neg_inf(self):
+        assert ssrjson.dumps(np.float64(float("-inf"))) == "-Infinity"
+
+    def test_float32_nan(self):
+        assert ssrjson.dumps(np.float32(float("nan"))) == "NaN"
+
+    def test_float32_inf(self):
+        assert ssrjson.dumps(np.float32(float("inf"))) == "Infinity"
+
+    def test_float16_nan(self):
+        assert ssrjson.dumps(np.float16(float("nan"))) == "NaN"
+
+    def test_float16_inf(self):
+        assert ssrjson.dumps(np.float16(float("inf"))) == "Infinity"
+
+    def test_float16_neg_inf(self):
+        assert ssrjson.dumps(np.float16(float("-inf"))) == "-Infinity"
+
+    def test_float_nan_dumps_to_bytes(self):
+        assert ssrjson.dumps_to_bytes(np.float64(float("nan"))) == b"NaN"
+        assert ssrjson.dumps_to_bytes(np.float32(float("nan"))) == b"NaN"
+        assert ssrjson.dumps_to_bytes(np.float16(float("nan"))) == b"NaN"
+
+    def test_float_inf_dumps_to_bytes(self):
+        assert ssrjson.dumps_to_bytes(np.float64(float("inf"))) == b"Infinity"
+        assert ssrjson.dumps_to_bytes(np.float32(float("inf"))) == b"Infinity"
+        assert ssrjson.dumps_to_bytes(np.float16(float("inf"))) == b"Infinity"
+
+    # --- NaN / Inf inside ndarray ---
+
+    def test_ndarray_with_nan(self):
+        result = ssrjson.dumps(np.array([1.0, float("nan"), 3.0]))
+        assert "NaN" in result
+
+    def test_ndarray_with_inf(self):
+        result = ssrjson.dumps(np.array([1.0, float("inf"), 3.0]))
+        assert "Infinity" in result
+
+    def test_ndarray_with_neg_inf(self):
+        result = ssrjson.dumps(np.array([1.0, float("-inf"), 3.0]))
+        assert "-Infinity" in result
+
+    def test_ndarray_float32_with_nan(self):
+        result = ssrjson.dumps(np.array([1.0, float("nan")], dtype=np.float32))
+        assert "NaN" in result
+
+    # --- NaN/Inf in containers ---
+
+    def test_float_nan_in_dict(self):
+        result = ssrjson.dumps({"val": np.float64(float("nan"))})
+        assert "NaN" in result
+
+    def test_float_inf_in_list(self):
+        result = ssrjson.dumps([np.float32(float("inf"))])
+        assert "Infinity" in result
+
+    # --- Zero-dimensional arrays ---
+
+    def test_0d_array_raises(self):
+        with pytest.raises(ssrjson.JSONEncodeError):
+            ssrjson.dumps(np.array(42))
+
+    # --- Non-contiguous arrays ---
+
+    def test_non_contiguous_column_slice(self):
+        arr = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int32)
+        col = arr[:, 1]  # non-contiguous view
+        assert not col.flags["C_CONTIGUOUS"]
+        # Should either succeed with correct output or raise an error
+        try:
+            result = ssrjson.dumps(col)
+            loaded = ssrjson.loads(result)
+            assert loaded == col.tolist()
+        except (ValueError, ssrjson.JSONEncodeError):
+            pass  # Rejecting non-contiguous is acceptable
+
+    def test_non_contiguous_step_slice(self):
+        arr = np.arange(10, dtype=np.int64)
+        sliced = arr[::2]  # [0, 2, 4, 6, 8], non-contiguous
+        assert not sliced.flags["C_CONTIGUOUS"]
+        try:
+            result = ssrjson.dumps(sliced)
+            loaded = ssrjson.loads(result)
+            assert loaded == sliced.tolist()
+        except (ValueError, ssrjson.JSONEncodeError):
+            pass
+
+    def test_fortran_order_2d(self):
+        arr = np.asfortranarray(np.array([[1, 2], [3, 4]], dtype=np.int32))
+        assert arr.flags["F_CONTIGUOUS"]
+        assert not arr.flags["C_CONTIGUOUS"]
+        try:
+            result = ssrjson.dumps(arr)
+            loaded = ssrjson.loads(result)
+            assert loaded == arr.tolist()
+        except (ValueError, ssrjson.JSONEncodeError):
+            pass
+
+    # --- Single-element arrays (non-indented) ---
+
+    def test_single_element_1d(self):
+        arr = np.array([42])
+        result = ssrjson.dumps(arr)
+        assert result == "[42]"
+
+    def test_single_element_float(self):
+        arr = np.array([3.14], dtype=np.float64)
+        result = ssrjson.dumps(arr)
+        loaded = ssrjson.loads(result)
+        assert loaded == [pytest.approx(3.14)]
+
+    def test_single_element_bool(self):
+        arr = np.array([True], dtype=np.bool_)
+        result = ssrjson.dumps(arr)
+        assert result == "[true]"
+
+    def test_single_element_dumps_to_bytes(self):
+        arr = np.array([99], dtype=np.int32)
+        result = ssrjson.dumps_to_bytes(arr)
+        assert result == b"[99]"

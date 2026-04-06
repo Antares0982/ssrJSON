@@ -56,7 +56,7 @@
 
 /* Extract a value of type `T` at fixed offset `sizeof(PyObject)` from a PyObject pointer.
  * For f16, use u16 as the intermediate type. */
-#define PYOBJ_SCALAR_VALUE(obj, T) (*ssrjson_cast(T *, ssrjson_cast(PyObject *, (obj)) + 1))
+#define pyobj_scalar_value(T, obj) (*ssrjson_cast(T *, ssrjson_cast(PyObject *, (obj)) + 1))
 
 // copy 24 bytes in UCS4 case if only SSE is available
 #define _WriteBoolCopyCnt ((SSRJSON_IS_X64 && _CompileVectorBits <= 128 && COMPILE_WRITE_UCS_LEVEL == 4) ? 6 : 8)
@@ -82,6 +82,10 @@ force_inline EncodeCtnWithIndex *get_encode_obj_stack_buffer(void) {
  * Utils
  *============================================================================*/
 
+/*
+ * Below f16 utilities are derived from NumPy (https://github.com/numpy/numpy).
+ * See: https://github.com/numpy/numpy/blob/main/LICENSE.txt
+ */
 force_inline double f16_to_f64(u16 h) {
 #if defined(__AVX512FP16__)
     /* x86 AVX-512 FP16: hardware f16 -> f64 */
@@ -133,6 +137,63 @@ force_inline double f16_to_f64(u16 h) {
             u64 bits = d_sgn + (ssrjson_cast(u64, (h & 0x7fffu) + 0xfc000u) << 42);
             double result;
             memcpy(&result, &bits, 8);
+            return result;
+        }
+    }
+#endif
+}
+
+force_inline float f16_to_f32(u16 h) {
+#if defined(__AVX512FP16__)
+    /* x86 AVX-512 FP16: hardware f16 -> f32 */
+    float ret;
+    _mm_store_ss(&ret, _mm_cvtph_ps(_mm_cvtsi32_si128(bits_)));
+    return ret;
+#elif defined(__ARM_FP16_FORMAT_IEEE)
+    /* ARM: use native __fp16 type */
+    __fp16 f16;
+    memcpy(&f16, &h, 2);
+    return ssrjson_cast(float, f16);
+#else
+    /* Software bit manipulation: f16 -> f32 */
+    u16 h_exp = (h & 0x7c00u);
+    u32 f_sgn = (ssrjson_cast(u32, h) & 0x8000u) << 16;
+    switch (h_exp) {
+        case 0x0000u: { // 0 or subnormal
+            u16 h_sig = (h & 0x03ffu);
+            // Signed zero
+            if (h_sig == 0) {
+                float result;
+                memcpy(&result, &f_sgn, 4);
+                return result;
+            }
+            // Subnormal
+            h_sig <<= 1;
+            while ((h_sig & 0x0400u) == 0) {
+                h_sig <<= 1;
+                h_exp++;
+            }
+            u32 f_exp = (ssrjson_cast(u32, 127 - 15 - h_exp)) << 23;
+            u32 f_sig = (ssrjson_cast(u32, h_sig & 0x03ffu)) << 13;
+            u32 f = f_sgn + f_exp + f_sig;
+            float result;
+            memcpy(&result, &f, 4);
+            return result;
+        }
+        case 0x7c00u: // inf or NaN
+        {
+            // All-ones exponent and a copy of the significand
+            u32 f = f_sgn + 0x7f800000u + ((ssrjson_cast(u32, h & 0x03ffu)) << 13);
+            float result;
+            memcpy(&result, &f, 4);
+            return result;
+        }
+        default: // normalized
+        {
+            // Just need to adjust the exponent and shift
+            u32 f = f_sgn + (((ssrjson_cast(u32, h & 0x7fffu) + 0x1c000u)) << 13);
+            float result;
+            memcpy(&result, &f, 4);
             return result;
         }
     }
@@ -243,7 +304,7 @@ force_inline bool pylong_to_clong(PyObject *obj, u64 *value_out, int *sign_out) 
             return false;
         }
         assert(signed_value <= 0);
-        *value_out = -signed_value;
+        *value_out = -(u64)signed_value;
         *sign_out = 1;
     }
     return true;
@@ -362,7 +423,7 @@ force_inline bool resize_to_fit_pybytes(EncodeUnicodeBufferInfo *unicode_buffer_
 /*==============================================================================
  * Integer Writer
  *
- * The maximum value of uint32_t is 4294967295 (10 digits),
+ * The maximum value of u32 is 4294967295 (10 digits),
  * these digits are named as 'aabbccddee' here.
  *
  * Although most compilers may convert the "division by constant value" into
@@ -465,17 +526,18 @@ force_inline u8 *write_u16_len_1_5(u16 val, u8 *buf) {
         byte_copy_2(buf + 2, EncodeDigitTable + bb * 2);
         return buf + 4;
 
-    } else {                                   /* 5-6 digits: aabbcc */
+    } else {                                   /* 5 digits: abbcc */
         aa = (u32)(((u64)val * 429497) >> 32); /* (val / 10000) */
         bbcc = (u32)val - aa * 10000;          /* (val % 10000) */
         bb = (bbcc * 5243) >> 19;              /* (bbcc / 100) */
         cc = bbcc - bb * 100;                  /* (bbcc % 100) */
         lz = 1;                                // lz = aa < 10; max of aa is 6 /* leading zero: 0 or 1 */
-        byte_copy_2(buf + 0, EncodeDigitTable + aa * 2 + lz);
-        buf -= lz;
-        byte_copy_2(buf + 2, EncodeDigitTable + bb * 2);
-        byte_copy_2(buf + 4, EncodeDigitTable + cc * 2);
-        return buf + 6;
+        assume(aa <= 6);
+        // byte_copy_2(buf + 0, EncodeDigitTable + aa * 2 + lz);
+        *buf = '0' + (u8)aa;
+        byte_copy_2(buf + 1, EncodeDigitTable + bb * 2);
+        byte_copy_2(buf + 3, EncodeDigitTable + cc * 2);
+        return buf + 5;
     }
 }
 
@@ -488,14 +550,15 @@ force_inline u8 *write_u8_len_1_3(u8 val, u8 *buf) {
         buf -= lz;
         return buf + 2;
 
-    } else {                          /* 3-4 digits: aabb */
+    } else {                          /* 3 digits: abb */
         aa = ((u32)val * 5243) >> 19; /* (val / 100) */
         bb = (u32)val - aa * 100;     /* (val % 100) */
         lz = 1;                       // lz = aa < 10; max of aa is 2 /* leading zero: 0 or 1 */
-        byte_copy_2(buf + 0, EncodeDigitTable + aa * 2 + lz);
-        buf -= lz;
-        byte_copy_2(buf + 2, EncodeDigitTable + bb * 2);
-        return buf + 4;
+        assume(aa <= 2);
+        // byte_copy_2(buf + 0, EncodeDigitTable + aa * 2 + lz);
+        *buf = '0' + (u8)aa;
+        byte_copy_2(buf + 1, EncodeDigitTable + bb * 2);
+        return buf + 3;
     }
 }
 

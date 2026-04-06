@@ -235,6 +235,19 @@ force_inline PyObject *ssrjson_dumps_single_float_from_f64(double v, ssrjson_com
     return create_obj_from_buffer(buffer, string_size, to_bytes_obj);
 }
 
+force_inline PyObject *ssrjson_dumps_single_float_from_f32(float v, ssrjson_compiletime bool to_bytes_obj) {
+    u8 buffer[ssrjson_ftoa_write_length];
+    u8 *buffer_end;
+    if (ssrjson_consteval(!ssrjson_ftoa_handle_inf_nan) && unlikely(isinf(v) || isnan(v))) {
+        return _ssrjson_dumps_single_inf_nan(v, to_bytes_obj);
+    }
+    buffer_end = xjb32(v, buffer);
+    const usize string_size = buffer_end - buffer;
+    assert(string_size <= ssrjson_ftoa_output_maxlen);
+    buffer[string_size] = 0;
+    return create_obj_from_buffer(buffer, string_size, to_bytes_obj);
+}
+
 force_inline PyObject *ssrjson_dumps_single_float(PyObject *val, ssrjson_compiletime bool to_bytes_obj) {
     return ssrjson_dumps_single_float_from_f64(PyFloat_AS_DOUBLE(val), to_bytes_obj);
 }
@@ -244,7 +257,6 @@ force_inline PyObject *ssrjson_dumps_single_long_zero(ssrjson_compiletime bool t
 }
 
 force_inline PyObject *ssrjson_dumps_single_long_from_u64_nonzero(u64 v, bool sign, ssrjson_compiletime bool to_bytes_obj) {
-    PyObject *ret;
     u8 buffer[32];
     *buffer = '-';
     u8 *buffer_end = write_u64(v, buffer + sign);
@@ -255,7 +267,6 @@ force_inline PyObject *ssrjson_dumps_single_long_from_u64_nonzero(u64 v, bool si
 }
 
 force_inline PyObject *ssrjson_dumps_single_long_from_u32_nonzero(u32 v, bool sign, ssrjson_compiletime bool to_bytes_obj) {
-    PyObject *ret;
     u8 buffer[16];
     *buffer = '-';
     u8 *buffer_end = write_u32(v, buffer + sign);
@@ -266,7 +277,6 @@ force_inline PyObject *ssrjson_dumps_single_long_from_u32_nonzero(u32 v, bool si
 }
 
 force_inline PyObject *ssrjson_dumps_single_long_from_u16_nonzero(u16 v, bool sign, ssrjson_compiletime bool to_bytes_obj) {
-    PyObject *ret;
     u8 buffer[8];
     *buffer = '-';
     u8 *buffer_end = write_u16(v, buffer + sign);
@@ -277,7 +287,6 @@ force_inline PyObject *ssrjson_dumps_single_long_from_u16_nonzero(u16 v, bool si
 }
 
 force_inline PyObject *ssrjson_dumps_single_long_from_u8_nonzero(u8 v, bool sign, ssrjson_compiletime bool to_bytes_obj) {
-    PyObject *ret;
     u8 buffer[8];
     *buffer = '-';
     u8 *buffer_end = write_u8(v, buffer + sign);
@@ -328,7 +337,6 @@ static force_noinline PyObject *ssrjson_dumps_to_bytes_single_long_from_u8(u8 v,
 }
 
 force_inline PyObject *ssrjson_dumps_single_long(PyObject *val, ssrjson_compiletime bool to_bytes_obj) {
-    PyObject *ret;
     u64 v;
     int sign;
 
@@ -534,48 +542,47 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Dumps)(PyObject *self,
         case T_Float: {
             goto dumps_float;
         }
+        case T_NumpyArray:
+            return ssrjson_dumps_single_ndarray(obj, indent_int, false);
         case T_NumpyFloat16:
-            return ssrjson_dumps_single_float_from_f64(f16_to_f64(PYOBJ_SCALAR_VALUE(obj, u16)), false);
+            return ssrjson_dumps_single_float_from_f32(f16_to_f32(pyobj_scalar_value(u16, obj)), false);
         case T_NumpyFloat32:
-            return ssrjson_dumps_single_float_from_f64((double)PYOBJ_SCALAR_VALUE(obj, float), false);
+            return ssrjson_dumps_single_float_from_f32(pyobj_scalar_value(float, obj), false);
         case T_NumpyInt8: {
-            i16 v = (i16)PYOBJ_SCALAR_VALUE(obj, i8);
+            i16 v = (i16)pyobj_scalar_value(i8, obj);
             bool sign = v < 0;
             return ssrjson_dumps_to_str_single_long_from_u8(sign ? (u8)(-v) : (u8)v, sign);
         }
         case T_NumpyInt16: {
-            i32 v = (i32)PYOBJ_SCALAR_VALUE(obj, i16);
+            i32 v = (i32)pyobj_scalar_value(i16, obj);
             bool sign = v < 0;
             return ssrjson_dumps_to_str_single_long_from_u16(sign ? (u16)(-v) : (u16)v, sign);
         }
         case T_NumpyInt32: {
-            i64 v = (i64)PYOBJ_SCALAR_VALUE(obj, i32);
+            i64 v = (i64)pyobj_scalar_value(i32, obj);
             bool sign = v < 0;
             return ssrjson_dumps_to_str_single_long_from_u32(sign ? (u32)(-v) : (u32)v, sign);
         }
         case T_NumpyInt64: {
-            i64 v = PYOBJ_SCALAR_VALUE(obj, i64);
+            i64 v = pyobj_scalar_value(i64, obj);
             bool sign = v < 0;
-            return ssrjson_dumps_to_str_single_long_from_u64(sign ? (u64)(-(i64)v) : (u64)v, sign);
+            return ssrjson_dumps_to_str_single_long_from_u64(sign ? -(u64)v : (u64)v, sign);
         }
         case T_NumpyUint8:
-            return ssrjson_dumps_to_str_single_long_from_u8(PYOBJ_SCALAR_VALUE(obj, u8), 0);
+            return ssrjson_dumps_to_str_single_long_from_u8(pyobj_scalar_value(u8, obj), 0);
         case T_NumpyUint16:
-            return ssrjson_dumps_to_str_single_long_from_u16(PYOBJ_SCALAR_VALUE(obj, u16), 0);
+            return ssrjson_dumps_to_str_single_long_from_u16(pyobj_scalar_value(u16, obj), 0);
         case T_NumpyUint32:
-            return ssrjson_dumps_to_str_single_long_from_u32(PYOBJ_SCALAR_VALUE(obj, u32), 0);
+            return ssrjson_dumps_to_str_single_long_from_u32(pyobj_scalar_value(u32, obj), 0);
         case T_NumpyUint64:
-            return ssrjson_dumps_to_str_single_long_from_u64(PYOBJ_SCALAR_VALUE(obj, u64), 0);
+            return ssrjson_dumps_to_str_single_long_from_u64(pyobj_scalar_value(u64, obj), 0);
         case T_NumpyBool: {
             // Convert numpy bool to Python bool
-            int is_true = PyObject_IsTrue(obj);
-            if (is_true == -1) return NULL;
+            bool is_true = pyobj_scalar_value(u8, obj);
             obj = is_true ? Py_True : Py_False;
             obj_type = T_Bool;
             goto dumps_constant;
         }
-        case T_NumpyArray:
-            return ssrjson_dumps_single_ndarray(obj, indent_int, false);
         default: {
             PyErr_SetString(JSONEncodeError, "Unsupported type to encode");
             return NULL;
@@ -756,48 +763,47 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_DumpsToBytes)(PyObject *self,
         case T_Float: {
             goto dumps_float;
         }
+        case T_NumpyArray:
+            return ssrjson_dumps_single_ndarray(obj, indent_int, true);
         case T_NumpyFloat16:
-            return ssrjson_dumps_single_float_from_f64(f16_to_f64(PYOBJ_SCALAR_VALUE(obj, u16)), true);
+            return ssrjson_dumps_single_float_from_f32(f16_to_f32(pyobj_scalar_value(u16, obj)), true);
         case T_NumpyFloat32:
-            return ssrjson_dumps_single_float_from_f64((double)PYOBJ_SCALAR_VALUE(obj, float), true);
+            return ssrjson_dumps_single_float_from_f32(pyobj_scalar_value(float, obj), true);
         case T_NumpyInt8: {
-            i16 v = (i16)PYOBJ_SCALAR_VALUE(obj, i8);
+            i16 v = (i16)pyobj_scalar_value(i8, obj);
             bool sign = v < 0;
             return ssrjson_dumps_to_bytes_single_long_from_u8(sign ? (u8)(-v) : (u8)v, sign);
         }
         case T_NumpyInt16: {
-            i32 v = (i32)PYOBJ_SCALAR_VALUE(obj, i16);
+            i32 v = (i32)pyobj_scalar_value(i16, obj);
             bool sign = v < 0;
             return ssrjson_dumps_to_bytes_single_long_from_u16(sign ? (u16)(-v) : (u16)v, sign);
         }
         case T_NumpyInt32: {
-            i64 v = (i64)PYOBJ_SCALAR_VALUE(obj, i32);
+            i64 v = (i64)pyobj_scalar_value(i32, obj);
             bool sign = v < 0;
             return ssrjson_dumps_to_bytes_single_long_from_u32(sign ? (u32)(-v) : (u32)v, sign);
         }
         case T_NumpyInt64: {
-            i64 v = PYOBJ_SCALAR_VALUE(obj, i64);
+            i64 v = pyobj_scalar_value(i64, obj);
             bool sign = v < 0;
-            return ssrjson_dumps_to_bytes_single_long_from_u64(sign ? (u64)(-(i64)v) : (u64)v, sign);
+            return ssrjson_dumps_to_bytes_single_long_from_u64(sign ? -(u64)v : (u64)v, sign);
         }
         case T_NumpyUint8:
-            return ssrjson_dumps_to_bytes_single_long_from_u8(PYOBJ_SCALAR_VALUE(obj, u8), 0);
+            return ssrjson_dumps_to_bytes_single_long_from_u8(pyobj_scalar_value(u8, obj), 0);
         case T_NumpyUint16:
-            return ssrjson_dumps_to_bytes_single_long_from_u16(PYOBJ_SCALAR_VALUE(obj, u16), 0);
+            return ssrjson_dumps_to_bytes_single_long_from_u16(pyobj_scalar_value(u16, obj), 0);
         case T_NumpyUint32:
-            return ssrjson_dumps_to_bytes_single_long_from_u32(PYOBJ_SCALAR_VALUE(obj, u32), 0);
+            return ssrjson_dumps_to_bytes_single_long_from_u32(pyobj_scalar_value(u32, obj), 0);
         case T_NumpyUint64:
-            return ssrjson_dumps_to_bytes_single_long_from_u64(PYOBJ_SCALAR_VALUE(obj, u64), 0);
+            return ssrjson_dumps_to_bytes_single_long_from_u64(pyobj_scalar_value(u64, obj), 0);
         case T_NumpyBool: {
             // Convert numpy bool to Python bool
-            int is_true = PyObject_IsTrue(obj);
-            if (is_true == -1) return NULL;
+            bool is_true = pyobj_scalar_value(u8, obj);
             obj = is_true ? Py_True : Py_False;
             obj_type = T_Bool;
             goto dumps_constant;
         }
-        case T_NumpyArray:
-            return ssrjson_dumps_single_ndarray(obj, indent_int, true);
         default: {
             PyErr_SetString(JSONEncodeError, "Unsupported type to encode");
             return NULL;

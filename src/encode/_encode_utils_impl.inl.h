@@ -36,11 +36,13 @@
 #include "compile_context/sw_in.inl.h"
 
 #define _cvt_up_from_u8_cnt32 make_w_name(_cvt_up_from_u8_cnt32)
+#define _cvt_up_from_u8_cnt24 make_w_name(_cvt_up_from_u8_cnt24)
 #define _cvt_up_from_u8_cnt16 make_w_name(_cvt_up_from_u8_cnt16)
 #define _cvt_up_from_u8_cnt8 make_w_name(_cvt_up_from_u8_cnt8)
 #define _cvt_up_from_u8_cnt4 make_w_name(_cvt_up_from_u8_cnt4)
 
 extern u8 *xjb64(double value, u8 *buffer);
+extern u8 *xjb32(float value, u8 *buffer);
 /*
  * (PRIVATE)
  * Convert the u8 buffer to the buffer.
@@ -52,6 +54,16 @@ force_inline ssrjson_nofail void _cvt_up_from_u8_cnt32(dst_t *writer, const u8 *
     __partial_cvt_32_u8_u16(&writer, &buffer);
 #    else // COMPILE_WRITE_UCS_LEVEL == 4
     __partial_cvt_32_u8_u32(&writer, &buffer);
+#    endif
+}
+
+force_inline ssrjson_nofail void _cvt_up_from_u8_cnt24(dst_t *writer, const u8 *buffer) {
+#    if COMPILE_WRITE_UCS_LEVEL == 2
+    __partial_cvt_16_u8_u16(&writer, &buffer);
+    __partial_cvt_8_u8_u16(&writer, &buffer);
+#    else // COMPILE_WRITE_UCS_LEVEL == 4
+    __partial_cvt_16_u8_u32(&writer, &buffer);
+    __partial_cvt_8_u8_u32(&writer, &buffer);
 #    endif
 }
 
@@ -174,7 +186,7 @@ force_inline ssrjson_nofail dst_t *u8_to_unicode(register dst_t *writer, u8 val,
 
 /*
  * Write a f64 number to the buffer.
- * The space (32 * sizeof(dst_t)) must be reserved before calling this function.
+ * The space (ssrjson_dtoa_write_length * sizeof(dst_t)) must be reserved before calling this function.
  */
 force_inline ssrjson_nofail dst_t *f64_to_unicode(register dst_t *writer, double d) {
 #if COMPILE_WRITE_UCS_LEVEL == 1
@@ -190,6 +202,28 @@ force_inline ssrjson_nofail dst_t *f64_to_unicode(register dst_t *writer, double
     usize write_len = buffer_end - buffer;
     assert(write_len <= ssrjson_dtoa_output_maxlen);
     _cvt_up_from_u8_cnt32(writer, buffer);
+    return writer + write_len;
+#endif
+}
+
+/*
+ * Write a f32 number to the buffer.
+ * The space (ssrjson_ftoa_write_length * sizeof(dst_t)) must be reserved before calling this function.
+ */
+force_inline ssrjson_nofail dst_t *f32_to_unicode(register dst_t *writer, float f) {
+#if COMPILE_WRITE_UCS_LEVEL == 1
+    u8 *buffer = writer;
+#else
+    u8 _buffer[ssrjson_ftoa_write_length];
+    u8 *buffer = _buffer;
+#endif
+    u8 *buffer_end = xjb32(f, buffer);
+#if COMPILE_WRITE_UCS_LEVEL == 1
+    return buffer_end;
+#else
+    usize write_len = buffer_end - buffer;
+    assert(write_len <= ssrjson_ftoa_output_maxlen);
+    _cvt_up_from_u8_cnt24(writer, buffer);
     return writer + write_len;
 #endif
 }
@@ -213,6 +247,7 @@ force_inline ssrjson_nofail dst_t *inf_nan_to_unicode(register dst_t *writer, do
 #include "compile_context/sw_out.inl.h"
 
 #undef _cvt_up_from_u8_cnt32
+#undef _cvt_up_from_u8_cnt24
 #undef _cvt_up_from_u8_cnt16
 #undef _cvt_up_from_u8_cnt8
 #undef _cvt_up_from_u8_cnt4

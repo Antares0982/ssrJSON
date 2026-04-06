@@ -67,6 +67,7 @@ typedef struct {
 } PyArrayInterface;
 
 extern u8 *xjb64(double value, u8 *buffer);
+extern u8 *xjb32(float value, u8 *buffer);
 
 /*==============================================================================
  * Element writers (ssrjson_nofail, buffer already reserved)
@@ -81,7 +82,7 @@ force_inline ssrjson_nofail u8 *ndarray_write_i8_elem(u8 *writer, i8 v) {
     } else {
         int sign = v < 0;
         *writer = '-';
-        writer = write_u8(sign ? (u8)(-(i8)v) : (u8)v, writer + sign);
+        writer = write_u8(sign ? -(u8)v : (u8)v, writer + sign);
         *writer++ = ',';
     }
     return writer;
@@ -94,7 +95,7 @@ force_inline ssrjson_nofail u8 *ndarray_write_i16_elem(u8 *writer, i16 v) {
     } else {
         int sign = v < 0;
         *writer = '-';
-        writer = write_u16(sign ? (u16)(-(i16)v) : (u16)v, writer + sign);
+        writer = write_u16(sign ? -(u16)v : (u16)v, writer + sign);
         *writer++ = ',';
     }
     return writer;
@@ -107,7 +108,7 @@ force_inline ssrjson_nofail u8 *ndarray_write_i32_elem(u8 *writer, i32 v) {
     } else {
         int sign = v < 0;
         *writer = '-';
-        writer = write_u32(sign ? (u32)(-(i32)v) : (u32)v, writer + sign);
+        writer = write_u32(sign ? -(u32)v : (u32)v, writer + sign);
         *writer++ = ',';
     }
     return writer;
@@ -120,7 +121,7 @@ force_inline ssrjson_nofail u8 *ndarray_write_i64_elem(u8 *writer, i64 v) {
     } else {
         int sign = v < 0;
         *writer = '-';
-        writer = write_u64(sign ? (u64)(-(i64)v) : (u64)v, writer + sign);
+        writer = write_u64(sign ? -(u64)v : (u64)v, writer + sign);
         *writer++ = ',';
     }
     return writer;
@@ -171,14 +172,14 @@ force_inline ssrjson_nofail u8 *ndarray_write_u64_elem(u8 *writer, u64 v) {
 }
 
 force_inline ssrjson_nofail u8 *ndarray_write_f16_elem(u8 *writer, u16 raw) {
-    double v = f16_to_f64(raw);
-    writer = xjb64(v, writer);
+    float v = f16_to_f32(raw);
+    writer = xjb32(v, writer);
     *writer++ = ',';
     return writer;
 }
 
 force_inline ssrjson_nofail u8 *ndarray_write_f32_elem(u8 *writer, float v) {
-    writer = xjb64((double)v, writer);
+    writer = xjb32(v, writer);
     *writer++ = ',';
     return writer;
 }

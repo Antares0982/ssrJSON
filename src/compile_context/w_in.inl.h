@@ -62,6 +62,7 @@
 #define u16_to_unicode make_w_name(u16_to_unicode)
 #define u8_to_unicode make_w_name(u8_to_unicode)
 #define f64_to_unicode make_w_name(f64_to_unicode)
+#define f32_to_unicode make_w_name(f32_to_unicode)
 #define inf_nan_to_unicode make_w_name(inf_nan_to_unicode)
 #define ControlEscapeTable make_w_name(ControlEscapeTable)
 //

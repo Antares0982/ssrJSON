@@ -26,7 +26,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-# ── boilerplate symbols that clutter the graph ──────────────────────────
+# -- boilerplate symbols that clutter the graph --------------------------
 _BORING_FUNCTIONS: frozenset[str] = frozenset(
     {
         "_init",
@@ -44,7 +44,7 @@ _BORING_FUNCTIONS: frozenset[str] = frozenset(
 )
 
 
-# ── helpers ─────────────────────────────────────────────────────────────
+# helpers -------------------------------------------------------------
 def _find_objdump() -> str:
     """Return the path to an available objdump binary, or exit."""
     for name in ("objdump", "llvm-objdump"):
@@ -73,7 +73,7 @@ def _run_objdump(objdump: str, binary: str) -> str:
     return proc.stdout
 
 
-# ── core analysis ───────────────────────────────────────────────────────
+# -- core analysis -------------------------------------------------------
 def parse_disassembly(
     disasm: str,
     *,
@@ -81,9 +81,9 @@ def parse_disassembly(
 ) -> tuple[dict[str, set[str]], set[str], set[str]]:
     """Parse objdump output and return (call_graph, internal, external).
 
-    * call_graph  – mapping  caller_name → {callee_names}
-    * internal    – set of function names *defined* inside the binary
-    * external    – set of function names called only via PLT
+    * call_graph  - mapping  caller_name -> {callee_names}
+    * internal    - set of function names *defined* inside the binary
+    * external    - set of function names called only via PLT
     """
     # "0000000000001234 <func_name>:"
     re_func = re.compile(r"^[0-9a-f]+ <(.+)>:\s*$")
@@ -102,13 +102,13 @@ def parse_disassembly(
     for line in disasm.splitlines():
         stripped = line.strip()
 
-        # ── section header ──
+        # -- section header --
         if stripped.startswith("Disassembly of section"):
             in_plt = ".plt" in stripped
             cur_func = None
             continue
 
-        # ── function header ──
+        # -- function header --
         m = re_func.match(stripped)
         if m:
             name = m.group(1)
@@ -122,7 +122,7 @@ def parse_disassembly(
         if cur_func is None:
             continue
 
-        # ── call instruction ──
+        # -- call instruction --
         m = re_call.search(stripped)
         if m:
             target = m.group(1)
@@ -134,13 +134,13 @@ def parse_disassembly(
                 call_graph[cur_func].add(target)
             continue
 
-        # ── optional: tail-call via jmp ──
+        # -- optional: tail-call via jmp --
         if include_tail_calls:
             m = re_jmp.search(stripped)
             if m:
                 target = m.group(1).strip()
                 if target == cur_func:
-                    continue  # recursive jump – skip
+                    continue  # recursive jump - skip
                 if target.endswith("@plt"):
                     clean = target[:-4]
                     external.add(clean)
@@ -168,7 +168,7 @@ def filter_boring(
     return call_graph, internal, external
 
 
-# ── DOT generation ──────────────────────────────────────────────────────
+# -- DOT generation ------------------------------------------------------
 def _esc(name: str) -> str:
     """Escape a label for use inside DOT double-quotes."""
     return name.replace("\\", "\\\\").replace('"', '\\"')
@@ -187,7 +187,7 @@ def generate_dot(
         all_callees |= targets
     active_nodes = set(call_graph.keys()) | all_callees
 
-    # ── compute in-degree / out-degree ──
+    # -- compute in-degree / out-degree --
     in_deg: dict[str, int] = defaultdict(int)
     out_deg: dict[str, int] = defaultdict(int)
     for caller, callees in call_graph.items():
@@ -204,7 +204,7 @@ def generate_dot(
         "",
     ]
 
-    # ── internal (black) ──
+    # -- internal (black) --
     for node in sorted(active_nodes & internal):
         e = _esc(node)
         i, o = in_deg.get(node, 0), out_deg.get(node, 0)
@@ -213,7 +213,7 @@ def generate_dot(
 
     lines.append("")
 
-    # ── external (red) ──
+    # -- external (red) --
     ext_nodes = active_nodes - internal
     for node in sorted(ext_nodes):
         e = _esc(node)
@@ -226,7 +226,7 @@ def generate_dot(
 
     lines.append("")
 
-    # ── edges ──
+    # -- edges --
     for caller in sorted(call_graph):
         for callee in sorted(call_graph[caller]):
             lines.append(f'    "{_esc(caller)}" -> "{_esc(callee)}";')
@@ -235,10 +235,10 @@ def generate_dot(
     return "\n".join(lines)
 
 
-# ── entry point ─────────────────────────────────────────────────────────
+# -- entry point ---------------------------------------------------------
 def main() -> None:
     ap = argparse.ArgumentParser(
-        description="Analyze ELF binary function call graph → Graphviz DOT.",
+        description="Analyze ELF binary function call graph -> Graphviz DOT.",
     )
     ap.add_argument("binary", help="Path to the ELF binary (.so / executable)")
     ap.add_argument(
@@ -249,7 +249,7 @@ def main() -> None:
     ap.add_argument(
         "--no-filter",
         action="store_true",
-        help="Keep standard boilerplate functions (_init, _fini, …)",
+        help="Keep standard boilerplate functions (_init, _fini, ...)",
     )
     ap.add_argument(
         "--tail-calls",
@@ -275,10 +275,10 @@ def main() -> None:
     print(f"output  : {output}")
     print()
 
-    print("Disassembling …")
+    print("Disassembling ...")
     disasm = _run_objdump(objdump, str(binary))
 
-    print("Parsing call graph …")
+    print("Parsing call graph ...")
     call_graph, internal, external = parse_disassembly(
         disasm, include_tail_calls=args.tail_calls
     )
@@ -289,7 +289,7 @@ def main() -> None:
     dot = generate_dot(call_graph, internal, external, title=binary.name)
     output.write_text(dot, encoding="utf-8")
 
-    # ── summary ──
+    # -- summary --
     all_callees: set[str] = set()
     for targets in call_graph.values():
         all_callees |= targets

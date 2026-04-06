@@ -35,6 +35,7 @@
 #undef u16_to_unicode
 #undef u8_to_unicode
 #undef f64_to_unicode
+#undef f32_to_unicode
 #undef inf_nan_to_unicode
 #undef ControlEscapeTable
 //

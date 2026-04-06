@@ -49,6 +49,7 @@
 #    define unicode_buffer_append_bool make_iu_name(_unicode_buffer_append_bool)
 #    define unicode_buffer_append_null make_iu_name(_unicode_buffer_append_null)
 #    define unicode_buffer_append_float make_iu_name(_unicode_buffer_append_numpy_float)
+#    define unicode_buffer_append_f32 make_iu_name(_unicode_buffer_append_f32)
 #    define unicode_buffer_append_empty_arr make_iu_name(_unicode_buffer_append_empty_arr)
 #    define unicode_buffer_append_arr_begin make_iu_name(_unicode_buffer_append_arr_begin)
 #    define unicode_buffer_append_arr_end make_iu_name(_unicode_buffer_append_arr_end)
