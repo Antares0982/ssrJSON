@@ -18,32 +18,32 @@ If you prefer to skip the technical details below, please proceed directly to th
 
 TL;DR: ssrJSON is faster than or nearly as fast as [orjson](https://github.com/ijl/orjson) (which [announces](https://github.com/ijl/orjson/blob/3.11.4/README.md#:~:text=It%20benchmarks%20as%20the%20fastest) itself as the fastest Python library for JSON) on most benchmark cases.
 
-![](pics/ratio_distribution.v0.0.9.svg)
+![](pics/ratio_distribution.v0.0.17.svg)
 
 Below is an artificial benchmark case to demonstrate the speed of encoding non-ASCII JSON ([simple_object_zh.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/simple_object_zh.json)). Upon seeing the diagram below, you might wonder: why do the performance results from other libraries appear so poor? If you are interested, please refer to the section [UTF-8 Cache of str Objects](#utf-8-cache-of-str-objects).
 
-![](pics/simple_object_zh.json_dumps_to_bytes.v0.0.9.svg)
-![](pics/simple_object_zh.json_load&dump.v0.0.9.svg)
+![](pics/simple_object_zh.json_dumps_to_bytes.v0.0.17.svg)
+![](pics/simple_object_zh.json_load&dump.v0.0.17.svg)
 
 Real-world case ([twitter.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/twitter.json)):
 
-![](pics/twitter.json_dumps_to_bytes.v0.0.9.svg)
-![](pics/twitter.json_load&dump.v0.0.9.svg)
+![](pics/twitter.json_dumps_to_bytes.v0.0.17.svg)
+![](pics/twitter.json_load&dump.v0.0.17.svg)
 
 Real-world case II ([github.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/github.json)):
 
-![](pics/github.json_dumps_to_bytes.v0.0.9.svg)
-![](pics/github.json_load&dump.v0.0.9.svg)
+![](pics/github.json_dumps_to_bytes.v0.0.17.svg)
+![](pics/github.json_load&dump.v0.0.17.svg)
 
 Floats ([canada.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/canada.json)):
 
-![](pics/canada.json_dumps_to_bytes.v0.0.9.svg)
-![](pics/canada.json_load&dump.v0.0.9.svg)
+![](pics/canada.json_dumps_to_bytes.v0.0.17.svg)
+![](pics/canada.json_load&dump.v0.0.17.svg)
 
 Numbers ([mesh.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/mesh.json)):
 
-![](pics/mesh.json_dumps_to_bytes.v0.0.9.svg)
-![](pics/mesh.json_load&dump.v0.0.9.svg)
+![](pics/mesh.json_dumps_to_bytes.v0.0.17.svg)
+![](pics/mesh.json_load&dump.v0.0.17.svg)
 
 `ssrjson.dumps()` is about 4x-31x as fast as `json.dumps()` (Python3.14, x86-64, AVX2). `ssrjson.loads()` is about 2x-8x as fast as `json.loads()` for `str` input and is about 2x-8x as fast as `json.loads()` for `bytes` input (Python3.14, x86-64, AVX2). ssrJSON also provides `ssrjson.dumps_to_bytes()`, which encode Python objects directly to UTF-8 encoded `bytes` object using SIMD instructions.
 
@@ -93,14 +93,13 @@ By default, writing cache is enabled globally. You can use `ssrjson.write_utf8_c
 
 ssrJSON employs xjb64 as float-to-string algorithm. Tests and comparisons reveals that the [xjb64](https://github.com/xjb714/xjb) algorithm significantly outperforms other algorithms in terms of performance and is more compatible. ssrJSON project adopts a slightly modified version to fit the standard behavior of Python's json module.
 
-<table>
-    <tr>
-<td ><center><img src="https://raw.githubusercontent.com/xjb714/xjb/915722455470ec8eb9a323663e24a333284b5e52/bench_result/random_double_m1.svg"  >ramdom double on Apple M1</br> compiler: apple clang 17.0.0</center></td>
-    </tr>
-    <tr>
-        <td ><center><img src="https://raw.githubusercontent.com/xjb714/xjb/915722455470ec8eb9a323663e24a333284b5e52/bench_result/random_double_7840h.svg"  >ramdom double on AMD R7-7840H</br> compiler: icpx 2025.0.4</center> </td>
-    </tr>
-</table>
+Random double on Apple M1:
+
+![](pics/xjb_random_double_m1.svg)
+
+Random double on AMD R7-7840H:
+
+![](pics/xjb_random_double_7840h.svg)
 
 ### JSON Module compatibility
 
@@ -124,6 +123,8 @@ ssrJSON will strive to minimize the addition of new features that are rarely use
 
 ## How To Install
 
+### Install from PyPI
+
 Pre-built wheels are available on PyPI, you can install it using pip.
 
 ```
@@ -143,6 +144,13 @@ Since ssrJSON utilizes Clang's vector extensions, it requires compilation with C
 mkdir build
 cmake -S . -B build  # On Windows, configure with `cmake -T ClangCL`
 cmake --build build
+```
+
+Or you like the `pip` way:
+
+```
+mv pysrc ssrjson  # rename the python source directory to make it installable
+pip install .
 ```
 
 ## Usage
@@ -198,6 +206,56 @@ Supported NumPy types:
 ndarray encoding writes element data directly from the array's memory buffer, bypassing Python object creation. Combined with the existing xjb64/xjb32 and yyjson-derived (for integers) encoding routines, this gives ssrJSON a significant performance advantage over converting to Python lists first. Indent is fully supported for ndarray output.
 
 > **Note:** `setup_numpy_types` must be called before any concurrent encoding in free-threading builds. The function itself is not thread-safe with respect to concurrent `dumps`/`dumps_to_bytes` calls. Once setup is complete, encoding is safe to call concurrently.
+
+Simple benchmark shows ssrJSON outperforms orjson in encoding numpy arrays:
+
+```
+$ python dev_tools/numpy_benchmark.py --scale 10
+numpy 2.4.2  |  scale=10  number=20  repeat=7  warmup=2
+Python 3.14.3
+
+[dumps_to_bytes: ssrjson vs orjson — numpy ndarray]
+
+  int32_1d[1000000]  shape=1000000  dtype=int32  3906.2 KiB raw
+    ssrjson  : median 1.83 ms  best 1.78 ms  out=4391695B  2.24 GiB/s
+    orjson   : median 4.96 ms  best 4.88 ms  out=4391695B  843.99 MiB/s
+    ssrjson is 2.72x faster than orjson (median); best 2.74x
+
+  int64_1d[1000000]  shape=1000000  dtype=int64  7812.5 KiB raw
+    ssrjson  : median 4.30 ms  best 4.13 ms  out=10982023B  2.38 GiB/s
+    orjson   : median 8.79 ms  best 8.66 ms  out=10982023B  1.16 GiB/s
+    ssrjson is 2.05x faster than orjson (median); best 2.10x
+
+  float32_1d[1000000]  shape=1000000  dtype=float32  3906.2 KiB raw
+    ssrjson  : median 9.15 ms  best 9.04 ms  out=10627011B  1.08 GiB/s
+    orjson   : median 17.25 ms  best 17.18 ms  out=10627112B  587.55 MiB/s
+    ssrjson is 1.88x faster than orjson (median); best 1.90x
+
+  float64_1d[1000000]  shape=1000000  dtype=float64  7812.5 KiB raw
+    ssrjson  : median 13.27 ms  best 12.94 ms  out=19269164B  1.35 GiB/s
+    orjson   : median 19.12 ms  best 18.99 ms  out=19269255B  961.00 MiB/s
+    ssrjson is 1.44x faster than orjson (median); best 1.47x
+
+  float64_2d[1000x1000]  shape=1000x1000  dtype=float64  7812.5 KiB raw
+    ssrjson  : median 13.50 ms  best 13.14 ms  out=19272764B  1.33 GiB/s
+    orjson   : median 19.09 ms  best 19.04 ms  out=19272837B  962.88 MiB/s
+    ssrjson is 1.41x faster than orjson (median); best 1.45x
+
+  float64_3d[100x100x100]  shape=100x100x100  dtype=float64  7812.5 KiB raw
+    ssrjson  : median 13.46 ms  best 13.13 ms  out=19291108B  1.33 GiB/s
+    orjson   : median 19.48 ms  best 19.42 ms  out=19291190B  944.22 MiB/s
+    ssrjson is 1.45x faster than orjson (median); best 1.48x
+
+  int32_2d[1000x1000]  shape=1000x1000  dtype=int32  3906.2 KiB raw
+    ssrjson  : median 1.17 ms  best 1.17 ms  out=5391602B  4.31 GiB/s
+    orjson   : median 5.04 ms  best 5.00 ms  out=5391602B  1020.42 MiB/s
+    ssrjson is 4.32x faster than orjson (median); best 4.29x
+
+  bool_1d[1000000]  shape=1000000  dtype=bool  976.6 KiB raw
+    ssrjson  : median 323.7 µs  best 323.1 µs  out=5500290B  15.83 GiB/s
+    orjson   : median 3.24 ms  best 3.21 ms  out=5500290B  1.58 GiB/s
+    ssrjson is 10.02x faster than orjson (median); best 9.92x
+```
 
 ### Indent
 

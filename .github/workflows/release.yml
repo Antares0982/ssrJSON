@@ -82,7 +82,7 @@ jobs:
 
     - name: Run Python Tests
       run: |
-        python -m pip install pytest pytest-xdist pytest-random-order psutil
+        python -m pip install pytest pytest-xdist pytest-random-order psutil numpy
         python -m pytest --random-order python-test
 
   Linux-x86_64-Build-And-Test-Wheel:
@@ -137,7 +137,7 @@ jobs:
 
     - name: Run Python Tests
       run: |
-        python -m pip install pytest pytest-xdist pytest-random-order psutil
+        python -m pip install pytest pytest-xdist pytest-random-order psutil numpy
         python -m pytest --random-order python-test
 
   Linux-aarch64-Test-Tarball:
@@ -246,7 +246,7 @@ jobs:
 
     - name: Run Python Tests
       run: |
-        python -m pip install pytest pytest-xdist pytest-random-order
+        python -m pip install pytest pytest-xdist pytest-random-order numpy
         python -m pytest --random-order python-test
 
   Windows-Build-And-Test-Wheel:
@@ -287,7 +287,7 @@ jobs:
 
     - name: Run Python Tests
       run: |
-        python -m pip install pytest pytest-xdist pytest-random-order
+        python -m pip install pytest pytest-xdist pytest-random-order numpy
         python -m pytest --random-order python-test
 
   MacOS-Test-Tarball:
@@ -326,7 +326,7 @@ jobs:
 
     - name: Run Python Tests
       run: |
-        python -m pip install pytest pytest-xdist pytest-random-order
+        python -m pip install pytest pytest-xdist pytest-random-order numpy
         python -m pytest --random-order python-test
 
   MacOS-Build-And-Test-Wheel:
@@ -385,7 +385,7 @@ jobs:
 
     - name: Run Python Tests
       run: |
-        python -m pip install pytest pytest-xdist pytest-random-order psutil
+        python -m pip install pytest pytest-xdist pytest-random-order psutil numpy
         python -m pytest --random-order python-test
 
   Publish:
@@ -433,6 +433,15 @@ jobs:
         python-version: '3.x'
         allow-prereleases: true
 
+    - name: Extract changelog for current version
+      id: changelog
+      run: |
+        VERSION=${{ env.VERSION }}
+        BODY=$(sed -n "/^## ${VERSION}$/,/^## /{/^## ${VERSION}$/d;/^## /d;p}" CHANGELOG.md)
+        echo "BODY<<EOF" >> $GITHUB_OUTPUT
+        echo "$BODY" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
     - name: Dry Run - Skip release steps
       if: env.DRY_RUN == 'true'
       run: echo "Dry run mode, skipping release and tag steps."
@@ -458,7 +467,7 @@ jobs:
       with:
         tag_name: ${{ env.VERSION }}
         name: Release ${{ env.VERSION }}
-        generate_release_notes: true
+        body: ${{ steps.changelog.outputs.BODY }}
         files: |
           ./artifacts/*
 

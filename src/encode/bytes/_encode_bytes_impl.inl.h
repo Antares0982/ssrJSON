@@ -643,7 +643,7 @@ dict_pair_begin:;
                                           pyobj_set,
 #endif
                                           true, false, is_write_cache);
-        switch ((jump_flag)) {
+        switch (ssrjson_consteval(jump_flag)) {
             case JumpFlag_Default: {
                 break;
             }
@@ -728,7 +728,7 @@ arr_val_begin:;
                                           pyobj_set,
 #endif
                                           false, cur_is_tuple, is_write_cache);
-        switch ((jump_flag)) {
+        switch (ssrjson_consteval(jump_flag)) {
             case JumpFlag_Default: {
                 break;
             }

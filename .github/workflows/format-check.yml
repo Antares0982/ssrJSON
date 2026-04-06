@@ -1,4 +1,4 @@
-name: Format Check
+name: Code Quality Checks
 on:
   workflow_dispatch:
   push:
@@ -7,15 +7,27 @@ on:
       - dev
     paths:
       - "src/**"
+      - "python-test/**"
+      - "cmake/**"
       - "CMakeLists.txt"
+      - "dev_tools/**/*.py"
+      - "ci/**/*.py"
+      - "./*.py"
+      - "test_data/**/*.py"
   pull_request:
     paths:
       - "src/**"
+      - "python-test/**"
+      - "cmake/**"
       - "CMakeLists.txt"
+      - "dev_tools/**/*.py"
+      - "ci/**/*.py"
+      - "./*.py"
+      - "test_data/**/*.py"
 
 jobs:
   formatting-check:
-    name: Formatting Check
+    name: Format Check
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -24,9 +36,20 @@ jobs:
       uses: cachix/install-nix-action@v31
     - name: Run format check
       run: |
-        nix shell nixpkgs#clang-tools nixpkgs#cmake-format -c bash ./dev_tools/format-src.sh
+        nix shell nixpkgs#clang-tools nixpkgs#cmake-format nixpkgs#ruff nixpkgs#python3 -c python3 ci/format_src.py --check
         if ! git diff --exit-code; then
           echo "::error::The following files are not properly formatted:"
           git diff --name-only
           exit 1
         fi
+
+  non-ascii-check:
+    name: Non-ASCII Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+    - name: Install nix
+      uses: cachix/install-nix-action@v31
+    - name: Run non-ASCII check
+      run: nix shell nixpkgs#python3 -c python3 ci/check_non_ascii.py

@@ -94,6 +94,13 @@ def collect_files(repo_root: Path) -> list[Path]:
             if p.is_file():
                 files.append(p)
 
+    # ci/*
+    ci_dir = repo_root / ".github" / "workflows"
+    if ci_dir.is_dir():
+        for p in sorted(ci_dir.glob("*")):
+            if p.is_file():
+                files.append(p)
+
     # cmake/
     cmake_dir = repo_root / "cmake"
     if cmake_dir.is_dir():

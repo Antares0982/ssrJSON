@@ -22,10 +22,9 @@ class TestCanonicalTests:
         """
         dumps() U+2028, U+2029 escape
         """
-        assert (
-            ssrjson.dumps({"spaces": "\u2028 \u2029"})
-            == b'{"spaces":"\xe2\x80\xa8 \xe2\x80\xa9"}'.decode('utf-8')
-        )
+        assert ssrjson.dumps(
+            {"spaces": "\u2028 \u2029"}
+        ) == b'{"spaces":"\xe2\x80\xa8 \xe2\x80\xa9"}'.decode("utf-8")
         assert (
             ssrjson.dumps_to_bytes({"spaces": "\u2028 \u2029"})
             == b'{"spaces":"\xe2\x80\xa8 \xe2\x80\xa9"}'

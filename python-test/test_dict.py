@@ -17,7 +17,9 @@ class TestDict:
         assert ssrjson.loads(ref) == obj
 
     def test_dict_duplicate_loads(self):
-        assert ssrjson.loads(b'{"1":true,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false}') == {"1": False}
+        assert ssrjson.loads(
+            b'{"1":true,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false,"1":false}'
+        ) == {"1": False}
 
     def test_dict_empty(self):
         obj = [{"key": [{}] * 4096}] * 4096  # type:ignore

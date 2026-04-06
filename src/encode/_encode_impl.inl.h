@@ -155,7 +155,8 @@ static force_noinline EncodeUnicodeWriter unicode_buffer_append_key(PyObject *ke
     assert(ssrjson_pyascii_cast(key)->state.compact);
     writer = prepare_unicode_write(key, writer, unicode_buffer_info, unicode_info, &len, &pykind, &write_kind, &src_voidp);
 
-    switch (write_kind) {
+    // compile-time optimized
+    switch (ssrjson_consteval(write_kind)) {
 #if COMPILE_UCS_LEVEL < 1
         case 0:
 #endif
@@ -224,7 +225,8 @@ static force_noinline EncodeUnicodeWriter unicode_buffer_append_str(EncodeUnicod
     assert(ssrjson_pyascii_cast(val)->state.compact);
     writer = prepare_unicode_write(val, writer, unicode_buffer_info, unicode_info, &len, &kind, &write_kind, &src_voidp);
 
-    switch (write_kind) {
+    // compile-time optimized
+    switch (ssrjson_consteval(write_kind)) {
 #if COMPILE_UCS_LEVEL < 1
         case 0:
 #endif
@@ -353,24 +355,25 @@ force_inline EncodeUnicodeWriter encode_process_val(
         case T_Unicode: {
             writer = unicode_buffer_append_str(writer, val, unicode_buffer_info, unicode_info_addr, *cur_nested_depth_addr, is_in_obj);
             return_jump_fail_if_unlikely(!writer);
+            if (ssrjson_consteval(COMPILE_UCS_LEVEL < 4) && unlikely(unicode_info_addr->cur_ucs_type > COMPILE_UCS_LEVEL)) {
 #if COMPILE_UCS_LEVEL < 1
-            if (unlikely(unicode_info_addr->cur_ucs_type == 1)) {
-                *jump_flag_out = is_in_obj ? JumpFlag_Elevate1_ObjVal : JumpFlag_Elevate1_ArrVal;
-                return writer;
-            }
+                if (unicode_info_addr->cur_ucs_type == 1) {
+                    *jump_flag_out = is_in_obj ? JumpFlag_Elevate1_ObjVal : JumpFlag_Elevate1_ArrVal;
+                    return writer;
+                }
 #endif
 #if COMPILE_UCS_LEVEL < 2
-            if (unlikely(unicode_info_addr->cur_ucs_type == 2)) {
-                *jump_flag_out = is_in_obj ? JumpFlag_Elevate2_ObjVal : JumpFlag_Elevate2_ArrVal;
-                return writer;
-            }
+                if (unicode_info_addr->cur_ucs_type == 2) {
+                    *jump_flag_out = is_in_obj ? JumpFlag_Elevate2_ObjVal : JumpFlag_Elevate2_ArrVal;
+                    return writer;
+                }
 #endif
 #if COMPILE_UCS_LEVEL < 4
-            if (unlikely(unicode_info_addr->cur_ucs_type == 4)) {
+                assume(unicode_info_addr->cur_ucs_type == 4);
                 *jump_flag_out = is_in_obj ? JumpFlag_Elevate4_ObjVal : JumpFlag_Elevate4_ArrVal;
                 return writer;
-            }
 #endif
+            }
             break;
         }
 
@@ -799,21 +802,22 @@ dict_pair_begin:;
         }
         writer = unicode_buffer_append_key(key, writer, &_unicode_buffer_info, &unicode_info, cur_nested_depth);
         goto_fail_if_unlikely(!writer);
-        {
+        if (ssrjson_consteval(COMPILE_UCS_LEVEL < 4) && unlikely(unicode_info.cur_ucs_type > COMPILE_UCS_LEVEL)) {
 #if COMPILE_UCS_LEVEL < 1
-            if (unlikely(unicode_info.cur_ucs_type == 1)) {
+            if (unicode_info.cur_ucs_type == 1) {
                 return dumps_next(ucs1)(_DUMPS_PASS_ARGS, _unicode_buffer_info, CallFlag_Key);
             }
 #endif
 #if COMPILE_UCS_LEVEL < 2
-            if (unlikely(unicode_info.cur_ucs_type == 2)) {
+            if (unicode_info.cur_ucs_type == 2) {
                 return dumps_next(ucs2)(_DUMPS_PASS_ARGS, _unicode_buffer_info, CallFlag_Key);
             }
 #endif
 #if COMPILE_UCS_LEVEL < 4
-            if (unlikely(unicode_info.cur_ucs_type == 4)) {
-                return dumps_next(ucs4)(_DUMPS_PASS_ARGS, _unicode_buffer_info, CallFlag_Key);
-            }
+            assume(unicode_info.cur_ucs_type == 4);
+            // if (unlikely(unicode_info.cur_ucs_type == 4)) {
+            return dumps_next(ucs4)(_DUMPS_PASS_ARGS, _unicode_buffer_info, CallFlag_Key);
+            // }
 #endif
         }
     dict_key_done:;
@@ -824,7 +828,7 @@ dict_pair_begin:;
                                     pyobj_set,
 #endif
                                     true, false);
-        switch ((jump_flag)) {
+        switch (ssrjson_consteval(jump_flag)) {
             case JumpFlag_Default: {
                 goto dict_pair_begin;
             }
@@ -926,7 +930,7 @@ arr_val_begin:;
                                     pyobj_set,
 #endif
                                     false, cur_is_tuple);
-        switch ((jump_flag)) {
+        switch (ssrjson_consteval(jump_flag)) {
             case JumpFlag_Default: {
                 goto arr_val_begin;
             }
