@@ -226,7 +226,7 @@ force_inline u8 *bytes_write_ucs4_trailing_512(u8 *writer, const u32 *src, usize
     assert(len && len < READ_BATCH_COUNT);
     //
     vector_a *checker_masks = (vector_a *)&_CheckerMasks;
-    ssrjson_asm(("" : "+r"(checker_masks)));
+
     vector_a t1 = checker_masks[0];
     vector_a t2 = checker_masks[1];
     vector_a t3 = checker_masks[2];

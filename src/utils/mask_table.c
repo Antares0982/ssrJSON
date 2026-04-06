@@ -20,7 +20,8 @@
  SOFTWARE.
  *============================================================================*/
 
-#include "ssrjson.h"
+#include "simd/mask_table.h"
+#include "ndarray/ndarray_common.h"
 
 ssrjson_align(64) const u8 _TailmaskTable_8[65][64] = {
         {(u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1, (u8)-1},
@@ -310,3 +311,36 @@ ssrjson_align(64) const u32 _CheckerMasks_u32_512[3][16] = {
         {REPEAT_16(_Slash)},
         {REPEAT_16(_ControlMax)},
 };
+
+// Indexed by NDATypes: {NDA_f64, NDA_f32, NDA_f16, NDA_i64, NDA_i32, NDA_i16,
+//                       NDA_i8, NDA_u64, NDA_u32, NDA_u16, NDA_u8, NDA_bool, NDA_err}
+const usize _NdaElemWriteSizeTable[] = {
+        ssrjson_dtoa_output_maxlen, // NDA_f64
+        ssrjson_ftoa_output_maxlen, // NDA_f32
+        ssrjson_ftoa_output_maxlen, // NDA_f16
+        20,                         // NDA_i64: "-9223372036854775808"
+        11,                         // NDA_i32: "-2147483648"
+        6,                          // NDA_i16: "-32768"
+        4,                          // NDA_i8:  "-128"
+        20,                         // NDA_u64: "18446744073709551615"
+        10,                         // NDA_u32: "4294967295"
+        5,                          // NDA_u16: "65535"
+        3,                          // NDA_u8:  "255"
+        5,                          // NDA_bool: "false"
+        (usize)-1,                  // NDA_err
+};
+
+
+static_assert(NDA_f64 == 0, "NDA_f64 should be 0");
+static_assert(NDA_f32 == 1, "NDA_f32 should be 1");
+static_assert(NDA_f16 == 2, "NDA_f16 should be 2");
+static_assert(NDA_i64 == 3, "NDA_i64 should be 3");
+static_assert(NDA_i32 == 4, "NDA_i32 should be 4");
+static_assert(NDA_i16 == 5, "NDA_i16 should be 5");
+static_assert(NDA_i8 == 6, "NDA_i8 should be 6");
+static_assert(NDA_u64 == 7, "NDA_u64 should be 7");
+static_assert(NDA_u32 == 8, "NDA_u32 should be 8");
+static_assert(NDA_u16 == 9, "NDA_u16 should be 9");
+static_assert(NDA_u8 == 10, "NDA_u8 should be 10");
+static_assert(NDA_bool == 11, "NDA_bool should be 11");
+static_assert(NDA_err == 12, "NDA_err should be 12");

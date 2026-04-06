@@ -21,6 +21,18 @@ typedef enum EncodePyTypes {
     T_Dict,
     T_Tuple,
     T_UnicodeNonCompact,
+    T_NumpyArray,
+    T_NumpyFloat32,
+    T_NumpyInt64,
+    T_NumpyInt32,
+    T_NumpyUint64,
+    T_NumpyUint32,
+    T_NumpyBool,
+    T_NumpyFloat16,
+    T_NumpyInt16,
+    T_NumpyInt8,
+    T_NumpyUint16,
+    T_NumpyUint8,
     T_Unknown,
 } EncodePyTypes;
 

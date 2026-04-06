@@ -161,6 +161,44 @@ b'{"key":"value"}'
 {'key': 'value'}
 ```
 
+### NumPy Support
+
+ssrJSON can directly serialize NumPy scalar types and `ndarray` objects without converting them to Python types first. To avoid introducing NumPy as a hard dependency, you must explicitly enable this by calling `setup_numpy_types` once:
+
+```python
+>>> import numpy as np
+>>> import ssrjson
+>>> ssrjson.setup_numpy_types(np)
+```
+
+After setup, NumPy scalars and arrays are recognized in `dumps` and `dumps_to_bytes`:
+
+```python
+>>> ssrjson.dumps(np.int64(42))
+'42'
+>>> ssrjson.dumps(np.array([1, 2, 3]))
+'[1,2,3]'
+>>> ssrjson.dumps({"data": np.array([[1, 2], [3, 4]]), "score": np.float32(0.95)})
+'{"data":[[1,2],[3,4]],"score":0.95}'
+>>> ssrjson.dumps_to_bytes(np.arange(5))
+b'[0,1,2,3,4]'
+```
+
+Supported NumPy types:
+
+| Category | Types |
+|---|---|
+| Integers | `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64` |
+| Floats | `float16`, `float32`, `float64` |
+| Boolean | `bool_` |
+| Array | `ndarray` (C-contiguous, any supported element dtype, up to 32 dimensions) |
+
+`np.float64` is a subclass of Python `float` and is always handled by the standard float path, regardless of whether `setup_numpy_types` has been called.
+
+ndarray encoding writes element data directly from the array's memory buffer, bypassing Python object creation. Combined with the existing xjb64/xjb32 and yyjson-derived (for integers) encoding routines, this gives ssrJSON a significant performance advantage over converting to Python lists first. Indent is fully supported for ndarray output.
+
+> **Note:** `setup_numpy_types` must be called before any concurrent encoding in free-threading builds. The function itself is not thread-safe with respect to concurrent `dumps`/`dumps_to_bytes` calls. Once setup is complete, encoding is safe to call concurrently.
+
 ### Indent
 
 ssrJSON only supports encoding with indent = 2, 4 or no indent (don't pass indent, or pass indent=None). When indent is used, a space is inserted between each key and value.

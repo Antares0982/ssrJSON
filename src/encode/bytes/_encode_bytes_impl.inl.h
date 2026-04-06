@@ -274,11 +274,44 @@ force_inline u8 *encode_bytes_process_val(
             return_jump_fail_if_unlikely(!writer);
             break;
         }
-        case T_Long: {
-            writer = unicode_buffer_append_long(writer, unicode_buffer_info, *cur_nested_depth_addr, val, is_in_obj);
+        t_long_zero:;
+            writer = unicode_indent_writer(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, 2);
             return_jump_fail_if_unlikely(!writer);
+            *writer++ = '0';
+            *writer++ = ',';
             break;
-        }
+
+            {
+                u64 value;
+                int sign;
+
+                case T_Long: {
+                    return_jump_fail_if_unlikely(!pylong_to_clong(val, &value, &sign));
+                    if (ssrjson_consteval(sign == -1)) goto t_long_zero;
+                t_long_nonzero:;
+                    writer = unicode_indent_writer(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, 32);
+                    return_jump_fail_if_unlikely(!writer);
+                    writer = u64_to_unicode_u8(writer, value, sign);
+                    *writer++ = ',';
+                    break;
+                }
+
+                case T_NumpyInt64: {
+                    i64 v = pyobj_scalar_value(i64, val);
+                    if (v == 0) goto t_long_zero;
+                    sign = v < 0;
+                    value = sign ? (u64)(-(i64)v) : (u64)v;
+                    goto t_long_nonzero;
+                }
+                case T_NumpyUint64: {
+                    u64 v = pyobj_scalar_value(u64, val);
+                    if (v == 0) goto t_long_zero;
+                    value = v;
+                    sign = 0;
+                    goto t_long_nonzero;
+                }
+            }
+
         case T_Bool: {
             const bool is_false = (val == Py_False);
             writer = unicode_buffer_append_bool(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, is_false);
@@ -291,7 +324,8 @@ force_inline u8 *encode_bytes_process_val(
             break;
         }
         case T_Float: {
-            writer = unicode_buffer_append_float(writer, unicode_buffer_info, *cur_nested_depth_addr, val, is_in_obj);
+            double v = PyFloat_AS_DOUBLE(val);
+            writer = unicode_buffer_append_float(writer, unicode_buffer_info, *cur_nested_depth_addr, v, is_in_obj);
             return_jump_fail_if_unlikely(!writer);
             break;
         }
@@ -375,6 +409,114 @@ force_inline u8 *encode_bytes_process_val(
                 *jump_flag_out = JumpFlag_TupleValBegin;
                 return writer;
             }
+            break;
+        }
+        case T_NumpyArray: {
+            writer = u8_buffer_append_ndarray(writer, unicode_buffer_info, *cur_nested_depth_addr, val, is_in_obj);
+            return_jump_fail_if_unlikely(!writer);
+            break;
+        }
+
+            {
+                float v;
+                case T_NumpyFloat32: {
+                    v = pyobj_scalar_value(float, val);
+                t_f32:;
+                    writer = unicode_buffer_append_f32(writer, unicode_buffer_info, *cur_nested_depth_addr, v, is_in_obj);
+                    return_jump_fail_if_unlikely(!writer);
+                    break;
+                }
+                case T_NumpyFloat16: {
+                    v = f16_to_f32(pyobj_scalar_value(u16, val));
+                    goto t_f32;
+                }
+            }
+            {
+                u32 value;
+                int sign;
+
+                case T_NumpyUint32: {
+                    u32 v = pyobj_scalar_value(u32, val);
+                    if (v == 0) goto t_long_zero;
+                    value = (u32)v;
+                    sign = 0;
+                    goto t_iu32_nonzero;
+                }
+                case T_NumpyInt32: {
+                    i32 v = pyobj_scalar_value(i32, val);
+                    if (v == 0) goto t_long_zero;
+                    sign = v < 0;
+                    value = sign ? (u32)(-(i32)v) : (u32)v;
+                    goto t_iu32_nonzero;
+                }
+
+                t_iu32_nonzero:;
+                    writer = unicode_indent_writer(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, 16);
+                    return_jump_fail_if_unlikely(!writer);
+                    writer = u32_to_unicode_u8(writer, value, sign);
+                    *writer++ = ',';
+                    break;
+            }
+
+            {
+                u16 value;
+                int sign;
+
+                case T_NumpyUint16: {
+                    u16 v = pyobj_scalar_value(u16, val);
+                    if (v == 0) goto t_long_zero;
+                    value = (u16)v;
+                    sign = 0;
+                    goto t_iu16_nonzero;
+                }
+                case T_NumpyInt16: {
+                    i16 v = pyobj_scalar_value(i16, val);
+                    if (v == 0) goto t_long_zero;
+                    sign = v < 0;
+                    value = sign ? (u16)(-(i16)v) : (u16)v;
+                    goto t_iu16_nonzero;
+                }
+
+                t_iu16_nonzero:;
+                    writer = unicode_indent_writer(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, 8);
+                    return_jump_fail_if_unlikely(!writer);
+                    writer = u16_to_unicode_u8(writer, value, sign);
+                    *writer++ = ',';
+                    break;
+            }
+
+            {
+                u8 value;
+                int sign;
+
+                case T_NumpyUint8: {
+                    u8 v = pyobj_scalar_value(u8, val);
+                    if (v == 0) goto t_long_zero;
+                    value = (u8)v;
+                    sign = 0;
+                    goto t_iu8_nonzero;
+                }
+                case T_NumpyInt8: {
+                    i8 v = pyobj_scalar_value(i8, val);
+                    if (v == 0) goto t_long_zero;
+                    sign = v < 0;
+                    value = sign ? (u8)(-(i8)v) : (u8)v;
+                    goto t_iu8_nonzero;
+                }
+
+                t_iu8_nonzero:;
+                    writer = unicode_indent_writer(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, 4);
+                    return_jump_fail_if_unlikely(!writer);
+                    writer = u8_to_unicode_u8(writer, value, sign);
+                    *writer++ = ',';
+                    break;
+            }
+
+        case T_NumpyBool: {
+            bool is_true = pyobj_scalar_value(u8, val);
+            const bool is_false = !is_true;
+            writer = unicode_buffer_append_bool(writer, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, is_false);
+            return_jump_fail_if_unlikely(!writer);
             break;
         }
         default: {

@@ -59,6 +59,4 @@ force_inline dst_t *unicode_indent_writer(
     }
 }
 
-#undef make_impl_list_unicode_indent_writer
-
 #include "compile_context/iw_out.inl.h"

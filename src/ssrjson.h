@@ -135,6 +135,9 @@
 #define ssrjson_dtoa_handle_inf_nan 1
 #define ssrjson_dtoa_write_length 33
 #define ssrjson_dtoa_output_maxlen 32
+#define ssrjson_ftoa_handle_inf_nan 1
+#define ssrjson_ftoa_write_length 24
+#define ssrjson_ftoa_output_maxlen 24
 
 /** compiler version (MSVC) */
 #ifdef _MSC_VER
@@ -228,7 +231,7 @@
 #define unlikely ssrjson_unlikely
 
 /* assembly */
-#define ssrjson_asm(x) // asm x
+#define ssrjson_asm(x) asm x
 
 /* assume for compiler */
 #ifdef NDEBUG
@@ -378,8 +381,16 @@ __extension__ typedef unsigned __int128 u128;
 #define return_if_unlikely(_x_) \
     do {                        \
         if (unlikely((_x_))) {  \
-            return false;       \
+            return 0;           \
         }                       \
+    } while (0)
+
+#define return_if_no_memory(_x_) \
+    do {                         \
+        if (unlikely(!(_x_))) {  \
+            PyErr_NoMemory();    \
+            return 0;            \
+        }                        \
     } while (0)
 
 

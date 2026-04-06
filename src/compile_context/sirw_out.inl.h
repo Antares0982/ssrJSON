@@ -42,23 +42,15 @@
 #undef unicode_buffer_append_str
 #undef unicode_buffer_append_str_distribute2
 #undef unicode_buffer_append_str_distribute4
-#undef unicode_buffer_append_long
-#undef write_unicode_bool
 #undef unicode_buffer_append_bool
-#undef write_unicode_null
 #undef unicode_buffer_append_null
 #undef unicode_buffer_append_float
-#undef write_unicode_empty_arr
+#undef unicode_buffer_append_f32
 #undef unicode_buffer_append_empty_arr
-#undef write_unicode_arr_begin
 #undef unicode_buffer_append_arr_begin
-#undef write_unicode_arr_end
 #undef unicode_buffer_append_arr_end
-#undef write_unicode_empty_obj
 #undef unicode_buffer_append_empty_obj
-#undef write_unicode_obj_begin
 #undef unicode_buffer_append_obj_begin
-#undef write_unicode_obj_end
 #undef unicode_buffer_append_obj_end
 #undef ssrjson_dumps_obj
 //

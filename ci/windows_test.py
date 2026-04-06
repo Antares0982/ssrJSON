@@ -1,9 +1,7 @@
-import json
 import os
 import shutil
 import subprocess
 import sys
-import warnings
 
 SSRJSON_FILE = "ssrjson.pyd"
 ASAN_DLL = "clang_rt.asan_dynamic-x86_64.dll"

@@ -58,8 +58,22 @@
  */
 #define unicode_buffer_reserve make_w_name(unicode_buffer_reserve)
 #define u64_to_unicode make_w_name(u64_to_unicode)
+#define u32_to_unicode make_w_name(u32_to_unicode)
+#define u16_to_unicode make_w_name(u16_to_unicode)
+#define u8_to_unicode make_w_name(u8_to_unicode)
 #define f64_to_unicode make_w_name(f64_to_unicode)
+#define f32_to_unicode make_w_name(f32_to_unicode)
 #define inf_nan_to_unicode make_w_name(inf_nan_to_unicode)
 #define ControlEscapeTable make_w_name(ControlEscapeTable)
+//
+#define write_unicode_bool make_w_name(_write_unicode_bool)
+#define write_unicode_bool_numpy make_w_name(_write_unicode_bool_numpy)
+#define write_unicode_null make_w_name(_write_unicode_null)
+#define write_unicode_empty_arr make_w_name(_write_unicode_empty_arr)
+#define write_unicode_arr_begin make_w_name(_write_unicode_arr_begin)
+#define write_unicode_arr_end make_w_name(_write_unicode_arr_end)
+#define write_unicode_empty_obj make_w_name(_write_unicode_empty_obj)
+#define write_unicode_obj_begin make_w_name(_write_unicode_obj_begin)
+#define write_unicode_obj_end make_w_name(_write_unicode_obj_end)
 
 #endif // SSRJSON_COMPILE_CONTEXT_W

@@ -20,31 +20,27 @@
  SOFTWARE.
  *============================================================================*/
 
-#undef SSRJSON_COMPILE_CONTEXT_W
-//
-#undef WRITE_BIT_SIZE
-#undef _CAST_WRITER
-//
-#undef dst_t
-//
-#undef make_w_name
-//
-#undef unicode_buffer_reserve
-#undef u64_to_unicode
-#undef u32_to_unicode
-#undef u16_to_unicode
-#undef u8_to_unicode
-#undef f64_to_unicode
-#undef f32_to_unicode
-#undef inf_nan_to_unicode
-#undef ControlEscapeTable
-//
-#undef write_unicode_bool
-#undef write_unicode_bool_numpy
-#undef write_unicode_null
-#undef write_unicode_empty_arr
-#undef write_unicode_arr_begin
-#undef write_unicode_arr_end
-#undef write_unicode_empty_obj
-#undef write_unicode_obj_begin
-#undef write_unicode_obj_end
+#ifndef ENCODE_WRITER_WRAP_H
+#define ENCODE_WRITER_WRAP_H
+
+#include "encode_shared.h"
+
+// Macros push
+#include "simd/compile_feature_check.h"
+
+#define COMPILE_WRITE_UCS_LEVEL 1
+#include "_sw_writers.inl.h"
+#undef COMPILE_WRITE_UCS_LEVEL
+
+#define COMPILE_WRITE_UCS_LEVEL 2
+#include "_sw_writers.inl.h"
+#undef COMPILE_WRITE_UCS_LEVEL
+
+#define COMPILE_WRITE_UCS_LEVEL 4
+#include "_sw_writers.inl.h"
+#undef COMPILE_WRITE_UCS_LEVEL
+
+// Macros pop
+#undef _CompileVectorBits
+
+#endif // ENCODE_WRITER_WRAP_H

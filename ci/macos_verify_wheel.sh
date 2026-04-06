@@ -58,7 +58,7 @@ echo "--- [2/3] Functional test ---"
 "$TMPDIR/venv/bin/python" - <<'EOF'
 import ssrjson, json
 
-data = {"hello": "world", "num": 42, "arr": [1, 2, 3], "nested": {"a": True, "b": None}, "unicode": "你好"}
+data = {"hello": "world", "num": 42, "arr": [1, 2, 3], "nested": {"a": True, "b": None}, "unicode": b'\xe4\xbd\xa0\xe5\xa5\xbd'.decode('utf-8')}
 encoded = ssrjson.dumps(data)
 decoded = ssrjson.loads(encoded)
 assert decoded == data, f"Round-trip mismatch: {decoded}"
