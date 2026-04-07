@@ -18,32 +18,32 @@ If you prefer to skip the technical details below, please proceed directly to th
 
 TL;DR: ssrJSON is faster than or nearly as fast as [orjson](https://github.com/ijl/orjson) (which [announces](https://github.com/ijl/orjson/blob/3.11.4/README.md#:~:text=It%20benchmarks%20as%20the%20fastest) itself as the fastest Python library for JSON) on most benchmark cases.
 
-![](pics/ratio_distribution.v0.0.17.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/ratio_distribution.v0.0.17.svg)
 
 Below is an artificial benchmark case to demonstrate the speed of encoding non-ASCII JSON ([simple_object_zh.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/simple_object_zh.json)). Upon seeing the diagram below, you might wonder: why do the performance results from other libraries appear so poor? If you are interested, please refer to the section [UTF-8 Cache of str Objects](#utf-8-cache-of-str-objects).
 
-![](pics/simple_object_zh.json_dumps_to_bytes.v0.0.17.svg)
-![](pics/simple_object_zh.json_load&dump.v0.0.17.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/simple_object_zh.json_dumps_to_bytes.v0.0.17.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/simple_object_zh.json_load&dump.v0.0.17.svg)
 
 Real-world case ([twitter.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/twitter.json)):
 
-![](pics/twitter.json_dumps_to_bytes.v0.0.17.svg)
-![](pics/twitter.json_load&dump.v0.0.17.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/twitter.json_dumps_to_bytes.v0.0.17.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/twitter.json_load&dump.v0.0.17.svg)
 
 Real-world case II ([github.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/github.json)):
 
-![](pics/github.json_dumps_to_bytes.v0.0.17.svg)
-![](pics/github.json_load&dump.v0.0.17.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/github.json_dumps_to_bytes.v0.0.17.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/github.json_load&dump.v0.0.17.svg)
 
 Floats ([canada.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/canada.json)):
 
-![](pics/canada.json_dumps_to_bytes.v0.0.17.svg)
-![](pics/canada.json_load&dump.v0.0.17.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/canada.json_dumps_to_bytes.v0.0.17.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/canada.json_load&dump.v0.0.17.svg)
 
 Numbers ([mesh.json](https://github.com/Nambers/ssrJSON-benchmark/blob/9207eb70c972200cec44ea3538773590b59b01ad/src/ssrjson_benchmark/_files/mesh.json)):
 
-![](pics/mesh.json_dumps_to_bytes.v0.0.17.svg)
-![](pics/mesh.json_load&dump.v0.0.17.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/mesh.json_dumps_to_bytes.v0.0.17.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/mesh.json_load&dump.v0.0.17.svg)
 
 `ssrjson.dumps()` is about 4x-31x as fast as `json.dumps()` (Python3.14, x86-64, AVX2). `ssrjson.loads()` is about 2x-8x as fast as `json.loads()` for `str` input and is about 2x-8x as fast as `json.loads()` for `bytes` input (Python3.14, x86-64, AVX2). ssrJSON also provides `ssrjson.dumps_to_bytes()`, which encode Python objects directly to UTF-8 encoded `bytes` object using SIMD instructions.
 
@@ -95,11 +95,11 @@ ssrJSON employs xjb64 as float-to-string algorithm. Tests and comparisons reveal
 
 Random double on Apple M1:
 
-![](pics/xjb_random_double_m1.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/xjb_random_double_m1.svg)
 
 Random double on AMD R7-7840H:
 
-![](pics/xjb_random_double_7840h.svg)
+![](https://raw.githubusercontent.com/Antares0982/ssrJSON/main/pics/xjb_random_double_7840h.svg)
 
 ### JSON Module compatibility
 

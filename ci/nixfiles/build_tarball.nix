@@ -31,6 +31,7 @@ clangStdenv.mkDerivation {
           "/pyproject.toml"
           "/setup.py"
           "/MANIFEST.in"
+          "/README.md"
           "/pysrc"
           "/licenses"
           "/src"

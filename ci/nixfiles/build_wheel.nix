@@ -60,6 +60,7 @@ clangStdenv.mkDerivation {
           "/pyproject.toml"
           "/setup.py"
           "/MANIFEST.in"
+          "/README.md"
           "/pysrc"
           "/licenses"
           "/ci/check_glibc_version.py"
