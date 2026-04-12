@@ -182,3 +182,11 @@ class TestJsonChecker:
         roundtrip027.json
         """
         self._run_roundtrip_json("roundtrip201.json")
+
+    def test_roundtrip_ex1(self):
+        d = {
+            "鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶鴶": 1124,
+            "🐈": None,
+        }
+        assert ssrjson.loads(ssrjson.dumps(d)) == d
+        assert ssrjson.loads(ssrjson.dumps_to_bytes(d)) == d

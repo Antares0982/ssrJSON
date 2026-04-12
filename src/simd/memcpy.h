@@ -62,6 +62,14 @@ typedef u8 unaligned64 __attribute__((__vector_size__(64), __aligned__(1)));
 typedef u8 unaligned128 __attribute__((__vector_size__(128), __aligned__(1)));
 typedef u8 unaligned256 __attribute__((__vector_size__(256), __aligned__(1)));
 
+force_inline void power2_check(usize cnt) {
+    assume((cnt & (cnt - 1)) == 0);
+}
+
+force_inline void small_check(usize cnt) {
+    assume(cnt <= 128);
+}
+
 force_inline void __ssrjson_memcpy(u8 **restrict dest_addr, const u8 **restrict src_addr, ssrjson_compiletime size_t n_bytes) {
     memcpy((void *)*dest_addr, (const void *)*src_addr, n_bytes);
     *dest_addr += n_bytes;
@@ -145,24 +153,36 @@ force_inline void __ssrjson_memcpy_aligned_store_power2(u8 **restrict dest_addr,
 }
 
 force_inline void __ssrjson_short_memcpy_small_first(u8 **restrict dest_addr, const u8 **restrict src_addr, size_t n_bytes, ssrjson_compiletime size_t size_less_than) {
+    power2_check(size_less_than);
+    small_check(size_less_than);
+    assume(n_bytes < size_less_than);
     if (size_less_than >= 2 && (n_bytes & 1)) __ssrjson_memcpy(dest_addr, src_addr, 1);
     if (size_less_than >= 4 && (n_bytes & 2)) __ssrjson_memcpy(dest_addr, src_addr, 2);
     if (size_less_than >= 8 && (n_bytes & 4)) __ssrjson_memcpy(dest_addr, src_addr, 4);
     if (size_less_than >= 16 && (n_bytes & 8)) __ssrjson_memcpy(dest_addr, src_addr, 8);
     if (size_less_than >= 32 && (n_bytes & 16)) __ssrjson_memcpy(dest_addr, src_addr, 16);
     if (size_less_than >= 64 && (n_bytes & 32)) __ssrjson_memcpy(dest_addr, src_addr, 32);
+    if (size_less_than >= 128 && (n_bytes & 64)) __ssrjson_memcpy(dest_addr, src_addr, 64);
 }
 
 force_inline void __ssrjson_short_memcpy_small_first_aligned_store(u8 **restrict dest_addr, const u8 **restrict src_addr, size_t n_bytes, ssrjson_compiletime size_t size_less_than) {
+    power2_check(size_less_than);
+    small_check(size_less_than);
+    assume(n_bytes < size_less_than);
     if (size_less_than >= 2 && (n_bytes & 1)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 1);
     if (size_less_than >= 4 && (n_bytes & 2)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 2);
     if (size_less_than >= 8 && (n_bytes & 4)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 4);
     if (size_less_than >= 16 && (n_bytes & 8)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 8);
     if (size_less_than >= 32 && (n_bytes & 16)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 16);
     if (size_less_than >= 64 && (n_bytes & 32)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 32);
+    if (size_less_than >= 128 && (n_bytes & 64)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 64);
 }
 
 force_inline void __ssrjson_short_memcpy_large_first(u8 **restrict dest_addr, const u8 **restrict src_addr, size_t n_bytes, ssrjson_compiletime size_t size_less_than) {
+    power2_check(size_less_than);
+    small_check(size_less_than);
+    assume(n_bytes < size_less_than);
+    if (size_less_than >= 128 && (n_bytes & 64)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 64);
     if (size_less_than >= 64 && (n_bytes & 32)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 32);
     if (size_less_than >= 32 && (n_bytes & 16)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 16);
     if (size_less_than >= 16 && (n_bytes & 8)) __ssrjson_memcpy_aligned_store_power2(dest_addr, src_addr, 8);

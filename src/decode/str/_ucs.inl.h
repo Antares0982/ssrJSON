@@ -148,7 +148,7 @@ force_inline PyObject *make_unicode_from_src(const src_t *start, usize count, ss
             const u8 *temp_src = temp_buffer;
             u8 *temp_dst = kind ? ssrjson_pyunicode_ucs1_start(ret) : ssrjson_pyunicode_ascii_start(ret);
             dst_void = temp_dst;
-            __ssrjson_short_memcpy_small_first(&temp_dst, &temp_src, count * tpsize, 64);
+            __ssrjson_short_memcpy_small_first(&temp_dst, &temp_src, count * tpsize, 128);
         } else {
             // always this case if `is_key` is false
             make_ucs_name(copy_to_new_unicode)(&dst_void, ret, need_cvt, start, count, kind);
