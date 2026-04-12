@@ -774,13 +774,8 @@ ssrjson_dumps_obj(
 #else
     switch (encode_call_flag) {
         case CallFlag_ArrVal: {
-            if (PyList_CheckExact(cur_obj)) {
-                cur_is_tuple = false;
-                goto arr_val_begin;
-            } else {
-                cur_is_tuple = true;
-                goto arr_val_begin;
-            }
+            cur_is_tuple = !PyList_Check(cur_obj);
+            goto arr_val_begin;
         }
         case CallFlag_ObjVal: {
             goto dict_pair_begin;
