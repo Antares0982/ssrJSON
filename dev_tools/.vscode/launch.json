@@ -230,18 +230,23 @@
             ]
         },
         {
-            "name": "(gdb) Launch fuzzer",
+            "name": "(gdb) Launch decode fuzzer",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/ssrjson_fuzzer",
+            "program": "${workspaceFolder}/build-fuzz/ssrjson_decode_fuzzer",
             "args": [
-                "-dict=fuzzer.dict",
+                "-dict=${workspaceFolder}/test_data/fuzzer/fuzzer.dict",
                 "-max_total_time=300",
-                "./corpus"
+                "${workspaceFolder}/build-fuzz/decode_corpus"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build",
-            "environment": [],
+            "cwd": "${workspaceFolder}/build-fuzz",
+            "environment": [
+                {
+                    "name": "PYTHONPATH",
+                    "value": "${workspaceFolder}/test_data/fuzzer"
+                }
+            ],
             "sourceFileMap": {
                 "/build": "${workspaceFolder}/debug_source"
             },
@@ -259,7 +264,44 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "CMake: build with last config"
+            "preLaunchTask": "CMake: build fuzz (ASAN + fuzzer)"
+        },
+        {
+            "name": "(gdb) Launch encode fuzzer",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build-fuzz/ssrjson_encode_fuzzer",
+            "args": [
+                "-dict=${workspaceFolder}/test_data/fuzzer/encode_fuzzer.dict",
+                "-max_total_time=300",
+                "${workspaceFolder}/build-fuzz/encode_corpus"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build-fuzz",
+            "environment": [
+                {
+                    "name": "PYTHONPATH",
+                    "value": "${workspaceFolder}/test_data/fuzzer"
+                }
+            ],
+            "sourceFileMap": {
+                "/build": "${workspaceFolder}/debug_source"
+            },
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "enable gdb pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "set disassembly flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "CMake: build fuzz (ASAN + fuzzer)"
         },
         {
             "name": "(gdb) Launch C test",

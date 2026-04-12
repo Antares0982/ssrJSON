@@ -388,7 +388,14 @@ jobs:
         python -m pip install pytest pytest-xdist pytest-random-order psutil numpy
         python -m pytest --random-order python-test
 
+  Run-Fuzzer:
+    if: github.event.inputs['dry-run'] == 'false'
+    uses: ./.github/workflows/fuzzer.yml
+    with:
+      max-total-time: '300'
+
   Publish:
+    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
     needs:
       - Linux-x86_64-Test-Tarball
@@ -399,6 +406,7 @@ jobs:
       - Windows-Build-And-Test-Wheel
       - MacOS-Test-Tarball
       - MacOS-Build-And-Test-Wheel
+      - Run-Fuzzer
     steps:
     - name: Checkout
       uses: actions/checkout@v5

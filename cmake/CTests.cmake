@@ -3,7 +3,8 @@ include(CTest)
 set(SRC_TEST src/ctests/tools.c src/ctests/main.c src/utils/float_tables.c
              src/utils/mask_table.c src/ctests/test_numpy_reserve.c)
 set(SRC_TEST_WITH_SIMD src/ctests/test.c)
-set(SRC_FUZZER src/ctests/fuzzer.c)
+set(SRC_DECODE_FUZZER src/ctests/decode_fuzzer.c)
+set(SRC_ENCODE_FUZZER src/ctests/encode_fuzzer.c)
 
 if(BUILD_MULTI_LIB)
   if("${TARGET_SIMD_ARCH}" STREQUAL "x86")
@@ -42,25 +43,54 @@ if((CMAKE_C_COMPILER_ID MATCHES Clang)
    AND BUILD_FUZZER)
   file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/test_data/fuzzer/fuzzer.dict"
        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/test_data/fuzzer/ssrjson_fuzz.py"
-       DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
   file(GLOB TEST_DATA_FILES
        "${CMAKE_CURRENT_SOURCE_DIR}/test_data/json/**/*.json")
-  file(COPY ${TEST_DATA_FILES} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/corpus")
-  add_executable(ssrjson_fuzzer ${SRC_FUZZER})
-  target_link_libraries(ssrjson_fuzzer PUBLIC commonBuild ${Python3_LIBRARIES})
+  file(COPY ${TEST_DATA_FILES}
+       DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/decode_corpus")
+  add_executable(ssrjson_decode_fuzzer ${SRC_DECODE_FUZZER})
+  target_link_libraries(ssrjson_decode_fuzzer PUBLIC commonBuild
+                                                     ${Python3_LIBRARIES})
 
-  add_asan_compile_option(ssrjson_fuzzer)
-  target_compile_options(ssrjson_fuzzer PRIVATE -fsanitize=fuzzer -g -O1)
-  target_link_options(ssrjson_fuzzer PRIVATE -fsanitize=fuzzer)
+  add_asan_compile_option(ssrjson_decode_fuzzer)
+  target_compile_options(ssrjson_decode_fuzzer PRIVATE -fsanitize=fuzzer -g -O1)
+  target_link_options(ssrjson_decode_fuzzer PRIVATE -fsanitize=fuzzer)
 
   if(ASAN_ENABLED)
-    add_asan_compile_option(ssrjson_fuzzer)
+    add_asan_compile_option(ssrjson_decode_fuzzer)
   endif()
 
-  add_test(ssrjson_fuzzer ${CMAKE_CURRENT_BINARY_DIR}/ssrjson_fuzzer
-           -dict=fuzzer.dict -max_total_time=1800
-           ${CMAKE_CURRENT_BINARY_DIR}/corpus)
-  set_tests_properties(ssrjson_fuzzer PROPERTIES ENVIRONMENT
-                                                 "ASAN_OPTIONS=detect_leaks=0")
+  add_test(ssrjson_decode_fuzzer
+           ${CMAKE_CURRENT_BINARY_DIR}/ssrjson_decode_fuzzer -dict=fuzzer.dict
+           -max_total_time=1800 ${CMAKE_CURRENT_BINARY_DIR}/decode_corpus)
+  set_tests_properties(
+    ssrjson_decode_fuzzer
+    PROPERTIES
+      ENVIRONMENT
+      "ASAN_OPTIONS=detect_leaks=0;PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/test_data/fuzzer"
+  )
+
+  # Encoding fuzzer
+  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/test_data/fuzzer/encode_fuzzer.dict"
+       DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+  add_executable(ssrjson_encode_fuzzer ${SRC_ENCODE_FUZZER})
+  target_link_libraries(ssrjson_encode_fuzzer PUBLIC commonBuild
+                                                     ${Python3_LIBRARIES})
+
+  add_asan_compile_option(ssrjson_encode_fuzzer)
+  target_compile_options(ssrjson_encode_fuzzer PRIVATE -fsanitize=fuzzer -g -O1)
+  target_link_options(ssrjson_encode_fuzzer PRIVATE -fsanitize=fuzzer)
+
+  if(ASAN_ENABLED)
+    add_asan_compile_option(ssrjson_encode_fuzzer)
+  endif()
+
+  add_test(ssrjson_encode_fuzzer
+           ${CMAKE_CURRENT_BINARY_DIR}/ssrjson_encode_fuzzer
+           -dict=encode_fuzzer.dict -max_total_time=1800)
+  set_tests_properties(
+    ssrjson_encode_fuzzer
+    PROPERTIES
+      ENVIRONMENT
+      "ASAN_OPTIONS=detect_leaks=0;PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}/test_data/fuzzer"
+  )
 endif()

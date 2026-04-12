@@ -241,6 +241,10 @@ set(SRC_XJB src/xjb/xjb.cpp)
 add_library(xjb OBJECT ${SRC_XJB})
 target_link_libraries(xjb PUBLIC commonBuild)
 
+if(BUILD_FUZZER)
+  add_fuzzer_coverage_option(xjb)
+endif()
+
 # library ssrjson
 if(BUILD_MULTI_LIB)
   set(SRC_FILES ${SRC_FILES} src/multilib.c)
@@ -276,6 +280,13 @@ if(BUILD_MULTI_LIB)
       add_coverage_flags(ssrjson_sse4)
     endif()
 
+    if(BUILD_FUZZER)
+      add_fuzzer_coverage_option(_ssrjson_common)
+      add_fuzzer_coverage_option(ssrjson_avx512)
+      add_fuzzer_coverage_option(ssrjson_avx2)
+      add_fuzzer_coverage_option(ssrjson_sse4)
+    endif()
+
   elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
     add_library(_ssrjson_common OBJECT ${SRC_FILES})
     target_link_libraries(_ssrjson_common PUBLIC commonBuild)
@@ -295,6 +306,11 @@ if(BUILD_MULTI_LIB)
       add_coverage_flags(ssrjson_neon)
     endif()
 
+    if(BUILD_FUZZER)
+      add_fuzzer_coverage_option(_ssrjson_common)
+      add_fuzzer_coverage_option(ssrjson_neon)
+    endif()
+
   else()
     message(FATAL_ERROR "TARGET_SIMD_ARCH=${TARGET_SIMD_ARCH} not supported")
   endif()
@@ -311,7 +327,11 @@ if(BUILD_COVERAGE)
   add_coverage_flags(ssrjson)
 endif()
 
-if(ASAN_ENABLED)
+if(BUILD_FUZZER)
+  add_fuzzer_coverage_option(ssrjson)
+endif()
+
+if(ASAN_ENABLED AND NOT BUILD_FUZZER)
   target_link_libraries(ssrjson PRIVATE asan)
 endif()
 

@@ -1,0 +1,67 @@
+name: "Fuzzer"
+on:
+  workflow_dispatch:
+    inputs:
+      max-total-time:
+        description: 'Max total time in seconds for each fuzzer'
+        required: false
+        default: '1800'
+        type: string
+  workflow_call:
+    inputs:
+      max-total-time:
+        description: 'Max total time in seconds for each fuzzer'
+        required: false
+        default: '1800'
+        type: string
+
+jobs:
+  Run-Decode-Fuzzer:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Install nix
+      uses: cachix/install-nix-action@v31
+
+    - name: Setup cachix
+      uses: cachix/cachix-action@v17
+      with:
+        name: antares0982
+
+    - name: Build Fuzzer
+      run: |
+        nix develop -c bash ci/build_fuzz.sh
+
+    - name: Run Decode Fuzzer
+      run: |
+        cd build-fuzz
+        ASAN_OPTIONS=detect_leaks=0 PYTHONPATH=${{ github.workspace }}/test_data/fuzzer \
+          ./ssrjson_decode_fuzzer -dict=fuzzer.dict \
+          -max_total_time=${{ inputs.max-total-time || '300' }} decode_corpus
+
+  Run-Encode-Fuzzer:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Install nix
+      uses: cachix/install-nix-action@v31
+
+    - name: Setup cachix
+      uses: cachix/cachix-action@v17
+      with:
+        name: antares0982
+
+    - name: Build Fuzzer
+      run: |
+        nix develop -c bash ci/build_fuzz.sh
+
+    - name: Run Encode Fuzzer
+      run: |
+        cd build-fuzz
+        ASAN_OPTIONS=detect_leaks=0 PYTHONPATH=${{ github.workspace }}/test_data/fuzzer \
+          ./ssrjson_encode_fuzzer -dict=encode_fuzzer.dict \
+          -max_total_time=${{ inputs.max-total-time || '300' }}

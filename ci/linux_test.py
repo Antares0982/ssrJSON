@@ -51,6 +51,7 @@ def build(build_dir: str, build_type: str, asan: bool, lockfree: bool) -> None:
 
     if asan:
         configure_cmd += ["-DASAN_ENABLED=ON"]
+        configure_cmd += ["-DBUILD_FUZZER=OFF"]
     subprocess.run(configure_cmd, check=True, env=new_env)
     build_cmd = ["cmake", "--build", build_dir, "-j"]
     subprocess.run(build_cmd, check=True)

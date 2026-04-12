@@ -241,6 +241,30 @@
             "detail": "Run clang-format, cmake-format, and ruff on all source files"
         },
         {
+            "label": "CMake: build fuzz (ASAN + fuzzer)",
+            "type": "shell",
+            "command": "${workspaceFolder}/ci/build_fuzz.sh",
+            "options": {
+                "shell": {
+                    "executable": "nix",
+                    "args": [
+                        "develop",
+                        "--no-net",
+                        "-c",
+                        "bash"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Build encode fuzzer with ASAN and libFuzzer into build-fuzz/"
+        },
+        {
             "label": "Analyze Call Graph",
             "type": "shell",
             "command": "${workspaceFolder}/.nix-devenv/bin/python ${workspaceFolder}/dev_tools/call_graph.py ${workspaceFolder}/build/ssrjson.so",

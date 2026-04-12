@@ -99,6 +99,26 @@ function(add_asan_compile_option TARGET)
   )
 endfunction(add_asan_compile_option TARGET)
 
+function(add_fuzzer_coverage_option TARGET)
+  if(ARGC GREATER 1)
+    set(CO_TYPE "${ARGV1}")
+  else()
+    set(CO_TYPE "PRIVATE")
+  endif()
+
+  check_co_type(${CO_TYPE})
+  target_compile_options(
+    ${TARGET}
+    ${CO_TYPE}
+    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-fsanitize=fuzzer-no-link>
+  )
+  target_link_options(
+    ${TARGET}
+    ${CO_TYPE}
+    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-fsanitize=fuzzer-no-link>
+  )
+endfunction(add_fuzzer_coverage_option TARGET)
+
 function(add_coverage_flags TARGET)
   if(ARGC GREATER 1)
     set(CO_TYPE "${ARGV1}")
