@@ -63,7 +63,7 @@ clangStdenv.mkDerivation rec {
   buildInputs = [ python ];
   cmakeFlags = [
     "-DPREDEFINED_VERSION=${version}"
-    "-DBUILD_TEST=OFF"
+    "-DBUILD_CTESTS=OFF"
     "-DBUILD_SHIPPING_SIMD=ON"
   ]
   ++ (lib.optional (

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.18
+
+### Bug Fixes
+- Fix wrong key created using dirty memory when object contains UCS(X) and UCS(Y) strings (X>Y) and byte size of UCS(Y) string is exactly 64
+- Fix crash when list subclass contains string that elevates UCS type
+
+### Performance
+- Update xjb to 1.5.0
+
 ## 0.0.17
 
 ### New Features
