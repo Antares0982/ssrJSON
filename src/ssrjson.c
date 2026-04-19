@@ -22,6 +22,7 @@
 
 #include "ssrjson.h"
 #include "decode/decode_shared.h"
+#include "encode/encode_typedefs.h"
 #include "pythonlib.h"
 #include "tls.h"
 #include "version.h"
@@ -263,19 +264,19 @@ static int ssrjson_exec(PyObject *module) {
         return -1;
     }
 
+    // codes below should not fail.
 #if PY_MINOR_VERSION >= 13
     PyNone_Type = Py_TYPE(Py_None);
 #endif
-    // codes below should not fail.
 
-    _PyFastType[0] = (u64)&PyUnicode_Type;
-    _PyFastType[1] = (u64)&PyLong_Type;
-    _PyFastType[2] = (u64)&PyBool_Type;
-    _PyFastType[3] = (u64)PyNone_Type;
-    _PyFastType[4] = (u64)&PyFloat_Type;
-    _PyFastType[5] = (u64)&PyList_Type;
-    _PyFastType[6] = (u64)&PyDict_Type;
-    _PyFastType[7] = (u64)&PyTuple_Type;
+    _PyFastType[T_Unicode] = (u64)&PyUnicode_Type;
+    _PyFastType[T_Long] = (u64)&PyLong_Type;
+    _PyFastType[T_Bool] = (u64)&PyBool_Type;
+    _PyFastType[T_None] = (u64)PyNone_Type;
+    _PyFastType[T_Float] = (u64)&PyFloat_Type;
+    _PyFastType[T_List] = (u64)&PyList_Type;
+    _PyFastType[T_Dict] = (u64)&PyDict_Type;
+    _PyFastType[T_Tuple] = (u64)&PyTuple_Type;
 
     // do ssrjson internal init.
 #if SSRJSON_GIL_ENABLED
