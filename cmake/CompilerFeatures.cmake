@@ -25,6 +25,21 @@ function(add_native_compile_option TARGET)
   target_compile_options(${TARGET} ${CO_TYPE} -march=native)
 endfunction()
 
+function(add_ssse3_compile_option TARGET)
+  if(ARGC GREATER 1)
+    set(CO_TYPE "${ARGV1}")
+  else()
+    set(CO_TYPE "PRIVATE")
+  endif()
+
+  check_co_type(${CO_TYPE})
+  if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${TARGET} ${CO_TYPE} /clang:-mssse3)
+  else()
+    target_compile_options(${TARGET} ${CO_TYPE} -mssse3)
+  endif()
+endfunction(add_ssse3_compile_option TARGET)
+
 function(add_sse4_compile_option TARGET)
   if(ARGC GREATER 1)
     set(CO_TYPE "${ARGV1}")
@@ -33,12 +48,11 @@ function(add_sse4_compile_option TARGET)
   endif()
 
   check_co_type(${CO_TYPE})
-  target_compile_options(
-    ${TARGET}
-    ${CO_TYPE}
-    $<$<C_COMPILER_ID:MSVC>:/arch:SSE4.2>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-msse4.2>
-  )
+  if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${TARGET} ${CO_TYPE} /clang:-msse4.2)
+  else()
+    target_compile_options(${TARGET} ${CO_TYPE} -msse4.2)
+  endif()
 endfunction(add_sse4_compile_option TARGET)
 
 function(add_avx2_compile_option TARGET)
@@ -49,12 +63,11 @@ function(add_avx2_compile_option TARGET)
   endif()
 
   check_co_type(${CO_TYPE})
-  target_compile_options(
-    ${TARGET}
-    ${CO_TYPE}
-    $<$<C_COMPILER_ID:MSVC>:/arch:AVX2>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-mavx2>
-  )
+  if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${TARGET} ${CO_TYPE} /arch:AVX2)
+  else()
+    target_compile_options(${TARGET} ${CO_TYPE} -mavx2)
+  endif()
 endfunction(add_avx2_compile_option TARGET)
 
 function(add_avx512_compile_option TARGET)
@@ -66,16 +79,25 @@ function(add_avx512_compile_option TARGET)
 
   check_co_type(${CO_TYPE})
   # Modern architecture except Knights Landing, Knights Mill
-  target_compile_options(
-    ${TARGET}
-    ${CO_TYPE}
-    $<$<C_COMPILER_ID:MSVC>:/arch:AVX512>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-mavx512f>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-mavx512cd>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-mavx512bw>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-mavx512vl>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-mavx512dq>
-  )
+  if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(
+      ${TARGET}
+      ${CO_TYPE}
+      /clang:-mavx512f
+      /clang:-mavx512cd
+      /clang:-mavx512bw
+      /clang:-mavx512vl
+      /clang:-mavx512dq)
+  else()
+    target_compile_options(
+      ${TARGET}
+      ${CO_TYPE}
+      -mavx512f
+      -mavx512cd
+      -mavx512bw
+      -mavx512vl
+      -mavx512dq)
+  endif()
 endfunction(add_avx512_compile_option TARGET)
 
 function(add_asan_compile_option TARGET)
@@ -86,17 +108,12 @@ function(add_asan_compile_option TARGET)
   endif()
 
   check_co_type(${CO_TYPE})
-  target_compile_options(
-    ${TARGET}
-    ${CO_TYPE}
-    $<$<C_COMPILER_ID:MSVC>:/fsanitize=address>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-fsanitize=address>
-  )
-  target_link_options(
-    ${TARGET}
-    ${CO_TYPE}
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-fsanitize=address>
-  )
+  if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${TARGET} ${CO_TYPE} /fsanitize=address)
+  else()
+    target_compile_options(${TARGET} ${CO_TYPE} -fsanitize=address)
+    target_link_options(${TARGET} ${CO_TYPE} -fsanitize=address)
+  endif()
 endfunction(add_asan_compile_option TARGET)
 
 function(add_fuzzer_coverage_option TARGET)
@@ -107,16 +124,8 @@ function(add_fuzzer_coverage_option TARGET)
   endif()
 
   check_co_type(${CO_TYPE})
-  target_compile_options(
-    ${TARGET}
-    ${CO_TYPE}
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-fsanitize=fuzzer-no-link>
-  )
-  target_link_options(
-    ${TARGET}
-    ${CO_TYPE}
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-fsanitize=fuzzer-no-link>
-  )
+  target_compile_options(${TARGET} ${CO_TYPE} -fsanitize=fuzzer-no-link)
+  target_link_options(${TARGET} ${CO_TYPE} -fsanitize=fuzzer-no-link)
 endfunction(add_fuzzer_coverage_option TARGET)
 
 function(add_coverage_flags TARGET)
@@ -127,20 +136,15 @@ function(add_coverage_flags TARGET)
   endif()
 
   check_co_type(${CO_TYPE})
-  target_compile_options(
-    ${TARGET}
-    ${CO_TYPE}
-    $<$<C_COMPILER_ID:MSVC>:/fprofile-instr-generate>
-    $<$<C_COMPILER_ID:MSVC>:/fcoverage-mapping>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-fprofile-instr-generate>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-fcoverage-mapping>
-  )
-  target_link_options(
-    ${TARGET}
-    ${CO_TYPE}
-    $<$<C_COMPILER_ID:MSVC>:/fprofile-instr-generate>
-    $<$<C_COMPILER_ID:MSVC>:/fcoverage-mapping>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-fprofile-instr-generate>
-    $<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:Intel>>:-fcoverage-mapping>
-  )
+  if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${TARGET} ${CO_TYPE} /fprofile-instr-generate
+                           /fcoverage-mapping)
+    target_link_options(${TARGET} ${CO_TYPE} /fprofile-instr-generate
+                        /fcoverage-mapping)
+  else()
+    target_compile_options(${TARGET} ${CO_TYPE} -fprofile-instr-generate
+                           -fcoverage-mapping)
+    target_link_options(${TARGET} ${CO_TYPE} -fprofile-instr-generate
+                        -fcoverage-mapping)
+  endif()
 endfunction()

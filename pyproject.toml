@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ssrjson"
-version = "0.0.18"
+version = "0.0.19"
 description = "A SIMD boosted high-performance and correct Python JSON parsing library, faster than the fastest."
 readme = "README.md"
 requires-python = ">=3.10"

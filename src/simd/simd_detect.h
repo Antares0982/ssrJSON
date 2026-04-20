@@ -81,15 +81,8 @@
 #        define SIMD_256_IU __m256i_u
 #    endif
 #    define SIMD_512 __m512i
-// x86: WRITE_SUPPORT_MASK_WRITE
-#    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
-#        define WRITE_SUPPORT_MASK_WRITE 1
-#    else
-#        define WRITE_SUPPORT_MASK_WRITE 0
-#    endif
 #elif SSRJSON_IS_AARCH64
 #    define SIMD_FEATURE_NAME neon
-#    define WRITE_SUPPORT_MASK_WRITE 0
 #    define USING_AVX512 0
 #    define USING_AVX2 0
 #else
@@ -114,7 +107,7 @@
 #elif SSRJSON_IS_AARCH64
 #    include <arm_neon.h>
 #    include <assert.h>
-static_assert(__LITTLE_ENDIAN__, "currently only little endian is supported");
+static_assert(__LITTLE_ENDIAN__, "only little endian is supported");
 #endif
 
 
