@@ -2,3 +2,5 @@ CompileFlags:
   Add: [-DSSRJSON_CLANGD_CHECKING, -DDISABLE_INTERNAL_NOINLINE=0]
 Diagnostics:
   Suppress: [undefined-internal, unused-includes]
+Index:
+  HeaderInsertion: never

@@ -34,7 +34,9 @@
 #undef unicode_indent_writer
 //
 #undef bytes_buffer_append_key
+#undef bytes_buffer_append_key_non_compact
 #undef bytes_buffer_append_str
+#undef bytes_buffer_append_str_non_compact
 #undef bytes_buffer_append_nonascii_key_write_cache
 #undef bytes_buffer_append_nonascii_key_no_write_cache
 #undef encode_bytes_process_val

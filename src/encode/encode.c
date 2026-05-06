@@ -583,6 +583,9 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Dumps)(PyObject *self,
             obj_type = T_Bool;
             goto dumps_constant;
         }
+        case T_UnicodeNonCompact: {
+            return ssrjson_dumps_single_unicode_non_compact_to_str(obj);
+        }
         default: {
             PyErr_SetString(JSONEncodeError, "Unsupported type to encode");
             return NULL;
@@ -804,6 +807,9 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_DumpsToBytes)(PyObject *self,
             obj_type = T_Bool;
             goto dumps_constant;
         }
+        case T_UnicodeNonCompact: {
+            return ssrjson_dumps_single_unicode_non_compact_to_bytes(obj, is_write_cache);
+        }
         default: {
             PyErr_SetString(JSONEncodeError, "Unsupported type to encode");
             return NULL;
@@ -851,3 +857,5 @@ dumps_constant:;
 dumps_float:;
     return ssrjson_dumps_single_float(obj, true);
 }
+
+#include "encode_scalar.h"

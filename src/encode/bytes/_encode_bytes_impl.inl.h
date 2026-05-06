@@ -182,6 +182,27 @@ static force_noinline u8 *bytes_buffer_append_key(u8 *writer, PyObject *key,
     }
 }
 
+static force_noinline u8 *bytes_buffer_append_key_non_compact(u8 *writer, PyObject *key,
+                                                              EncodeUnicodeBufferInfo *unicode_buffer_info,
+                                                              Py_ssize_t cur_nested_depth, bool is_write_cache) {
+    int kind = PyUnicode_KIND(key);
+    usize len = (usize)PyUnicode_GET_LENGTH(key);
+    const void *src = ssrjson_pyunicode_cast(key)->data.any;
+#define _NC_BKEY(r_t) ssrjson_concat3(_bytes_buffer_append_key_non_compact, r_t, __INDENT_NAME)
+    switch (kind) {
+        case 1:
+            return _NC_BKEY(u8)(writer, src, len, key, unicode_buffer_info, cur_nested_depth, is_write_cache);
+        case 2:
+            return _NC_BKEY(u16)(writer, src, len, key, unicode_buffer_info, cur_nested_depth, is_write_cache);
+        case 4:
+            return _NC_BKEY(u32)(writer, src, len, key, unicode_buffer_info, cur_nested_depth, is_write_cache);
+        default:
+            ssrjson_unreachable();
+            return NULL;
+    }
+#undef _NC_BKEY
+}
+
 static force_noinline u8 *bytes_buffer_append_str(u8 *writer, PyObject *str,
                                                   EncodeUnicodeBufferInfo *unicode_buffer_info,
                                                   Py_ssize_t cur_nested_depth,
@@ -235,6 +256,47 @@ static force_noinline u8 *bytes_buffer_append_str(u8 *writer, PyObject *str,
     }
 }
 
+force_inline u8 *bytes_buffer_append_str_non_compact(u8 *writer, PyObject *str,
+                                                     EncodeUnicodeBufferInfo *unicode_buffer_info,
+                                                     Py_ssize_t cur_nested_depth,
+                                                     ssrjson_compiletime bool is_in_obj,
+                                                     bool is_write_cache) {
+    int kind = PyUnicode_KIND(str);
+    usize len = (usize)PyUnicode_GET_LENGTH(str);
+    const void *src = ssrjson_pyunicode_cast(str)->data.any;
+#define _NC_BVAL_IN_OBJ(r_t) ssrjson_concat3(_bytes_buffer_append_str_value_non_compact_in_obj, r_t, __INDENT_NAME)
+#define _NC_BVAL_IN_ARR(r_t) ssrjson_concat3(_bytes_buffer_append_str_value_non_compact_in_arr, r_t, __INDENT_NAME)
+    switch (kind) {
+        case 1:
+            if (ssrjson_consteval(is_in_obj)) {
+                writer = _NC_BVAL_IN_OBJ(u8)(writer, src, len, str, unicode_buffer_info, cur_nested_depth, is_write_cache);
+            } else {
+                writer = _NC_BVAL_IN_ARR(u8)(writer, src, len, str, unicode_buffer_info, cur_nested_depth, is_write_cache);
+            }
+            break;
+        case 2:
+            if (ssrjson_consteval(is_in_obj)) {
+                writer = _NC_BVAL_IN_OBJ(u16)(writer, src, len, str, unicode_buffer_info, cur_nested_depth, is_write_cache);
+            } else {
+                writer = _NC_BVAL_IN_ARR(u16)(writer, src, len, str, unicode_buffer_info, cur_nested_depth, is_write_cache);
+            }
+            break;
+        case 4:
+            if (ssrjson_consteval(is_in_obj)) {
+                writer = _NC_BVAL_IN_OBJ(u32)(writer, src, len, str, unicode_buffer_info, cur_nested_depth, is_write_cache);
+            } else {
+                writer = _NC_BVAL_IN_ARR(u32)(writer, src, len, str, unicode_buffer_info, cur_nested_depth, is_write_cache);
+            }
+            break;
+        default:
+            ssrjson_unreachable();
+            return NULL;
+    }
+#undef _NC_BVAL_IN_OBJ
+#undef _NC_BVAL_IN_ARR
+    return writer;
+}
+
 force_inline u8 *encode_bytes_process_val(
         u8 *writer,
         EncodeValJumpFlag *jump_flag_out,
@@ -271,6 +333,11 @@ force_inline u8 *encode_bytes_process_val(
     switch (obj_type) {
         case T_Unicode: {
             writer = bytes_buffer_append_str(writer, val, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, is_write_cache);
+            return_jump_fail_if_unlikely(!writer);
+            break;
+        }
+        case T_UnicodeNonCompact: {
+            writer = bytes_buffer_append_str_non_compact(writer, val, unicode_buffer_info, *cur_nested_depth_addr, is_in_obj, is_write_cache);
             return_jump_fail_if_unlikely(!writer);
             break;
         }
@@ -630,10 +697,14 @@ ssrjson_dumps_to_bytes_obj(PyObject *in_obj, int is_write_cache) {
 dict_pair_begin:;
     assert(PyDict_GET_SIZE(cur_obj) != 0);
     if (pydict_next(cur_obj, &cur_pos, &key, &val)) {
-        if (unlikely(!PyUnicode_CheckExact(key))) {
+        EncodePyTypes key_type = ssrjson_str_check(key);
+        if (likely(key_type == T_Unicode)) {
+            writer = bytes_buffer_append_key(writer, key, &_unicode_buffer_info, cur_nested_depth, is_write_cache);
+        } else if (key_type == T_UnicodeNonCompact) {
+            writer = bytes_buffer_append_key_non_compact(writer, key, &_unicode_buffer_info, cur_nested_depth, is_write_cache);
+        } else {
             goto fail_keytype;
         }
-        writer = bytes_buffer_append_key(writer, key, &_unicode_buffer_info, cur_nested_depth, is_write_cache);
         goto_fail_if_unlikely(!writer);
     dict_key_done:;
         //

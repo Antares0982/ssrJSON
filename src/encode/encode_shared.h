@@ -326,24 +326,36 @@ force_inline EncodePyTypes ssrjson_type_check(PyObject *val) {
     u64 type = (u64)Py_TYPE(val);
     assert(type);
     u64 *py_fast_type = _PyFastType;
-    if (type == _PyFastType[0]) {
+    if (type == _PyFastType[T_Unicode]) {
         return T_Unicode;
-    } else if (type == _PyFastType[1]) {
+    } else if (type == _PyFastType[T_Long]) {
         return T_Long;
-    } else if (type == _PyFastType[2]) {
+    } else if (type == _PyFastType[T_Bool]) {
         return T_Bool;
-    } else if (type == _PyFastType[3]) {
+    } else if (type == _PyFastType[T_None]) {
         return T_None;
-    } else if (type == _PyFastType[4]) {
+    } else if (type == _PyFastType[T_Float]) {
         return T_Float;
-    } else if (type == _PyFastType[5]) {
+    } else if (type == _PyFastType[T_List]) {
         return T_List;
-    } else if (type == _PyFastType[6]) {
+    } else if (type == _PyFastType[T_Dict]) {
         return T_Dict;
-    } else if (type == _PyFastType[7]) {
+    } else if (type == _PyFastType[T_Tuple]) {
         return T_Tuple;
     } else {
         return slow_type_check((PyTypeObject *)type);
+    }
+}
+
+force_inline EncodePyTypes ssrjson_str_check(PyObject *val) {
+    u64 type = (u64)Py_TYPE(val);
+    assert(type);
+    if (likely(type == _PyFastType[T_Unicode])) {
+        return T_Unicode;
+    } else if (PyType_FastSubclass((PyTypeObject *)type, Py_TPFLAGS_UNICODE_SUBCLASS)) {
+        return T_UnicodeNonCompact;
+    } else {
+        return T_Unknown;
     }
 }
 
@@ -379,6 +391,73 @@ force_inline bool check_unicode_writer_valid(void *writer, EncodeUnicodeBufferIn
  *     ucs_type: The unicode type of the buffer (0 stands for ascii).
  */
 bool resize_to_fit_pyunicode(EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t len, int ucs_type);
+
+/*==============================================================================
+ * Non-compact unicode cold-path entries.
+ *============================================================================*/
+
+/* Top-level single-string entries. */
+PyObject *ssrjson_dumps_single_unicode_non_compact_to_str(PyObject *unicode);
+PyObject *ssrjson_dumps_single_unicode_non_compact_to_bytes(PyObject *unicode, bool is_write_cache);
+
+#define _DECL_STR_NC_VAL(r_t, w_t, ind)                                                       \
+    w_t *ssrjson_concat4(_unicode_buffer_append_str_value_non_compact_in_obj, r_t, w_t, ind)( \
+            const r_t *str_data, usize len, w_t *writer,                                      \
+            EncodeUnicodeBufferInfo *unicode_buffer_info,                                     \
+            Py_ssize_t cur_nested_depth);                                                     \
+    w_t *ssrjson_concat4(_unicode_buffer_append_str_value_non_compact_in_arr, r_t, w_t, ind)( \
+            const r_t *str_data, usize len, w_t *writer,                                      \
+            EncodeUnicodeBufferInfo *unicode_buffer_info,                                     \
+            Py_ssize_t cur_nested_depth);
+#define _DECL_STR_NC_KEY(r_t, w_t, ind)                                          \
+    w_t *ssrjson_concat4(_unicode_buffer_append_key_non_compact, r_t, w_t, ind)( \
+            const r_t *str_data, usize len, w_t *writer,                         \
+            EncodeUnicodeBufferInfo *unicode_buffer_info,                        \
+            Py_ssize_t cur_nested_depth);
+#define _DECL_FOR_EACH_RW(MAC, ind) \
+    MAC(u8, u8, ind)                \
+    MAC(u8, u16, ind)               \
+    MAC(u8, u32, ind)               \
+    MAC(u16, u16, ind)              \
+    MAC(u16, u32, ind)              \
+    MAC(u32, u32, ind)
+_DECL_FOR_EACH_RW(_DECL_STR_NC_VAL, indent0)
+_DECL_FOR_EACH_RW(_DECL_STR_NC_VAL, indent2)
+_DECL_FOR_EACH_RW(_DECL_STR_NC_VAL, indent4)
+_DECL_FOR_EACH_RW(_DECL_STR_NC_KEY, indent0)
+_DECL_FOR_EACH_RW(_DECL_STR_NC_KEY, indent2)
+_DECL_FOR_EACH_RW(_DECL_STR_NC_KEY, indent4)
+#undef _DECL_FOR_EACH_RW
+#undef _DECL_STR_NC_KEY
+#undef _DECL_STR_NC_VAL
+
+#define _DECL_BYTES_NC_VAL(r_t, ind)                                                  \
+    u8 *ssrjson_concat3(_bytes_buffer_append_str_value_non_compact_in_obj, r_t, ind)( \
+            u8 * writer, const r_t *src_data, usize len, PyObject *str,               \
+            EncodeUnicodeBufferInfo *unicode_buffer_info,                             \
+            Py_ssize_t cur_nested_depth, bool is_write_cache);                        \
+    u8 *ssrjson_concat3(_bytes_buffer_append_str_value_non_compact_in_arr, r_t, ind)( \
+            u8 * writer, const r_t *src_data, usize len, PyObject *str,               \
+            EncodeUnicodeBufferInfo *unicode_buffer_info,                             \
+            Py_ssize_t cur_nested_depth, bool is_write_cache);
+#define _DECL_BYTES_NC_KEY(r_t, ind)                                     \
+    u8 *ssrjson_concat3(_bytes_buffer_append_key_non_compact, r_t, ind)( \
+            u8 * writer, const r_t *src_data, usize len, PyObject *key,  \
+            EncodeUnicodeBufferInfo *unicode_buffer_info,                \
+            Py_ssize_t cur_nested_depth, bool is_write_cache);
+#define _DECL_FOR_EACH_R(MAC, ind) \
+    MAC(u8, ind)                   \
+    MAC(u16, ind)                  \
+    MAC(u32, ind)
+_DECL_FOR_EACH_R(_DECL_BYTES_NC_VAL, indent0)
+_DECL_FOR_EACH_R(_DECL_BYTES_NC_VAL, indent2)
+_DECL_FOR_EACH_R(_DECL_BYTES_NC_VAL, indent4)
+_DECL_FOR_EACH_R(_DECL_BYTES_NC_KEY, indent0)
+_DECL_FOR_EACH_R(_DECL_BYTES_NC_KEY, indent2)
+_DECL_FOR_EACH_R(_DECL_BYTES_NC_KEY, indent4)
+#undef _DECL_FOR_EACH_R
+#undef _DECL_BYTES_NC_KEY
+#undef _DECL_BYTES_NC_VAL
 
 /** Digit table from 00 to 99. */
 extern ssrjson_align(8) const u8 EncodeDigitTable[200];

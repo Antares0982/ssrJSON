@@ -60,13 +60,17 @@
         if (unlikely(!(_writer_))) return NULL;                                                                                             \
     } while (0)
 
-force_inline ssrjson_nofail EncodeUnicodeWriter prepare_unicode_write(PyObject *obj, EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *restrict unicode_info, usize *out_len, unsigned int *read_pykind, unsigned int *write_kind, const void **src_addr) {
+force_inline ssrjson_nofail EncodeUnicodeWriter prepare_unicode_write(PyObject *obj, EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *restrict unicode_info, usize *out_len, unsigned int *read_pykind, unsigned int *write_kind, const void **src_addr, ssrjson_compiletime bool is_compact) {
     usize out_len_val = (usize)PyUnicode_GET_LENGTH(obj);
     *out_len = out_len_val;
     unsigned int r_kind_val = PyUnicode_KIND(obj);
     *read_pykind = r_kind_val;
     bool is_ascii = PyUnicode_IS_ASCII(obj);
-    *src_addr = is_ascii ? ssrjson_pyunicode_ascii_start(obj) : ssrjson_pyunicode_ucs1_start(obj);
+    if (ssrjson_consteval(is_compact)) {
+        *src_addr = is_ascii ? ssrjson_pyunicode_ascii_start(obj) : ssrjson_pyunicode_ucs1_start(obj);
+    } else {
+        *src_addr = ssrjson_pyunicode_cast(obj)->data.any;
+    }
 
     // to eliminate redundant instructions when checking pykind
     assume(r_kind_val == 1 || r_kind_val == 2 || r_kind_val == 4);
@@ -153,7 +157,7 @@ static force_noinline EncodeUnicodeWriter unicode_buffer_append_key(PyObject *ke
     unsigned int pykind, write_kind;
     const void *src_voidp;
     assert(ssrjson_pyascii_cast(key)->state.compact);
-    writer = prepare_unicode_write(key, writer, unicode_buffer_info, unicode_info, &len, &pykind, &write_kind, &src_voidp);
+    writer = prepare_unicode_write(key, writer, unicode_buffer_info, unicode_info, &len, &pykind, &write_kind, &src_voidp, true);
 
     // compile-time optimized
     switch (ssrjson_consteval(write_kind)) {
@@ -173,6 +177,80 @@ static force_noinline EncodeUnicodeWriter unicode_buffer_append_key(PyObject *ke
 #endif
         case 4: {
             return unicode_buffer_append_key_distribute4(writer, unicode_buffer_info, cur_nested_depth, len, pykind, src_voidp);
+        }
+        default: {
+            ssrjson_unreachable();
+            return NULL;
+        }
+    }
+}
+
+#if COMPILE_UCS_LEVEL < 4
+force_inline EncodeUnicodeWriter unicode_buffer_append_key_non_compact_distribute2(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, usize len, unsigned int pykind, const void *src_voidp) {
+#    define _NC_KEY(r_t, w_t) ssrjson_concat4(_unicode_buffer_append_key_non_compact, r_t, w_t, __INDENT_NAME)
+#    if COMPILE_UCS_LEVEL == 2
+    if (pykind == 1) {
+        const u8 *src = src_voidp;
+        return _NC_KEY(u8, u16)(src, len, WRITER_AS_U16(writer), unicode_buffer_info, cur_nested_depth);
+    } else {
+#    endif
+        assert(pykind == 2);
+        const u16 *src = src_voidp;
+        return _NC_KEY(u16, u16)(src, len, WRITER_AS_U16(writer), unicode_buffer_info, cur_nested_depth);
+#    if COMPILE_UCS_LEVEL == 2
+    }
+#    endif
+    return writer;
+#    undef _NC_KEY
+}
+#endif
+
+force_inline EncodeUnicodeWriter unicode_buffer_append_key_non_compact_distribute4(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, usize len, unsigned int pykind, const void *src_voidp) {
+#define _NC_KEY(r_t, w_t) ssrjson_concat4(_unicode_buffer_append_key_non_compact, r_t, w_t, __INDENT_NAME)
+#if COMPILE_READ_UCS_LEVEL == 4
+    if (pykind == 1) {
+        const u8 *src = src_voidp;
+        return _NC_KEY(u8, u32)(src, len, WRITER_AS_U32(writer), unicode_buffer_info, cur_nested_depth);
+    } else if (pykind == 2) {
+        const u16 *src = src_voidp;
+        return _NC_KEY(u16, u32)(src, len, WRITER_AS_U32(writer), unicode_buffer_info, cur_nested_depth);
+    } else {
+#endif
+        assert(pykind == 4);
+        const u32 *src = src_voidp;
+        return _NC_KEY(u32, u32)(src, len, WRITER_AS_U32(writer), unicode_buffer_info, cur_nested_depth);
+#if COMPILE_READ_UCS_LEVEL == 4
+    }
+#endif
+    return writer;
+#undef _NC_KEY
+}
+
+static force_noinline EncodeUnicodeWriter unicode_buffer_append_key_non_compact(PyObject *key, EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info, EncodeUnicodeInfo *unicode_info, Py_ssize_t cur_nested_depth) {
+    usize len;
+    unsigned int pykind, write_kind;
+    const void *src_voidp;
+    writer = prepare_unicode_write(key, writer, unicode_buffer_info, unicode_info, &len, &pykind, &write_kind, &src_voidp, false);
+
+    switch (ssrjson_consteval(write_kind)) {
+#if COMPILE_UCS_LEVEL < 1
+        case 0:
+#endif
+#if COMPILE_UCS_LEVEL < 2
+        case 1: {
+#    define _NC_KEY(r_t, w_t) ssrjson_concat4(_unicode_buffer_append_key_non_compact, r_t, w_t, __INDENT_NAME)
+            const u8 *src = src_voidp;
+            return _NC_KEY(u8, u8)(src, len, WRITER_AS_U8(writer), unicode_buffer_info, cur_nested_depth);
+#    undef _NC_KEY
+        }
+#endif
+#if COMPILE_UCS_LEVEL < 4
+        case 2: {
+            return unicode_buffer_append_key_non_compact_distribute2(writer, unicode_buffer_info, cur_nested_depth, len, pykind, src_voidp);
+        }
+#endif
+        case 4: {
+            return unicode_buffer_append_key_non_compact_distribute4(writer, unicode_buffer_info, cur_nested_depth, len, pykind, src_voidp);
         }
         default: {
             ssrjson_unreachable();
@@ -223,7 +301,7 @@ static force_noinline EncodeUnicodeWriter unicode_buffer_append_str(EncodeUnicod
     unsigned int kind, write_kind;
     const void *src_voidp;
     assert(ssrjson_pyascii_cast(val)->state.compact);
-    writer = prepare_unicode_write(val, writer, unicode_buffer_info, unicode_info, &len, &kind, &write_kind, &src_voidp);
+    writer = prepare_unicode_write(val, writer, unicode_buffer_info, unicode_info, &len, &kind, &write_kind, &src_voidp, true);
 
     // compile-time optimized
     switch (ssrjson_consteval(write_kind)) {
@@ -248,6 +326,129 @@ static force_noinline EncodeUnicodeWriter unicode_buffer_append_str(EncodeUnicod
             return NULL;
         }
     }
+}
+
+#if COMPILE_UCS_LEVEL < 4
+force_inline EncodeUnicodeWriter unicode_buffer_append_str_non_compact_distribute2(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, usize len, unsigned int pykind, ssrjson_compiletime bool is_in_obj, const void *src_voidp) {
+#    define _NC_VAL_IN_OBJ(r_t, w_t) ssrjson_concat4(_unicode_buffer_append_str_value_non_compact_in_obj, r_t, w_t, __INDENT_NAME)
+#    define _NC_VAL_IN_ARR(r_t, w_t) ssrjson_concat4(_unicode_buffer_append_str_value_non_compact_in_arr, r_t, w_t, __INDENT_NAME)
+#    if COMPILE_UCS_LEVEL == 2
+    if (pykind == 1) {
+        const u8 *src = src_voidp;
+        if (ssrjson_consteval(is_in_obj)) {
+            return _NC_VAL_IN_OBJ(u8, u16)(src, len, WRITER_AS_U16(writer), unicode_buffer_info, cur_nested_depth);
+        } else {
+            return _NC_VAL_IN_ARR(u8, u16)(src, len, WRITER_AS_U16(writer), unicode_buffer_info, cur_nested_depth);
+        }
+    } else {
+#    endif
+        assert(pykind == 2);
+        const u16 *src = src_voidp;
+        if (ssrjson_consteval(is_in_obj)) {
+            return _NC_VAL_IN_OBJ(u16, u16)(src, len, WRITER_AS_U16(writer), unicode_buffer_info, cur_nested_depth);
+        } else {
+            return _NC_VAL_IN_ARR(u16, u16)(src, len, WRITER_AS_U16(writer), unicode_buffer_info, cur_nested_depth);
+        }
+#    if COMPILE_UCS_LEVEL == 2
+    }
+#    endif
+    return writer;
+#    undef _NC_VAL_IN_OBJ
+#    undef _NC_VAL_IN_ARR
+}
+#endif
+
+force_inline EncodeUnicodeWriter unicode_buffer_append_str_non_compact_distribute4(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, usize len, unsigned int pykind, ssrjson_compiletime bool is_in_obj, const void *src_voidp) {
+#define _NC_VAL_IN_OBJ(r_t, w_t) ssrjson_concat4(_unicode_buffer_append_str_value_non_compact_in_obj, r_t, w_t, __INDENT_NAME)
+#define _NC_VAL_IN_ARR(r_t, w_t) ssrjson_concat4(_unicode_buffer_append_str_value_non_compact_in_arr, r_t, w_t, __INDENT_NAME)
+#if COMPILE_UCS_LEVEL == 4
+    if (pykind == 1) {
+        const u8 *src = src_voidp;
+        if (ssrjson_consteval(is_in_obj)) {
+            return _NC_VAL_IN_OBJ(u8, u32)(src, len, WRITER_AS_U32(writer), unicode_buffer_info, cur_nested_depth);
+        } else {
+            return _NC_VAL_IN_ARR(u8, u32)(src, len, WRITER_AS_U32(writer), unicode_buffer_info, cur_nested_depth);
+        }
+    } else if (pykind == 2) {
+        const u16 *src = src_voidp;
+        if (ssrjson_consteval(is_in_obj)) {
+            return _NC_VAL_IN_OBJ(u16, u32)(src, len, WRITER_AS_U32(writer), unicode_buffer_info, cur_nested_depth);
+        } else {
+            return _NC_VAL_IN_ARR(u16, u32)(src, len, WRITER_AS_U32(writer), unicode_buffer_info, cur_nested_depth);
+        }
+    } else {
+#endif
+        assert(pykind == 4);
+        const u32 *src = src_voidp;
+        if (ssrjson_consteval(is_in_obj)) {
+            return _NC_VAL_IN_OBJ(u32, u32)(src, len, WRITER_AS_U32(writer), unicode_buffer_info, cur_nested_depth);
+        } else {
+            return _NC_VAL_IN_ARR(u32, u32)(src, len, WRITER_AS_U32(writer), unicode_buffer_info, cur_nested_depth);
+        }
+#if COMPILE_UCS_LEVEL == 4
+    }
+#endif
+    return writer;
+#undef _NC_VAL_IN_OBJ
+#undef _NC_VAL_IN_ARR
+}
+
+force_inline EncodeUnicodeWriter unicode_buffer_append_str_non_compact_impl(
+        EncodeUnicodeWriter writer, PyObject *val,
+        EncodeUnicodeBufferInfo *unicode_buffer_info,
+        EncodeUnicodeInfo *unicode_info,
+        Py_ssize_t cur_nested_depth, ssrjson_compiletime bool is_in_obj) {
+    usize len;
+    unsigned int kind, write_kind;
+    const void *src_voidp;
+    writer = prepare_unicode_write(val, writer, unicode_buffer_info, unicode_info, &len, &kind, &write_kind, &src_voidp, false);
+
+    switch (ssrjson_consteval(write_kind)) {
+#if COMPILE_UCS_LEVEL < 1
+        case 0:
+#endif
+#if COMPILE_UCS_LEVEL < 2
+        case 1: {
+#    define _NC_VAL_IN_OBJ(r_t, w_t) ssrjson_concat4(_unicode_buffer_append_str_value_non_compact_in_obj, r_t, w_t, __INDENT_NAME)
+#    define _NC_VAL_IN_ARR(r_t, w_t) ssrjson_concat4(_unicode_buffer_append_str_value_non_compact_in_arr, r_t, w_t, __INDENT_NAME)
+            if (ssrjson_consteval(is_in_obj)) {
+                return _NC_VAL_IN_OBJ(u8, u8)(src_voidp, len, WRITER_AS_U8(writer), unicode_buffer_info, cur_nested_depth);
+            } else {
+                return _NC_VAL_IN_ARR(u8, u8)(src_voidp, len, WRITER_AS_U8(writer), unicode_buffer_info, cur_nested_depth);
+            }
+#    undef _NC_VAL_IN_OBJ
+#    undef _NC_VAL_IN_ARR
+        }
+#endif
+#if COMPILE_UCS_LEVEL < 4
+        case 2: {
+            return unicode_buffer_append_str_non_compact_distribute2(writer, unicode_buffer_info, cur_nested_depth, len, kind, is_in_obj, src_voidp);
+        }
+#endif
+        case 4: {
+            return unicode_buffer_append_str_non_compact_distribute4(writer, unicode_buffer_info, cur_nested_depth, len, kind, is_in_obj, src_voidp);
+        }
+        default: {
+            ssrjson_unreachable();
+            return NULL;
+        }
+    }
+}
+
+static force_noinline EncodeUnicodeWriter unicode_buffer_append_str_non_compact_in_obj(
+        EncodeUnicodeWriter writer, PyObject *val,
+        EncodeUnicodeBufferInfo *unicode_buffer_info,
+        EncodeUnicodeInfo *unicode_info,
+        Py_ssize_t cur_nested_depth) {
+    return unicode_buffer_append_str_non_compact_impl(writer, val, unicode_buffer_info, unicode_info, cur_nested_depth, true);
+}
+
+static force_noinline EncodeUnicodeWriter unicode_buffer_append_str_non_compact_in_arr(
+        EncodeUnicodeWriter writer, PyObject *val,
+        EncodeUnicodeBufferInfo *unicode_buffer_info,
+        EncodeUnicodeInfo *unicode_info,
+        Py_ssize_t cur_nested_depth) {
+    return unicode_buffer_append_str_non_compact_impl(writer, val, unicode_buffer_info, unicode_info, cur_nested_depth, false);
 }
 
 force_inline dst_t *unicode_buffer_append_bool(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, bool is_in_obj, bool is_false) {
@@ -354,6 +555,7 @@ force_inline EncodeUnicodeWriter encode_process_val(
     switch (obj_type) {
         case T_Unicode: {
             writer = unicode_buffer_append_str(writer, val, unicode_buffer_info, unicode_info_addr, *cur_nested_depth_addr, is_in_obj);
+        t_unicode_check_elevate:;
             return_jump_fail_if_unlikely(!writer);
             if (ssrjson_consteval(COMPILE_UCS_LEVEL < 4) && unlikely(unicode_info_addr->cur_ucs_type > COMPILE_UCS_LEVEL)) {
 #if COMPILE_UCS_LEVEL < 1
@@ -375,6 +577,14 @@ force_inline EncodeUnicodeWriter encode_process_val(
 #endif
             }
             break;
+        }
+        case T_UnicodeNonCompact: {
+            if (ssrjson_consteval(is_in_obj)) {
+                writer = unicode_buffer_append_str_non_compact_in_obj(writer, val, unicode_buffer_info, unicode_info_addr, *cur_nested_depth_addr);
+            } else {
+                writer = unicode_buffer_append_str_non_compact_in_arr(writer, val, unicode_buffer_info, unicode_info_addr, *cur_nested_depth_addr);
+            }
+            goto t_unicode_check_elevate;
         }
 
         t_long_zero:;
@@ -792,10 +1002,14 @@ ssrjson_dumps_obj(
 dict_pair_begin:;
     assert(PyDict_GET_SIZE(cur_obj) != 0);
     if (pydict_next(cur_obj, &cur_pos, &key, &val)) {
-        if (unlikely(!PyUnicode_CheckExact(key))) {
+        EncodePyTypes key_type = ssrjson_str_check(key);
+        if (likely(key_type == T_Unicode)) {
+            writer = unicode_buffer_append_key(key, writer, &_unicode_buffer_info, &unicode_info, cur_nested_depth);
+        } else if (key_type == T_UnicodeNonCompact) {
+            writer = unicode_buffer_append_key_non_compact(key, writer, &_unicode_buffer_info, &unicode_info, cur_nested_depth);
+        } else {
             goto fail_keytype;
         }
-        writer = unicode_buffer_append_key(key, writer, &_unicode_buffer_info, &unicode_info, cur_nested_depth);
         goto_fail_if_unlikely(!writer);
         if (ssrjson_consteval(COMPILE_UCS_LEVEL < 4) && unlikely(unicode_info.cur_ucs_type > COMPILE_UCS_LEVEL)) {
 #if COMPILE_UCS_LEVEL < 1

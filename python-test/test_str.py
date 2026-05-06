@@ -386,3 +386,182 @@ class TestStr:
         s = '{"\\u00ffÿ":"好ÿ","ÿ\\u00ff":"\\/\\"/\\f/a\\r\\b\\/\\f"}'
         obj = ssrjson.loads(s)
         assert obj == {"ÿÿ": '/"/\x0c/a\r\x08/\x0c'}
+
+
+class MyStr(str):
+    pass
+
+
+class TestStrSubclass:
+    def _test_dumps_str_subclass(self, d):
+        x = ssrjson.dumps(d)
+        assert x == json.dumps(d, ensure_ascii=False).replace(" ", "")
+        assert ssrjson.dumps(d, indent=2) == json.dumps(d, indent=2, ensure_ascii=False)
+        assert ssrjson.dumps(d, indent=4) == json.dumps(d, indent=4, ensure_ascii=False)
+        return x
+
+    def _test_dumps_bytes_subclass(self, d):
+        def _do_test(is_write_cache: bool):
+            b = ssrjson.dumps_to_bytes(d)
+            assert b == json.dumps(d, ensure_ascii=False).replace(" ", "").encode(
+                "utf-8"
+            )
+            assert ssrjson.dumps_to_bytes(
+                d, indent=2, is_write_cache=is_write_cache
+            ) == json.dumps(d, indent=2, ensure_ascii=False).encode("utf-8")
+            assert ssrjson.dumps_to_bytes(
+                d, indent=4, is_write_cache=is_write_cache
+            ) == json.dumps(d, indent=4, ensure_ascii=False).encode("utf-8")
+            return b
+
+        a = _do_test(False)
+        b = _do_test(True)
+        assert a == b
+        return b
+
+    def test_top_level_ascii(self):
+        for _ in range(100):
+            s = MyStr(random_ascii_str())
+            d = self._test_dumps_str_subclass(s)
+            assert str(s) == ssrjson.loads(d)
+            b = self._test_dumps_bytes_subclass(s)
+            assert str(s) == ssrjson.loads(b)
+
+    def test_top_level_ucs1(self):
+        for _ in range(100):
+            s = MyStr(random_ucs1_str())
+            d = self._test_dumps_str_subclass(s)
+            assert str(s) == ssrjson.loads(d)
+            b = self._test_dumps_bytes_subclass(s)
+            assert str(s) == ssrjson.loads(b)
+
+    def test_top_level_ucs2(self):
+        for _ in range(100):
+            s = MyStr(random_ucs2_str())
+            d = self._test_dumps_str_subclass(s)
+            assert str(s) == ssrjson.loads(d)
+            b = self._test_dumps_bytes_subclass(s)
+            assert str(s) == ssrjson.loads(b)
+
+    def test_top_level_ucs4(self):
+        for _ in range(100):
+            s = MyStr(random_ucs4_str())
+            d = self._test_dumps_str_subclass(s)
+            assert str(s) == ssrjson.loads(d)
+            b = self._test_dumps_bytes_subclass(s)
+            assert str(s) == ssrjson.loads(b)
+
+    def test_empty_str(self):
+        s = MyStr("")
+        d = self._test_dumps_str_subclass(s)
+        assert ssrjson.loads(d) == ""
+        b = self._test_dumps_bytes_subclass(s)
+        assert ssrjson.loads(b) == ""
+
+    def test_as_dict_key(self):
+        for _ in range(100):
+            k = MyStr(get_random_str())
+            v = get_random_str()
+            obj = {k: v}
+            sample = (
+                json.dumps(obj, ensure_ascii=False)
+                .replace(": ", ":", 2)
+                .replace(", ", ",", 1)
+            )
+            assert self._test_dumps_str_subclass(obj) == sample
+            assert self._test_dumps_bytes_subclass(obj) == sample.encode("utf-8")
+
+    def test_as_dict_value(self):
+        for _ in range(100):
+            k = get_random_str()
+            v = MyStr(get_random_str())
+            obj = {k: v}
+            sample = (
+                json.dumps(obj, ensure_ascii=False)
+                .replace(": ", ":", 2)
+                .replace(", ", ",", 1)
+            )
+            assert self._test_dumps_str_subclass(obj) == sample
+            assert self._test_dumps_bytes_subclass(obj) == sample.encode("utf-8")
+
+    def test_as_list_item(self):
+        for _ in range(100):
+            s = MyStr(get_random_str())
+            obj = [s]
+            sample = (
+                json.dumps(obj, ensure_ascii=False)
+                .replace(": ", ":", 2)
+                .replace(", ", ",", 1)
+            )
+            assert self._test_dumps_str_subclass(obj) == sample
+            assert self._test_dumps_bytes_subclass(obj) == sample.encode("utf-8")
+
+    def test_mixed_with_normal_str(self):
+        for _ in range(100):
+            k1 = MyStr(get_random_str())
+            k2 = get_random_str()
+            v1 = MyStr(get_random_str())
+            v2 = get_random_str()
+            obj = {k1: v1, k2: v2}
+            sample = (
+                json.dumps(obj, ensure_ascii=False)
+                .replace(": ", ":", 2)
+                .replace(", ", ",", 1)
+            )
+            assert self._test_dumps_str_subclass(obj) == sample
+            assert self._test_dumps_bytes_subclass(obj) == sample.encode("utf-8")
+
+    def test_nested_containers(self):
+        for _ in range(100):
+            k = MyStr(get_random_str())
+            v1 = MyStr(get_random_str())
+            v2 = get_random_str()
+            obj = {k: [v1, v2]}
+            sample = (
+                json.dumps(obj, ensure_ascii=False)
+                .replace(": ", ":", 2)
+                .replace(", ", ",", 1)
+            )
+            assert self._test_dumps_str_subclass(obj) == sample
+            assert self._test_dumps_bytes_subclass(obj) == sample.encode("utf-8")
+
+    def test_cover(self):
+        for a in (MyStr("a"), MyStr("ÿ"), MyStr("好"), MyStr("🐈")):
+            for b in (MyStr("a"), MyStr("ÿ"), MyStr("好"), MyStr("🐈")):
+                obj = {a: b}
+                self._test_dumps_str_subclass(obj)
+                self._test_dumps_bytes_subclass(obj)
+                obj = [a, b]
+                self._test_dumps_str_subclass(obj)
+                self._test_dumps_bytes_subclass(obj)
+
+        for a in (
+            MyStr("a" * 4096),
+            MyStr("ÿ" * 4096),
+            MyStr("好" * 4096),
+            MyStr("🐈" * 4096),
+        ):
+            for b in (
+                MyStr("a" * 4096),
+                MyStr("ÿ" * 4096),
+                MyStr("好" * 4096),
+                MyStr("🐈" * 4096),
+            ):
+                obj = {a: b}
+                self._test_dumps_str_subclass(obj)
+                self._test_dumps_bytes_subclass(obj)
+                obj = [a, b]
+                self._test_dumps_str_subclass(obj)
+                self._test_dumps_bytes_subclass(obj)
+
+        def _test_1(repeat: int):
+            for c in (MyStr("ÿ"), MyStr("好"), MyStr("🐈")):
+                a = MyStr("a" * repeat) + c + MyStr("a" * repeat)
+                b = MyStr("a" * repeat) + c * 2 + MyStr("a" * repeat)
+                obj = {a: b}
+                self._test_dumps_str_subclass(obj)
+                self._test_dumps_bytes_subclass(obj)
+
+        for repeat in (1, 2, 4, 8, 16, 32, 64, 128, 256):
+            _test_1(repeat)
+            _test_1(repeat + 4096)

@@ -71,6 +71,10 @@ class FloatSubclass(float):
     pass
 
 
+class StrSubclass(str):
+    pass
+
+
 # --- Object generation ---
 
 MAX_DEPTH = 512
@@ -413,6 +417,8 @@ def gen_value(bc: ByteConsumer, rng: random.Random):
     has_surrogate = False
     if type_id == TYPE_STR:
         val, has_surrogate = gen_str(bc, rng)
+        if bc.choose(4) == 0:
+            val = StrSubclass(val)
     elif type_id == TYPE_INT:
         val = gen_int(bc, rng)
     elif type_id == TYPE_BOOL:
@@ -434,7 +440,7 @@ def gen_object(bc: ByteConsumer, rng: random.Random, depth: int = 0):
     """Generate an object (container or value). Returns (obj, has_surrogate, has_tuple, has_ndarray, has_subclass)."""
     if depth >= MAX_DEPTH or not bc.has():
         val, has_surr = gen_value(bc, rng)
-        has_subclass = isinstance(val, (IntSubclass, FloatSubclass))
+        has_subclass = isinstance(val, (IntSubclass, FloatSubclass, StrSubclass))
         has_lossy_float = HAS_NUMPY and (
             isinstance(val, np.ndarray) or isinstance(val, (np.float16, np.float32))
         )
@@ -445,7 +451,7 @@ def gen_object(bc: ByteConsumer, rng: random.Random, depth: int = 0):
         return gen_container(bc, rng, depth)
     else:
         val, has_surr = gen_value(bc, rng)
-        has_subclass = isinstance(val, (IntSubclass, FloatSubclass))
+        has_subclass = isinstance(val, (IntSubclass, FloatSubclass, StrSubclass))
         has_lossy_float = HAS_NUMPY and (
             isinstance(val, np.ndarray) or isinstance(val, (np.float16, np.float32))
         )
@@ -578,6 +584,8 @@ def normalize_for_comparison(obj):
         return int(obj)  # strip subclass
     elif isinstance(obj, float):
         return float(obj)  # strip subclass
+    elif isinstance(obj, str):
+        return str(obj)  # strip subclass
     return obj
 
 

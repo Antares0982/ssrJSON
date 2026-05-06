@@ -37,11 +37,19 @@
 //
 #undef prepare_unicode_write
 #undef unicode_buffer_append_key
+#undef unicode_buffer_append_key_non_compact
 #undef unicode_buffer_append_key_distribute2
 #undef unicode_buffer_append_key_distribute4
+#undef unicode_buffer_append_key_non_compact_distribute2
+#undef unicode_buffer_append_key_non_compact_distribute4
 #undef unicode_buffer_append_str
+#undef unicode_buffer_append_str_non_compact_in_obj
+#undef unicode_buffer_append_str_non_compact_in_arr
+#undef unicode_buffer_append_str_non_compact_impl
 #undef unicode_buffer_append_str_distribute2
 #undef unicode_buffer_append_str_distribute4
+#undef unicode_buffer_append_str_non_compact_distribute2
+#undef unicode_buffer_append_str_non_compact_distribute4
 #undef unicode_buffer_append_bool
 #undef unicode_buffer_append_null
 #undef unicode_buffer_append_float

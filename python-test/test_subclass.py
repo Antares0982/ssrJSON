@@ -33,14 +33,23 @@ class SubTuple(tuple):
 
 class TestSubclass:
     def test_subclass_str(self):
-        with pytest.raises(ssrjson.JSONEncodeError):
-            ssrjson.dumps(SubStr("abc"))
-        with pytest.raises(ssrjson.JSONEncodeError):
-            ssrjson.dumps_to_bytes(SubStr("abc"))
-        with pytest.raises(ssrjson.JSONEncodeError):
-            ssrjson.dumps({SubStr("abc"): SubStr("abcd")})
-        with pytest.raises(ssrjson.JSONEncodeError):
-            ssrjson.dumps([SubStr("abc")])
+        # Top-level
+        assert ssrjson.dumps(SubStr("abc")) == '"abc"'
+        assert ssrjson.dumps_to_bytes(SubStr("abc")) == b'"abc"'
+        # As dict key + value
+        assert ssrjson.dumps({SubStr("abc"): SubStr("abcd")}) == '{"abc":"abcd"}'
+        assert (
+            ssrjson.dumps_to_bytes({SubStr("abc"): SubStr("abcd")}) == b'{"abc":"abcd"}'
+        )
+        # As list value
+        assert ssrjson.dumps([SubStr("abc")]) == '["abc"]'
+        assert ssrjson.dumps_to_bytes([SubStr("abc")]) == b'["abc"]'
+        # UCS1 non-ASCII / UCS2 / UCS4 round-trips
+        for v in ("héllo", "日本", "𝕳"):
+            assert json.loads(ssrjson.dumps(SubStr(v))) == v
+            assert json.loads(ssrjson.dumps_to_bytes(SubStr(v))) == v
+            assert json.loads(ssrjson.dumps([SubStr(v)])) == [v]
+            assert json.loads(ssrjson.dumps({SubStr(v): SubStr(v)})) == {v: v}
 
     def test_subclass_int(self):
         assert ssrjson.dumps(SubInt(1)) == "1"
