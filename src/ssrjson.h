@@ -133,11 +133,18 @@
 #endif
 
 #define ssrjson_dtoa_handle_inf_nan 1
+#define ssrjson_dtoa_allocate_length 64
 #define ssrjson_dtoa_write_length 33
 #define ssrjson_dtoa_output_maxlen 24
 #define ssrjson_ftoa_handle_inf_nan 1
-#define ssrjson_ftoa_write_length 17
+#define ssrjson_ftoa_allocate_length 24
+#define ssrjson_ftoa_write_length 21
 #define ssrjson_ftoa_output_maxlen 15
+
+static_assert((ssrjson_dtoa_allocate_length % 8) == 0, "");
+static_assert((ssrjson_ftoa_allocate_length % 8) == 0, "");
+static_assert(ssrjson_dtoa_allocate_length >= ssrjson_dtoa_write_length, "");
+static_assert(ssrjson_ftoa_allocate_length >= ssrjson_ftoa_write_length, "");
 
 /** compiler version (MSVC) */
 #ifdef _MSC_VER

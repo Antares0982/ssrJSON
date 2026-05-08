@@ -192,7 +192,7 @@ force_inline ssrjson_nofail dst_t *f64_to_unicode(register dst_t *writer, double
 #if COMPILE_WRITE_UCS_LEVEL == 1
     u8 *buffer = writer;
 #else
-    u8 _buffer[ssrjson_dtoa_write_length];
+    u8 _buffer[ssrjson_dtoa_allocate_length];
     u8 *buffer = _buffer;
 #endif
     u8 *buffer_end = xjb64(d, buffer);
@@ -214,7 +214,7 @@ force_inline ssrjson_nofail dst_t *f32_to_unicode(register dst_t *writer, float 
 #if COMPILE_WRITE_UCS_LEVEL == 1
     u8 *buffer = writer;
 #else
-    u8 _buffer[ssrjson_ftoa_write_length];
+    u8 _buffer[ssrjson_ftoa_allocate_length];
     u8 *buffer = _buffer;
 #endif
     u8 *buffer_end = xjb32(f, buffer);
