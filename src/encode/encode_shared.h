@@ -326,25 +326,36 @@ force_inline EncodePyTypes ssrjson_type_check(PyObject *val) {
     u64 type = (u64)Py_TYPE(val);
     assert(type);
     u64 *py_fast_type = _PyFastType;
-    if (type == _PyFastType[0]) {
+    if (type == _PyFastType[T_Unicode]) {
         return T_Unicode;
-    } else if (type == _PyFastType[1]) {
+    } else if (type == _PyFastType[T_Long]) {
         return T_Long;
-    } else if (type == _PyFastType[2]) {
+    } else if (type == _PyFastType[T_Bool]) {
         return T_Bool;
-    } else if (type == _PyFastType[3]) {
+    } else if (type == _PyFastType[T_None]) {
         return T_None;
-    } else if (type == _PyFastType[4]) {
+    } else if (type == _PyFastType[T_Float]) {
         return T_Float;
-    } else if (type == _PyFastType[5]) {
+    } else if (type == _PyFastType[T_List]) {
         return T_List;
-    } else if (type == _PyFastType[6]) {
+    } else if (type == _PyFastType[T_Dict]) {
         return T_Dict;
-    } else if (type == _PyFastType[7]) {
+    } else if (type == _PyFastType[T_Tuple]) {
         return T_Tuple;
     } else {
         return slow_type_check((PyTypeObject *)type);
     }
+}
+
+force_inline EncodePyTypes ssrjson_fast_str_check(PyObject *s) {
+    u64 type = (u64)Py_TYPE(s);
+    assert(s);
+    u64 *py_fast_type = _PyFastType;
+    if (type == _PyFastType[T_Unicode]) return T_Unicode;
+    else if (PyType_FastSubclass(ssrjson_cast(PyTypeObject *, type), Py_TPFLAGS_UNICODE_SUBCLASS))
+        return T_UnicodeNonCompact;
+    else
+        return T_Unknown;
 }
 
 force_inline void init_pybytes(PyObject *in_new_bytes, usize final_len) {
