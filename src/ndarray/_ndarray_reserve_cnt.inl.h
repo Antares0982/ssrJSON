@@ -33,9 +33,7 @@
 
 force_inline usize get_1darray_reserve_cnt(usize cur_nested_depth, usize length, NDATypes ndatype) {
 #if COMPILE_INDENT_LEVEL > 0
-    if (unlikely(!length)) {
-        return 3;
-    }
+    if (unlikely(!length)) { return 3; }
     // pre indent size (with '\n')
     usize cnt = (cur_nested_depth * COMPILE_INDENT_LEVEL + 1) * (length + 1);
     // elements
@@ -45,11 +43,13 @@ force_inline usize get_1darray_reserve_cnt(usize cur_nested_depth, usize length,
     return cnt;
 #else
     // calculate branchlessly
-    return length * (get_elem_write_size(ndatype) + 1) + 3 - 1 + !length; // elements with comma, plus brackets and last comma, also remove comma of last element
+    return length * (get_elem_write_size(ndatype) + 1) + 3 - 1 +
+           !length; // elements with comma, plus brackets and last comma, also remove comma of last element
 #endif
 }
 
-force_inline usize get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype, bool is_in_obj) {
+force_inline usize get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype,
+                                                    bool is_in_obj) {
     if (nd == 1) return get_1darray_reserve_cnt(cur_nested_depth, shape[0], ndatype);
 
     struct {
@@ -92,7 +92,7 @@ unwind:
         cnt = cnt * length                                              // inner arrays
               + ((depth + 1) * COMPILE_INDENT_LEVEL + 1) * (length - 1) // indent between inner arrays
               + ((depth + 1) * COMPILE_INDENT_LEVEL + 1) + 1            // first bracket + '\n' + indent
-              + (depth * COMPILE_INDENT_LEVEL + 1) + 2 - 1;             // last bracket + indent + comma - last inner comma
+              + (depth * COMPILE_INDENT_LEVEL + 1) + 2 - 1; // last bracket + indent + comma - last inner comma
 #else
         cnt = cnt * length + 1 + 2 - 1; // inner arrays + bracket + bracket + comma - last inner comma
 #endif

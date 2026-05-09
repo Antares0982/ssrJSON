@@ -267,7 +267,7 @@
         {
             "label": "Analyze Call Graph",
             "type": "shell",
-            "command": "${workspaceFolder}/.nix-devenv/bin/python ${workspaceFolder}/dev_tools/call_graph.py ${workspaceFolder}/build/ssrjson.so",
+            "command": "${workspaceFolder}/.nix-devenv/bin/python ${workspaceFolder}/dev_tools/call_graph.py ${workspaceFolder}/build/ssrjson.so --tail-calls",
             "options": {
                 "shell": {
                     "executable": "nix",

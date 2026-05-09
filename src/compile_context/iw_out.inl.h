@@ -33,10 +33,12 @@
 #undef write_unicode_indent
 #undef unicode_indent_writer
 //
-#undef bytes_buffer_append_key
-#undef bytes_buffer_append_str
-#undef bytes_buffer_append_nonascii_key_write_cache
-#undef bytes_buffer_append_nonascii_key_no_write_cache
+#undef b_buf_apd_key
+#undef b_buf_apd_str_reserve
+#undef b_buf_apd_str_impl
+#undef b_buf_apd_str
+#undef b_buf_apd_nonascii_key_write_cache
+#undef b_buf_apd_nonascii_key_no_write_cache
 #undef encode_bytes_process_val
 #undef ssrjson_dumps_to_bytes_obj
 #undef ndarray_traverse_dispatch

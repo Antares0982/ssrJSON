@@ -41,18 +41,14 @@ force_inline vector_a get_high_mask(usize count) {
     return *mask_ptr;
 }
 
-force_inline vector_a high_mask(vector_a x, usize count) {
-    return x & get_high_mask(count);
-}
+force_inline vector_a high_mask(vector_a x, usize count) { return x & get_high_mask(count); }
 
 force_inline vector_a get_low_mask(usize count) {
     const vector_a *mask_ptr = read_head_mask_table_8(count * sizeof(src_t));
     return *mask_ptr;
 }
 
-force_inline vector_a low_mask(vector_a x, usize count) {
-    return x & get_low_mask(count);
-}
+force_inline vector_a low_mask(vector_a x, usize count) { return x & get_low_mask(count); }
 
 force_inline vector_a get_escape_mask(vector_a x) {
     vector_a *checker_masks = (vector_a *)&_CheckerMasks;
@@ -98,10 +94,7 @@ force_inline usize escape_mask_to_done_count_track_max(vector_a mask, vector_a *
     return ret;
 }
 
-force_inline usize joined4_escape_mask_to_done_count(vector_a mask1,
-                                                     vector_a mask2,
-                                                     vector_a mask3,
-                                                     vector_a mask4) {
+force_inline usize joined4_escape_mask_to_done_count(vector_a mask1, vector_a mask2, vector_a mask3, vector_a mask4) {
     u64 bitmask1, bitmask2, bitmask3, bitmask4;
     u64 bitmask[2];
     bitmask1 = 0xffffffff & escape_mask_to_bitmask(mask1);
@@ -115,11 +108,8 @@ force_inline usize joined4_escape_mask_to_done_count(vector_a mask1,
     return 64 / COMPILE_READ_UCS_LEVEL + u64_tz_bits(bitmask[1]) / COMPILE_READ_UCS_LEVEL;
 }
 
-force_inline usize joined4_escape_mask_to_done_count_track_max(vector_a mask1,
-                                                               vector_a mask2,
-                                                               vector_a mask3,
-                                                               vector_a mask4,
-                                                               vector_a *max_vec,
+force_inline usize joined4_escape_mask_to_done_count_track_max(vector_a mask1, vector_a mask2, vector_a mask3,
+                                                               vector_a mask4, vector_a *max_vec,
                                                                unionvector_a_x4 src_vecs) {
     const usize bitsize = 32;
     usize cnt;

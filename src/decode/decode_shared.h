@@ -112,7 +112,8 @@ extern decode_cache_t _DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
 #endif
 
 
-force_inline void add_key_cache(decode_keyhash_t hash, PyObject *obj, usize real_len, int kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+force_inline void add_key_cache(decode_keyhash_t hash, PyObject *obj, usize real_len,
+                                int kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #if SSRJSON_GIL_ENABLED
     decode_cache_t *key_cache_arr = _DecodeKeyCache;
 #else
@@ -131,7 +132,8 @@ force_inline void add_key_cache(decode_keyhash_t hash, PyObject *obj, usize real
     key_cache_arr[index].key_hint = make_key_hint(real_len, kind);
 }
 
-force_inline PyObject *get_key_cache(const void *unicode_str, decode_keyhash_t hash, usize real_len, int kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+force_inline PyObject *get_key_cache(const void *unicode_str, decode_keyhash_t hash, usize real_len,
+                                     int kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #if SSRJSON_GIL_ENABLED
     decode_cache_t *key_cache_arr = _DecodeKeyCache;
 #else
@@ -142,7 +144,9 @@ force_inline PyObject *get_key_cache(const void *unicode_str, decode_keyhash_t h
     if (!cache.key) return NULL;
     u64 key_hint = make_key_hint(real_len, kind);
     Py_ssize_t cache_offset = kind ? sizeof(PyCompactUnicodeObject) : sizeof(PyASCIIObject);
-    if (likely(key_hint == cache.key_hint && (ssrjson_memcmp_neq_le64(ssrjson_cast(u8 *, unicode_str), ssrjson_cast(u8 *, cache.key) + cache_offset, real_len) == 0))) {
+    if (likely(key_hint == cache.key_hint &&
+               (ssrjson_memcmp_neq_le64(ssrjson_cast(u8 *, unicode_str), ssrjson_cast(u8 *, cache.key) + cache_offset,
+                                        real_len) == 0))) {
         // SSRJSON_TRACE_CACHE_HIT();
         Py_INCREF(cache.key);
         return cache.key;
@@ -277,39 +281,24 @@ force_inline bool decode_nan(decode_obj_stack_ptr_t *decode_obj_writer_addr,
 extern const u8 char_type_table[256];
 
 /** Match a character with specified type. */
-force_inline bool char_is_type(u8 c, u8 type) {
-    return (char_type_table[c] & type) != 0;
-}
+force_inline bool char_is_type(u8 c, u8 type) { return (char_type_table[c] & type) != 0; }
 
 /** Match a whitespace: ' ', '\\t', '\\n', '\\r'. */
-force_inline bool char_is_space(u8 c) {
-    return char_is_type(c, (u8)CHAR_TYPE_SPACE);
-}
+force_inline bool char_is_space(u8 c) { return char_is_type(c, (u8)CHAR_TYPE_SPACE); }
 
 /** Match a whitespace or comment: ' ', '\\t', '\\n', '\\r', '/'. */
-force_inline bool char_is_space_or_comment(u8 c) {
-    return char_is_type(c, (u8)(CHAR_TYPE_SPACE | CHAR_TYPE_COMMENT));
-}
+force_inline bool char_is_space_or_comment(u8 c) { return char_is_type(c, (u8)(CHAR_TYPE_SPACE | CHAR_TYPE_COMMENT)); }
 
 /** Match a JSON number: '-', [0-9]. */
-force_inline bool char_is_number(u8 c) {
-    return char_is_type(c, (u8)CHAR_TYPE_NUMBER);
-}
+force_inline bool char_is_number(u8 c) { return char_is_type(c, (u8)CHAR_TYPE_NUMBER); }
 
 /** Match a JSON container: '{', '['. */
-force_inline bool char_is_container(u8 c) {
-    return char_is_type(c, (u8)CHAR_TYPE_CONTAINER);
-}
+force_inline bool char_is_container(u8 c) { return char_is_type(c, (u8)CHAR_TYPE_CONTAINER); }
 
 /** Match a stop character in ASCII string: '"', '\', [0x00-0x1F,0x80-0xFF]. */
-force_inline bool char_is_ascii_stop(u8 c) {
-    return char_is_type(c, (u8)(CHAR_TYPE_ESC_ASCII |
-                                CHAR_TYPE_NON_ASCII));
-}
+force_inline bool char_is_ascii_stop(u8 c) { return char_is_type(c, (u8)(CHAR_TYPE_ESC_ASCII | CHAR_TYPE_NON_ASCII)); }
 
-force_inline u16 to_b2_unicode(u32 uni) {
-    return ((uni & 0x1f) << 6) | ((uni & 0x3f00) >> 8);
-}
+force_inline u16 to_b2_unicode(u32 uni) { return ((uni & 0x1f) << 6) | ((uni & 0x3f00) >> 8); }
 
 force_inline u16 to_b3_unicode(u32 uni) {
     return ((uni & 0x0f) << 12) | ((uni & 0x3f00) >> 2) | ((uni & 0x3f0000) >> 16);
@@ -319,11 +308,10 @@ force_inline u32 to_b4_unicode(u32 uni) {
     return ((uni & 0x07) << 18) | ((uni & 0x3f00) << 4) | ((uni & 0x3f0000) >> 10) | ((uni & 0x3f000000) >> 24);
 }
 
-force_inline bool init_decode_obj_stack_info(
-        DecoderBuffers *decoder_context,
-        decode_obj_stack_ptr_t *decode_obj_writer_addr,
-        decode_obj_stack_ptr_t *decode_obj_stack_addr,
-        decode_obj_stack_ptr_t *decode_obj_stack_end_addr) {
+force_inline bool init_decode_obj_stack_info(DecoderBuffers *decoder_context,
+                                             decode_obj_stack_ptr_t *decode_obj_writer_addr,
+                                             decode_obj_stack_ptr_t *decode_obj_stack_addr,
+                                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr) {
     pyobj_ptr_t *new_buffer = get_decode_obj_stack_buffer(decoder_context);
     if (unlikely(!new_buffer)) {
         PyErr_NoMemory();
@@ -335,7 +323,8 @@ force_inline bool init_decode_obj_stack_info(
     return true;
 }
 
-force_inline bool init_decode_ctn_stack_info(DecoderBuffers *decoder_context, DecodeCtnWithSize **ctn_start_addr, DecodeCtnWithSize **ctn_addr, DecodeCtnWithSize **ctn_end_addr) {
+force_inline bool init_decode_ctn_stack_info(DecoderBuffers *decoder_context, DecodeCtnWithSize **ctn_start_addr,
+                                             DecodeCtnWithSize **ctn_addr, DecodeCtnWithSize **ctn_end_addr) {
     DecodeCtnWithSize *new_buffer = get_decode_ctn_stack_buffer(decoder_context);
     if (unlikely(!new_buffer)) {
         PyErr_NoMemory();
@@ -347,13 +336,9 @@ force_inline bool init_decode_ctn_stack_info(DecoderBuffers *decoder_context, De
     return true;
 }
 
-force_inline bool decode_ctn_is_arr(DecodeCtnWithSize *ctn) {
-    return ctn->raw < 0;
-}
+force_inline bool decode_ctn_is_arr(DecodeCtnWithSize *ctn) { return ctn->raw < 0; }
 
-force_inline Py_ssize_t get_decode_ctn_len(DecodeCtnWithSize *ctn) {
-    return ctn->raw & PY_SSIZE_T_MAX;
-}
+force_inline Py_ssize_t get_decode_ctn_len(DecodeCtnWithSize *ctn) { return ctn->raw & PY_SSIZE_T_MAX; }
 
 force_inline void set_decode_ctn(DecodeCtnWithSize *ctn, Py_ssize_t len, bool is_arr) {
     assert(len >= 0);
@@ -369,13 +354,15 @@ force_inline bool ctn_grow_check(DecodeCtnWithSize **ctn_addr, DecodeCtnWithSize
     return ++(*ctn_addr) < ctn_end;
 }
 
-force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int type_flag, ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
+force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int type_flag,
+                                   ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
 force_inline bool _decoder_push_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                                     decode_obj_stack_ptr_t *decode_obj_stack_addr,
                                     decode_obj_stack_ptr_t *decode_obj_stack_end_addr, pyobj_ptr_t obj);
 
-force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
+force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer,
+                                   ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
 force_inline bool decode_true(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                               decode_obj_stack_ptr_t *decode_obj_stack_addr,
@@ -417,9 +404,7 @@ force_inline void Py_DecRef_NoCheck(PyObject *op) {
     // Non-limited C API and limited C API for Python 3.9 and older access
     // directly PyObject.ob_refcnt.
 #    if PY_MINOR_VERSION >= 12
-    if (_Py_IsImmortal(op)) {
-        return;
-    }
+    if (_Py_IsImmortal(op)) { return; }
 #    endif
     SSRJSON_PY_DECREF_DEBUG();
     assert(op->ob_refcnt > 1);
@@ -451,9 +436,7 @@ force_inline void Py_Immortal_IncRef(PyObject *op) {
 /**
  Convert normalized u64 (highest bit is 1) to f64.
  */
-force_inline f64 normalized_u64_to_f64(u64 val) {
-    return (f64)val;
-}
+force_inline f64 normalized_u64_to_f64(u64 val) { return (f64)val; }
 
 /*==============================================================================
  * Read state utilities

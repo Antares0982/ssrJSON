@@ -23,13 +23,12 @@
 #include "compile_context/iw_in.inl.h"
 #include "ndarray/_ndarray_reserve_cnt.inl.h"
 
-static usize test_get_ndarray_reserve_cnt_reference(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype, bool is_in_obj) {
+static usize test_get_ndarray_reserve_cnt_reference(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype,
+                                                    bool is_in_obj) {
     if (nd == 1) {
 #if COMPILE_INDENT_LEVEL > 0
         usize length = shape[0];
-        if (!length) {
-            return 3;
-        }
+        if (!length) { return 3; }
         // pre indent size (with '\n')
         usize cnt = (cur_nested_depth * COMPILE_INDENT_LEVEL + 1) * (length + 1);
         // elements
@@ -39,18 +38,16 @@ static usize test_get_ndarray_reserve_cnt_reference(int nd, Py_ssize_t *shape, u
         return cnt;
 #else
         usize length = shape[0];
-        if (!length) {
-            return 3;
-        }
-        return length * (get_elem_write_size(ndatype) + 1) + 3 - 1; // elements with comma, plus brackets and last comma, also remove comma of last element
+        if (!length) { return 3; }
+        return length * (get_elem_write_size(ndatype) + 1) + 3 -
+               1; // elements with comma, plus brackets and last comma, also remove comma of last element
 #endif
     } else {
 #if COMPILE_INDENT_LEVEL > 0
         usize length = shape[0];
-        if (!length) {
-            return 3;
-        }
-        usize inner_cnt = test_get_ndarray_reserve_cnt_reference(nd - 1, shape + 1, cur_nested_depth + 1, ndatype, is_in_obj);
+        if (!length) { return 3; }
+        usize inner_cnt = test_get_ndarray_reserve_cnt_reference(
+                nd - 1, shape + 1, cur_nested_depth + 1, ndatype, is_in_obj);
         usize cnt = inner_cnt * length; // inner arrays with comma
         // each indent between two inner arrays
         cnt += ((cur_nested_depth + 1) * COMPILE_INDENT_LEVEL + 1) * (length - 1);
@@ -61,10 +58,9 @@ static usize test_get_ndarray_reserve_cnt_reference(int nd, Py_ssize_t *shape, u
         return cnt;
 #else
         usize length = shape[0];
-        if (!length) {
-            return 3;
-        }
-        usize inner_cnt = test_get_ndarray_reserve_cnt_reference(nd - 1, shape + 1, cur_nested_depth + 1, ndatype, is_in_obj);
+        if (!length) { return 3; }
+        usize inner_cnt = test_get_ndarray_reserve_cnt_reference(
+                nd - 1, shape + 1, cur_nested_depth + 1, ndatype, is_in_obj);
         usize cnt = inner_cnt * length; // inner arrays with comma
         // first bracket
         cnt += 1;
@@ -80,7 +76,8 @@ static usize test_get_ndarray_reserve_cnt_reference(int nd, Py_ssize_t *shape, u
 #define TEST_NDARRAY_RESERVE_MAX_DIM_SIZE 16
 
 int test_ndarray_reserve_cnt(void) {
-    NDATypes all_types[] = {NDA_f64, NDA_f32, NDA_f16, NDA_i64, NDA_i32, NDA_i16, NDA_i8, NDA_u64, NDA_u32, NDA_u16, NDA_u8, NDA_bool};
+    NDATypes all_types[] = {
+            NDA_f64, NDA_f32, NDA_f16, NDA_i64, NDA_i32, NDA_i16, NDA_i8, NDA_u64, NDA_u32, NDA_u16, NDA_u8, NDA_bool};
     int num_types = sizeof(all_types) / sizeof(all_types[0]);
 
     for (int round = 0; round < TEST_NDARRAY_RESERVE_ROUNDS; round++) {
@@ -97,7 +94,8 @@ int test_ndarray_reserve_cnt(void) {
         usize actual = get_ndarray_reserve_cnt_internal(nd, shape, depth, ndatype, is_in_obj);
 
         if (expected != actual) {
-            printf("\n  FAIL: indent=%d nd=%d depth=%zu ndatype=%d is_in_obj=%d shape=[", COMPILE_INDENT_LEVEL, nd, depth, (int)ndatype, is_in_obj);
+            printf("\n  FAIL: indent=%d nd=%d depth=%zu ndatype=%d is_in_obj=%d shape=[", COMPILE_INDENT_LEVEL, nd,
+                   depth, (int)ndatype, is_in_obj);
             for (int i = 0; i < nd; i++) {
                 if (i > 0) printf(",");
                 printf("%zd", shape[i]);

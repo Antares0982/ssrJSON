@@ -28,13 +28,17 @@
 //
 #include "compile_context/s_in.inl.h"
 
-force_inline void get_cache_key_hash_and_size_ucs1(const void **hash_string_ptr_addr, usize *hash_string_u8size_addr, const u8 *src, usize count, usize tpsize, bool need_size_cvt, void *temp_buffer) {
+force_inline void get_cache_key_hash_and_size_ucs1(const void **hash_string_ptr_addr, usize *hash_string_u8size_addr,
+                                                   const u8 *src, usize count, usize tpsize, bool need_size_cvt,
+                                                   void *temp_buffer) {
     // inplace case
     *hash_string_ptr_addr = src;
     *hash_string_u8size_addr = count * 1;
 }
 
-force_inline void get_cache_key_hash_and_size_ucs2(const void **hash_string_ptr_addr, usize *hash_string_u8size_addr, const u16 *src, usize count, usize tpsize, bool need_size_cvt, void *temp_buffer) {
+force_inline void get_cache_key_hash_and_size_ucs2(const void **hash_string_ptr_addr, usize *hash_string_u8size_addr,
+                                                   const u16 *src, usize count, usize tpsize, bool need_size_cvt,
+                                                   void *temp_buffer) {
     // complicated case when ucs level > 1
     if (need_size_cvt) {
         // do convert
@@ -54,9 +58,7 @@ force_inline void get_cache_key_hash_and_size_ucs2(const void **hash_string_ptr_
             temp_dst -= more;
             temp_src -= more;
             usize cnt = temp_count / 16;
-            for (usize i = 0; i < cnt; ++i) {
-                __partial_cvt_16_u16_u8(&temp_dst, &temp_src);
-            }
+            for (usize i = 0; i < cnt; ++i) { __partial_cvt_16_u16_u8(&temp_dst, &temp_src); }
         }
         *hash_string_ptr_addr = temp_buffer;
         *hash_string_u8size_addr = count * tpsize;
@@ -67,7 +69,9 @@ force_inline void get_cache_key_hash_and_size_ucs2(const void **hash_string_ptr_
     }
 }
 
-force_inline void get_cache_key_hash_and_size_ucs4(const void **hash_string_ptr_addr, usize *hash_string_u8size_addr, const u32 *src, usize count, usize tpsize, bool need_size_cvt, void *temp_buffer) {
+force_inline void get_cache_key_hash_and_size_ucs4(const void **hash_string_ptr_addr, usize *hash_string_u8size_addr,
+                                                   const u32 *src, usize count, usize tpsize, bool need_size_cvt,
+                                                   void *temp_buffer) {
     // complicated case when ucs level > 1
     if (need_size_cvt) {
         // do inplace zip
@@ -87,9 +91,7 @@ force_inline void get_cache_key_hash_and_size_ucs4(const void **hash_string_ptr_
             temp_dst -= more;
             temp_src -= more;
             usize cnt = temp_count / 8;
-            for (usize i = 0; i < cnt; ++i) {
-                __partial_cvt_8_u32_u16(&temp_dst, &temp_src);
-            }
+            for (usize i = 0; i < cnt; ++i) { __partial_cvt_8_u32_u16(&temp_dst, &temp_src); }
         } else {
             assert(tpsize == 1);
             assert(count <= 64);
@@ -103,9 +105,7 @@ force_inline void get_cache_key_hash_and_size_ucs4(const void **hash_string_ptr_
             temp_dst -= more;
             temp_src -= more;
             usize cnt = temp_count / 8;
-            for (usize i = 0; i < cnt; ++i) {
-                __partial_cvt_8_u32_u8(&temp_dst, &temp_src);
-            }
+            for (usize i = 0; i < cnt; ++i) { __partial_cvt_8_u32_u8(&temp_dst, &temp_src); }
         }
         *hash_string_ptr_addr = temp_buffer;
         *hash_string_u8size_addr = count * tpsize;

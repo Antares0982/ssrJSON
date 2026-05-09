@@ -99,27 +99,21 @@
 
 #include "_ndarray_reserve_cnt.inl.h"
 
-force_inline usize get_ndarray_reserve_cnt(
-        const PyArrayInterface *array,
-        Py_ssize_t base_nested_depth, NDATypes ndatype, bool is_in_obj) {
+force_inline usize get_ndarray_reserve_cnt(const PyArrayInterface *array, Py_ssize_t base_nested_depth,
+                                           NDATypes ndatype, bool is_in_obj) {
     int nd = array->nd;
     Py_ssize_t *shape = array->shape;
     usize ret = 0;
     // write \n and indent for list
-    if (COMPILE_INDENT_LEVEL > 0 && !is_in_obj) {
-        ret += COMPILE_INDENT_LEVEL * base_nested_depth + 1;
-    }
+    if (COMPILE_INDENT_LEVEL > 0 && !is_in_obj) { ret += COMPILE_INDENT_LEVEL * base_nested_depth + 1; }
     const usize padding = 9; // reserve some extra padding for safety
     assert(padding >= 3);    // for writing bool, we write 8 bytes at once
     assert(padding >= ssrjson_dtoa_write_length - ssrjson_dtoa_output_maxlen);
     return ret + padding + get_ndarray_reserve_cnt_internal(nd, shape, base_nested_depth + 1, ndatype, is_in_obj);
 }
 
-force_inline ssrjson_nofail u8 *ndarray_traverse_dispatch(
-        u8 *writer,
-        const PyArrayInterface *array,
-        Py_ssize_t base_nested_depth,
-        NDATypes ndatype) {
+force_inline ssrjson_nofail u8 *ndarray_traverse_dispatch(u8 *writer, const PyArrayInterface *array,
+                                                          Py_ssize_t base_nested_depth, NDATypes ndatype) {
     switch (ndatype) {
         case NDA_f64:
             return make_i_name(_ndarray_traverse_f64)(writer, array, base_nested_depth);
@@ -158,16 +152,10 @@ force_inline ssrjson_nofail u8 *ndarray_traverse_dispatch(
  * Returns updated writer on success, NULL on error (PyErr set).
  *============================================================================*/
 
-static force_noinline u8 *u8_buffer_append_ndarray(
-        u8 *writer,
-        EncodeUnicodeBufferInfo *unicode_buffer_info,
-        Py_ssize_t cur_nested_depth,
-        PyObject *obj,
-        bool is_in_obj) {
+static force_noinline u8 *u8_buffer_append_ndarray(u8 *writer, EncodeUBufInfo *u_buf_info, Py_ssize_t cur_nested_depth,
+                                                   PyObject *obj, bool is_in_obj) {
     PyObject *capsule_obj = PyObject_GetAttrString(obj, "__array_struct__");
-    if (unlikely(!capsule_obj)) {
-        return NULL;
-    }
+    if (unlikely(!capsule_obj)) { return NULL; }
     if (unlikely(!PyCapsule_IsValid(capsule_obj, NULL))) {
         Py_DECREF(capsule_obj);
         PyErr_SetString(JSONEncodeError, "__array_struct__ is not a valid PyCapsule");
@@ -217,7 +205,7 @@ static force_noinline u8 *u8_buffer_append_ndarray(
     }
 
     usize reserve_cnt = get_ndarray_reserve_cnt(array, cur_nested_depth, ndatype, is_in_obj);
-    writer = unicode_buffer_reserve_u8(writer, unicode_buffer_info, reserve_cnt);
+    writer = u_buf_reserve_u8(writer, u_buf_info, reserve_cnt);
     if (unlikely(!writer)) {
         Py_DECREF(capsule_obj);
         return NULL;
@@ -228,9 +216,7 @@ static force_noinline u8 *u8_buffer_append_ndarray(
 #endif
 
 #if COMPILE_INDENT_LEVEL > 0
-    if (!is_in_obj) {
-        writer = ndarray_write_indent(writer, cur_nested_depth);
-    }
+    if (!is_in_obj) { writer = ndarray_write_indent(writer, cur_nested_depth); }
 #else
     (void)is_in_obj;
 #endif

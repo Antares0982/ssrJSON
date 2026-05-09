@@ -76,10 +76,10 @@ typedef struct EncodeUnicodeInfo {
     int cur_ucs_type;
 } EncodeUnicodeInfo;
 
-typedef struct EncodeUnicodeBufferInfo {
+typedef struct EncodeUBufInfo {
     void *head;
     void *end;
-} EncodeUnicodeBufferInfo;
+} EncodeUBufInfo;
 
 typedef void *EncodeUnicodeWriter;
 

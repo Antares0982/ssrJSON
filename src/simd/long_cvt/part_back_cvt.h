@@ -33,21 +33,13 @@
 
 
 // 1
-force_inline void __partial_back_cvt_1_u8_u8(u8 **dst_addr, const u8 **src_addr) {
-    *--(*dst_addr) = *--(*src_addr);
-}
+force_inline void __partial_back_cvt_1_u8_u8(u8 **dst_addr, const u8 **src_addr) { *--(*dst_addr) = *--(*src_addr); }
 
-force_inline void __partial_back_cvt_1_u16_u8(u8 **dst_addr, const u16 **src_addr) {
-    *--(*dst_addr) = *--(*src_addr);
-}
+force_inline void __partial_back_cvt_1_u16_u8(u8 **dst_addr, const u16 **src_addr) { *--(*dst_addr) = *--(*src_addr); }
 
-force_inline void __partial_back_cvt_1_u32_u8(u8 **dst_addr, const u32 **src_addr) {
-    *--(*dst_addr) = *--(*src_addr);
-}
+force_inline void __partial_back_cvt_1_u32_u8(u8 **dst_addr, const u32 **src_addr) { *--(*dst_addr) = *--(*src_addr); }
 
-force_inline void __partial_back_cvt_1_u8_u16(u16 **dst_addr, const u8 **src_addr) {
-    *--(*dst_addr) = *--(*src_addr);
-}
+force_inline void __partial_back_cvt_1_u8_u16(u16 **dst_addr, const u8 **src_addr) { *--(*dst_addr) = *--(*src_addr); }
 
 force_inline void __partial_back_cvt_1_u16_u16(u16 **dst_addr, const u16 **src_addr) {
     *--(*dst_addr) = *--(*src_addr);
@@ -57,9 +49,7 @@ force_inline void __partial_back_cvt_1_u32_u16(u16 **dst_addr, const u32 **src_a
     *--(*dst_addr) = *--(*src_addr);
 }
 
-force_inline void __partial_back_cvt_1_u8_u32(u32 **dst_addr, const u8 **src_addr) {
-    *--(*dst_addr) = *--(*src_addr);
-}
+force_inline void __partial_back_cvt_1_u8_u32(u32 **dst_addr, const u8 **src_addr) { *--(*dst_addr) = *--(*src_addr); }
 
 force_inline void __partial_back_cvt_1_u16_u32(u32 **dst_addr, const u16 **src_addr) {
     *--(*dst_addr) = *--(*src_addr);

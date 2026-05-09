@@ -40,35 +40,15 @@
 
 force_inline void ucs4_encode_3bytes_utf8_neon(u8 *writer, vector_a x) {
     static const vector_a_u8_128 t1 = {
-            0x80, 0x80, 0,
-            0x80, 0x80, 4,
-            0x80, 0x80, 8,
-            0x80, 0x80, 12,
-            0x80, 0x80, 0x80, 0x80};
+            0x80, 0x80, 0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12, 0x80, 0x80, 0x80, 0x80};
     static const vector_a_u8_128 t2 = {
-            0x80, 0, 0x80,
-            0x80, 4, 0x80,
-            0x80, 8, 0x80,
-            0x80, 12, 0x80,
-            0x80, 0x80, 0x80, 0x80};
+            0x80, 0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12, 0x80, 0x80, 0x80, 0x80, 0x80};
     static const vector_a_u8_128 t3 = {
-            0, 0x80, 0x80,
-            4, 0x80, 0x80,
-            8, 0x80, 0x80,
-            12, 0x80, 0x80,
-            0x80, 0x80, 0x80, 0x80};
+            0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
     static const vector_a_u8_128 m1 = {
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
-            0xff, 0xff, 0xff, 0xff};
+            0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f, 0xff, 0xff, 0xff, 0xff};
     static const vector_a_u8_128 m2 = {
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            0, 0, 0, 0};
+            0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80, 0, 0, 0, 0};
     vector_a x1 = rshift_u32_128(x, 6);
     vector_a x2 = rshift_u32_128(x, 12);
     vector_a_u8_128 x3 = shuffle_128(x, t1);
@@ -166,7 +146,8 @@ restart:;
     // Unreachable
 ascii:;
     {
-        const vector_a m_not_ascii = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, broadcast(0x7f));
+        const vector_a m_not_ascii = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) |
+                                     signed_cmpgt(vec, broadcast(0x7f));
         m = high_mask(m_not_ascii, len);
         shift = sizeof(u32) * (READ_BATCH_COUNT - len);
         tail_vec = runtime_byte_rshift_128(vec, shift);
@@ -182,7 +163,8 @@ ascii:;
             src = last_batch_start + done_count + 1;
             writer += real_done_count;
             len = READ_BATCH_COUNT - done_count - 1;
-            if (escape_unicode >= _ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash && escape_unicode != _Quote) {
+            if (escape_unicode >= _ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash &&
+                escape_unicode != _Quote) {
                 ssrjson_unreachable();
             } else {
                 writer = encode_one_ucs4(writer, escape_unicode);
@@ -224,7 +206,9 @@ _2bytes:;
     }
 _3bytes:;
     {
-        const vector_a m_not_3bytes = signed_cmpgt(broadcast(0x800), vec) | (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec)) | signed_cmpgt(vec, broadcast(0xffff));
+        const vector_a m_not_3bytes = signed_cmpgt(broadcast(0x800), vec) |
+                                      (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec)) |
+                                      signed_cmpgt(vec, broadcast(0xffff));
         m = high_mask(m_not_3bytes, len);
         shift = sizeof(u32) * (READ_BATCH_COUNT - len);
         tail_vec = runtime_byte_rshift_128(vec, shift);
@@ -240,7 +224,8 @@ _3bytes:;
             src = last_batch_start + done_count + 1;
             writer += real_done_count * 3;
             len = READ_BATCH_COUNT - done_count - 1;
-            if (escape_unicode >= 0x800 && escape_unicode <= 0xffff && (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)) {
+            if (escape_unicode >= 0x800 && escape_unicode <= 0xffff &&
+                (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)) {
                 ssrjson_unreachable();
             } else {
                 writer = encode_one_ucs4(writer, escape_unicode);
@@ -328,7 +313,9 @@ ascii:;
     }
 _2bytes:;
     {
-        const vector_a m_not_2bytes = (vec < broadcast(0x80)) | (vec >= broadcast(0x800)); //signed_cmpgt(broadcast(0x80), vec) | signed_cmpgt(vec, broadcast(0x7ff));
+        const vector_a m_not_2bytes =
+                (vec < broadcast(0x80)) |
+                (vec >= broadcast(0x800)); //signed_cmpgt(broadcast(0x80), vec) | signed_cmpgt(vec, broadcast(0x7ff));
         m = high_mask(m_not_2bytes, len);
         shift = sizeof(u32) * (READ_BATCH_COUNT - len);
         tail_vec = runtime_byte_rshift_128(vec, shift);
@@ -357,7 +344,8 @@ _2bytes:;
     }
 _3bytes:;
     {
-        const vector_a m_not_3bytes = (vec < broadcast(0x800)) | (vec >= broadcast(0x10000)) | ((vec >= broadcast(0xd800)) & (vec < broadcast(0xe000)));
+        const vector_a m_not_3bytes = (vec < broadcast(0x800)) | (vec >= broadcast(0x10000)) |
+                                      ((vec >= broadcast(0xd800)) & (vec < broadcast(0xe000)));
         m = high_mask(m_not_3bytes, len);
         shift = sizeof(u32) * (READ_BATCH_COUNT - len);
         tail_vec = runtime_byte_rshift_128(vec, shift);
@@ -373,7 +361,8 @@ _3bytes:;
             src = last_batch_start + done_count + 1;
             writer += real_done_count * 3;
             len = READ_BATCH_COUNT - done_count - 1;
-            assume(!(escape_unicode >= 0x800 && escape_unicode <= 0xffff && (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)));
+            assume(!(escape_unicode >= 0x800 && escape_unicode <= 0xffff &&
+                     (escape_unicode <= 0xd7ff || escape_unicode >= 0xe000)));
             writer = encode_one_ucs4_noescape(writer, escape_unicode);
             if (unlikely(!writer)) return NULL;
             if (len) goto restart;

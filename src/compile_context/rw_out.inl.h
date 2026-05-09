@@ -28,6 +28,8 @@
 #undef make_rw_name
 //
 #undef avx2_trailing_cvt
+#undef u_buf_apd_key_impl
+#undef u_buf_apd_str_impl
 //
 #undef make_ucs_w_name
 //

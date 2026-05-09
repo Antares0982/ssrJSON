@@ -38,18 +38,14 @@ force_inline vector_a get_high_mask(usize count) {
     return *mask_ptr;
 }
 
-force_inline vector_a high_mask(vector_a x, usize count) {
-    return x & get_high_mask(count);
-}
+force_inline vector_a high_mask(vector_a x, usize count) { return x & get_high_mask(count); }
 
 force_inline vector_a get_low_mask(usize count) {
     const vector_a *mask_ptr = read_head_mask_table_8(count * sizeof(src_t));
     return *mask_ptr;
 }
 
-force_inline vector_a low_mask(vector_a x, usize count) {
-    return x & get_low_mask(count);
-}
+force_inline vector_a low_mask(vector_a x, usize count) { return x & get_low_mask(count); }
 
 force_inline vector_a get_escape_mask(vector_a x) {
     vector_a *checker_masks = (vector_a *)&_CheckerMasks;
@@ -77,10 +73,7 @@ force_inline usize escape_mask_to_done_count(vector_a mask) {
     return u.parts[0] ? a : b;
 }
 
-force_inline usize joined4_escape_mask_to_done_count(vector_a mask1,
-                                                     vector_a mask2,
-                                                     vector_a mask3,
-                                                     vector_a mask4) {
+force_inline usize joined4_escape_mask_to_done_count(vector_a mask1, vector_a mask2, vector_a mask3, vector_a mask4) {
     union {
         vector_a mask[4];
         u64 parts[8];
@@ -94,9 +87,7 @@ force_inline usize joined4_escape_mask_to_done_count(vector_a mask1,
     const usize dividesize = (COMPILE_READ_UCS_LEVEL << 3);
 
     for (usize i = 0; i < 8; ++i) {
-        if (u.parts[i]) {
-            return i * (64 / dividesize) + u64_tz_bits(u.parts[i]) / dividesize;
-        }
+        if (u.parts[i]) { return i * (64 / dividesize) + u64_tz_bits(u.parts[i]) / dividesize; }
     }
     ssrjson_unreachable();
     return (usize)-1;
@@ -109,11 +100,8 @@ force_inline usize escape_mask_to_done_count_track_max(vector_a mask, vector_a *
     return ret;
 }
 
-force_inline usize joined4_escape_mask_to_done_count_track_max(vector_a mask1,
-                                                               vector_a mask2,
-                                                               vector_a mask3,
-                                                               vector_a mask4,
-                                                               vector_a *max_vec,
+force_inline usize joined4_escape_mask_to_done_count_track_max(vector_a mask1, vector_a mask2, vector_a mask3,
+                                                               vector_a mask4, vector_a *max_vec,
                                                                unionvector_a_x4 src_vecs) {
     const usize bitsize = 16;
     usize cnt;

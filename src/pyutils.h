@@ -144,27 +144,22 @@ force_noinline void init_pyunicode_noinline(void *head, Py_ssize_t size, int kin
 
 force_inline void *pymem_malloc_wrapped(usize size) {
     void *ptr = PyMem_Malloc(size);
-    if (unlikely(!ptr)) {
-        PyErr_NoMemory();
-    }
+    if (unlikely(!ptr)) { PyErr_NoMemory(); }
     return ptr;
 }
 
 force_inline void *pymem_realloc_wrapped(void *ptr, usize size) {
     void *new_ptr = PyMem_Realloc(ptr, size);
-    if (unlikely(!new_ptr)) {
-        PyErr_NoMemory();
-    }
+    if (unlikely(!new_ptr)) { PyErr_NoMemory(); }
     return new_ptr;
 }
 
-force_inline void pymem_free_wrapped(void *ptr) {
-    PyMem_Free(ptr);
-}
+force_inline void pymem_free_wrapped(void *ptr) { PyMem_Free(ptr); }
 
 force_inline const u8 *pyunicode_get_utf8_cache(PyObject *unicode) {
 #if !SSRJSON_GIL_ENABLED
-    return atomic_load_explicit((const _Atomic(void *) *)&ssrjson_pycompactunicode_cast(unicode)->utf8, memory_order_acquire);
+    return atomic_load_explicit(
+            (const _Atomic(void *) *)&ssrjson_pycompactunicode_cast(unicode)->utf8, memory_order_acquire);
 #else
     return (const u8 *)ssrjson_pycompactunicode_cast(unicode)->utf8;
 #endif
@@ -181,12 +176,9 @@ force_inline void set_cache(PyObject *str, const u8 **utf8_cache_addr, usize utf
 #if !SSRJSON_GIL_ENABLED
     ssrjson_pycompactunicode_cast(str)->utf8_length = (Py_ssize_t)utf8_length;
     u8 *expected = NULL;
-    if (!atomic_compare_exchange_strong_explicit(
-                (_Atomic(u8 *) *)&ssrjson_pycompactunicode_cast(str)->utf8,
-                &expected,
-                (u8 *)(*utf8_cache_addr),
-                memory_order_release,
-                memory_order_relaxed)) {
+    if (!atomic_compare_exchange_strong_explicit((_Atomic(u8 *) *)&ssrjson_pycompactunicode_cast(str)->utf8, &expected,
+                                                 (u8 *)(*utf8_cache_addr), memory_order_release,
+                                                 memory_order_relaxed)) {
         // already has an UTF-8 cache, free the allocated one by us
         pymem_free_wrapped((void *)*utf8_cache_addr);
         *utf8_cache_addr = expected;

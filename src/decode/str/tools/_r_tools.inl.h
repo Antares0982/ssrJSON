@@ -55,7 +55,8 @@ force_inline bool verify_escape_hex(const src_t *src, const src_t *src_end, int 
         return false;
     }
 #elif COMPILE_READ_UCS_LEVEL == 4
-    vector_a_u32_128 to_verify = *(vector_u_u32_128 *)(src + offset); //load_128((void *)(decode_src_info->src + offset));
+    vector_a_u32_128 to_verify = *(vector_u_u32_128 *)(src +
+                                                       offset); //load_128((void *)(decode_src_info->src + offset));
     const vector_a_u32_128 verify_mask = broadcast_u32_128(0xffffff00);
     if (unlikely(!testz2_128(to_verify, verify_mask))) {
         PyErr_SetString(JSONDecodeError, "Invalid escape sequence in string");
@@ -127,9 +128,7 @@ force_inline bool _read_null(const src_t **restrict ptr, const src_t *restrict e
 force_inline bool _read_inf(const src_t **ptr, const src_t *end) {
 #define r_inf_vector ssrjson_concat4(vector, a, src_t, READ_BIT_SIZEx8)
 #define r_inf_vector_u ssrjson_concat4(vector, u, src_t, READ_BIT_SIZEx8)
-    if (unlikely(end < *ptr + 8)) {
-        return false;
-    }
+    if (unlikely(end < *ptr + 8)) { return false; }
     r_inf_vector _mask = {~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20,
                           ~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20};
     r_inf_vector _template = {'I', 'N', 'F', 'I', 'N', 'I', 'T', 'Y'};
@@ -149,9 +148,7 @@ force_inline bool _read_inf(const src_t **ptr, const src_t *end) {
 force_inline bool _read_nan(const src_t **restrict ptr, const src_t *restrict end) {
 #define r_nan_vector ssrjson_concat4(vector, a, src_t, READ_BIT_SIZEx4)
 #define r_nan_vector_u ssrjson_concat4(vector, u, src_t, READ_BIT_SIZEx4)
-    if (unlikely(end < *ptr + 3)) {
-        return false;
-    }
+    if (unlikely(end < *ptr + 3)) { return false; }
     // it is safe to load *end, so here we load `4 * sizeof(src_t)` bytes
     r_nan_vector _mask = {~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20, 0};
     r_nan_vector _template = {'N', 'A', 'N', 0};
@@ -168,12 +165,8 @@ force_inline bool _read_nan(const src_t **restrict ptr, const src_t *restrict en
 
 /** Read 'Infinity' or 'NaN' literal (ignoring case). */
 force_inline PyObject *loads_inf_or_nan(bool sign, const src_t **ptr, const src_t *end) {
-    if (_read_inf(ptr, end)) {
-        return PyFloat_FromDouble(sign ? -fabs(Py_HUGE_VAL) : fabs(Py_HUGE_VAL));
-    }
-    if (_read_nan(ptr, end)) {
-        return PyFloat_FromDouble(sign ? -fabs(Py_NAN) : fabs(Py_NAN));
-    }
+    if (_read_inf(ptr, end)) { return PyFloat_FromDouble(sign ? -fabs(Py_HUGE_VAL) : fabs(Py_HUGE_VAL)); }
+    if (_read_nan(ptr, end)) { return PyFloat_FromDouble(sign ? -fabs(Py_NAN) : fabs(Py_NAN)); }
     return NULL;
 }
 

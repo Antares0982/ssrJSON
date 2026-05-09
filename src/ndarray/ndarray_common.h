@@ -199,9 +199,7 @@ force_inline ssrjson_nofail u8 *ndarray_write_f64_elem(u8 *writer, double v) {
 
 extern const usize _NdaElemWriteSizeTable[];
 
-force_inline usize get_elem_write_size(NDATypes ndatype) {
-    return _NdaElemWriteSizeTable[ndatype];
-}
+force_inline usize get_elem_write_size(NDATypes ndatype) { return _NdaElemWriteSizeTable[ndatype]; }
 
 /*==============================================================================
  * Stack frame for iterative traversal

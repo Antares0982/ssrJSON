@@ -50,7 +50,9 @@ size_t __hash_add_key_call_count = 0;
         __hash_add_key_call_count++;  \
         __hash_trace[_hash & (SSRJSON_KEY_CACHE_SIZE - 1)]++
 #    define SSRJSON_TRACE_CACHE_HIT() __hash_hit_counter++
-#    define SSRJSON_TRACE_HASH_CONFLICT(_hash) printf("hash conflict: %lld, index=%lld\n", (long long int)_hash, (long long int)(_hash & (SSRJSON_KEY_CACHE_SIZE - 1)))
+#    define SSRJSON_TRACE_HASH_CONFLICT(_hash)                            \
+        printf("hash conflict: %lld, index=%lld\n", (long long int)_hash, \
+               (long long int)(_hash & (SSRJSON_KEY_CACHE_SIZE - 1)))
 #else // SSRJSON_ENABLE_TRACE
 #    define SSRJSON_TRACE_STR_LEN(_len) (void)(0)
 #    define SSRJSON_TRACE_HASH(_hash) (void)(0)
@@ -58,7 +60,8 @@ size_t __hash_add_key_call_count = 0;
 #    define SSRJSON_TRACE_HASH_CONFLICT(_hash) (void)(0)
 #endif // SSRJSON_ENABLE_TRACE
 
-force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int kind, ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int kind,
+                                   ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     SSRJSON_TRACE_STR_LEN(len);
     PyObject *obj;
     decode_keyhash_t hash;
@@ -105,17 +108,13 @@ force_inline PyObject *make_string(const u8 *unicode_str, Py_ssize_t len, int ki
     if (should_cache) {
         hash = XXH3_64bits(unicode_str, real_len);
         obj = get_key_cache(unicode_str, hash, real_len, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
-        if (obj) {
-            return obj;
-        }
+        if (obj) { return obj; }
     }
 
     obj = create_empty_unicode(len, kind);
     if (unlikely(!obj)) return NULL;
     ssrjson_memcpy(ssrjson_cast(u8 *, obj) + offset, unicode_str, real_len);
-    if (should_cache) {
-        add_key_cache(hash, obj, real_len, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
-    }
+    if (should_cache) { add_key_cache(hash, obj, real_len, kind DECODER_TLS_KEYCACHE_ADDITIONAL_ARG); }
 success:
     if (ssrjson_consteval(is_key)) {
         PyASCIIObject *ascii_obj = ssrjson_pyascii_cast(obj);
@@ -146,15 +145,15 @@ success:
 #endif
 
 
-bool _decode_obj_stack_resize(
-        decode_obj_stack_ptr_t *decode_obj_writer_addr,
-        decode_obj_stack_ptr_t *decode_obj_stack_addr,
-        decode_obj_stack_ptr_t *decode_obj_stack_end_addr);
+bool _decode_obj_stack_resize(decode_obj_stack_ptr_t *decode_obj_writer_addr,
+                              decode_obj_stack_ptr_t *decode_obj_stack_addr,
+                              decode_obj_stack_ptr_t *decode_obj_stack_end_addr);
 
 force_inline bool _decoder_push_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                                     decode_obj_stack_ptr_t *decode_obj_stack_addr,
                                     decode_obj_stack_ptr_t *decode_obj_stack_end_addr, pyobj_ptr_t obj) {
-    static_assert(((Py_ssize_t)SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1) > 0, "(SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1) > 0");
+    static_assert(((Py_ssize_t)SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1) > 0,
+                  "(SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1) > 0");
     if (unlikely((*decode_obj_writer_addr) >= (*decode_obj_stack_end_addr))) {
         bool c = _decode_obj_stack_resize(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr);
         return_if_unlikely(!c);
@@ -200,9 +199,7 @@ force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
             // we already decrefed some objects, have to manually handle all refcnt here
             Py_DECREF(dict);
             // also need to clean up the rest k-v pairs
-            for (usize k = j * 2; k < dict_len * 2; k++) {
-                Py_DECREF(dict_val_start[k]);
-            }
+            for (usize k = j * 2; k < dict_len * 2; k++) { Py_DECREF(dict_val_start[k]); }
             // move decode_obj_writer to the first key addr, avoid double decref
             (*decode_obj_writer_addr) = dict_val_start;
             return false;
@@ -213,9 +210,7 @@ force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
         PyObject *hooked_obj = PyObject_CallOneArg(object_hook, dict);
         Py_DECREF(dict);
 
-        if (unlikely(!hooked_obj)) {
-            return false;
-        }
+        if (unlikely(!hooked_obj)) { return false; }
         if (unlikely(!hooked_obj)) {
             PyErr_Format(PyExc_TypeError, "object_hook must return a dict not a %s", Py_TYPE(hooked_obj)->tp_name);
             Py_DECREF(hooked_obj);
@@ -259,7 +254,8 @@ force_inline bool decode_nan(decode_obj_stack_ptr_t *decode_obj_writer_addr,
     return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, o);
 }
 
-force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **s_out, PyObject **object_hook_out) {
+force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **s_out,
+                                          PyObject **object_hook_out) {
     assert(kwnames);
     PyObject *s;
     PyObject *object_hook;
@@ -326,7 +322,8 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
     return true;
 }
 
-PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames) {
+PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *args, Py_ssize_t nargsf,
+                                             PyObject *kwnames) {
     PyObject *ret;
     PyObject *s;
     PyObject *object_hook = NULL;

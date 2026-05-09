@@ -20,31 +20,38 @@
  SOFTWARE.
  *============================================================================*/
 
-#undef SSRJSON_COMPILE_CONTEXT_W
-//
-#undef WRITE_BIT_SIZE
-#undef _CAST_WRITER
-//
-#undef dst_t
-//
-#undef make_w_name
-//
-#undef u_buf_reserve
-#undef u64_to_unicode
-#undef u32_to_unicode
-#undef u16_to_unicode
-#undef u8_to_unicode
-#undef f64_to_unicode
-#undef f32_to_unicode
-#undef inf_nan_to_unicode
-#undef ControlEscapeTable
-//
-#undef write_unicode_bool
-#undef write_unicode_bool_numpy
-#undef write_unicode_null
-#undef write_unicode_empty_arr
-#undef write_unicode_arr_begin
-#undef write_unicode_arr_end
-#undef write_unicode_empty_obj
-#undef write_unicode_obj_begin
-#undef write_unicode_obj_end
+#ifdef SSRJSON_CLANGD_CHECKING
+#    ifndef COMPILE_CONTEXT_ENCODE
+#        define COMPILE_CONTEXT_ENCODE
+#        include "encode_shared.h"
+#        include "simd/simd_detect.h"
+#        include "simd/simd_impl.h"
+#        include "utils/unicode.h"
+#        define COMPILE_READ_UCS_LEVEL 1
+#        define COMPILE_WRITE_UCS_LEVEL 1
+#        include "simd/compile_feature_check.h"
+#    endif
+#endif
+
+/* Macro IN */
+#include "compile_context/srw_in.inl.h"
+
+// call u_buf_apd_key_rsv_idt before calling this.
+static force_noinline ssrjson_nofail dst_t *u_buf_apd_key_impl(dst_t *writer, const src_t *str_data, usize len) {
+    *writer++ = '"';
+    writer = encode_unicode_impl(writer, str_data, len, true);
+    *writer++ = '"';
+    *writer++ = ':';
+    return writer;
+}
+
+// call u_buf_apd_str_rsv_idt before calling this.
+static force_noinline ssrjson_nofail dst_t *u_buf_apd_str_impl(dst_t *writer, const src_t *str_data, usize len) {
+    *writer++ = '"';
+    writer = encode_unicode_impl_no_key(writer, str_data, len);
+    *writer++ = '"';
+    *writer++ = ',';
+    return writer;
+}
+
+#include "compile_context/srw_out.inl.h"

@@ -38,18 +38,14 @@ force_inline vector_a get_high_mask(usize count) {
     return *mask_ptr;
 }
 
-force_inline vector_a high_mask(vector_a x, usize count) {
-    return x & get_high_mask(count);
-}
+force_inline vector_a high_mask(vector_a x, usize count) { return x & get_high_mask(count); }
 
 force_inline vector_a get_low_mask(usize count) {
     const vector_a *mask_ptr = read_head_mask_table_8(count * sizeof(src_t));
     return *mask_ptr;
 }
 
-force_inline vector_a low_mask(vector_a x, usize count) {
-    return x & get_low_mask(count);
-}
+force_inline vector_a low_mask(vector_a x, usize count) { return x & get_low_mask(count); }
 
 force_inline vector_a get_escape_mask(vector_a x) {
     vector_a *checker_masks = (vector_a *)&_CheckerMasks;
@@ -88,18 +84,14 @@ force_inline usize escape_mask_to_done_count_no_eq0(vector_a mask) {
     return u32_tz_bits(get_bitmask_from_u8(mask)) / COMPILE_READ_UCS_LEVEL;
 }
 
-force_inline usize joined4_escape_mask_to_done_count(vector_a mask1,
-                                                     vector_a mask2,
-                                                     vector_a mask3,
-                                                     vector_a mask4) {
+force_inline usize joined4_escape_mask_to_done_count(vector_a mask1, vector_a mask2, vector_a mask3, vector_a mask4) {
     u64 bitmask1, bitmask2, bitmask3, bitmask4;
     bitmask1 = 0xffff & escape_mask_to_bitmask(mask1);
     bitmask2 = 0xffff & escape_mask_to_bitmask(mask2);
     bitmask3 = 0xffff & escape_mask_to_bitmask(mask3);
     bitmask4 = escape_mask_to_bitmask(mask4);
     u64 bitmask;
-    bitmask = bitmask1 | (bitmask2 << 16) |
-              (bitmask3 << 32) | (bitmask4 << 48);
+    bitmask = bitmask1 | (bitmask2 << 16) | (bitmask3 << 32) | (bitmask4 << 48);
     assert(bitmask);
     return u64_tz_bits(bitmask) / COMPILE_READ_UCS_LEVEL;
 }

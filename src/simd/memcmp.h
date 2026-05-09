@@ -40,9 +40,7 @@ force_inline bool __memcmp_neq_short(u8 **x_addr, u8 **y_addr, usize *size_addr,
 force_inline int ssrjson_memcmp_neq_le64(u8 *x, u8 *y, usize size) {
     assert(size <= 64);
 #if _CompileVectorBits == 512
-    if (size == 64) {
-        return memcmp(x, y, 64) ? 1 : 0;
-    }
+    if (size == 64) { return memcmp(x, y, 64) ? 1 : 0; }
 #endif
     if (size >= 32) {
         if (memcmp(x, y, 32)) return 1;

@@ -47,17 +47,11 @@
 
 #define get_bitmask_from_u8_128(_x_) ((u16)_mm_movemask_epi8(_x_))
 
-force_inline vector_a_u8_128 broadcast_u8_128(u8 v) {
-    return _mm_set1_epi8((i8)v);
-}
+force_inline vector_a_u8_128 broadcast_u8_128(u8 v) { return _mm_set1_epi8((i8)v); }
 
-force_inline vector_a_u16_128 broadcast_u16_128(u16 v) {
-    return _mm_set1_epi16((i16)v);
-}
+force_inline vector_a_u16_128 broadcast_u16_128(u16 v) { return _mm_set1_epi16((i16)v); }
 
-force_inline vector_a_u32_128 broadcast_u32_128(u32 v) {
-    return _mm_set1_epi32((i32)v);
-}
+force_inline vector_a_u32_128 broadcast_u32_128(u32 v) { return _mm_set1_epi32((i32)v); }
 
 force_inline SIMD_128 broadcast_u64_128(i64 v) {
 #if defined(_MSC_VER) && !defined(_M_IX86)
@@ -71,10 +65,7 @@ force_inline vector_a_u16_128 cvt_u8_to_u16_128(vector_a_u8_128 a) {
 #if __SSE4_1__
     return _mm_cvtepu8_epi16(a);
 #elif __SSSE3__
-    vector_a_u8_128 m = {0, 0x80, 1, 0x80,
-                         2, 0x80, 3, 0x80,
-                         4, 0x80, 5, 0x80,
-                         6, 0x80, 7, 0x80};
+    vector_a_u8_128 m = {0, 0x80, 1, 0x80, 2, 0x80, 3, 0x80, 4, 0x80, 5, 0x80, 6, 0x80, 7, 0x80};
     return _mm_shuffle_epi8(a, m);
 #else
     return _mm_unpacklo_epi8(a, setzero_128()); // ~2 cycles ..
@@ -85,10 +76,7 @@ force_inline vector_a_u32_128 cvt_u8_to_u32_128(vector_a_u8_128 a) {
 #if __SSE4_1__
     return _mm_cvtepu8_epi32(a);
 #elif __SSSE3__
-    vector_a_u8_128 m = {0, 0x80, 0x80, 0x80,
-                         1, 0x80, 0x80, 0x80,
-                         2, 0x80, 0x80, 0x80,
-                         3, 0x80, 0x80, 0x80};
+    vector_a_u8_128 m = {0, 0x80, 0x80, 0x80, 1, 0x80, 0x80, 0x80, 2, 0x80, 0x80, 0x80, 3, 0x80, 0x80, 0x80};
     return _mm_shuffle_epi8(a, m);
 #else
     a = _mm_unpacklo_epi8(a, a);                         // a0, a0, a1, a1, a2, a2, a3, a3, ....
@@ -100,10 +88,7 @@ force_inline vector_a_u32_128 cvt_u16_to_u32_128(vector_a_u16_128 a) {
 #if defined(__SSE4_1__)
     return _mm_cvtepu16_epi32(a);
 #elif defined(__SSSE3__)
-    vector_a_u8_128 shuffler = {0, 1, 0x80, 0x80,
-                                2, 3, 0x80, 0x80,
-                                4, 5, 0x80, 0x80,
-                                6, 7, 0x80, 0x80};
+    vector_a_u8_128 shuffler = {0, 1, 0x80, 0x80, 2, 3, 0x80, 0x80, 4, 5, 0x80, 0x80, 6, 7, 0x80, 0x80};
     return _mm_shuffle_epi8(a, shuffler);
 #else
     return _mm_unpacklo_epi16(a, setzero_128());
@@ -138,10 +123,7 @@ force_inline vector_a_u8_64 cvt_u16_to_u8_128(vector_a_u16_128 x) {
 
 force_inline vector_a_u8_32 cvt_u32_to_u8_128(vector_a_u32_128 x) {
 #if __SSSE3__
-    vector_a_u8_128 t1 = {0, 4, 8, 12,
-                          0, 4, 8, 12,
-                          0, 4, 8, 12,
-                          0, 4, 8, 12};
+    vector_a_u8_128 t1 = {0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12};
     return (vector_a_u8_32)extract_low_u32_from_128(_mm_shuffle_epi8(x, t1));
 #else
     // first using signed pack to u16. The values in `x` are below 256, so signed pack is equivalent to unsigned pack.

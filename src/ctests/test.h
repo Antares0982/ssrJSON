@@ -30,43 +30,29 @@
 #define TEST_STRINGIZE_EX(_x) #_x
 #define TEST_STRINGIZE(_x) TEST_STRINGIZE_EX(_x)
 
-#define CHECK(_x)                   \
-    do {                            \
-        bool _check_result_ = (_x); \
-        if (!_check_result_) {      \
-            return FAILED;          \
-        }                           \
+#define CHECK(_x)                               \
+    do {                                        \
+        bool _check_result_ = (_x);             \
+        if (!_check_result_) { return FAILED; } \
     } while (0)
 
-#define RANDOM_FILL(_x)                        \
-    do {                                       \
-        fill_random_buffer(&(_x), sizeof(_x)); \
-    } while (0)
+#define RANDOM_FILL(_x) \
+    do { fill_random_buffer(&(_x), sizeof(_x)); } while (0)
 
 #define RANDOM_FILLPTR_WITH_SIZE(_x, _u8size_) \
-    do {                                       \
-        fill_random_buffer((_x), (_u8size_));  \
-    } while (0)
+    do { fill_random_buffer((_x), (_u8size_)); } while (0)
 
-#define GARBAGE_FILL(_x)                 \
-    do {                                 \
-        memset(&(_x), 0xfa, sizeof(_x)); \
-    } while (0)
+#define GARBAGE_FILL(_x) \
+    do { memset(&(_x), 0xfa, sizeof(_x)); } while (0)
 
 #define GARBAGE_FILLPTR_WITH_SIZE(_x, _u8size_) \
-    do {                                        \
-        memset((_x), 0xfa, (_u8size_));         \
-    } while (0)
+    do { memset((_x), 0xfa, (_u8size_)); } while (0)
 
-#define ZERO_FILL(_x)                 \
-    do {                              \
-        memset(&(_x), 0, sizeof(_x)); \
-    } while (0)
+#define ZERO_FILL(_x) \
+    do { memset(&(_x), 0, sizeof(_x)); } while (0)
 
 #define ZERO_FILLPTR_WITH_SIZE(_x, _u8size_) \
-    do {                                     \
-        memset((_x), 0, (_u8size_));         \
-    } while (0)
+    do { memset((_x), 0, (_u8size_)); } while (0)
 
 static const int INVALID = -1;
 static const int FAILED = 0;
@@ -80,9 +66,7 @@ extern bool _SupportAVX2;
 
 force_inline void fill_random_buffer(void *_buffer, usize length) {
     u8 *buffer = (u8 *)_buffer;
-    for (usize i = 0; i < length; i++) {
-        buffer[i] = rand() & 0xff;
-    }
+    for (usize i = 0; i < length; i++) { buffer[i] = rand() & 0xff; }
 }
 
 force_inline u32 get_random_in_range(int a, int b) {
@@ -97,21 +81,13 @@ force_inline u32 get_random_in_range(int a, int b) {
     return r + a;
 }
 
-force_inline u8 get_random_ascii_u8(void) {
-    return (u8)get_random_in_range(0, 0x80);
-}
+force_inline u8 get_random_ascii_u8(void) { return (u8)get_random_in_range(0, 0x80); }
 
-force_inline u16 get_random_2bytes_u16(void) {
-    return (u16)get_random_in_range(0x80, 0x800);
-}
+force_inline u16 get_random_2bytes_u16(void) { return (u16)get_random_in_range(0x80, 0x800); }
 
-force_inline u16 get_random_3bytes_u16(void) {
-    return (u16)get_random_in_range(0x800, 0x10000);
-}
+force_inline u16 get_random_3bytes_u16(void) { return (u16)get_random_in_range(0x800, 0x10000); }
 
-force_inline u32 get_random_4bytes_u32(void) {
-    return (u32)get_random_in_range(0x10000, 0x110000);
-}
+force_inline u32 get_random_4bytes_u32(void) { return (u32)get_random_in_range(0x10000, 0x110000); }
 
 /* DECLARE_TEST macro. */
 #if BUILD_MULTI_LIB && SSRJSON_IS_X64

@@ -52,11 +52,12 @@ loop:;
         }
     } else {
         static src_t _t[2] = {' ', ' '};
-        while (true) repeat_call_16({
-            if (cmpeq_2chars(cur, _t, end)) cur += 2;
-            else
-                break;
-        }) if (*cur == ' ') cur++;
+        while (true)
+            repeat_call_16({
+                if (cmpeq_2chars(cur, _t, end)) cur += 2;
+                else
+                    break;
+            }) if (*cur == ' ') cur++;
     }
     *cur_addr = cur;
     assert(*cur != ' ');

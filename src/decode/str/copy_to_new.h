@@ -36,13 +36,15 @@
  * Fast path unicode copy for decoding string.
  *============================================================================*/
 
-force_inline void copy_to_new_unicode_ucs1(void **dst_addr, PyObject *ret, bool need_cvt, const u8 *src, usize count, int kind) {
+force_inline void copy_to_new_unicode_ucs1(void **dst_addr, PyObject *ret, bool need_cvt, const u8 *src, usize count,
+                                           int kind) {
     u8 *dst = need_cvt ? ssrjson_pyunicode_ascii_start(ret) : ssrjson_pyunicode_ucs1_start(ret);
     *dst_addr = dst;
     ssrjson_memcpy(dst, src, count);
 }
 
-force_inline void copy_to_new_unicode_ucs2(void **dst_addr, PyObject *ret, bool need_cvt, const u16 *src, usize count, int kind) {
+force_inline void copy_to_new_unicode_ucs2(void **dst_addr, PyObject *ret, bool need_cvt, const u16 *src, usize count,
+                                           int kind) {
     if (!need_cvt) {
         u16 *dst = ssrjson_pyunicode_ucs2_start(ret);
         *dst_addr = dst;
@@ -54,7 +56,8 @@ force_inline void copy_to_new_unicode_ucs2(void **dst_addr, PyObject *ret, bool 
     }
 }
 
-force_inline void copy_to_new_unicode_ucs4(void **dst_addr, PyObject *ret, bool need_cvt, const u32 *src, usize count, int kind) {
+force_inline void copy_to_new_unicode_ucs4(void **dst_addr, PyObject *ret, bool need_cvt, const u32 *src, usize count,
+                                           int kind) {
     if (!need_cvt) {
         u32 *dst = ssrjson_pyunicode_ucs4_start(ret);
         *dst_addr = dst;

@@ -50,9 +50,7 @@ force_inline vector_a get_low_mask(usize count) {
     return *mask_ptr;
 }
 
-force_inline vector_a low_mask(vector_a x, usize count) {
-    return x & get_low_mask(count);
-}
+force_inline vector_a low_mask(vector_a x, usize count) { return x & get_low_mask(count); }
 
 force_inline avx512_bitmask_t get_escape_bitmask(vector_a x) {
     vector_a *checker_masks = (vector_a *)&_CheckerMasks;
@@ -67,24 +65,21 @@ force_inline avx512_bitmask_t get_escape_bitmask(vector_a x) {
 }
 
 force_inline usize escape_bitmask_to_done_count(avx512_bitmask_t bitmask) {
-    if (sizeof(avx512_bitmask_t) == 8) {
-        return u64_tz_bits((u64)bitmask);
-    }
+    if (sizeof(avx512_bitmask_t) == 8) { return u64_tz_bits((u64)bitmask); }
     assert(sizeof(avx512_bitmask_t) == 2 || sizeof(avx512_bitmask_t) == 4);
     return u32_tz_bits((u32)bitmask);
 }
 
-force_inline usize escape_bitmask_to_done_count_track_max(avx512_bitmask_t bitmask, vector_a *max_vec, vector_a src_vec) {
+force_inline usize escape_bitmask_to_done_count_track_max(avx512_bitmask_t bitmask, vector_a *max_vec,
+                                                          vector_a src_vec) {
     usize ret = escape_bitmask_to_done_count(bitmask);
     vector_a part = low_mask(src_vec, ret);
     *max_vec = unsigned_max(part, *max_vec);
     return ret;
 }
 
-force_inline usize joined4_escape_bitmask_to_done_count(avx512_bitmask_t bitmask1,
-                                                        avx512_bitmask_t bitmask2,
-                                                        avx512_bitmask_t bitmask3,
-                                                        avx512_bitmask_t bitmask4) {
+force_inline usize joined4_escape_bitmask_to_done_count(avx512_bitmask_t bitmask1, avx512_bitmask_t bitmask2,
+                                                        avx512_bitmask_t bitmask3, avx512_bitmask_t bitmask4) {
 #if COMPILE_READ_UCS_LEVEL == 1
 #    define TZBITS u64_tz_bits
 #else
@@ -100,12 +95,9 @@ force_inline usize joined4_escape_bitmask_to_done_count(avx512_bitmask_t bitmask
 #undef TZBITS
 }
 
-force_inline usize joined4_escape_bitmask_to_done_count_track_max(avx512_bitmask_t bitmask1,
-                                                                  avx512_bitmask_t bitmask2,
-                                                                  avx512_bitmask_t bitmask3,
-                                                                  avx512_bitmask_t bitmask4,
-                                                                  vector_a *max_vec,
-                                                                  unionvector_a_x4 src_vecs) {
+force_inline usize joined4_escape_bitmask_to_done_count_track_max(avx512_bitmask_t bitmask1, avx512_bitmask_t bitmask2,
+                                                                  avx512_bitmask_t bitmask3, avx512_bitmask_t bitmask4,
+                                                                  vector_a *max_vec, unionvector_a_x4 src_vecs) {
 #if COMPILE_READ_UCS_LEVEL == 1
 #    define TZBITS u64_tz_bits
 #else

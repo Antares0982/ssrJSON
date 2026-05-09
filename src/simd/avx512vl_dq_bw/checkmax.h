@@ -22,7 +22,8 @@
 
 #ifndef SSRJSON_SIMD_AVX512VLDQBW_CHECKMAX_H
 #define SSRJSON_SIMD_AVX512VLDQBW_CHECKMAX_H
-#if !defined(__AVX512VL__) || !__AVX512VL__ || !defined(__AVX512DQ__) || !__AVX512DQ__ || !defined(__AVX512BW__) || !__AVX512BW__
+#if !defined(__AVX512VL__) || !__AVX512VL__ || !defined(__AVX512DQ__) || !__AVX512DQ__ || !defined(__AVX512BW__) || \
+        !__AVX512BW__
 #    error "AVX512VL, AVX512DQ and AVX512BW is required for this file"
 #endif
 

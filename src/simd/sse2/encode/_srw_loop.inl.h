@@ -52,18 +52,16 @@ force_inline ssrjson_nofail dst_t *encode_unicode_loop4(register dst_t *dst, con
         } escape_union_vec;
 
         memcpy(&union_vec, src, sizeof(union_vec));
-        for (usize i = 0; i < 4; ++i) {
-            cvt_to_dst(dst + READ_BATCH_COUNT * i, union_vec.x[i]);
-        }
-        for (usize i = 0; i < 4; ++i) {
-            escape_union_vec.x[i] = get_escape_mask(union_vec.x[i]);
-        }
-        if (likely(testz(escape_union_vec.x[0] | escape_union_vec.x[1] | escape_union_vec.x[2] | escape_union_vec.x[3]))) {
+        for (usize i = 0; i < 4; ++i) { cvt_to_dst(dst + READ_BATCH_COUNT * i, union_vec.x[i]); }
+        for (usize i = 0; i < 4; ++i) { escape_union_vec.x[i] = get_escape_mask(union_vec.x[i]); }
+        if (likely(testz(escape_union_vec.x[0] | escape_union_vec.x[1] | escape_union_vec.x[2] |
+                         escape_union_vec.x[3]))) {
             src += 4 * READ_BATCH_COUNT;
             dst += 4 * READ_BATCH_COUNT;
             len -= 4 * READ_BATCH_COUNT;
         } else {
-            usize done_count = joined4_escape_mask_to_done_count(escape_union_vec.x[0], escape_union_vec.x[1], escape_union_vec.x[2], escape_union_vec.x[3]);
+            usize done_count = joined4_escape_mask_to_done_count(
+                    escape_union_vec.x[0], escape_union_vec.x[1], escape_union_vec.x[2], escape_union_vec.x[3]);
             const src_t *escape_pos = src + done_count;
             src += done_count + 1;
             src_t escape_unicode = *escape_pos;
@@ -107,7 +105,8 @@ force_inline ssrjson_nofail dst_t *encode_unicode_loop(register dst_t *dst, cons
     return dst;
 }
 
-force_inline ssrjson_nofail dst_t *encode_trailing_copy_with_cvt(register dst_t *dst, const src_t *src, usize copy_len) {
+force_inline ssrjson_nofail dst_t *encode_trailing_copy_with_cvt(register dst_t *dst, const src_t *src,
+                                                                 usize copy_len) {
     assert(copy_len * sizeof(src_t) < 16);
     const src_t *const load_start = src + copy_len - 16 / sizeof(src_t);
     const vector_a vec = *(vector_u *)load_start;

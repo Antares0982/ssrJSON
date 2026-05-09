@@ -84,10 +84,8 @@ bool wrap_run_test(int (*func)(void), const char *name, TestCounter *counter) {
             RUN_ONE_TEST(_name##_sse4_2); \
         } while (0)
 #elif BUILD_MULTI_LIB && SSRJSON_IS_AARCH64
-#    define RUN_TESTS(_name)            \
-        do {                            \
-            RUN_ONE_TEST(_name##_neon); \
-        } while (0)
+#    define RUN_TESTS(_name) \
+        do { RUN_ONE_TEST(_name##_neon); } while (0)
 #else
 #    define RUN_TESTS(_name) RUN_ONE_TEST(_name);
 #endif
@@ -97,9 +95,11 @@ bool show_test_counter(TestCounter *counter) {
     bool success = !failed;
     printf("==================================================================================\n");
     if (success) {
-        printf(_GREEN "Summary: ALL PASSED, %d tests in total, %d passed, %d skipped." _CLEAR "\n", counter->total_count, counter->passed_count, counter->skipped_count);
+        printf(_GREEN "Summary: ALL PASSED, %d tests in total, %d passed, %d skipped." _CLEAR "\n",
+               counter->total_count, counter->passed_count, counter->skipped_count);
     } else {
-        printf(_RED "Summary: %d tests in total, %d passed, %d skipped, %d failed." _CLEAR "\n", counter->total_count, counter->passed_count, counter->skipped_count, failed);
+        printf(_RED "Summary: %d tests in total, %d passed, %d skipped, %d failed." _CLEAR "\n", counter->total_count,
+               counter->passed_count, counter->skipped_count, failed);
     }
     return success;
 }

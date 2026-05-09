@@ -24,7 +24,8 @@
 #include "ssrjson.h"
 
 
-#define IMPL_MULTILIB_FUNCTION_INTERFACE(_func_name_) ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
+#define IMPL_MULTILIB_FUNCTION_INTERFACE(_func_name_) \
+    ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 
 IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_Dumps)
 IMPL_MULTILIB_FUNCTION_INTERFACE(ssrjson_Decode)
@@ -89,7 +90,8 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     if (err) goto fail;
     err = PyDict_SetItemString(ret, "free_threading", SSRJSON_GIL_ENABLED ? Py_False : Py_True);
     if (err) goto fail;
-    err = PyDict_SetItemString(ret, "lockfree", (!SSRJSON_GIL_ENABLED && SSRJSON_FREE_THREADING_LOCKFREE) ? Py_True : Py_False);
+    err = PyDict_SetItemString(
+            ret, "lockfree", (!SSRJSON_GIL_ENABLED && SSRJSON_FREE_THREADING_LOCKFREE) ? Py_True : Py_False);
     if (err) goto fail;
 
 #    define DICT_SET_STRING_ITEM(_k_, _v_)               \
@@ -152,7 +154,8 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     if (err) goto fail;
     err = PyDict_SetItemString(ret, "free_threading", SSRJSON_GIL_ENABLED ? Py_False : Py_True);
     if (err) goto fail;
-    err = PyDict_SetItemString(ret, "lockfree", (!SSRJSON_GIL_ENABLED && SSRJSON_FREE_THREADING_LOCKFREE) ? Py_True : Py_False);
+    err = PyDict_SetItemString(
+            ret, "lockfree", (!SSRJSON_GIL_ENABLED && SSRJSON_FREE_THREADING_LOCKFREE) ? Py_True : Py_False);
     if (err) goto fail;
     PyObject *neon = PyUnicode_FromString("NEON");
     if (!neon) goto fail;

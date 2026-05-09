@@ -38,7 +38,8 @@
 #endif
 #include "compile_context/srw_in.inl.h"
 
-force_inline void make_srw_name(__small_back_cvt)(dst_t **dst_addr, const src_t **src_addr, usize count, ssrjson_compiletime usize max_power2) {
+force_inline void make_srw_name(__small_back_cvt)(dst_t **dst_addr, const src_t **src_addr, usize count,
+                                                  ssrjson_compiletime usize max_power2) {
     assert((max_power2 & (max_power2 - 1)) == 0);
     assert(max_power2 > 0 && max_power2 <= 64 && count < max_power2);
     if ((count & 1) && 1 < max_power2) make_rw_name(__partial_back_cvt_1)(dst_addr, src_addr);
@@ -49,7 +50,8 @@ force_inline void make_srw_name(__small_back_cvt)(dst_t **dst_addr, const src_t 
     if ((count & 32) && 32 < max_power2) make_rw_name(__partial_back_cvt_32)(dst_addr, src_addr);
 }
 
-force_inline void make_srw_name(__small_cvt)(dst_t *restrict *dst_addr, const src_t *restrict *src_addr, usize count, ssrjson_compiletime usize max_power2) {
+force_inline void make_srw_name(__small_cvt)(dst_t *restrict *dst_addr, const src_t *restrict *src_addr, usize count,
+                                             ssrjson_compiletime usize max_power2) {
     assert((max_power2 & (max_power2 - 1)) == 0);
     assert(max_power2 > 0 && max_power2 <= 64 && count < max_power2);
     if ((count & 1) && 1 < max_power2) make_rw_name(__partial_cvt_1)(dst_addr, src_addr);
@@ -93,9 +95,7 @@ force_inline void long_back_cvt(dst_t *dst, const src_t *src, usize count) {
         count -= batch_count;
         cvt_to_dst(dst, *(vector_u *)src);
     }
-    if (count) {
-        make_srw_name(__small_back_cvt)(&dst, &src, count, batch_count);
-    }
+    if (count) { make_srw_name(__small_back_cvt)(&dst, &src, count, batch_count); }
 }
 #endif
 
@@ -140,9 +140,7 @@ force_inline void long_cvt(dst_t *restrict dst, const src_t *restrict src, usize
         dst += batch_count;
         count -= batch_count;
     }
-    if (count) {
-        make_srw_name(__small_cvt)(&dst, &src, count, batch_count);
-    }
+    if (count) { make_srw_name(__small_cvt)(&dst, &src, count, batch_count); }
 }
 
 #include "compile_context/srw_out.inl.h"

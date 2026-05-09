@@ -41,7 +41,8 @@
  @param msg The error message pointer.
  @return Whether success.
  */
-force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer,
+                                   ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     /*
      Each unicode code point is encoded as 1 to 4 bytes in UTF-8 encoding,
      we use 4-byte mask and pattern value to validate UTF-8 byte sequence,
@@ -101,22 +102,14 @@ force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, ssrjson_com
     const u32 b4_err0 = 0x00000004UL;
     const u32 b4_err1 = 0x00003003UL;
 
-#define is_valid_seq_1(uni) ( \
-        ((uni & b1_mask) == b1_patt))
+#define is_valid_seq_1(uni) (((uni & b1_mask) == b1_patt))
 
-#define is_valid_seq_2(uni) (           \
-        ((uni & b2_mask) == b2_patt) && \
-        ((uni & b2_requ)))
+#define is_valid_seq_2(uni) (((uni & b2_mask) == b2_patt) && ((uni & b2_requ)))
 
-#define is_valid_seq_3(uni) (           \
-        ((uni & b3_mask) == b3_patt) && \
-        ((tmp = (uni & b3_requ))) &&    \
-        ((tmp != b3_erro)))
+#define is_valid_seq_3(uni) (((uni & b3_mask) == b3_patt) && ((tmp = (uni & b3_requ))) && ((tmp != b3_erro)))
 
-#define is_valid_seq_4(uni) (           \
-        ((uni & b4_mask) == b4_patt) && \
-        ((tmp = (uni & b4_requ))) &&    \
-        ((tmp & b4_err0) == 0 || (tmp & b4_err1) == 0))
+#define is_valid_seq_4(uni) \
+    (((uni & b4_mask) == b4_patt) && ((tmp = (uni & b4_requ))) && ((tmp & b4_err0) == 0 || (tmp & b4_err1) == 0))
 
 #define return_err(_end, _msg)                                                        \
     do {                                                                              \
@@ -169,8 +162,7 @@ skip_ascii_begin:
     skip_ascii_stop##i : src += i; \
     goto skip_ascii_end;
 
-    repeat_incr_16(expr_jump)
-            src += 16;
+    repeat_incr_16(expr_jump) src += 16;
     goto skip_ascii_begin;
     repeat_incr_16(expr_stop)
 
@@ -194,7 +186,8 @@ skip_ascii_begin:
 
         // this is a fast path for ascii strings. directly copy the buffer to pyobject
         *ptr = src + 1;
-        return make_string(src_start, src - src_start, SSRJSON_STRING_TYPE_ASCII, is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+        return make_string(
+                src_start, src - src_start, SSRJSON_STRING_TYPE_ASCII, is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
     } else if (src != src_start) {
         ssrjson_memcpy(temp_string_buf, src_start, src - src_start);
         len_ucs1 = src - src_start;
@@ -239,9 +232,7 @@ copy_escape_ucs1:
                 src++;
                 break;
             case 'u':
-                if (unlikely(!to_hex_u8(++src, &hi))) {
-                    return_err(src - 2, "invalid escaped sequence in string");
-                }
+                if (unlikely(!to_hex_u8(++src, &hi))) { return_err(src - 2, "invalid escaped sequence in string"); }
                 src += 4;
                 if (likely((hi & 0xF800) != 0xD800)) {
                     /* a BMP character */
@@ -260,21 +251,11 @@ copy_escape_ucs1:
                     }
                 } else {
                     /* a non-BMP character, represented as a surrogate pair */
-                    if (unlikely((hi & 0xFC00) != 0xD800)) {
-                        return_err(src - 6, "invalid high surrogate in string");
-                    }
-                    if (unlikely(!byte_match_2(src, "\\u"))) {
-                        return_err(src, "no low surrogate in string");
-                    }
-                    if (unlikely(!to_hex_u8(src + 2, &lo))) {
-                        return_err(src, "invalid escaped sequence in string");
-                    }
-                    if (unlikely((lo & 0xFC00) != 0xDC00)) {
-                        return_err(src, "invalid low surrogate in string");
-                    }
-                    uni = ((((u32)hi - 0xD800) << 10) |
-                           ((u32)lo - 0xDC00)) +
-                          0x10000;
+                    if (unlikely((hi & 0xFC00) != 0xD800)) { return_err(src - 6, "invalid high surrogate in string"); }
+                    if (unlikely(!byte_match_2(src, "\\u"))) { return_err(src, "no low surrogate in string"); }
+                    if (unlikely(!to_hex_u8(src + 2, &lo))) { return_err(src, "invalid escaped sequence in string"); }
+                    if (unlikely((lo & 0xFC00) != 0xDC00)) { return_err(src, "invalid low surrogate in string"); }
+                    uni = ((((u32)hi - 0xD800) << 10) | ((u32)lo - 0xDC00)) + 0x10000;
                     // ucs1 -> ucs4
                     assert(cur_max_ucs_size == 1);
                     len_ucs1 = dst - (u8 *)temp_string_buf;
@@ -468,9 +449,7 @@ copy_utf8_ucs1:
             goto copy_utf8_inner_ucs4;
         }
 
-        if (unlikely(pos == src)) {
-            return_err(src, "invalid UTF-8 encoding in string");
-        }
+        if (unlikely(pos == src)) { return_err(src, "invalid UTF-8 encoding in string"); }
         goto copy_ascii_ucs1;
     }
     goto copy_escape_ucs1;
@@ -512,9 +491,7 @@ copy_escape_ucs2:
                 src++;
                 break;
             case 'u':
-                if (unlikely(!to_hex_u8(++src, &hi))) {
-                    return_err(src - 2, "invalid escaped sequence in string");
-                }
+                if (unlikely(!to_hex_u8(++src, &hi))) { return_err(src - 2, "invalid escaped sequence in string"); }
                 src += 4;
                 if (likely((hi & 0xF800) != 0xD800)) {
                     /* a BMP character */
@@ -522,21 +499,11 @@ copy_escape_ucs2:
                     goto copy_ascii_ucs2;
                 } else {
                     /* a non-BMP character, represented as a surrogate pair */
-                    if (unlikely((hi & 0xFC00) != 0xD800)) {
-                        return_err(src - 6, "invalid high surrogate in string");
-                    }
-                    if (unlikely(!byte_match_2(src, "\\u"))) {
-                        return_err(src, "no low surrogate in string");
-                    }
-                    if (unlikely(!to_hex_u8(src + 2, &lo))) {
-                        return_err(src, "invalid escaped sequence in string");
-                    }
-                    if (unlikely((lo & 0xFC00) != 0xDC00)) {
-                        return_err(src, "invalid low surrogate in string");
-                    }
-                    uni = ((((u32)hi - 0xD800) << 10) |
-                           ((u32)lo - 0xDC00)) +
-                          0x10000;
+                    if (unlikely((hi & 0xFC00) != 0xD800)) { return_err(src - 6, "invalid high surrogate in string"); }
+                    if (unlikely(!byte_match_2(src, "\\u"))) { return_err(src, "no low surrogate in string"); }
+                    if (unlikely(!to_hex_u8(src + 2, &lo))) { return_err(src, "invalid escaped sequence in string"); }
+                    if (unlikely((lo & 0xFC00) != 0xDC00)) { return_err(src, "invalid low surrogate in string"); }
+                    uni = ((((u32)hi - 0xD800) << 10) | ((u32)lo - 0xDC00)) + 0x10000;
                     // ucs2 -> ucs4
                     assert(cur_max_ucs_size == 2);
                     len_ucs2 = dst_ucs2 - (u16 *)temp_string_buf - len_ucs1;
@@ -558,12 +525,13 @@ copy_escape_ucs2:
 
 copy_ascii_ucs2:
     assert(cur_max_ucs_size == 2);
-    while (true) repeat_call_16({
-        if (unlikely(char_is_ascii_stop(*src))) break;
-        *dst_ucs2++ = *src++;
-    })
+    while (true)
+        repeat_call_16({
+            if (unlikely(char_is_ascii_stop(*src))) break;
+            *dst_ucs2++ = *src++;
+        })
 
-            copy_utf8_ucs2 : assert(cur_max_ucs_size == 2);
+                copy_utf8_ucs2 : assert(cur_max_ucs_size == 2);
 
     if (*src & 0x80) { /* non-ASCII character */
     copy_utf8_inner_ucs2:
@@ -598,9 +566,7 @@ copy_ascii_ucs2:
         }
 
 
-        if (unlikely(pos == src)) {
-            return_err(src, "invalid UTF-8 encoding in string");
-        }
+        if (unlikely(pos == src)) { return_err(src, "invalid UTF-8 encoding in string"); }
         goto copy_ascii_ucs2;
     }
     goto copy_escape_ucs2;
@@ -642,9 +608,7 @@ copy_escape_ucs4:
                 src++;
                 break;
             case 'u':
-                if (unlikely(!to_hex_u8(++src, &hi))) {
-                    return_err(src - 2, "invalid escaped sequence in string");
-                }
+                if (unlikely(!to_hex_u8(++src, &hi))) { return_err(src - 2, "invalid escaped sequence in string"); }
                 src += 4;
                 if (likely((hi & 0xF800) != 0xD800)) {
                     /* a BMP character */
@@ -652,21 +616,11 @@ copy_escape_ucs4:
                     goto copy_ascii_ucs4;
                 } else {
                     /* a non-BMP character, represented as a surrogate pair */
-                    if (unlikely((hi & 0xFC00) != 0xD800)) {
-                        return_err(src - 6, "invalid high surrogate in string");
-                    }
-                    if (unlikely(!byte_match_2(src, "\\u"))) {
-                        return_err(src, "no low surrogate in string");
-                    }
-                    if (unlikely(!to_hex_u8(src + 2, &lo))) {
-                        return_err(src, "invalid escaped sequence in string");
-                    }
-                    if (unlikely((lo & 0xFC00) != 0xDC00)) {
-                        return_err(src, "invalid low surrogate in string");
-                    }
-                    uni = ((((u32)hi - 0xD800) << 10) |
-                           ((u32)lo - 0xDC00)) +
-                          0x10000;
+                    if (unlikely((hi & 0xFC00) != 0xD800)) { return_err(src - 6, "invalid high surrogate in string"); }
+                    if (unlikely(!byte_match_2(src, "\\u"))) { return_err(src, "no low surrogate in string"); }
+                    if (unlikely(!to_hex_u8(src + 2, &lo))) { return_err(src, "invalid escaped sequence in string"); }
+                    if (unlikely((lo & 0xFC00) != 0xDC00)) { return_err(src, "invalid low surrogate in string"); }
+                    uni = ((((u32)hi - 0xD800) << 10) | ((u32)lo - 0xDC00)) + 0x10000;
                     // ucs2 -> ucs4
                     *dst_ucs4++ = uni;
                     src += 6;
@@ -684,12 +638,13 @@ copy_escape_ucs4:
 
 copy_ascii_ucs4:
     assert(cur_max_ucs_size == 4);
-    while (true) repeat_call_16({
-        if (unlikely(char_is_ascii_stop(*src))) break;
-        *dst_ucs4++ = *src++;
-    })
+    while (true)
+        repeat_call_16({
+            if (unlikely(char_is_ascii_stop(*src))) break;
+            *dst_ucs4++ = *src++;
+        })
 
-            copy_utf8_ucs4 : assert(cur_max_ucs_size == 4);
+                copy_utf8_ucs4 : assert(cur_max_ucs_size == 4);
 
     if (*src & 0x80) { /* non-ASCII character */
     copy_utf8_inner_ucs4:
@@ -716,9 +671,7 @@ copy_ascii_ucs4:
             src += 4;
             uni = byte_load_4(src);
         }
-        if (unlikely(pos == src)) {
-            return_err(src, "invalid UTF-8 encoding in string");
-        }
+        if (unlikely(pos == src)) { return_err(src, "invalid UTF-8 encoding in string"); }
         goto copy_ascii_ucs4;
     }
     goto copy_escape_ucs4;
@@ -753,7 +706,8 @@ finalize:
         final_type_flag = is_ascii ? SSRJSON_STRING_TYPE_ASCII : SSRJSON_STRING_TYPE_LATIN1;
     }
 
-    return make_string(temp_string_buf, final_string_length, final_type_flag, is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+    return make_string(
+            temp_string_buf, final_string_length, final_type_flag, is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 
 #undef return_err
 #undef is_valid_seq_1
@@ -762,12 +716,14 @@ finalize:
 #undef is_valid_seq_4
 }
 
-internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr,
+                                                     u8 *write_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     return loads_bytes(ptr, write_buffer, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 }
 
 /** Read single value JSON document. */
-internal_simd_noinline PyObject *loads_root_single_bytes(DecoderBuffers *decoder_context, const u8 *dat, usize len DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+internal_simd_noinline PyObject *loads_root_single_bytes(DecoderBuffers *decoder_context, const u8 *dat,
+                                                         usize len DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define return_err(_pos, _type, _msg)                                                             \
     do {                                                                                          \
         if (_type == JSONDecodeError) {                                                           \
@@ -850,23 +806,17 @@ fail_string:
 fail_number:
     return_err(cur, JSONDecodeError, "invalid number");
 fail_alloc:
-    return_err(cur, PyExc_MemoryError,
-               "memory allocation failed");
+    return_err(cur, PyExc_MemoryError, "memory allocation failed");
 fail_literal_true:
-    return_err(cur, JSONDecodeError,
-               "invalid literal, expected a valid literal such as 'true'");
+    return_err(cur, JSONDecodeError, "invalid literal, expected a valid literal such as 'true'");
 fail_literal_false:
-    return_err(cur, JSONDecodeError,
-               "invalid literal, expected a valid literal such as 'false'");
+    return_err(cur, JSONDecodeError, "invalid literal, expected a valid literal such as 'false'");
 fail_literal_null:
-    return_err(cur, JSONDecodeError,
-               "invalid literal, expected a valid literal such as 'null'");
+    return_err(cur, JSONDecodeError, "invalid literal, expected a valid literal such as 'null'");
 fail_character:
-    return_err(cur, JSONDecodeError,
-               "unexpected character, expected a valid root value");
+    return_err(cur, JSONDecodeError, "unexpected character, expected a valid root value");
 fail_garbage:
-    return_err(cur, JSONDecodeError,
-               "unexpected content after document");
+    return_err(cur, JSONDecodeError, "unexpected content after document");
 fail_cleanup:
     Py_XDECREF(ret);
     return NULL;
@@ -890,7 +840,7 @@ force_inline bool _skip_starting_space(char **buffer_addr, Py_ssize_t *len_addr)
     return true;
 }
 
-force_inline void _alloc_aligned_bytes_buffer(DecoderBuffers *decoder_context, Py_ssize_t len, bool *dynamic, u8 **buffer) {
+force_inline void _alloc_aligned_b_buf(DecoderBuffers *decoder_context, Py_ssize_t len, bool *dynamic, u8 **buffer) {
     if (unlikely(len > (Py_ssize_t)PY_SSIZE_T_MAX - 2 * SSRJSON_MEMCPY_SIMD_SIZE - 4)) {
         PyErr_NoMemory();
         *buffer = NULL;
@@ -920,14 +870,13 @@ force_inline bool should_loads_bytes_pretty(const u8 *buffer, Py_ssize_t len) {
             // likely to hit
             return true;
         }
-        if (char_is_space(second) && char_is_space(third)) {
-            return true;
-        }
+        if (char_is_space(second) && char_is_space(third)) { return true; }
     }
     return false;
 }
 
-internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_context, char *_buffer, Py_ssize_t len, PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_context, char *_buffer, Py_ssize_t len,
+                                                      PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     if (unlikely(!len)) {
         PyErr_Format(JSONDecodeError, "input data is empty");
         return NULL;
@@ -936,13 +885,11 @@ internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_co
     assert(_buffer);
     assert(len > 0);
 
-    if (!_skip_starting_space(&_buffer, &len)) {
-        return NULL;
-    }
+    if (!_skip_starting_space(&_buffer, &len)) { return NULL; }
 
     u8 *_new_buffer;
     bool is_dynamic;
-    _alloc_aligned_bytes_buffer(decoder_context, len, &is_dynamic, &_new_buffer);
+    _alloc_aligned_b_buf(decoder_context, len, &is_dynamic, &_new_buffer);
     if (!_new_buffer) {
         PyErr_NoMemory();
         return NULL;
@@ -962,9 +909,11 @@ internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_co
     /* read json document */
     if (likely(char_is_container(*buffer))) {
         if (should_loads_bytes_pretty(buffer, len)) {
-            ret = loads_bytes_root_pretty(decoder_context, buffer, len, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+            ret = loads_bytes_root_pretty(
+                    decoder_context, buffer, len, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         } else {
-            ret = loads_bytes_root_minify(decoder_context, buffer, len, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+            ret = loads_bytes_root_minify(
+                    decoder_context, buffer, len, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         }
     } else {
         ret = loads_root_single_bytes(decoder_context, buffer, len DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);

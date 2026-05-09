@@ -102,62 +102,42 @@ static void module_free(void *m) {
         }
     }
 
-    if (unlikely(!_ssrjson_library_tls_free())) {
-        printf("ssrjson: failed to free TLS\n");
-    }
+    if (unlikely(!_ssrjson_library_tls_free())) { printf("ssrjson: failed to free TLS\n"); }
 }
 
 #if PY_MINOR_VERSION >= 13
 PyTypeObject *PyNone_Type = NULL;
 #endif
 
-PyMethodDef dumps_func_def = {
-        "dumps",
-        (PyCFunction)ssrjson_Dumps,
-        METH_FASTCALL | METH_KEYWORDS,
-        "dumps(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."};
+PyMethodDef dumps_func_def = {"dumps", (PyCFunction)ssrjson_Dumps, METH_FASTCALL | METH_KEYWORDS,
+                              "dumps(obj, indent=None)\n--\n\nConverts arbitrary object recursively into JSON."};
 
-PyMethodDef dumps_to_bytes_func_def = {
-        "dumps_to_bytes",
-        (PyCFunction)ssrjson_DumpsToBytes,
-        METH_FASTCALL | METH_KEYWORDS,
-        "dumps_to_bytes(obj, indent=None, is_write_cache=None)\n--\n\nConverts arbitrary object recursively into JSON."};
+PyMethodDef dumps_to_bytes_func_def = {"dumps_to_bytes", (PyCFunction)ssrjson_DumpsToBytes,
+                                       METH_FASTCALL | METH_KEYWORDS,
+                                       "dumps_to_bytes(obj, indent=None, is_write_cache=None)\n--\n\nConverts "
+                                       "arbitrary object recursively into JSON."};
 
-PyMethodDef loads_func_def = {
-        "loads",
-        (PyCFunction)ssrjson_Decode,
-        METH_FASTCALL | METH_KEYWORDS,
-        "loads(s)\n--\n\nConverts JSON as string to dict object structure."};
+PyMethodDef loads_func_def = {"loads", (PyCFunction)ssrjson_Decode, METH_FASTCALL | METH_KEYWORDS,
+                              "loads(s)\n--\n\nConverts JSON as string to dict object structure."};
 
-PyMethodDef get_current_features_func_def = {
-        "get_current_features",
-        (PyCFunction)ssrjson_get_current_features,
-        METH_NOARGS,
-        "get_current_features()\n--\n\nGet current features."};
+PyMethodDef get_current_features_func_def = {"get_current_features", (PyCFunction)ssrjson_get_current_features,
+                                             METH_NOARGS, "get_current_features()\n--\n\nGet current features."};
 
 PyMethodDef suppress_api_warning_func_def = {
-        "suppress_api_warning",
-        (PyCFunction)ssrjson_suppress_api_warning,
-        METH_NOARGS,
+        "suppress_api_warning", (PyCFunction)ssrjson_suppress_api_warning, METH_NOARGS,
         "suppress_api_warning()\n--\n\nSuppress warning when invalid arguments received."};
 
 PyMethodDef strict_argparse_func_def = {
-        "strict_argparse",
-        (PyCFunction)ssrjson_strict_argparse,
-        METH_O,
+        "strict_argparse", (PyCFunction)ssrjson_strict_argparse, METH_O,
         "strict_argparse(value)\n--\n\nSet strict argument parsing mode. Default is False."};
 
-PyMethodDef write_utf8_cache_func_def = {
-        "write_utf8_cache",
-        (PyCFunction)ssrjson_write_utf8_cache,
-        METH_O,
-        "write_utf8_cache(value)\n--\n\nSet whether to write UTF-8 cache when calling dumps_to_bytes(). Default is True."};
+PyMethodDef write_utf8_cache_func_def = {"write_utf8_cache", (PyCFunction)ssrjson_write_utf8_cache, METH_O,
+                                         "write_utf8_cache(value)\n--\n\nSet whether to write UTF-8 cache when calling "
+                                         "dumps_to_bytes(). Default is True."};
 
-PyMethodDef setup_numpy_types_func_def = {
-        "setup_numpy_types",
-        (PyCFunction)ssrjson_setup_numpy_types,
-        METH_FASTCALL,
-        "setup_numpy_types(numpy_module=None)\n--\n\nSetup numpy type support. Pass the numpy module or call without arguments to auto-import numpy."};
+PyMethodDef setup_numpy_types_func_def = {"setup_numpy_types", (PyCFunction)ssrjson_setup_numpy_types, METH_FASTCALL,
+                                          "setup_numpy_types(numpy_module=None)\n--\n\nSetup numpy type support. Pass "
+                                          "the numpy module or call without arguments to auto-import numpy."};
 
 const char *_getenv_write_cache(long *out_value) {
     const char *env = getenv("SSRJSON_WRITE_UTF8_CACHE");
@@ -178,9 +158,7 @@ static int ssrjson_exec(PyObject *module) {
     PyObject *func;
 
 #define RETURN_WHEN_ERR() \
-    if (err < 0) {        \
-        return -1;        \
-    }
+    if (err < 0) { return -1; }
 
 #define ADD_FUNC_CHECKED(_func_def_)                                   \
     {                                                                  \
@@ -212,16 +190,12 @@ static int ssrjson_exec(PyObject *module) {
     }
     _WriteUTF8CacheValue = (int)_write_utf8_cache_value;
 
-    if (PyModule_AddStringConstant(module, "__version__", SSRJSON_VERSION) < 0) {
-        return -1;
-    }
+    if (PyModule_AddStringConstant(module, "__version__", SSRJSON_VERSION) < 0) { return -1; }
 
     // Add: JSONDecodeError
     if (!JSONDecodeError) {
         JSONDecodeError = PyErr_NewException("ssrjson.JSONDecodeError", PyExc_ValueError, NULL);
-        if (!JSONDecodeError) {
-            return -1;
-        }
+        if (!JSONDecodeError) { return -1; }
         // global variable needs an additional ref
         Py_INCREF(JSONDecodeError);
     }
@@ -233,9 +207,7 @@ static int ssrjson_exec(PyObject *module) {
     // Add: JSONEncodeError
     if (!JSONEncodeError) {
         JSONEncodeError = PyErr_NewException("ssrjson.JSONEncodeError", PyExc_ValueError, NULL);
-        if (!JSONEncodeError) {
-            return -1;
-        }
+        if (!JSONEncodeError) { return -1; }
         // global variable needs an additional ref
         Py_INCREF(JSONEncodeError);
     }
@@ -288,9 +260,7 @@ static int ssrjson_exec(PyObject *module) {
 #undef RETURN_WHEN_ERR
 }
 
-PyMODINIT_FUNC PyInit_ssrjson(void) {
-    return PyModuleDef_Init(&moduledef);
-}
+PyMODINIT_FUNC PyInit_ssrjson(void) { return PyModuleDef_Init(&moduledef); }
 
 PyObject *ssrjson_suppress_api_warning(PyObject *self, PyObject *args) {
     _InvalidArgChecked = 1;
@@ -325,21 +295,12 @@ force_inline PyObject *_setup_numpy_types_impl(PyObject *mod) {
     // Order matches NumpyTypes struct layout.
     // np.float64 is omitted: it is a subclass of Python float, handled by T_Float.
     static const char *attr_names[] = {
-            "ndarray",
-            "float32",
-            "int64",
-            "int32",
-            "uint64",
-            "uint32",
-            "bool_",
-            "float16",
-            "int16",
-            "int8",
-            "uint16",
-            "uint8",
+            "ndarray", "float32", "int64", "int32", "uint64", "uint32",
+            "bool_",   "float16", "int16", "int8",  "uint16", "uint8",
     };
 
-    static_assert(sizeof(attr_names) / sizeof(attr_names[0]) == NUMPY_TYPES_COUNT, "attr_names count must match NumpyTypes fields");
+    static_assert(sizeof(attr_names) / sizeof(attr_names[0]) == NUMPY_TYPES_COUNT,
+                  "attr_names count must match NumpyTypes fields");
 
     NumpyTypes tmp = {0};
     PyTypeObject **tp = (PyTypeObject **)&tmp;
@@ -347,9 +308,7 @@ force_inline PyObject *_setup_numpy_types_impl(PyObject *mod) {
 
     for (int i = 0; i < NUMPY_TYPES_COUNT; i++) {
         PyObject *obj = PyObject_GetAttrString(mod, attr_names[i]);
-        if (unlikely(!obj)) {
-            goto fail;
-        }
+        if (unlikely(!obj)) { goto fail; }
         if (unlikely(!PyType_Check(obj))) {
             PyErr_Format(PyExc_TypeError, "numpy.%s is not a type object", attr_names[i]);
             Py_DECREF(obj);
@@ -361,26 +320,20 @@ force_inline PyObject *_setup_numpy_types_impl(PyObject *mod) {
 
     // Release old references then install new ones
     PyTypeObject **np = (PyTypeObject **)&_NumpyTypes;
-    for (int i = 0; i < NUMPY_TYPES_COUNT; i++) {
-        Py_XDECREF(np[i]);
-    }
+    for (int i = 0; i < NUMPY_TYPES_COUNT; i++) { Py_XDECREF(np[i]); }
     _NumpyTypes = tmp;
 
     Py_RETURN_NONE;
 
 fail:
-    for (int j = 0; j < filled; j++) {
-        Py_DECREF(tp[j]);
-    }
+    for (int j = 0; j < filled; j++) { Py_DECREF(tp[j]); }
     return NULL;
 }
 
 PyObject *ssrjson_setup_numpy_types(PyObject *self, PyObject *const *args, Py_ssize_t nargs) {
     if (nargs == 0) {
         PyObject *mod = PyImport_ImportModule("numpy");
-        if (unlikely(!mod)) {
-            return NULL;
-        }
+        if (unlikely(!mod)) { return NULL; }
         PyObject *ret = _setup_numpy_types_impl(mod);
         Py_DECREF(mod);
         return ret;

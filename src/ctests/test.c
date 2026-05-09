@@ -81,9 +81,7 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u16)(void) {
 #else
         *(vector_u_u16_128 *)dst = cvt_u8_to_u16(*(vector_u_u8_128 *)input);
 #endif
-        for (usize i = 0; i < count_of(dst); i++) {
-            CHECK(dst[i] == input[i]);
-        }
+        for (usize i = 0; i < count_of(dst); i++) { CHECK(dst[i] == input[i]); }
     }
     return PASSED;
 }
@@ -120,9 +118,7 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u32)(void) {
 #else
         *(vector_u_u32_128 *)dst = cvt_u8_to_u32(*(vector_u_u8_128 *)input);
 #endif
-        for (usize i = 0; i < count_of(dst); i++) {
-            CHECK(dst[i] == input[i]);
-        }
+        for (usize i = 0; i < count_of(dst); i++) { CHECK(dst[i] == input[i]); }
     }
     return PASSED;
 }
@@ -161,9 +157,7 @@ int SIMD_NAME_MODIFIER(test_cvt_u16_to_u32)(void) {
 #else
         *(vector_u_u32_128 *)dst = cvt_u16_to_u32(*(vector_u_u16_128 *)input);
 #endif
-        for (usize i = 0; i < count_of(dst); i++) {
-            CHECK(dst[i] == input[i]);
-        }
+        for (usize i = 0; i < count_of(dst); i++) { CHECK(dst[i] == input[i]); }
     }
     return PASSED;
 }
@@ -172,9 +166,7 @@ int SIMD_NAME_MODIFIER(test_cvt_u16_to_u32)(void) {
 force_inline int _test_ucs2_encode_ssse3(void) {
     u16 input[8];
     u8 output[24];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_3bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
     ucs2_encode_3bytes_utf8_ssse3(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
     return check_ucs2_3bytes(input, output, count_of(input));
 }
@@ -184,9 +176,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_3bytes_utf8)(void) {
 #if SSRJSON_IS_AARCH64
     u16 input[8];
     u8 output[24];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_3bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
     ucs2_encode_3bytes_utf8_neon(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
     return check_ucs2_3bytes(input, output, count_of(input));
 #else
@@ -194,9 +184,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_3bytes_utf8)(void) {
     GUARDED_SIMD;
     u16 input[32];
     u8 output[96];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_3bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
     ucs2_encode_3bytes_utf8_avx512(output, (vector_a_u16_512) * (vector_u_u16_512 *)input);
     return check_ucs2_3bytes(input, output, count_of(input));
 #    elif __AVX2__
@@ -204,9 +192,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_3bytes_utf8)(void) {
     {
         u16 input[16];
         u8 output[48];
-        for (usize i = 0; i < count_of(input); ++i) {
-            input[i] = get_random_3bytes_u16();
-        }
+        for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
         ucs2_encode_3bytes_utf8_avx2(output, (vector_a_u8_256) * (vector_u_u8_256 *)input);
         CHECK(check_ucs2_3bytes(input, output, count_of(input)));
     }
@@ -226,9 +212,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_2bytes_utf8)(void) {
 #if SSRJSON_IS_AARCH64
     u16 input[8];
     u8 output[16];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_2bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs2_encode_2bytes_utf8_neon(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
     return check_ucs2_2bytes(input, output, count_of(input));
 #else
@@ -236,26 +220,20 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_2bytes_utf8)(void) {
     GUARDED_SIMD;
     u16 input[32];
     u8 output[64];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_2bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs2_encode_2bytes_utf8_avx512(output, (vector_a_u16_512) * (vector_u_u16_512 *)input);
     return check_ucs2_2bytes(input, output, count_of(input));
 #    elif __AVX2__
     GUARDED_SIMD;
     u16 input[16];
     u8 output[32];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_2bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs2_encode_2bytes_utf8_avx2(output, (vector_a_u8_256) * (vector_u_u8_256 *)input);
     return check_ucs2_2bytes(input, output, count_of(input));
 #    else
     u16 input[8];
     u8 output[16];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_2bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs2_encode_2bytes_utf8_sse2(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
     return check_ucs2_2bytes(input, output, count_of(input));
 #    endif
@@ -266,9 +244,7 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_2bytes_utf8)(void) {
 force_inline int _test_ucs4_encode_ssse3(void) {
     u32 input[4];
     u8 output[12];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_3bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
     ucs4_encode_3bytes_utf8_ssse3(output, (vector_a_u32_128) * (vector_u_u32_128 *)input);
     return check_ucs4_3bytes(input, output, count_of(input));
 }
@@ -278,9 +254,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_3bytes_utf8)(void) {
 #if SSRJSON_IS_AARCH64
     u32 input[4];
     u8 output[12];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_3bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
     ucs4_encode_3bytes_utf8_neon(output, (vector_a_u32_128) * (vector_u_u32_128 *)input);
     return check_ucs4_3bytes(input, output, count_of(input));
 #else
@@ -288,9 +262,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_3bytes_utf8)(void) {
     GUARDED_SIMD;
     u32 input[16];
     u8 output[48];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_3bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
     ucs4_encode_3bytes_utf8_avx512(output, (vector_a_u32_512) * (vector_u_u32_512 *)input);
     return check_ucs4_3bytes(input, output, count_of(input));
 #    elif __AVX2__
@@ -298,9 +270,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_3bytes_utf8)(void) {
     {
         u32 input[8];
         u8 output[24];
-        for (usize i = 0; i < count_of(input); ++i) {
-            input[i] = get_random_3bytes_u16();
-        }
+        for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
         ucs4_encode_3bytes_utf8_avx2(output, (vector_a_u8_256) * (vector_u_u8_256 *)input);
         CHECK(check_ucs4_3bytes(input, output, count_of(input)));
     }
@@ -317,9 +287,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_2bytes_utf8)(void) {
 #if SSRJSON_IS_AARCH64
     u32 input[4];
     u8 output[8];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_2bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs4_encode_2bytes_utf8_neon(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
     return check_ucs4_2bytes(input, output, count_of(input));
 #else
@@ -327,26 +295,20 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_2bytes_utf8)(void) {
     GUARDED_SIMD;
     u32 input[16];
     u8 output[32];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_2bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs4_encode_2bytes_utf8_avx512(output, (vector_a_u16_512) * (vector_u_u16_512 *)input);
     return check_ucs4_2bytes(input, output, count_of(input));
 #    elif __AVX2__
     GUARDED_SIMD;
     u32 input[8];
     u8 output[16];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_2bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs4_encode_2bytes_utf8_avx2(output, (vector_a_u8_256) * (vector_u_u8_256 *)input);
     return check_ucs4_2bytes(input, output, count_of(input));
 #    else
     u32 input[4];
     u8 output[8];
-    for (usize i = 0; i < count_of(input); ++i) {
-        input[i] = get_random_2bytes_u16();
-    }
+    for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs4_encode_2bytes_utf8_sse2(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
     return check_ucs4_2bytes(input, output, count_of(input));
 #    endif
@@ -389,9 +351,7 @@ int SIMD_NAME_MODIFIER(test_long_back_cvt_u8_u16)(void) {
             CHECK(buffer_reference[i] == 0xfa);
         }
         // check content
-        for (usize i = 0; i < out_u16_length; ++i) {
-            CHECK(ref_start[i] == start[i]);
-        }
+        for (usize i = 0; i < out_u16_length; ++i) { CHECK(ref_start[i] == start[i]); }
     }
     return PASSED;
 }
@@ -408,7 +368,8 @@ static inline int _test_long_cvt(size_t from_size, size_t to_size) {
     buffer_from = (u8 *)malloc(buffer_len * sizeof(_from_type_));                                                   \
     GARBAGE_FILLPTR_WITH_SIZE(buffer_from, random_start_index * sizeof(_from_type_));                               \
     RANDOM_FILLPTR_WITH_SIZE(buffer_from + random_start_index * sizeof(_from_type_), length * sizeof(_from_type_)); \
-    GARBAGE_FILLPTR_WITH_SIZE(buffer_from + (random_start_index + length) * sizeof(_from_type_), (buffer_len - (random_start_index + length)) * sizeof(_from_type_));
+    GARBAGE_FILLPTR_WITH_SIZE(buffer_from + (random_start_index + length) * sizeof(_from_type_),                    \
+                              (buffer_len - (random_start_index + length)) * sizeof(_from_type_));
     if (from_size == 1) {
         TEST_LONG_CVT_ALLOC_BUFFER_FROM(u8);
     } else if (from_size == 2) {
@@ -439,33 +400,28 @@ static inline int _test_long_cvt(size_t from_size, size_t to_size) {
 
     if (from_size == 4 && to_size == 1) {
         u32 *from_ptr = ssrjson_cast(u32 *, buffer_from + random_start_index * sizeof(u32));
-        for (size_t i = 0; i < length; ++i) {
-            from_ptr[i] = from_ptr[i] & 0xFF;
-        }
+        for (size_t i = 0; i < length; ++i) { from_ptr[i] = from_ptr[i] & 0xFF; }
     } else if (from_size == 4 && to_size == 2) {
         u32 *from_ptr = ssrjson_cast(u32 *, buffer_from + random_start_index * sizeof(u32));
-        for (size_t i = 0; i < length; ++i) {
-            from_ptr[i] = from_ptr[i] & 0xFFFF;
-        }
+        for (size_t i = 0; i < length; ++i) { from_ptr[i] = from_ptr[i] & 0xFFFF; }
     } else if (from_size == 2 && to_size == 1) {
         u16 *from_ptr = ssrjson_cast(u16 *, buffer_from + random_start_index * sizeof(u16));
-        for (size_t i = 0; i < length; ++i) {
-            from_ptr[i] = from_ptr[i] & 0xFF;
-        }
+        for (size_t i = 0; i < length; ++i) { from_ptr[i] = from_ptr[i] & 0xFF; }
     }
 
-#define TEST_LONG_CVT_IMPL(_from_type_, _to_type_)                                                                                                                                                                                                \
-    _func = find_extension_symbol(TEST_STRINGIZE(SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, _from_type_, _to_type_))));                                                                                                                \
-    ssrjson_cast(void (*)(_to_type_ *, _from_type_ *, usize), _func)(ssrjson_cast(_to_type_ *, buffer_to + random_start_index * sizeof(_to_type_)), ssrjson_cast(_from_type_ *, buffer_from + random_start_index * sizeof(_from_type_)), length); \
-    _to_type_ *ref_target = ssrjson_cast(_to_type_ *, buffer_ref + random_start_index * sizeof(_to_type_));                                                                                                                                       \
-    _from_type_ *from = ssrjson_cast(_from_type_ *, buffer_from + random_start_index * sizeof(_from_type_));                                                                                                                                      \
-    for (size_t i = 0; i < length; ++i) {                                                                                                                                                                                                         \
-        ref_target[i] = ssrjson_cast(_to_type_, from[i]);                                                                                                                                                                                         \
-    }                                                                                                                                                                                                                                             \
-    bool suc = (memcmp(buffer_to, buffer_ref, buffer_len * sizeof(_to_type_)) == 0);                                                                                                                                                              \
-    free(buffer_from);                                                                                                                                                                                                                            \
-    free(buffer_to);                                                                                                                                                                                                                              \
-    free(buffer_ref);                                                                                                                                                                                                                             \
+#define TEST_LONG_CVT_IMPL(_from_type_, _to_type_)                                                           \
+    _func = find_extension_symbol(                                                                           \
+            TEST_STRINGIZE(SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, _from_type_, _to_type_)))); \
+    ssrjson_cast(void (*)(_to_type_ *, _from_type_ *, usize), _func)(                                        \
+            ssrjson_cast(_to_type_ *, buffer_to + random_start_index * sizeof(_to_type_)),                   \
+            ssrjson_cast(_from_type_ *, buffer_from + random_start_index * sizeof(_from_type_)), length);    \
+    _to_type_ *ref_target = ssrjson_cast(_to_type_ *, buffer_ref + random_start_index * sizeof(_to_type_));  \
+    _from_type_ *from = ssrjson_cast(_from_type_ *, buffer_from + random_start_index * sizeof(_from_type_)); \
+    for (size_t i = 0; i < length; ++i) { ref_target[i] = ssrjson_cast(_to_type_, from[i]); }                \
+    bool suc = (memcmp(buffer_to, buffer_ref, buffer_len * sizeof(_to_type_)) == 0);                         \
+    free(buffer_from);                                                                                       \
+    free(buffer_to);                                                                                         \
+    free(buffer_ref);                                                                                        \
     return suc ? PASSED : FAILED;
 
     uintptr_t _func;

@@ -164,8 +164,7 @@ static_assert(ssrjson_ftoa_allocate_length >= ssrjson_ftoa_write_length, "");
 #    else
 #        define MSC_HAS_BIT_SCAN_64 0
 #    endif
-#    if defined(_M_AMD64) || defined(_M_ARM64) || \
-            defined(_M_IX86) || defined(_M_ARM)
+#    if defined(_M_AMD64) || defined(_M_ARM64) || defined(_M_IX86) || defined(_M_ARM)
 #        define MSC_HAS_BIT_SCAN 1
 #        pragma intrinsic(_BitScanForward)
 #        pragma intrinsic(_BitScanReverse)
@@ -196,8 +195,7 @@ static_assert(ssrjson_ftoa_allocate_length >= ssrjson_ftoa_write_length, "");
 #endif
 
 /** real gcc check */
-#if !defined(__clang__) && !defined(__INTEL_COMPILER) && !defined(__ICC) && \
-        defined(__GNUC__)
+#if !defined(__clang__) && !defined(__INTEL_COMPILER) && !defined(__ICC) && defined(__GNUC__)
 #    define SSRJSON_IS_REAL_GCC 1
 #else
 #    define SSRJSON_IS_REAL_GCC 0
@@ -205,8 +203,7 @@ static_assert(ssrjson_ftoa_allocate_length >= ssrjson_ftoa_write_length, "");
 
 /** likely for compiler */
 #ifndef ssrjson_likely
-#    if ssrjson_has_builtin(__builtin_expect) || \
-            (SSRJSON_GCC_VER >= 4 && SSRJSON_GCC_VER != 5)
+#    if ssrjson_has_builtin(__builtin_expect) || (SSRJSON_GCC_VER >= 4 && SSRJSON_GCC_VER != 5)
 #        define ssrjson_likely(expr) __builtin_expect(!!(expr), 1)
 #    else
 #        define ssrjson_likely(expr) (expr)
@@ -215,8 +212,7 @@ static_assert(ssrjson_ftoa_allocate_length >= ssrjson_ftoa_write_length, "");
 
 /** unlikely for compiler */
 #ifndef ssrjson_unlikely
-#    if ssrjson_has_builtin(__builtin_expect) || \
-            (SSRJSON_GCC_VER >= 4 && SSRJSON_GCC_VER != 5)
+#    if ssrjson_has_builtin(__builtin_expect) || (SSRJSON_GCC_VER >= 4 && SSRJSON_GCC_VER != 5)
 #        define ssrjson_unlikely(expr) __builtin_expect(!!(expr), 0)
 #    else
 #        define ssrjson_unlikely(expr) (expr)
@@ -268,9 +264,7 @@ force_inline void cpuid_count(int *info, int leaf, int count) {
     __cpuid_count(leaf, count, info[0], info[1], info[2], info[3]);
 }
 
-force_inline void cpuid(int *info, int x) {
-    __cpuid(x, info[0], info[1], info[2], info[3]);
-}
+force_inline void cpuid(int *info, int x) { __cpuid(x, info[0], info[1], info[2], info[3]); }
 #    endif
 
 force_inline int get_cpuid_max(void) {
@@ -310,12 +304,10 @@ force_inline int get_cpuid_max(void) {
 
 #define repeat_call_16(x) {x x x x x x x x x x x x x x x x}
 
-#define repeat_incr_16(x) {x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) \
-                                   x(8) x(9) x(10) x(11) x(12) x(13) x(14) x(15)}
+#define repeat_incr_16(x) {x(0) x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9) x(10) x(11) x(12) x(13) x(14) x(15)}
 
-#define repeat_incr_in_1_18(x) {x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8)                \
-                                        x(9) x(10) x(11) x(12) x(13) x(14) x(15) x(16) \
-                                                x(17) x(18)}
+#define repeat_incr_in_1_18(x) \
+    {x(1) x(2) x(3) x(4) x(5) x(6) x(7) x(8) x(9) x(10) x(11) x(12) x(13) x(14) x(15) x(16) x(17) x(18)}
 
 
 /** align for compiler */
@@ -359,11 +351,11 @@ force_inline int get_cpuid_max(void) {
 
 #ifndef SSRJSON_HAS_IEEE_754
 /* IEEE 754 floating-point binary representation */
-#    if defined(DOUBLE_IS_LITTLE_ENDIAN_IEEE754) || defined(DOUBLE_IS_BIG_ENDIAN_IEEE754) || defined(DOUBLE_IS_ARM_MIXED_ENDIAN_IEEE754) || _PY_SHORT_FLOAT_REPR == 1
+#    if defined(DOUBLE_IS_LITTLE_ENDIAN_IEEE754) || defined(DOUBLE_IS_BIG_ENDIAN_IEEE754) || \
+            defined(DOUBLE_IS_ARM_MIXED_ENDIAN_IEEE754) || _PY_SHORT_FLOAT_REPR == 1
 #        define SSRJSON_HAS_IEEE_754 1
-#    elif (FLT_RADIX == 2) && (DBL_MANT_DIG == 53) && (DBL_DIG == 15) && \
-            (DBL_MIN_EXP == -1021) && (DBL_MAX_EXP == 1024) &&           \
-            (DBL_MIN_10_EXP == -307) && (DBL_MAX_10_EXP == 308)
+#    elif (FLT_RADIX == 2) && (DBL_MANT_DIG == 53) && (DBL_DIG == 15) && (DBL_MIN_EXP == -1021) && \
+            (DBL_MAX_EXP == 1024) && (DBL_MIN_10_EXP == -307) && (DBL_MAX_10_EXP == 308)
 #        define SSRJSON_HAS_IEEE_754 1
 #    else
 #        define SSRJSON_HAS_IEEE_754 0
@@ -385,11 +377,9 @@ __extension__ typedef unsigned __int128 u128;
 
 
 /* Helper for quickly write an err handle. */
-#define return_if_unlikely(_x_) \
-    do {                        \
-        if (unlikely((_x_))) {  \
-            return 0;           \
-        }                       \
+#define return_if_unlikely(_x_)            \
+    do {                                   \
+        if (unlikely((_x_))) { return 0; } \
     } while (0)
 
 #define return_if_no_memory(_x_) \
@@ -435,9 +425,7 @@ __extension__ typedef unsigned __int128 u128;
 #if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
 force_inline void *ssrjson_wrapped_kcalloc(size_t num, size_t size) {
     void *ret = SSRJSON_MALLOC(num * size);
-    if (unlikely(!ret)) {
-        return NULL;
-    }
+    if (unlikely(!ret)) { return NULL; }
     memset(ret, 0, num * size);
     return ret;
 }
@@ -599,39 +587,26 @@ static const u8 CHAR_TYPE_HEX = 1 << 7;
 extern const u8 DigiTypeTable[256];
 
 /** Match a character with specified type. */
-force_inline bool digi_is_type(u8 d, u8 type) {
-    return (DigiTypeTable[d] & type) != 0;
-}
+force_inline bool digi_is_type(u8 d, u8 type) { return (DigiTypeTable[d] & type) != 0; }
 
 /** Match a sign: '+', '-' */
-force_inline bool _digi_is_sign(u8 d) {
-    return digi_is_type(d, (u8)(DIGI_TYPE_POS | DIGI_TYPE_NEG));
-}
+force_inline bool _digi_is_sign(u8 d) { return digi_is_type(d, (u8)(DIGI_TYPE_POS | DIGI_TYPE_NEG)); }
 
 /** Match a none zero digit: [1-9] */
-force_inline bool _digi_is_nonzero(u8 d) {
-    return digi_is_type(d, (u8)DIGI_TYPE_NONZERO);
-}
+force_inline bool _digi_is_nonzero(u8 d) { return digi_is_type(d, (u8)DIGI_TYPE_NONZERO); }
 
 /** Match a digit: [0-9] */
-force_inline bool _digi_is_digit(u8 d) {
-    return digi_is_type(d, (u8)(DIGI_TYPE_ZERO | DIGI_TYPE_NONZERO));
-}
+force_inline bool _digi_is_digit(u8 d) { return digi_is_type(d, (u8)(DIGI_TYPE_ZERO | DIGI_TYPE_NONZERO)); }
 
 /** Match an exponent sign: 'e', 'E'. */
-force_inline bool _digi_is_exp(u8 d) {
-    return digi_is_type(d, (u8)DIGI_TYPE_EXP);
-}
+force_inline bool _digi_is_exp(u8 d) { return digi_is_type(d, (u8)DIGI_TYPE_EXP); }
 
 /** Match a floating point indicator: '.', 'e', 'E'. */
-force_inline bool _digi_is_fp(u8 d) {
-    return digi_is_type(d, (u8)(DIGI_TYPE_DOT | DIGI_TYPE_EXP));
-}
+force_inline bool _digi_is_fp(u8 d) { return digi_is_type(d, (u8)(DIGI_TYPE_DOT | DIGI_TYPE_EXP)); }
 
 /** Match a digit or floating point indicator: [0-9], '.', 'e', 'E'. */
 force_inline bool _digi_is_digit_or_fp(u8 d) {
-    return digi_is_type(d, (u8)(DIGI_TYPE_ZERO | DIGI_TYPE_NONZERO |
-                                DIGI_TYPE_DOT | DIGI_TYPE_EXP));
+    return digi_is_type(d, (u8)(DIGI_TYPE_ZERO | DIGI_TYPE_NONZERO | DIGI_TYPE_DOT | DIGI_TYPE_EXP));
 }
 
 /** Returns the number of leading 0-bits in value (input should not be 0). */
@@ -648,11 +623,9 @@ force_inline u32 u32_lz_bits(u32 v) {
      branchless, use de Bruijn sequences
      see: https://www.chessprogramming.org/BitScan
      */
-    const u8 table[64] = {
-            63, 16, 62, 7, 15, 36, 61, 3, 6, 14, 22, 26, 35, 47, 60, 2,
-            9, 5, 28, 11, 13, 21, 42, 19, 25, 31, 34, 40, 46, 52, 59, 1,
-            17, 8, 37, 4, 23, 27, 48, 10, 29, 12, 43, 20, 32, 41, 53, 18,
-            38, 24, 49, 30, 44, 33, 54, 39, 50, 45, 55, 51, 56, 57, 58, 0};
+    const u8 table[64] = {63, 16, 62, 7,  15, 36, 61, 3,  6,  14, 22, 26, 35, 47, 60, 2,  9,  5,  28, 11, 13, 21,
+                          42, 19, 25, 31, 34, 40, 46, 52, 59, 1,  17, 8,  37, 4,  23, 27, 48, 10, 29, 12, 43, 20,
+                          32, 41, 53, 18, 38, 24, 49, 30, 44, 33, 54, 39, 50, 45, 55, 51, 56, 57, 58, 0};
     v |= v >> 1;
     v |= v >> 2;
     v |= v >> 4;
@@ -682,11 +655,9 @@ force_inline u32 u64_lz_bits(u64 v) {
      branchless, use de Bruijn sequences
      see: https://www.chessprogramming.org/BitScan
      */
-    const u8 table[64] = {
-            63, 16, 62, 7, 15, 36, 61, 3, 6, 14, 22, 26, 35, 47, 60, 2,
-            9, 5, 28, 11, 13, 21, 42, 19, 25, 31, 34, 40, 46, 52, 59, 1,
-            17, 8, 37, 4, 23, 27, 48, 10, 29, 12, 43, 20, 32, 41, 53, 18,
-            38, 24, 49, 30, 44, 33, 54, 39, 50, 45, 55, 51, 56, 57, 58, 0};
+    const u8 table[64] = {63, 16, 62, 7,  15, 36, 61, 3,  6,  14, 22, 26, 35, 47, 60, 2,  9,  5,  28, 11, 13, 21,
+                          42, 19, 25, 31, 34, 40, 46, 52, 59, 1,  17, 8,  37, 4,  23, 27, 48, 10, 29, 12, 43, 20,
+                          32, 41, 53, 18, 38, 24, 49, 30, 44, 33, 54, 39, 50, 45, 55, 51, 56, 57, 58, 0};
     v |= v >> 1;
     v |= v >> 2;
     v |= v >> 4;
@@ -711,11 +682,9 @@ force_inline u32 u32_tz_bits(u32 v) {
      branchless, use de Bruijn sequences
      see: https://www.chessprogramming.org/BitScan
      */
-    const u8 table[64] = {
-            0, 1, 2, 53, 3, 7, 54, 27, 4, 38, 41, 8, 34, 55, 48, 28,
-            62, 5, 39, 46, 44, 42, 22, 9, 24, 35, 59, 56, 49, 18, 29, 11,
-            63, 52, 6, 26, 37, 40, 33, 47, 61, 45, 43, 21, 23, 58, 17, 10,
-            51, 25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12};
+    const u8 table[64] = {0,  1,  2,  53, 3,  7,  54, 27, 4,  38, 41, 8,  34, 55, 48, 28, 62, 5,  39, 46, 44, 42,
+                          22, 9,  24, 35, 59, 56, 49, 18, 29, 11, 63, 52, 6,  26, 37, 40, 33, 47, 61, 45, 43, 21,
+                          23, 58, 17, 10, 51, 25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12};
     return table[(((u64)v & (~(u64)v + 1)) * U64(0x022FDD63, 0xCC95386D)) >> 58];
 #endif
 }
@@ -740,11 +709,9 @@ force_inline u32 u64_tz_bits(u64 v) {
      branchless, use de Bruijn sequences
      see: https://www.chessprogramming.org/BitScan
      */
-    const u8 table[64] = {
-            0, 1, 2, 53, 3, 7, 54, 27, 4, 38, 41, 8, 34, 55, 48, 28,
-            62, 5, 39, 46, 44, 42, 22, 9, 24, 35, 59, 56, 49, 18, 29, 11,
-            63, 52, 6, 26, 37, 40, 33, 47, 61, 45, 43, 21, 23, 58, 17, 10,
-            51, 25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12};
+    const u8 table[64] = {0,  1,  2,  53, 3,  7,  54, 27, 4,  38, 41, 8,  34, 55, 48, 28, 62, 5,  39, 46, 44, 42,
+                          22, 9,  24, 35, 59, 56, 49, 18, 29, 11, 63, 52, 6,  26, 37, 40, 33, 47, 61, 45, 43, 21,
+                          23, 58, 17, 10, 51, 25, 36, 32, 60, 20, 57, 16, 50, 31, 19, 15, 30, 14, 13, 12};
     return table[((v & (~v + 1)) * U64(0x022FDD63, 0xCC95386D)) >> 58];
 #endif
 }
@@ -754,9 +721,7 @@ force_inline u32 u64_tz_bits(u64 v) {
  *============================================================================*/
 
 /** Returns whether the size is power of 2 (size should not be 0). */
-force_inline bool size_is_pow2(usize size) {
-    return (size & (size - 1)) == 0;
-}
+force_inline bool size_is_pow2(usize size) { return (size & (size - 1)) == 0; }
 
 /** Align size upwards (may overflow). */
 force_inline usize size_align_up(usize size, usize align) {
@@ -770,7 +735,8 @@ force_inline usize size_align_up(usize size, usize align) {
 /*
  * Split tail length into multi parts.
  */
-force_inline void split_tail_len_two_parts(usize tail_len, usize check_count, usize *restrict part1, usize *restrict part2) {
+force_inline void split_tail_len_two_parts(usize tail_len, usize check_count, usize *restrict part1,
+                                           usize *restrict part2) {
     assert(tail_len > 0 && tail_len < check_count);
     assert(check_count / 2 * 2 == check_count);
     const usize check_half = check_count / 2;

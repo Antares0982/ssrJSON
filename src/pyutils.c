@@ -26,9 +26,7 @@
 #include "simd/memcpy.h"
 #include "utils/unicode.h"
 
-void init_pyunicode_noinline(void *head, Py_ssize_t size, int kind) {
-    init_pyunicode(head, size, kind);
-}
+void init_pyunicode_noinline(void *head, Py_ssize_t size, int kind) { init_pyunicode(head, size, kind); }
 
 PyObject *make_unicode_from_raw_ucs4(void *raw_buffer, usize u8size, usize u16size, usize totalsize, bool do_hash) {
     PyObject *unicode = create_empty_unicode(totalsize, 4);
@@ -44,12 +42,8 @@ PyObject *make_unicode_from_raw_ucs4(void *raw_buffer, usize u8size, usize u16si
         long_cvt_noinline_u16_u32_interface(writer + u8size, ssrjson_cast(u16 *, raw_buffer) + u8size, u16size);
     }
     // write u8 part
-    if (u8size) {
-        long_cvt_noinline_u8_u32_interface(writer, ssrjson_cast(u8 *, raw_buffer), u8size);
-    }
-    if (do_hash && totalsize) {
-        make_hash(ssrjson_pyascii_cast(unicode), writer, totalsize * 4);
-    }
+    if (u8size) { long_cvt_noinline_u8_u32_interface(writer, ssrjson_cast(u8 *, raw_buffer), u8size); }
+    if (do_hash && totalsize) { make_hash(ssrjson_pyascii_cast(unicode), writer, totalsize * 4); }
     return unicode;
 }
 
@@ -59,16 +53,10 @@ PyObject *make_unicode_from_raw_ucs2(void *raw_buffer, usize u8size, usize total
     usize u16size = totalsize - u8size;
     u16 *writer = ssrjson_pyunicode_ucs2_start(unicode);
     // write u16 part
-    if (u16size) {
-        memcpy(writer + u8size, ssrjson_cast(u16 *, raw_buffer) + u8size, u16size * sizeof(u16));
-    }
+    if (u16size) { memcpy(writer + u8size, ssrjson_cast(u16 *, raw_buffer) + u8size, u16size * sizeof(u16)); }
     // write u8 part
-    if (u8size) {
-        long_cvt_noinline_u8_u16_interface(writer, ssrjson_cast(u8 *, raw_buffer), u8size);
-    }
-    if (do_hash && totalsize) {
-        make_hash(ssrjson_pyascii_cast(unicode), writer, totalsize * 2);
-    }
+    if (u8size) { long_cvt_noinline_u8_u16_interface(writer, ssrjson_cast(u8 *, raw_buffer), u8size); }
+    if (do_hash && totalsize) { make_hash(ssrjson_pyascii_cast(unicode), writer, totalsize * 2); }
     return unicode;
 }
 
@@ -77,12 +65,8 @@ PyObject *make_unicode_from_raw_ucs1(void *raw_buffer, usize size, bool do_hash)
     if (!unicode) return NULL;
     u8 *writer = ssrjson_pyunicode_ucs1_start(unicode);
     // write u8 part
-    if (size) {
-        memcpy(writer, raw_buffer, size);
-    }
-    if (do_hash && size) {
-        make_hash(ssrjson_pyascii_cast(unicode), writer, size);
-    }
+    if (size) { memcpy(writer, raw_buffer, size); }
+    if (do_hash && size) { make_hash(ssrjson_pyascii_cast(unicode), writer, size); }
     return unicode;
 }
 
@@ -91,12 +75,8 @@ PyObject *make_unicode_from_raw_ascii(void *raw_buffer, usize size, bool do_hash
     if (!unicode) return NULL;
     u8 *writer = ssrjson_pyunicode_ascii_start(unicode);
     // write u8 part
-    if (size) {
-        memcpy(writer, raw_buffer, size);
-    }
-    if (do_hash && size) {
-        make_hash(ssrjson_pyascii_cast(unicode), writer, size);
-    }
+    if (size) { memcpy(writer, raw_buffer, size); }
+    if (do_hash && size) { make_hash(ssrjson_pyascii_cast(unicode), writer, size); }
     return unicode;
 }
 
@@ -104,12 +84,8 @@ PyObject *make_unicode_down_ucs2_u8(void *raw_buffer, usize size, bool do_hash, 
     PyObject *unicode = create_empty_unicode(size, is_ascii ? 0 : 1);
     if (!unicode) return NULL;
     u8 *writer = is_ascii ? ssrjson_pyunicode_ascii_start(unicode) : ssrjson_pyunicode_ucs1_start(unicode);
-    if (size) {
-        long_cvt_noinline_u16_u8_interface(writer, ssrjson_cast(u16 *, raw_buffer), size);
-    }
-    if (do_hash && size) {
-        make_hash(ssrjson_pyascii_cast(unicode), writer, size);
-    }
+    if (size) { long_cvt_noinline_u16_u8_interface(writer, ssrjson_cast(u16 *, raw_buffer), size); }
+    if (do_hash && size) { make_hash(ssrjson_pyascii_cast(unicode), writer, size); }
     return unicode;
 }
 
@@ -117,12 +93,8 @@ PyObject *make_unicode_down_ucs4_u8(void *raw_buffer, usize size, bool do_hash, 
     PyObject *unicode = create_empty_unicode(size, is_ascii ? 0 : 1);
     if (!unicode) return NULL;
     u8 *writer = is_ascii ? ssrjson_pyunicode_ascii_start(unicode) : ssrjson_pyunicode_ucs1_start(unicode);
-    if (size) {
-        long_cvt_noinline_u32_u8_interface(writer, ssrjson_cast(u32 *, raw_buffer), size);
-    }
-    if (do_hash && size) {
-        make_hash(ssrjson_pyascii_cast(unicode), writer, size);
-    }
+    if (size) { long_cvt_noinline_u32_u8_interface(writer, ssrjson_cast(u32 *, raw_buffer), size); }
+    if (do_hash && size) { make_hash(ssrjson_pyascii_cast(unicode), writer, size); }
     return unicode;
 }
 
@@ -130,12 +102,8 @@ PyObject *make_unicode_down_ucs4_ucs2(void *raw_buffer, usize size, bool do_hash
     PyObject *unicode = create_empty_unicode(size, 2);
     if (!unicode) return NULL;
     u16 *writer = ssrjson_pyunicode_ucs2_start(unicode);
-    if (size) {
-        long_cvt_noinline_u32_u16_interface(writer, ssrjson_cast(u32 *, raw_buffer), size);
-    }
-    if (do_hash && size) {
-        make_hash(ssrjson_pyascii_cast(unicode), writer, size * 2);
-    }
+    if (size) { long_cvt_noinline_u32_u16_interface(writer, ssrjson_cast(u32 *, raw_buffer), size); }
+    if (do_hash && size) { make_hash(ssrjson_pyascii_cast(unicode), writer, size * 2); }
     return unicode;
 }
 

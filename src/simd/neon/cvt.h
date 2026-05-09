@@ -28,17 +28,11 @@
 //
 #include "common.h"
 
-force_inline void cvt_to_dst_u8_u8_128(u8 *dst, vector_a_u8_128 x) {
-    *(vector_u_u8_128 *)dst = x;
-}
+force_inline void cvt_to_dst_u8_u8_128(u8 *dst, vector_a_u8_128 x) { *(vector_u_u8_128 *)dst = x; }
 
-force_inline void cvt_to_dst_u16_u16_128(u16 *dst, vector_a_u16_128 x) {
-    *(vector_u_u16_128 *)dst = x;
-}
+force_inline void cvt_to_dst_u16_u16_128(u16 *dst, vector_a_u16_128 x) { *(vector_u_u16_128 *)dst = x; }
 
-force_inline void cvt_to_dst_u32_u32_128(u32 *dst, vector_a_u32_128 x) {
-    *(vector_u_u32_128 *)dst = x;
-}
+force_inline void cvt_to_dst_u32_u32_128(u32 *dst, vector_a_u32_128 x) { *(vector_u_u32_128 *)dst = x; }
 
 // cvt up
 
@@ -63,13 +57,9 @@ force_inline void cvt_to_dst_u16_u32_128(u32 *dst, vector_a_u16_128 x) {
 
 // cvt down
 
-force_inline void cvt_to_dst_u16_u8_128(u8 *dst, vector_a_u16_128 x) {
-    *(vector_u_u8_64 *)dst = cvt_u16_to_u8_128(x);
-}
+force_inline void cvt_to_dst_u16_u8_128(u8 *dst, vector_a_u16_128 x) { *(vector_u_u8_64 *)dst = cvt_u16_to_u8_128(x); }
 
-force_inline void cvt_to_dst_u32_u8_128(u8 *dst, vector_a_u32_128 x) {
-    *(vector_u_u8_32 *)dst = cvt_u32_to_u8_128(x);
-}
+force_inline void cvt_to_dst_u32_u8_128(u8 *dst, vector_a_u32_128 x) { *(vector_u_u8_32 *)dst = cvt_u32_to_u8_128(x); }
 
 force_inline void cvt_to_dst_u32_u16_128(u16 *dst, vector_a_u32_128 x) {
     *(vector_u_u16_64 *)dst = cvt_u32_to_u16_128(x);

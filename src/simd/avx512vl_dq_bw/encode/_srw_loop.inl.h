@@ -57,12 +57,14 @@ force_inline ssrjson_nofail dst_t *encode_unicode_loop4(register dst_t *dst, con
             cvt_to_dst(dst + READ_BATCH_COUNT * i, union_vec.x[i]);
             escape_union_vec.x[i] = get_escape_bitmask(union_vec.x[i]);
         }
-        if (likely(0 == (escape_union_vec.x[0] | escape_union_vec.x[1] | escape_union_vec.x[2] | escape_union_vec.x[3]))) {
+        if (likely(0 ==
+                   (escape_union_vec.x[0] | escape_union_vec.x[1] | escape_union_vec.x[2] | escape_union_vec.x[3]))) {
             src += 4 * READ_BATCH_COUNT;
             dst += 4 * READ_BATCH_COUNT;
             len -= 4 * READ_BATCH_COUNT;
         } else {
-            usize done_count = joined4_escape_bitmask_to_done_count(escape_union_vec.x[0], escape_union_vec.x[1], escape_union_vec.x[2], escape_union_vec.x[3]);
+            usize done_count = joined4_escape_bitmask_to_done_count(
+                    escape_union_vec.x[0], escape_union_vec.x[1], escape_union_vec.x[2], escape_union_vec.x[3]);
             const src_t *escape_pos = src + done_count;
             src += done_count + 1;
             src_t escape_unicode = *escape_pos;

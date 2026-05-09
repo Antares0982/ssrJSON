@@ -25,9 +25,8 @@
 #include "compile_context/r_in.inl.h"
 
 /** Set a bigint with floating point number string. */
-force_inline void bigint_set_buf(
-        bigint *big, u64 sig, i32 *exp,
-        const src_t *sig_cut, const src_t *sig_end, const src_t *dot_pos) {
+force_inline void bigint_set_buf(bigint *big, u64 sig, i32 *exp, const src_t *sig_cut, const src_t *sig_end,
+                                 const src_t *dot_pos) {
 
     if (unlikely(!sig_cut)) {
         /* no digit cut, set significant part only */
@@ -77,9 +76,8 @@ force_inline void bigint_set_buf(
     }
 }
 
-void bigint_set_buf_noinline(
-        bigint *big, u64 sig, i32 *exp,
-        const src_t *sig_cut, const src_t *sig_end, const src_t *dot_pos)
+void bigint_set_buf_noinline(bigint *big, u64 sig, i32 *exp, const src_t *sig_cut, const src_t *sig_end,
+                             const src_t *dot_pos)
 #if BIGINT_IMPL
 {
     bigint_set_buf(big, sig, exp, sig_cut, sig_end, dot_pos);

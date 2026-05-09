@@ -44,18 +44,20 @@ force_inline ssrjson_nofail dst_t *write_unicode_indent(dst_t *writer, Py_ssize_
 }
 
 // forward declaration
-force_inline dst_t *unicode_buffer_reserve(dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, usize size);
+force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usize size);
 
-force_inline dst_t *unicode_indent_writer(
-        dst_t *writer, EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t cur_nested_depth, ssrjson_compiletime bool is_in_obj, ssrjson_compiletime Py_ssize_t additional_reserve_count) {
+force_inline dst_t *unicode_indent_writer(dst_t *writer, EncodeUBufInfo *u_buf_info, Py_ssize_t cur_nested_depth,
+                                          ssrjson_compiletime bool is_in_obj,
+                                          ssrjson_compiletime Py_ssize_t additional_reserve_count) {
     // `is_in_obj` and `additional_reserve_count` must be known at compile time.
     if (ssrjson_consteval(!is_in_obj && COMPILE_INDENT_LEVEL != 0)) {
-        writer = unicode_buffer_reserve(writer, unicode_buffer_info, get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + additional_reserve_count);
-        return_if_unlikely(!writer);
-        return write_unicode_indent(writer, cur_nested_depth);
+        writer = u_buf_reserve(
+                writer, u_buf_info,
+                get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + additional_reserve_count);
+        if (likely(writer)) writer = write_unicode_indent(writer, cur_nested_depth);
+        return writer;
     } else {
-        return unicode_buffer_reserve(writer, unicode_buffer_info, additional_reserve_count);
-        return_if_unlikely(!writer);
+        return u_buf_reserve(writer, u_buf_info, additional_reserve_count);
     }
 }
 

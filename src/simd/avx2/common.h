@@ -52,26 +52,12 @@
 #define unsigned_max_u32_256 _mm256_max_epu32
 
 /* Create mask from the highest bit in each 8-bit element. */
-force_inline u32 get_bitmask_from_u8_256(SIMD_256 a) {
-    return (u32)_mm256_movemask_epi8(a);
-}
+force_inline u32 get_bitmask_from_u8_256(SIMD_256 a) { return (u32)_mm256_movemask_epi8(a); }
 
 force_inline vector_a_u8_64 cvt_u32_to_u8_256(vector_a_u32_256 y) {
-    vector_a_u8_256 shuffler = {0, 4, 8, 12,
-                                0x80, 0x80,
-                                0x80, 0x80,
-                                0x80, 0x80,
-                                0x80, 0x80,
-                                0x80, 0x80,
-                                0x80, 0x80,
+    vector_a_u8_256 shuffler = {0, 4, 8, 12, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
                                 //
-                                0x80, 0x80,
-                                0x80, 0x80,
-                                0, 4, 8, 12,
-                                0x80, 0x80,
-                                0x80, 0x80,
-                                0x80, 0x80,
-                                0x80, 0x80};
+                                0x80, 0x80, 0x80, 0x80, 0, 4, 8, 12, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
     vector_a_u8_256 shuffled = shuffle_256(y, shuffler);
     u64 ret = extract_64_from_256(shuffled, 0) | extract_64_from_256(shuffled, 2);
     return *(vector_a_u8_64 *)&ret;

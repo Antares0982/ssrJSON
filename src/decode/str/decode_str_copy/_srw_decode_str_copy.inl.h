@@ -34,7 +34,8 @@
 #define COMPILE_READ_UCS_LEVEL COMPILE_UCS_LEVEL
 #include "compile_context/srw_in.inl.h"
 
-force_inline int decode_str_copy_loop4(dst_t **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
+force_inline int decode_str_copy_loop4(dst_t **dst_addr, const src_t **src_addr, const src_t *src_end,
+                                       EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
     int ret;
     //
     unionvector_a_x4 vec;
@@ -47,12 +48,14 @@ force_inline int decode_str_copy_loop4(dst_t **dst_addr, const src_t **src_addr,
     cvt_to_dst(dst + 1 * READ_BATCH_COUNT, vec.x[1]);
     cvt_to_dst(dst + 2 * READ_BATCH_COUNT, vec.x[2]);
     cvt_to_dst(dst + 3 * READ_BATCH_COUNT, vec.x[3]);
-    usize moved_count = _decode_str_loop4_decoder_impl(src_addr, src_end, check_mask, check_mask_total, &ret, true, maxvec_addr, vec, escapeval_addr);
+    usize moved_count = _decode_str_loop4_decoder_impl(
+            src_addr, src_end, check_mask, check_mask_total, &ret, true, maxvec_addr, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
 }
 
-force_inline int decode_str_copy_loop(dst_t **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
+force_inline int decode_str_copy_loop(dst_t **dst_addr, const src_t **src_addr, const src_t *src_end,
+                                      EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
     int ret;
     //
     vector_a vec;
@@ -61,12 +64,14 @@ force_inline int decode_str_copy_loop(dst_t **dst_addr, const src_t **src_addr, 
     _decode_str_loop_read_src_impl(*src_addr, &vec, &check_mask);
     dst_t *const dst = *dst_addr;
     cvt_to_dst(*dst_addr, vec);
-    usize moved_count = _decode_str_loop_decoder_impl(src_addr, src_end, check_mask, &ret, true, maxvec_addr, vec, escapeval_addr);
+    usize moved_count = _decode_str_loop_decoder_impl(
+            src_addr, src_end, check_mask, &ret, true, maxvec_addr, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
 }
 
-force_inline int decode_str_copy_trailing(dst_t **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escape_info_addr, vector_a *maxvec_addr) {
+force_inline int decode_str_copy_trailing(dst_t **dst_addr, const src_t **src_addr, const src_t *src_end,
+                                          EscapeInfo *escape_info_addr, vector_a *maxvec_addr) {
     int ret;
     //
     vector_a vec;
@@ -78,7 +83,8 @@ force_inline int decode_str_copy_trailing(dst_t **dst_addr, const src_t **src_ad
 #else
     cvt_to_dst(*dst_addr, vec);
 #endif
-    usize done_count = _decode_str_trailing_decoder_impl(src_addr, src_end, check_mask, &ret, false, maxvec_addr, vec, escape_info_addr);
+    usize done_count = _decode_str_trailing_decoder_impl(
+            src_addr, src_end, check_mask, &ret, false, maxvec_addr, vec, escape_info_addr);
     *dst_addr += done_count;
     //
     return ret;

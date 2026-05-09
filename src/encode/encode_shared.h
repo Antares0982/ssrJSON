@@ -65,8 +65,8 @@
 #define WRITER_AS_U16(_writer_) (*ssrjson_cast(u16 **, &(_writer_)))
 #define WRITER_AS_U32(_writer_) (*ssrjson_cast(u32 **, &(_writer_)))
 
-#define GET_VEC_ASCII_START(_unicode_buffer_info_) (ssrjson_pyascii_cast((_unicode_buffer_info_)->head) + 1)
-#define GET_VEC_COMPACT_START(_unicode_buffer_info_) (ssrjson_pycompactunicode_cast((_unicode_buffer_info_)->head) + 1)
+#define GET_VEC_ASCII_START(_u_buf_info_) (ssrjson_pyascii_cast((_u_buf_info_)->head) + 1)
+#define GET_VEC_COMPACT_START(_u_buf_info_) (ssrjson_pycompactunicode_cast((_u_buf_info_)->head) + 1)
 
 /*==============================================================================
  * Global Vars
@@ -74,9 +74,7 @@
 #if SSRJSON_GIL_ENABLED
 extern EncodeCtnWithIndex _EncodeCtnBuffer[SSRJSON_ENCODE_MAX_RECURSION];
 
-force_inline EncodeCtnWithIndex *get_encode_obj_stack_buffer(void) {
-    return _EncodeCtnBuffer;
-}
+force_inline EncodeCtnWithIndex *get_encode_obj_stack_buffer(void) { return _EncodeCtnBuffer; }
 #endif
 /*==============================================================================
  * Utils
@@ -206,13 +204,12 @@ force_inline Py_ssize_t get_indent_char_count(Py_ssize_t cur_nested_depth, Py_ss
 
 // `is_dict` is known at compile time, but `is_tuple` is not
 force_inline EncodeContainerType get_encode_ctn_type(ssrjson_compiletime bool is_dict, bool is_tuple) {
-    if (ssrjson_consteval(is_dict)) {
-        return EncodeContainerType_Dict;
-    }
+    if (ssrjson_consteval(is_dict)) { return EncodeContainerType_Dict; }
     return EncodeContainerType_List << unlikely(is_tuple);
 }
 
-force_inline void extract_index_and_type(EncodeCtnWithIndex *ctn_with_index, Py_ssize_t *index, EncodeContainerType *type) {
+force_inline void extract_index_and_type(EncodeCtnWithIndex *ctn_with_index, Py_ssize_t *index,
+                                         EncodeContainerType *type) {
     *index = ssrjson_cast(Py_ssize_t, ctn_with_index->index_and_type >> 2);
     *type = ctn_with_index->index_and_type & 0x3;
 }
@@ -257,9 +254,7 @@ force_inline bool pylong_value_unsigned(PyObject *obj, u64 *value) {
     }
 #endif
     unsigned long long v = PyLong_AsUnsignedLongLong(obj);
-    if (unlikely(v == (unsigned long long)-1 && PyErr_Occurred())) {
-        return false;
-    }
+    if (unlikely(v == (unsigned long long)-1 && PyErr_Occurred())) { return false; }
     *value = (u64)v;
     static_assert(sizeof(unsigned long long) <= sizeof(u64), "sizeof(unsigned long long) <= sizeof(u64)");
     return true;
@@ -274,9 +269,7 @@ force_inline i64 pylong_value_signed(PyObject *obj, i64 *value) {
     }
 #endif
     long long v = PyLong_AsLongLong(obj);
-    if (unlikely(v == -1 && PyErr_Occurred())) {
-        return false;
-    }
+    if (unlikely(v == -1 && PyErr_Occurred())) { return false; }
     *value = (i64)v;
     static_assert(sizeof(long long) <= sizeof(i64), "sizeof(long long) <= sizeof(i64)");
     return true;
@@ -310,8 +303,7 @@ force_inline bool pylong_to_clong(PyObject *obj, u64 *value_out, int *sign_out) 
     return true;
 }
 
-force_inline int pydict_next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
-                             PyObject **pvalue) {
+force_inline int pydict_next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {
 #if PY_MINOR_VERSION >= 13
     return PyDict_Next(op, ppos, pkey, pvalue);
 #else
@@ -373,61 +365,59 @@ force_inline void init_pybytes(PyObject *in_new_bytes, usize final_len) {
  *============================================================================*/
 
 
-EncodeUnicodeBufferInfo _unicode_buffer_reserve(EncodeUnicodeBufferInfo unicode_buffer_info, usize target_size);
+EncodeUBufInfo _u_buf_reserve(EncodeUBufInfo u_buf_info, usize target_size);
 
 #ifndef NDEBUG
-force_inline bool check_unicode_writer_valid(void *writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return ssrjson_cast(u8 *, writer) <= (u8 *)unicode_buffer_info->end && ssrjson_cast(u8 *, writer) >= (u8 *)unicode_buffer_info->head;
+force_inline bool check_unicode_writer_valid(void *writer, EncodeUBufInfo *u_buf_info) {
+    return ssrjson_cast(u8 *, writer) <= (u8 *)u_buf_info->end && ssrjson_cast(u8 *, writer) >= (u8 *)u_buf_info->head;
 }
 #endif
 
-/* Resize the buffer described by `unicode_buffer_info`.
+/* Resize the buffer described by `u_buf_info`.
  * If resize succeed, the buffer will be updated to the new address and return true.
  * Otherwise, buffer left unchanged and returns false.
  * Args:
- *     unicode_buffer_info: The buffer.
+ *     u_buf_info: The buffer.
  *     len: Count of valid unicode points in the buffer.
  *     ucs_type: The unicode type of the buffer (0 stands for ascii).
  */
-bool resize_to_fit_pyunicode(EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t len, int ucs_type);
+bool resize_to_fit_pyunicode(EncodeUBufInfo *u_buf_info, Py_ssize_t len, int ucs_type);
 
 /** Digit table from 00 to 99. */
 extern ssrjson_align(8) const u8 EncodeDigitTable[200];
 
-force_inline void byte_copy_2(void *dst, const void *src) {
-    memcpy(dst, src, 2);
+force_inline void byte_copy_2(void *dst, const void *src) { memcpy(dst, src, 2); }
+
+force_inline Py_ssize_t get_u_buf_final_len_ascii(EncodeUnicodeWriter writer, EncodeUBufInfo *u_buf_info) {
+    return WRITER_AS_U8(writer) - (u8 *)GET_VEC_ASCII_START(u_buf_info);
 }
 
-force_inline Py_ssize_t get_unicode_buffer_final_len_ascii(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return WRITER_AS_U8(writer) - (u8 *)GET_VEC_ASCII_START(unicode_buffer_info);
+force_inline Py_ssize_t get_u_buf_final_len_ucs1(EncodeUnicodeWriter writer, EncodeUBufInfo *u_buf_info) {
+    return WRITER_AS_U8(writer) - (u8 *)GET_VEC_COMPACT_START(u_buf_info);
 }
 
-force_inline Py_ssize_t get_unicode_buffer_final_len_ucs1(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return WRITER_AS_U8(writer) - (u8 *)GET_VEC_COMPACT_START(unicode_buffer_info);
+force_inline Py_ssize_t get_u_buf_final_len_ucs2(EncodeUnicodeWriter writer, EncodeUBufInfo *u_buf_info) {
+    return WRITER_AS_U16(writer) - (u16 *)GET_VEC_COMPACT_START(u_buf_info);
 }
 
-force_inline Py_ssize_t get_unicode_buffer_final_len_ucs2(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return WRITER_AS_U16(writer) - (u16 *)GET_VEC_COMPACT_START(unicode_buffer_info);
+force_inline Py_ssize_t get_u_buf_final_len_ucs4(EncodeUnicodeWriter writer, EncodeUBufInfo *u_buf_info) {
+    return WRITER_AS_U32(writer) - (u32 *)GET_VEC_COMPACT_START(u_buf_info);
 }
 
-force_inline Py_ssize_t get_unicode_buffer_final_len_ucs4(EncodeUnicodeWriter writer, EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return WRITER_AS_U32(writer) - (u32 *)GET_VEC_COMPACT_START(unicode_buffer_info);
-}
-
-force_inline usize get_bytes_buffer_final_len(u8 *writer, void *head) {
+force_inline usize get_b_buf_final_len(u8 *writer, void *head) {
     assert(writer >= ssrjson_cast(u8 *, head) + PYBYTES_START_OFFSET);
     usize ret = writer - ssrjson_cast(u8 *, head) - PYBYTES_START_OFFSET;
     return ret;
 }
 
-force_inline bool resize_to_fit_pybytes(EncodeUnicodeBufferInfo *unicode_buffer_info, usize len) {
+force_inline bool resize_to_fit_pybytes(EncodeUBufInfo *u_buf_info, usize len) {
     usize buffer_total_size = PYBYTES_START_OFFSET + len + 1;
-    void *new_ptr = PyObject_Realloc(unicode_buffer_info->head, buffer_total_size);
+    void *new_ptr = PyObject_Realloc(u_buf_info->head, buffer_total_size);
     if (unlikely(!new_ptr)) {
         PyErr_NoMemory();
         return false;
     }
-    unicode_buffer_info->head = new_ptr;
+    u_buf_info->head = new_ptr;
     return true;
 }
 
@@ -656,14 +646,10 @@ force_inline u8 *write_u32(u32 val, u8 *buf) {
 }
 
 /* Write at most 5 bytes */
-force_inline u8 *write_u16(u16 val, u8 *buf) {
-    return write_u16_len_1_5(val, buf);
-}
+force_inline u8 *write_u16(u16 val, u8 *buf) { return write_u16_len_1_5(val, buf); }
 
 /* Write at most 3 bytes */
-force_inline u8 *write_u8(u8 val, u8 *buf) {
-    return write_u8_len_1_3(val, buf);
-}
+force_inline u8 *write_u8(u8 val, u8 *buf) { return write_u8_len_1_3(val, buf); }
 
 /*==============================================================================
  * Buffer Init
@@ -683,15 +669,15 @@ force_inline bool init_encode_ctn_stack(EncodeCtnWithIndex **ctn_stack_addr) {
     return true;
 }
 
-force_inline EncodeUnicodeWriter _init_encode_buffer(EncodeUnicodeBufferInfo *unicode_buffer_info, usize u8_start_offset) {
+force_inline EncodeUnicodeWriter _init_encode_buffer(EncodeUBufInfo *u_buf_info, usize u8_start_offset) {
     EncodeUnicodeWriter writer;
-    unicode_buffer_info->head = PyObject_Malloc(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
-    if (likely(unicode_buffer_info->head)) {
+    u_buf_info->head = PyObject_Malloc(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
+    if (likely(u_buf_info->head)) {
 #ifndef NDEBUG
-        memset(unicode_buffer_info->head, 0, SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
+        memset(u_buf_info->head, 0, SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
 #endif
-        WRITER_AS_U8(writer) = ssrjson_cast(u8 *, unicode_buffer_info->head) + u8_start_offset;
-        unicode_buffer_info->end = ssrjson_cast(u8 *, unicode_buffer_info->head) + SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE;
+        WRITER_AS_U8(writer) = ssrjson_cast(u8 *, u_buf_info->head) + u8_start_offset;
+        u_buf_info->end = ssrjson_cast(u8 *, u_buf_info->head) + SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE;
     } else {
         PyErr_NoMemory();
         return NULL;
@@ -699,12 +685,12 @@ force_inline EncodeUnicodeWriter _init_encode_buffer(EncodeUnicodeBufferInfo *un
     return writer;
 }
 
-force_inline EncodeUnicodeWriter init_unicode_buffer(EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return _init_encode_buffer(unicode_buffer_info, sizeof(PyASCIIObject));
+force_inline EncodeUnicodeWriter init_u_buf(EncodeUBufInfo *u_buf_info) {
+    return _init_encode_buffer(u_buf_info, sizeof(PyASCIIObject));
 }
 
-force_inline u8 *init_bytes_buffer(EncodeUnicodeBufferInfo *unicode_buffer_info) {
-    return _init_encode_buffer(unicode_buffer_info, PYBYTES_START_OFFSET);
+force_inline u8 *init_b_buf(EncodeUBufInfo *u_buf_info) {
+    return _init_encode_buffer(u_buf_info, PYBYTES_START_OFFSET);
 }
 
 /*==============================================================================

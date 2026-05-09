@@ -34,21 +34,17 @@
 #define F64_POW10_EXP_MAX_EXACT 22
 
 /** Cached pow10 table. */
-static const f64 f64_pow10_table[] = {
-        1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12,
-        1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22};
+static const f64 f64_pow10_table[] = {1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,  1e8,  1e9,  1e10, 1e11,
+                                      1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22};
 
 /** Table: [ 10^0, ..., 10^19 ] (generate with misc/make_tables.c) */
 static const u64 u64_pow10_table[U64_POW10_MAX_EXP + 1] = {
-        U64(0x00000000, 0x00000001), U64(0x00000000, 0x0000000A),
-        U64(0x00000000, 0x00000064), U64(0x00000000, 0x000003E8),
-        U64(0x00000000, 0x00002710), U64(0x00000000, 0x000186A0),
-        U64(0x00000000, 0x000F4240), U64(0x00000000, 0x00989680),
-        U64(0x00000000, 0x05F5E100), U64(0x00000000, 0x3B9ACA00),
-        U64(0x00000002, 0x540BE400), U64(0x00000017, 0x4876E800),
-        U64(0x000000E8, 0xD4A51000), U64(0x00000918, 0x4E72A000),
-        U64(0x00005AF3, 0x107A4000), U64(0x00038D7E, 0xA4C68000),
-        U64(0x002386F2, 0x6FC10000), U64(0x01634578, 0x5D8A0000),
+        U64(0x00000000, 0x00000001), U64(0x00000000, 0x0000000A), U64(0x00000000, 0x00000064),
+        U64(0x00000000, 0x000003E8), U64(0x00000000, 0x00002710), U64(0x00000000, 0x000186A0),
+        U64(0x00000000, 0x000F4240), U64(0x00000000, 0x00989680), U64(0x00000000, 0x05F5E100),
+        U64(0x00000000, 0x3B9ACA00), U64(0x00000002, 0x540BE400), U64(0x00000017, 0x4876E800),
+        U64(0x000000E8, 0xD4A51000), U64(0x00000918, 0x4E72A000), U64(0x00005AF3, 0x107A4000),
+        U64(0x00038D7E, 0xA4C68000), U64(0x002386F2, 0x6FC10000), U64(0x01634578, 0x5D8A0000),
         U64(0x0DE0B6B3, 0xA7640000), U64(0x8AC72304, 0x89E80000)};
 
 /** Unsigned arbitrarily large integer */
@@ -121,9 +117,7 @@ force_inline void bigint_mul_pow2(bigint *big, u32 exp) {
     u32 move = exp / 64;
     u32 idx = big->used;
     if (unlikely(shft == 0)) {
-        for (; idx > 0; idx--) {
-            big->bits[idx + move - 1] = big->bits[idx - 1];
-        }
+        for (; idx > 0; idx--) { big->bits[idx + move - 1] = big->bits[idx - 1]; }
         big->used += move;
         while (move) big->bits[--move] = 0;
     } else {
@@ -148,9 +142,7 @@ force_inline void bigint_mul_pow10(bigint *big, i32 exp) {
     for (; exp >= U64_POW10_MAX_EXP; exp -= U64_POW10_MAX_EXP) {
         bigint_mul_u64(big, u64_pow10_table[U64_POW10_MAX_EXP]);
     }
-    if (exp) {
-        bigint_mul_u64(big, u64_pow10_table[exp]);
-    }
+    if (exp) { bigint_mul_u64(big, u64_pow10_table[exp]); }
 }
 
 /**

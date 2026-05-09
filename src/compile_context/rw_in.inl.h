@@ -32,6 +32,8 @@
 #define make_rw_name(_x_) ssrjson_concat3(_x_, src_t, dst_t)
 
 #define avx2_trailing_cvt make_rw_name(avx2_trailing_cvt)
+#define u_buf_apd_key_impl make_rw_name(u_buf_apd_key_impl)
+#define u_buf_apd_str_impl make_rw_name(u_buf_apd_str_impl)
 
 #ifdef COMPILE_UCS_LEVEL
 /* Generate function names with unicode type and writer type. */

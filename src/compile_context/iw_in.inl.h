@@ -65,10 +65,12 @@
  */
 #define unicode_indent_writer make_iw_name(unicode_indent_writer)
 
-#define bytes_buffer_append_key make_i_name(bytes_buffer_append_key)
-#define bytes_buffer_append_str make_i_name(bytes_buffer_append_str)
-#define bytes_buffer_append_nonascii_key_write_cache make_i_name(bytes_buffer_append_nonascii_key_write_cache)
-#define bytes_buffer_append_nonascii_key_no_write_cache make_i_name(bytes_buffer_append_nonascii_key_no_write_cache)
+#define b_buf_apd_key make_i_name(b_buf_apd_key)
+#define b_buf_apd_str_reserve make_i_name(b_buf_apd_str_reserve)
+#define b_buf_apd_str_impl make_i_name(b_buf_apd_str_impl)
+#define b_buf_apd_str make_i_name(b_buf_apd_str)
+#define b_buf_apd_nonascii_key_write_cache make_i_name(b_buf_apd_nonascii_key_write_cache)
+#define b_buf_apd_nonascii_key_no_write_cache make_i_name(b_buf_apd_nonascii_key_no_write_cache)
 #define encode_bytes_process_val make_i_name(encode_bytes_process_val)
 #define ssrjson_dumps_to_bytes_obj make_i_name(ssrjson_dumps_to_bytes_obj)
 #define ndarray_traverse_dispatch make_i_name(ndarray_traverse_dispatch)

@@ -78,8 +78,4 @@
 #define fast_skip_spaces_u8 make_s_name(fast_skip_spaces_u8)
 #define fast_skip_spaces_u16 make_s_name(fast_skip_spaces_u16)
 #define fast_skip_spaces_u32 make_s_name(fast_skip_spaces_u32)
-//
-#define STR_WRITER_NOINDENT_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_str_internal, r_t, w_t, indent0, _CompileVectorBits)
-#define KEY_WRITER_NOINDENT_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_key_internal, r_t, w_t, indent0, _CompileVectorBits)
-
 #endif // SSRJSON_COMPILE_CONTEXT_S

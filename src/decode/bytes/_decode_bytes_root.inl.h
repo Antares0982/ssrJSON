@@ -40,16 +40,16 @@
 //
 #include "compile_context/s_in.inl.h"
 
-#define SKIP_CONSECUTIVE_SPACES(_u8ptr)   \
-    do {                                  \
-        do {                              \
-            _u8ptr++;                     \
-        } while (char_is_space(*_u8ptr)); \
+#define SKIP_CONSECUTIVE_SPACES(_u8ptr)                  \
+    do {                                                 \
+        do { _u8ptr++; } while (char_is_space(*_u8ptr)); \
     } while (0)
 
-internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
+internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr,
+                                                     u8 *write_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
-internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const u8 *dat, usize len, PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const u8 *dat, usize len,
+                                                PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     // container stack info
     DecodeCtnWithSize *ctn = NULL;
     DecodeCtnWithSize *ctn_start = NULL;
@@ -59,13 +59,13 @@ internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context,
     decode_obj_stack_ptr_t decode_obj_stack = NULL;
     decode_obj_stack_ptr_t decode_obj_stack_end = NULL;
     // init
-    if (!init_decode_ctn_stack_info(decoder_context, &ctn_start, &ctn, &ctn_end) || !init_decode_obj_stack_info(decoder_context, &decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end)) goto failed_cleanup;
+    if (!init_decode_ctn_stack_info(decoder_context, &ctn_start, &ctn, &ctn_end) ||
+        !init_decode_obj_stack_info(decoder_context, &decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))
+        goto failed_cleanup;
     u8 *string_buffer_head = (u8 *)decoder_context->decoder_ctx_temp_buffer;
 
     //
-    if (unlikely(len > ((size_t)(-1)) / 4)) {
-        goto fail_alloc;
-    }
+    if (unlikely(len > ((size_t)(-1)) / 4)) { goto fail_alloc; }
     if (unlikely(4 * len > SSRJSON_STRING_BUFFER_SIZE)) {
         string_buffer_head = SSRJSON_MALLOC(4 * len);
         if (!string_buffer_head) goto fail_alloc;
@@ -95,9 +95,7 @@ arr_begin:
 
 arr_val_begin:
 #if DECODE_READ_PRETTY
-    if (*cur == ' ') {
-        fast_skip_spaces_u8(&cur, end);
-    }
+    if (*cur == ' ') { fast_skip_spaces_u8(&cur, end); }
 
 #endif
     if (*cur == '{') {
@@ -110,7 +108,8 @@ arr_val_begin:
     }
     if (char_is_number(*cur)) {
         PyObject *number_obj = loads_number_u8(&cur, end);
-        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        if (likely(number_obj &&
+                   _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
@@ -118,32 +117,37 @@ arr_val_begin:
     }
     if (*cur == '"') {
         PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
-        if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
+        if (likely(str_obj &&
+                   _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
         goto fail_string;
     }
     if (*cur == 't') {
-        if (likely(_read_true_u8(&cur, end) && decode_true(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
+        if (likely(_read_true_u8(&cur, end) &&
+                   decode_true(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
         goto fail_literal_true;
     }
     if (*cur == 'f') {
-        if (likely(_read_false_u8(&cur, end) && decode_false(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
+        if (likely(_read_false_u8(&cur, end) &&
+                   decode_false(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
         goto fail_literal_false;
     }
     if (*cur == 'n') {
-        if (likely(_read_null_u8(&cur, end) && decode_null(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
+        if (likely(_read_null_u8(&cur, end) &&
+                   decode_null(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
-        if (likely(_read_nan_u8(&cur, end) && decode_nan(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, false))) {
+        if (likely(_read_nan_u8(&cur, end) &&
+                   decode_nan(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, false))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
@@ -168,7 +172,8 @@ arr_val_begin:
     }
     if ((*cur == 'i' || *cur == 'I' || *cur == 'N')) {
         PyObject *number_obj = loads_inf_or_nan_u8(false, &cur, end);
-        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        if (likely(number_obj &&
+                   _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto arr_val_end;
         }
@@ -198,9 +203,7 @@ arr_val_end:
         // unlikely case, we expect a "," or "]" but not found right after the value
         cur++;
         if (*cur == ' ') fast_skip_spaces_u8(&cur, end);
-        if (char_is_space(*cur)) {
-            SKIP_CONSECUTIVE_SPACES(cur);
-        }
+        if (char_is_space(*cur)) { SKIP_CONSECUTIVE_SPACES(cur); }
         goto arr_val_end;
     }
 
@@ -208,11 +211,10 @@ arr_val_end:
 
 arr_end:
     assert(decode_ctn_is_arr(ctn));
-    if (!decode_arr(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, get_decode_ctn_len(ctn))) goto failed_cleanup;
+    if (!decode_arr(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, get_decode_ctn_len(ctn)))
+        goto failed_cleanup;
     /* pop parent as current container */
-    if (unlikely(ctn-- == ctn_start)) {
-        goto doc_end;
-    }
+    if (unlikely(ctn-- == ctn_start)) { goto doc_end; }
 
     incr_decode_ctn_size(ctn);
     if (DECODE_READ_PRETTY && *cur == '\n') cur++;
@@ -230,14 +232,13 @@ obj_begin:
 
 obj_key_begin:
 #if DECODE_READ_PRETTY
-    if (*cur == ' ') {
-        fast_skip_spaces_u8(&cur, end);
-    }
+    if (*cur == ' ') { fast_skip_spaces_u8(&cur, end); }
 #endif
 
     if (likely(*cur == '"')) {
         PyObject *str_obj = loads_bytes(&cur, string_buffer_head, true DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
-        if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
+        if (likely(str_obj &&
+                   _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             goto obj_key_end;
         }
         goto fail_string;
@@ -270,9 +271,7 @@ obj_key_end:
         // unlikely case, we expect a colon here
         cur++;
         if (*cur == ' ') fast_skip_spaces_u8(&cur, end);
-        if (char_is_space(*cur)) {
-            SKIP_CONSECUTIVE_SPACES(cur);
-        }
+        if (char_is_space(*cur)) { SKIP_CONSECUTIVE_SPACES(cur); }
         goto obj_key_end;
     }
     goto fail_character_obj_sep;
@@ -280,7 +279,8 @@ obj_key_end:
 obj_val_begin:
     if (*cur == '"') {
         PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
-        if (likely(str_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
+        if (likely(str_obj &&
+                   _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
@@ -288,7 +288,8 @@ obj_val_begin:
     }
     if (char_is_number(*cur)) {
         PyObject *number_obj = loads_number_u8(&cur, end);
-        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        if (likely(number_obj &&
+                   _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
@@ -303,25 +304,29 @@ obj_val_begin:
         goto arr_begin;
     }
     if (*cur == 't') {
-        if (likely(_read_true_u8(&cur, end) && decode_true(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
+        if (likely(_read_true_u8(&cur, end) &&
+                   decode_true(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
         goto fail_literal_true;
     }
     if (*cur == 'f') {
-        if (likely(_read_false_u8(&cur, end) && decode_false(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
+        if (likely(_read_false_u8(&cur, end) &&
+                   decode_false(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
         goto fail_literal_false;
     }
     if (*cur == 'n') {
-        if (likely(_read_null_u8(&cur, end) && decode_null(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
+        if (likely(_read_null_u8(&cur, end) &&
+                   decode_null(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
-        if (likely(_read_nan_u8(&cur, end) && decode_nan(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, false))) {
+        if (likely(_read_nan_u8(&cur, end) &&
+                   decode_nan(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, false))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
@@ -344,7 +349,8 @@ obj_val_begin:
     }
     if ((*cur == 'i' || *cur == 'I' || *cur == 'N')) {
         PyObject *number_obj = loads_inf_or_nan_u8(false, &cur, end);
-        if (likely(number_obj && _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
+        if (likely(number_obj &&
+                   _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, number_obj))) {
             incr_decode_ctn_size(ctn);
             goto obj_val_end;
         }
@@ -374,9 +380,7 @@ obj_val_end:
         // unlikely case
         cur++;
         if (*cur == ' ') fast_skip_spaces_u8(&cur, end);
-        if (char_is_space(*cur)) {
-            SKIP_CONSECUTIVE_SPACES(cur);
-        }
+        if (char_is_space(*cur)) { SKIP_CONSECUTIVE_SPACES(cur); }
         goto obj_val_end;
     }
 
@@ -384,12 +388,12 @@ obj_val_end:
 
 obj_end:
     assert(!decode_ctn_is_arr(ctn));
-    if (unlikely(!decode_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, get_decode_ctn_len(ctn), object_hook))) goto failed_cleanup;
+    if (unlikely(!decode_obj(
+                &decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, get_decode_ctn_len(ctn), object_hook)))
+        goto failed_cleanup;
     /* pop container */
     /* point to the next value */
-    if (unlikely(ctn-- == ctn_start)) {
-        goto doc_end;
-    }
+    if (unlikely(ctn-- == ctn_start)) { goto doc_end; }
     incr_decode_ctn_size(ctn);
     if (DECODE_READ_PRETTY && *cur == '\n') cur++;
     if (decode_ctn_is_arr(ctn)) {
@@ -402,9 +406,7 @@ doc_end:
     /* check invalid contents after json document */
     if (unlikely(cur < end)) {
         if (*cur == ' ') fast_skip_spaces_u8(&cur, end);
-        if (char_is_space(*cur)) {
-            SKIP_CONSECUTIVE_SPACES(cur);
-        }
+        if (char_is_space(*cur)) { SKIP_CONSECUTIVE_SPACES(cur); }
         // while (char_is_space(*cur)) cur++;
         if (unlikely(cur < end)) goto fail_garbage;
     }
@@ -418,9 +420,7 @@ success:;
     assert(obj->ob_refcnt == 1);
 #endif
     // free string buffer
-    if (unlikely(string_buffer_head != decoder_context->decoder_ctx_temp_buffer)) {
-        SSRJSON_FREE(string_buffer_head);
-    }
+    if (unlikely(string_buffer_head != decoder_context->decoder_ctx_temp_buffer)) { SSRJSON_FREE(string_buffer_head); }
     // free obj stack buffer if allocated dynamically
     if (unlikely(decode_obj_stack_end - decode_obj_stack > SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE)) {
         SSRJSON_FREE(decode_obj_stack);
@@ -443,50 +443,36 @@ fail_string:
 fail_number:
     return_err(cur, JSONDecodeError, "invalid number");
 fail_alloc:
-    return_err(cur, PyExc_MemoryError,
-               "memory allocation failed");
+    return_err(cur, PyExc_MemoryError, "memory allocation failed");
 fail_trailing_comma:
-    return_err(cur, JSONDecodeError,
-               "trailing comma is not allowed");
+    return_err(cur, JSONDecodeError, "trailing comma is not allowed");
 fail_literal_true:
-    return_err(cur, JSONDecodeError,
-               "invalid literal, expected a valid literal such as 'true'");
+    return_err(cur, JSONDecodeError, "invalid literal, expected a valid literal such as 'true'");
 fail_literal_false:
-    return_err(cur, JSONDecodeError,
-               "invalid literal, expected a valid literal such as 'false'");
+    return_err(cur, JSONDecodeError, "invalid literal, expected a valid literal such as 'false'");
 fail_literal_null:
-    return_err(cur, JSONDecodeError,
-               "invalid literal, expected a valid literal such as 'null'");
+    return_err(cur, JSONDecodeError, "invalid literal, expected a valid literal such as 'null'");
 fail_character_val:
-    return_err(cur, JSONDecodeError,
-               "unexpected character, expected a valid JSON value");
+    return_err(cur, JSONDecodeError, "unexpected character, expected a valid JSON value");
 fail_character_arr_end:
-    return_err(cur, JSONDecodeError,
-               "unexpected character, expected a comma or a closing bracket");
+    return_err(cur, JSONDecodeError, "unexpected character, expected a comma or a closing bracket");
 fail_character_obj_key:
-    return_err(cur, JSONDecodeError,
-               "unexpected character, expected a string for object key");
+    return_err(cur, JSONDecodeError, "unexpected character, expected a string for object key");
 fail_character_obj_sep:
-    return_err(cur, JSONDecodeError,
-               "unexpected character, expected a colon after object key");
+    return_err(cur, JSONDecodeError, "unexpected character, expected a colon after object key");
 fail_character_obj_end:
-    return_err(cur, JSONDecodeError,
-               "unexpected character, expected a comma or a closing brace");
+    return_err(cur, JSONDecodeError, "unexpected character, expected a comma or a closing brace");
 fail_garbage:
-    return_err(cur, JSONDecodeError,
-               "unexpected content after document");
+    return_err(cur, JSONDecodeError, "unexpected content after document");
 fail_ctn_grow:
-    return_err(cur, JSONDecodeError,
-               "max recursion exceeded");
+    return_err(cur, JSONDecodeError, "max recursion exceeded");
 
 failed_cleanup:
     for (decode_obj_stack_ptr_t obj_ptr = decode_obj_stack; obj_ptr < decode_obj_writer; obj_ptr++) {
         Py_XDECREF(*obj_ptr);
     }
     // free string buffer
-    if (unlikely(string_buffer_head != decoder_context->decoder_ctx_temp_buffer)) {
-        SSRJSON_FREE(string_buffer_head);
-    }
+    if (unlikely(string_buffer_head != decoder_context->decoder_ctx_temp_buffer)) { SSRJSON_FREE(string_buffer_head); }
     // free obj stack buffer if allocated dynamically
     if (unlikely(decode_obj_stack_end - decode_obj_stack > SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE)) {
         SSRJSON_FREE(decode_obj_stack);

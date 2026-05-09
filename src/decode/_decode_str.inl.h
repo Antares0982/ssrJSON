@@ -39,16 +39,16 @@
 //
 #include "compile_context/sr_in.inl.h"
 
-force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, Py_ssize_t len, src_t **buffer_head_addr, bool *need_dealloc) {
+force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, Py_ssize_t len,
+                                               src_t **buffer_head_addr, bool *need_dealloc) {
     // consider the max length of the buffer we need
     // assume that each string has an escape of ucs4, we need buffer with size
     // sizeof(ucs4) * len == 4 * len
     // reserve additional _TailPadding bytes before and after the buffer for convenience,
     // i.e. additional 2 * _TailPadding bytes
-    if (len > ((Py_ssize_t)PY_SSIZE_T_MAX - _TailPadding * 2) / 4) {
-        return false;
-    }
-    static_assert(((Py_ssize_t)SSRJSON_STRING_BUFFER_SIZE - _TailPadding * 2) > 4, "((Py_ssize_t)SSRJSON_STRING_BUFFER_SIZE - 128) > 4");
+    if (len > ((Py_ssize_t)PY_SSIZE_T_MAX - _TailPadding * 2) / 4) { return false; }
+    static_assert(((Py_ssize_t)SSRJSON_STRING_BUFFER_SIZE - _TailPadding * 2) > 4,
+                  "((Py_ssize_t)SSRJSON_STRING_BUFFER_SIZE - 128) > 4");
     Py_ssize_t new_buffer_size = 4 * len + 2 * _TailPadding;
     if (new_buffer_size > SSRJSON_STRING_BUFFER_SIZE) {
         u8 *new_buffer = (u8 *)SSRJSON_MALLOC(new_buffer_size);
@@ -63,7 +63,8 @@ force_inline bool check_and_reserve_str_buffer(DecoderBuffers *decoder_context, 
 }
 
 /** Read single value JSON document. */
-internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_context, const src_t *dat, Py_ssize_t len DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_context, const src_t *dat,
+                                                   Py_ssize_t len DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define return_err(_pos, _type, _msg)                                                             \
     do {                                                                                          \
         if (_type == JSONDecodeError) {                                                           \
@@ -93,9 +94,7 @@ internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_conte
         check_and_reserve_str_buffer(decoder_context, len, &string_buffer_head, &need_dealloc);
         cur++;
         ret = decode_str(&cur, end, string_buffer_head, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
-        if (need_dealloc) {
-            SSRJSON_FREE((void *)((u8 *)string_buffer_head - _TailPadding));
-        }
+        if (need_dealloc) { SSRJSON_FREE((void *)((u8 *)string_buffer_head - _TailPadding)); }
         if (likely(ret)) goto single_end;
         goto fail_string;
     }
@@ -138,9 +137,7 @@ single_end:
     if (unlikely(cur < end)) {
         if (*cur == ' ') fast_skip_spaces(&cur, end);
         if (*cur <= U8MAX && char_is_space(*cur)) {
-            do {
-                cur++;
-            } while (*cur <= U8MAX && char_is_space(*cur));
+            do { cur++; } while (*cur <= U8MAX && char_is_space(*cur));
         }
         if (unlikely(cur < end)) goto fail_garbage;
     }
@@ -151,23 +148,17 @@ fail_string:
 fail_number:
     return_err(cur, JSONDecodeError, "invalid number");
 fail_alloc:
-    return_err(cur, PyExc_MemoryError,
-               "memory allocation failed");
+    return_err(cur, PyExc_MemoryError, "memory allocation failed");
 fail_literal_true:
-    return_err(cur, JSONDecodeError,
-               "invalid literal, expected a valid literal such as 'true'");
+    return_err(cur, JSONDecodeError, "invalid literal, expected a valid literal such as 'true'");
 fail_literal_false:
-    return_err(cur, JSONDecodeError,
-               "invalid literal, expected a valid literal such as 'false'");
+    return_err(cur, JSONDecodeError, "invalid literal, expected a valid literal such as 'false'");
 fail_literal_null:
-    return_err(cur, JSONDecodeError,
-               "invalid literal, expected a valid literal such as 'null'");
+    return_err(cur, JSONDecodeError, "invalid literal, expected a valid literal such as 'null'");
 fail_character:
-    return_err(cur, JSONDecodeError,
-               "unexpected character, expected a valid root value");
+    return_err(cur, JSONDecodeError, "unexpected character, expected a valid root value");
 fail_garbage:
-    return_err(cur, JSONDecodeError,
-               "unexpected content after document");
+    return_err(cur, JSONDecodeError, "unexpected content after document");
 fail_cleanup:
     Py_XDECREF(ret);
     return NULL;
@@ -184,14 +175,13 @@ force_inline bool should_loads_pretty(const src_t *buffer, const src_t *end) {
             // likely to hit
             return true;
         }
-        if (second <= U8MAX && third <= U8MAX && char_is_space(second) && char_is_space(third)) {
-            return true;
-        }
+        if (second <= U8MAX && third <= U8MAX && char_is_space(second) && char_is_space(third)) { return true; }
     }
     return false;
 }
 
-internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnicodeObject *in_unicode, PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnicodeObject *in_unicode,
+                                        PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     // some checks
     assert(in_unicode);
     PyASCIIObject *ascii_head = ssrjson_pyascii_cast(in_unicode);
@@ -226,9 +216,11 @@ internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnico
     /* read json document */
     if (likely(*buffer <= U8MAX && char_is_container(*buffer))) {
         if (should_loads_pretty(buffer, end)) {
-            ret = loads_root_pretty(decoder_context, buffer, end - buffer, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+            ret = loads_root_pretty(
+                    decoder_context, buffer, end - buffer, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         } else {
-            ret = loads_root_minify(decoder_context, buffer, end - buffer, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+            ret = loads_root_minify(
+                    decoder_context, buffer, end - buffer, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         }
     } else {
         ret = loads_root_single(decoder_context, buffer, end - buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);

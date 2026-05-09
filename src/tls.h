@@ -56,22 +56,14 @@
  *============================================================================*/
 #if defined(_POSIX_THREADS)
 #    define SSRJSON_DECLARE_TLS_GETTER(_key, _getter_name) \
-        force_inline void *_getter_name(void) {            \
-            return pthread_getspecific((_key));            \
-        }
+        force_inline void *_getter_name(void) { return pthread_getspecific((_key)); }
 #    define SSRJSON_DECLARE_TLS_SETTER(_key, _setter_name) \
-        force_inline bool _setter_name(void *ptr) {        \
-            return 0 == pthread_setspecific(_key, ptr);    \
-        }
+        force_inline bool _setter_name(void *ptr) { return 0 == pthread_setspecific(_key, ptr); }
 #else
 #    define SSRJSON_DECLARE_TLS_GETTER(_key, _getter_name) \
-        force_inline void *_getter_name(void) {            \
-            return FlsGetValue((_key));                    \
-        }
+        force_inline void *_getter_name(void) { return FlsGetValue((_key)); }
 #    define SSRJSON_DECLARE_TLS_SETTER(_key, _setter_name) \
-        force_inline bool _setter_name(void *ptr) {        \
-            return FlsSetValue(_key, ptr);                 \
-        }
+        force_inline bool _setter_name(void *ptr) { return FlsSetValue(_key, ptr); }
 #endif
 
 /*==============================================================================

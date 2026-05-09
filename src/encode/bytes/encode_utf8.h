@@ -40,9 +40,11 @@
 
 /* UTF-8 src. */
 // forward declaration
-force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_key);
+force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usize len,
+                                                  ssrjson_compiletime bool is_key);
 
-force_inline ssrjson_nofail u8 *bytes_write_utf8(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_utf8(u8 *writer, const u8 *src, usize len,
+                                                 ssrjson_compiletime bool is_key) {
     // UTF-8 trailing source case is a little different,
     // because the 16 bytes before `src_end` are not readable in general.
     // This function only impls the fast path that we can reuse the unicode encode loop,
@@ -56,7 +58,8 @@ force_inline ssrjson_nofail u8 *bytes_write_utf8(u8 *writer, const u8 *src, usiz
 }
 
 /* ASCII src. */
-force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usize len,
+                                                  ssrjson_compiletime bool is_key) {
     // reuse the unicode encode loop.
     // excess written bytes = ssrjson_max(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode >= 2
     if (ssrjson_consteval(!is_key)) writer = encode_unicode_loop4(writer, &src, &len);
@@ -65,8 +68,13 @@ force_inline ssrjson_nofail u8 *bytes_write_ascii(u8 *writer, const u8 *src, usi
     return writer;
 }
 
+static force_noinline ssrjson_nofail u8 *bytes_write_ascii_str(u8 *writer, const u8 *src, usize len) {
+    return bytes_write_ascii(writer, src, len, false);
+}
+
 /* UCS1 src. */
-force_inline void check_ascii_in_ucs1_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
+force_inline void check_ascii_in_ucs1_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked,
+                                                           usize *out_done_count) {
     vector_a *checker_masks = (vector_a *)&_CheckerMasks;
 
     vector_a t1 = checker_masks[0];
@@ -79,18 +87,10 @@ force_inline void check_ascii_in_ucs1_and_get_done_countx4(unionvector_a_x4 vec,
 
     u64 r;
 
-    m.x[0] = cmpeq_bitmask(vec.x[0], t1) |
-             cmpeq_bitmask(vec.x[0], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[0]);
-    m.x[1] = cmpeq_bitmask(vec.x[1], t1) |
-             cmpeq_bitmask(vec.x[1], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[1]);
-    m.x[2] = cmpeq_bitmask(vec.x[2], t1) |
-             cmpeq_bitmask(vec.x[2], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[2]);
-    m.x[3] = cmpeq_bitmask(vec.x[3], t1) |
-             cmpeq_bitmask(vec.x[3], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[3]);
+    m.x[0] = cmpeq_bitmask(vec.x[0], t1) | cmpeq_bitmask(vec.x[0], t2) | signed_cmpgt_bitmask(t3, vec.x[0]);
+    m.x[1] = cmpeq_bitmask(vec.x[1], t1) | cmpeq_bitmask(vec.x[1], t2) | signed_cmpgt_bitmask(t3, vec.x[1]);
+    m.x[2] = cmpeq_bitmask(vec.x[2], t1) | cmpeq_bitmask(vec.x[2], t2) | signed_cmpgt_bitmask(t3, vec.x[2]);
+    m.x[3] = cmpeq_bitmask(vec.x[3], t1) | cmpeq_bitmask(vec.x[3], t2) | signed_cmpgt_bitmask(t3, vec.x[3]);
 #else
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
     unionvector_a_x4 m;
@@ -121,7 +121,8 @@ force_inline void check_ascii_in_ucs1_and_get_done_countx4(unionvector_a_x4 vec,
     }
 }
 
-force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
+force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked,
+                                                                    usize *out_done_count) {
     vector_a t = broadcast(0);
 #if SSRJSON_IS_X64 && _CompileVectorBits == 512
     struct {
@@ -172,9 +173,7 @@ force_inline void check_ascii_in_ucs1_and_get_done_count(vector_a vec, bool *out
 #if SSRJSON_IS_X64 && _CompileVectorBits == 512
     u64 m;
 
-    m = cmpeq_bitmask(vec, t1) |
-        cmpeq_bitmask(vec, t2) |
-        signed_cmpgt_bitmask(t3, vec);
+    m = cmpeq_bitmask(vec, t1) | cmpeq_bitmask(vec, t2) | signed_cmpgt_bitmask(t3, vec);
 #else
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
     vector_a m;
@@ -182,12 +181,11 @@ force_inline void check_ascii_in_ucs1_and_get_done_count(vector_a vec, bool *out
 #endif
     bool checked = testz_escape_mask(m);
     *out_checked = checked;
-    if (unlikely(!checked)) {
-        *out_done_count = escape_anymask_to_done_count_no_eq0(m);
-    }
+    if (unlikely(!checked)) { *out_done_count = escape_anymask_to_done_count_no_eq0(m); }
 }
 
-force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
+force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked,
+                                                                  usize *out_done_count) {
     vector_a t = broadcast(0);
 #if SSRJSON_IS_X64 && _CompileVectorBits == 512
     u64 m;
@@ -199,12 +197,11 @@ force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_count(vector_a vec, 
 #endif
     bool checked = testz_escape_mask(m);
     *out_checked = checked;
-    if (unlikely(!checked)) {
-        *out_done_count = escape_anymask_to_done_count_no_eq0(m);
-    }
+    if (unlikely(!checked)) { *out_done_count = escape_anymask_to_done_count_no_eq0(m); }
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop4(u8 *dst, const u8 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop4(u8 *dst, const u8 **src_addr, usize *len_addr,
+                                                           bool *continuous_out) {
     // prepare
     const u8 *src = *src_addr;
     usize len = *len_addr;
@@ -243,7 +240,8 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop4(u8 *dst, const u8 **s
     return dst;
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop(u8 *dst, const u8 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop(u8 *dst, const u8 **src_addr, usize *len_addr,
+                                                          bool *continuous_out) {
     // prepare
     const u8 *src = *src_addr;
     usize len = *len_addr;
@@ -273,7 +271,8 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop(u8 *dst, const u8 **sr
     return dst;
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop4_raw_utf8(u8 *dst, const u8 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop4_raw_utf8(u8 *dst, const u8 **src_addr, usize *len_addr,
+                                                                    bool *continuous_out) {
     // prepare
     const u8 *src = *src_addr;
     usize len = *len_addr;
@@ -311,7 +310,8 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop4_raw_utf8(u8 *dst, con
     return dst;
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop_raw_utf8(u8 *dst, const u8 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop_raw_utf8(u8 *dst, const u8 **src_addr, usize *len_addr,
+                                                                   bool *continuous_out) {
     // prepare
     const u8 *src = *src_addr;
     usize len = *len_addr;
@@ -341,7 +341,8 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs1_encode_loop_raw_utf8(u8 *dst, cons
     return dst;
 }
 
-force_inline ssrjson_nofail u8 *bytes_write_ucs1(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1(u8 *writer, const u8 *src, usize len,
+                                                 ssrjson_compiletime bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -352,17 +353,13 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1(u8 *writer, const u8 *src, usiz
             if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs1_encode_loop4(writer, &src, &len, &continuous);
-                    if (unlikely(!continuous)) {
-                        goto encode_one;
-                    }
+                    if (unlikely(!continuous)) { goto encode_one; }
                 }
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
                 writer = ascii_in_ucs1_encode_loop(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -382,7 +379,8 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1(u8 *writer, const u8 *src, usiz
 #undef CAN_LOOP4
 }
 
-force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_key) {
+force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8(u8 *writer, const u8 *src, usize len,
+                                                          ssrjson_compiletime bool is_key) {
 #define CAN_LOOP4 (len >= 4 * READ_BATCH_COUNT)
 #define CAN_LOOP (len >= READ_BATCH_COUNT)
     while (CAN_LOOP) {
@@ -393,17 +391,13 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8(u8 *writer, const u8 *
             if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs1_encode_loop4_raw_utf8(writer, &src, &len, &continuous);
-                    if (unlikely(!continuous)) {
-                        goto encode_one;
-                    }
+                    if (unlikely(!continuous)) { goto encode_one; }
                 }
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
                 writer = ascii_in_ucs1_encode_loop_raw_utf8(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -432,7 +426,8 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8(u8 *writer, const u8 *
 #define COMPILE_WRITE_UCS_LEVEL 1
 #include "compile_context/srw_in.inl.h"
 
-force_inline void check_ascii_in_ucs2_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
+force_inline void check_ascii_in_ucs2_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked,
+                                                           usize *out_done_count) {
     vector_a *checker_masks = (vector_a *)&_CheckerMasks;
 
     vector_a t1 = checker_masks[0];
@@ -445,21 +440,13 @@ force_inline void check_ascii_in_ucs2_and_get_done_countx4(unionvector_a_x4 vec,
     } m;
 
     u32 r;
-    m.x[0] = cmpeq_bitmask(vec.x[0], t1) |
-             cmpeq_bitmask(vec.x[0], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[0]) |
+    m.x[0] = cmpeq_bitmask(vec.x[0], t1) | cmpeq_bitmask(vec.x[0], t2) | signed_cmpgt_bitmask(t3, vec.x[0]) |
              signed_cmpgt_bitmask(vec.x[0], t4);
-    m.x[1] = cmpeq_bitmask(vec.x[1], t1) |
-             cmpeq_bitmask(vec.x[1], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[1]) |
+    m.x[1] = cmpeq_bitmask(vec.x[1], t1) | cmpeq_bitmask(vec.x[1], t2) | signed_cmpgt_bitmask(t3, vec.x[1]) |
              signed_cmpgt_bitmask(vec.x[1], t4);
-    m.x[2] = cmpeq_bitmask(vec.x[2], t1) |
-             cmpeq_bitmask(vec.x[2], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[2]) |
+    m.x[2] = cmpeq_bitmask(vec.x[2], t1) | cmpeq_bitmask(vec.x[2], t2) | signed_cmpgt_bitmask(t3, vec.x[2]) |
              signed_cmpgt_bitmask(vec.x[2], t4);
-    m.x[3] = cmpeq_bitmask(vec.x[3], t1) |
-             cmpeq_bitmask(vec.x[3], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[3]) |
+    m.x[3] = cmpeq_bitmask(vec.x[3], t1) | cmpeq_bitmask(vec.x[3], t2) | signed_cmpgt_bitmask(t3, vec.x[3]) |
              signed_cmpgt_bitmask(vec.x[3], t4);
 #elif SSRJSON_IS_X64
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
@@ -497,7 +484,8 @@ force_inline void check_ascii_in_ucs2_and_get_done_countx4(unionvector_a_x4 vec,
     }
 }
 
-force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
+force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked,
+                                                                    usize *out_done_count) {
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_IS_X64 && _CompileVectorBits == 512
@@ -506,14 +494,10 @@ force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_countx4(unionvector_
     } m;
 
     u32 r;
-    m.x[0] = signed_cmpgt_bitmask(t3, vec.x[0]) |
-             signed_cmpgt_bitmask(vec.x[0], t4);
-    m.x[1] = signed_cmpgt_bitmask(t3, vec.x[1]) |
-             signed_cmpgt_bitmask(vec.x[1], t4);
-    m.x[2] = signed_cmpgt_bitmask(t3, vec.x[2]) |
-             signed_cmpgt_bitmask(vec.x[2], t4);
-    m.x[3] = signed_cmpgt_bitmask(t3, vec.x[3]) |
-             signed_cmpgt_bitmask(vec.x[3], t4);
+    m.x[0] = signed_cmpgt_bitmask(t3, vec.x[0]) | signed_cmpgt_bitmask(vec.x[0], t4);
+    m.x[1] = signed_cmpgt_bitmask(t3, vec.x[1]) | signed_cmpgt_bitmask(vec.x[1], t4);
+    m.x[2] = signed_cmpgt_bitmask(t3, vec.x[2]) | signed_cmpgt_bitmask(vec.x[2], t4);
+    m.x[3] = signed_cmpgt_bitmask(t3, vec.x[3]) | signed_cmpgt_bitmask(vec.x[3], t4);
 #elif SSRJSON_IS_X64
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
     unionvector_a_x4 m;
@@ -559,10 +543,7 @@ force_inline void check_ascii_in_ucs2_and_get_done_count(vector_a vec, bool *out
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_IS_X64 && _CompileVectorBits == 512
     u32 m;
-    m = cmpeq_bitmask(vec, t1) |
-        cmpeq_bitmask(vec, t2) |
-        signed_cmpgt_bitmask(t3, vec) |
-        signed_cmpgt_bitmask(vec, t4);
+    m = cmpeq_bitmask(vec, t1) | cmpeq_bitmask(vec, t2) | signed_cmpgt_bitmask(t3, vec) | signed_cmpgt_bitmask(vec, t4);
 #elif SSRJSON_IS_X64
     vector_a m;
     m = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, t4);
@@ -572,18 +553,16 @@ force_inline void check_ascii_in_ucs2_and_get_done_count(vector_a vec, bool *out
 #endif
     bool checked = testz_escape_mask(m);
     *out_checked = checked;
-    if (unlikely(!checked)) {
-        *out_done_count = escape_anymask_to_done_count_no_eq0(m);
-    }
+    if (unlikely(!checked)) { *out_done_count = escape_anymask_to_done_count_no_eq0(m); }
 }
 
-force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
+force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked,
+                                                                  usize *out_done_count) {
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_IS_X64 && _CompileVectorBits == 512
     u32 m;
-    m = signed_cmpgt_bitmask(t3, vec) |
-        signed_cmpgt_bitmask(vec, t4);
+    m = signed_cmpgt_bitmask(t3, vec) | signed_cmpgt_bitmask(vec, t4);
 #elif SSRJSON_IS_X64
     vector_a m;
     m = signed_cmpgt(t3, vec) | signed_cmpgt(vec, t4);
@@ -593,12 +572,11 @@ force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_count(vector_a vec, 
 #endif
     bool checked = testz_escape_mask(m);
     *out_checked = checked;
-    if (unlikely(!checked)) {
-        *out_done_count = escape_anymask_to_done_count_no_eq0(m);
-    }
+    if (unlikely(!checked)) { *out_done_count = escape_anymask_to_done_count_no_eq0(m); }
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop4(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop4(u8 *dst, const u16 **src_addr, usize *len_addr,
+                                                           bool *continuous_out) {
     // prepare
     const u16 *src = *src_addr;
     usize len = *len_addr;
@@ -636,7 +614,8 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop4(u8 *dst, const u16 **
     return dst;
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop4_raw_utf8(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop4_raw_utf8(u8 *dst, const u16 **src_addr, usize *len_addr,
+                                                                    bool *continuous_out) {
     // prepare
     const u16 *src = *src_addr;
     usize len = *len_addr;
@@ -675,7 +654,8 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop4_raw_utf8(u8 *dst, con
     return dst;
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop(u8 *dst, const u16 **src_addr, usize *len_addr,
+                                                          bool *continuous_out) {
     // prepare
     const u16 *src = *src_addr;
     usize len = *len_addr;
@@ -707,7 +687,8 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop(u8 *dst, const u16 **s
     return dst;
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop_raw_utf8(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop_raw_utf8(u8 *dst, const u16 **src_addr, usize *len_addr,
+                                                                   bool *continuous_out) {
     // prepare
     const u16 *src = *src_addr;
     usize len = *len_addr;
@@ -754,12 +735,11 @@ force_inline void check_2bytes_in_ucs2_and_get_done_count(vector_a vec, bool *ou
 #endif
     bool checked = testz_escape_mask(m);
     *out_checked = checked;
-    if (unlikely(!checked)) {
-        *out_done_count = escape_anymask_to_done_count_no_eq0(m);
-    }
+    if (unlikely(!checked)) { *out_done_count = escape_anymask_to_done_count_no_eq0(m); }
 }
 
-force_inline ssrjson_nofail u8 *_2bytes_in_ucs2_encode_loop(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *_2bytes_in_ucs2_encode_loop(u8 *dst, const u16 **src_addr, usize *len_addr,
+                                                            bool *continuous_out) {
     // prepare
     const u16 *src = *src_addr;
     usize len = *len_addr;
@@ -809,9 +789,7 @@ force_inline void check_3bytes_in_ucs2_and_get_done_count(vector_a vec, bool *ou
 #if SSRJSON_IS_X64 && _CompileVectorBits == 512
     u32 m;
 
-    m = unsigned_cmplt_bitmask(vec, t1) |
-        (unsigned_cmpgt_bitmask(vec, t2) &
-         unsigned_cmplt_bitmask(vec, t3));
+    m = unsigned_cmplt_bitmask(vec, t1) | (unsigned_cmpgt_bitmask(vec, t2) & unsigned_cmplt_bitmask(vec, t3));
 #elif SSRJSON_IS_X64
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
     vector_a m;
@@ -837,7 +815,8 @@ force_inline void check_3bytes_in_ucs4_and_get_done_count(vector_a vec, bool *ou
 
 #if SSRJSON_IS_X64 && _CompileVectorBits == 512
     u32 m;
-    m = unsigned_cmpgt_bitmask(t1, vec) | (unsigned_cmpgt_bitmask(vec, t2) & unsigned_cmpgt_bitmask(t3, vec)) | unsigned_cmpgt_bitmask(vec, t4);
+    m = unsigned_cmpgt_bitmask(t1, vec) | (unsigned_cmpgt_bitmask(vec, t2) & unsigned_cmpgt_bitmask(t3, vec)) |
+        unsigned_cmpgt_bitmask(vec, t4);
 #elif SSRJSON_IS_X64
     vector_a m;
     m = signed_cmpgt(t1, vec) | (signed_cmpgt(vec, t2) & signed_cmpgt(t3, vec)) | signed_cmpgt(vec, t4);
@@ -847,12 +826,11 @@ force_inline void check_3bytes_in_ucs4_and_get_done_count(vector_a vec, bool *ou
 #endif
     bool checked = testz_escape_mask(m);
     *out_checked = checked;
-    if (unlikely(!checked)) {
-        *out_done_count = escape_anymask_to_done_count_no_eq0(m);
-    }
+    if (unlikely(!checked)) { *out_done_count = escape_anymask_to_done_count_no_eq0(m); }
 }
 
-force_inline ssrjson_nofail u8 *_3bytes_in_ucs2_encode_loop(u8 *dst, const u16 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *_3bytes_in_ucs2_encode_loop(u8 *dst, const u16 **src_addr, usize *len_addr,
+                                                            bool *continuous_out) {
     // prepare
     const u16 *src = *src_addr;
     usize len = *len_addr;
@@ -909,17 +887,13 @@ force_inline u8 *bytes_write_ucs2(u8 *writer, const u16 *src, usize len, ssrjson
             if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs2_encode_loop4(writer, &src, &len, &continuous);
-                    if (unlikely(!continuous)) {
-                        goto encode_one;
-                    }
+                    if (unlikely(!continuous)) { goto encode_one; }
                 }
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
                 writer = ascii_in_ucs2_encode_loop(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -927,9 +901,7 @@ force_inline u8 *bytes_write_ucs2(u8 *writer, const u16 *src, usize len, ssrjson
             bool continuous;
             while (CAN_LOOP) {
                 writer = _2bytes_in_ucs2_encode_loop(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -938,9 +910,7 @@ force_inline u8 *bytes_write_ucs2(u8 *writer, const u16 *src, usize len, ssrjson
             bool continuous;
             while (CAN_LOOP) {
                 writer = _3bytes_in_ucs2_encode_loop(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -952,9 +922,7 @@ force_inline u8 *bytes_write_ucs2(u8 *writer, const u16 *src, usize len, ssrjson
         unicode = *src;
     do_encode_one:;
         writer = encode_one_ucs2(writer, unicode);
-        if (unlikely(!writer)) {
-            return NULL;
-        }
+        if (unlikely(!writer)) { return NULL; }
         src++;
         len--;
     }
@@ -976,17 +944,13 @@ force_inline u8 *bytes_write_ucs2_raw_utf8(u8 *writer, const u16 *src, usize len
             if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs2_encode_loop4_raw_utf8(writer, &src, &len, &continuous);
-                    if (unlikely(!continuous)) {
-                        goto encode_one;
-                    }
+                    if (unlikely(!continuous)) { goto encode_one; }
                 }
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
                 writer = ascii_in_ucs2_encode_loop_raw_utf8(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -994,9 +958,7 @@ force_inline u8 *bytes_write_ucs2_raw_utf8(u8 *writer, const u16 *src, usize len
             bool continuous;
             while (CAN_LOOP) {
                 writer = _2bytes_in_ucs2_encode_loop(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -1005,9 +967,7 @@ force_inline u8 *bytes_write_ucs2_raw_utf8(u8 *writer, const u16 *src, usize len
             bool continuous;
             while (CAN_LOOP) {
                 writer = _3bytes_in_ucs2_encode_loop(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -1019,9 +979,7 @@ force_inline u8 *bytes_write_ucs2_raw_utf8(u8 *writer, const u16 *src, usize len
         unicode = *src;
     do_encode_one:;
         writer = encode_one_ucs2_noescape(writer, unicode);
-        if (unlikely(!writer)) {
-            return NULL;
-        }
+        if (unlikely(!writer)) { return NULL; }
         src++;
         len--;
     }
@@ -1040,7 +998,8 @@ force_inline u8 *bytes_write_ucs2_raw_utf8(u8 *writer, const u16 *src, usize len
 #define COMPILE_WRITE_UCS_LEVEL 1
 #include "compile_context/srw_in.inl.h"
 
-force_inline void check_ascii_in_ucs4_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
+force_inline void check_ascii_in_ucs4_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked,
+                                                           usize *out_done_count) {
     vector_a *checker_masks = (vector_a *)&_CheckerMasks;
 
     vector_a t1 = checker_masks[0];
@@ -1053,21 +1012,13 @@ force_inline void check_ascii_in_ucs4_and_get_done_countx4(unionvector_a_x4 vec,
     } m;
 
     u32 r;
-    m.x[0] = cmpeq_bitmask(vec.x[0], t1) |
-             cmpeq_bitmask(vec.x[0], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[0]) |
+    m.x[0] = cmpeq_bitmask(vec.x[0], t1) | cmpeq_bitmask(vec.x[0], t2) | signed_cmpgt_bitmask(t3, vec.x[0]) |
              signed_cmpgt_bitmask(vec.x[0], t4);
-    m.x[1] = cmpeq_bitmask(vec.x[1], t1) |
-             cmpeq_bitmask(vec.x[1], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[1]) |
+    m.x[1] = cmpeq_bitmask(vec.x[1], t1) | cmpeq_bitmask(vec.x[1], t2) | signed_cmpgt_bitmask(t3, vec.x[1]) |
              signed_cmpgt_bitmask(vec.x[1], t4);
-    m.x[2] = cmpeq_bitmask(vec.x[2], t1) |
-             cmpeq_bitmask(vec.x[2], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[2]) |
+    m.x[2] = cmpeq_bitmask(vec.x[2], t1) | cmpeq_bitmask(vec.x[2], t2) | signed_cmpgt_bitmask(t3, vec.x[2]) |
              signed_cmpgt_bitmask(vec.x[2], t4);
-    m.x[3] = cmpeq_bitmask(vec.x[3], t1) |
-             cmpeq_bitmask(vec.x[3], t2) |
-             signed_cmpgt_bitmask(t3, vec.x[3]) |
+    m.x[3] = cmpeq_bitmask(vec.x[3], t1) | cmpeq_bitmask(vec.x[3], t2) | signed_cmpgt_bitmask(t3, vec.x[3]) |
              signed_cmpgt_bitmask(vec.x[3], t4);
 #elif SSRJSON_IS_X64
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
@@ -1105,7 +1056,8 @@ force_inline void check_ascii_in_ucs4_and_get_done_countx4(unionvector_a_x4 vec,
     }
 }
 
-force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked, usize *out_done_count) {
+force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_countx4(unionvector_a_x4 vec, bool *out_checked,
+                                                                    usize *out_done_count) {
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_IS_X64 && _CompileVectorBits == 512
@@ -1114,14 +1066,10 @@ force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_countx4(unionvector_
     } m;
 
     u32 r;
-    m.x[0] = signed_cmpgt_bitmask(t3, vec.x[0]) |
-             signed_cmpgt_bitmask(vec.x[0], t4);
-    m.x[1] = signed_cmpgt_bitmask(t3, vec.x[1]) |
-             signed_cmpgt_bitmask(vec.x[1], t4);
-    m.x[2] = signed_cmpgt_bitmask(t3, vec.x[2]) |
-             signed_cmpgt_bitmask(vec.x[2], t4);
-    m.x[3] = signed_cmpgt_bitmask(t3, vec.x[3]) |
-             signed_cmpgt_bitmask(vec.x[3], t4);
+    m.x[0] = signed_cmpgt_bitmask(t3, vec.x[0]) | signed_cmpgt_bitmask(vec.x[0], t4);
+    m.x[1] = signed_cmpgt_bitmask(t3, vec.x[1]) | signed_cmpgt_bitmask(vec.x[1], t4);
+    m.x[2] = signed_cmpgt_bitmask(t3, vec.x[2]) | signed_cmpgt_bitmask(vec.x[2], t4);
+    m.x[3] = signed_cmpgt_bitmask(t3, vec.x[3]) | signed_cmpgt_bitmask(vec.x[3], t4);
 #elif SSRJSON_IS_X64
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
     unionvector_a_x4 m;
@@ -1158,7 +1106,8 @@ force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_countx4(unionvector_
     }
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop4(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop4(u8 *dst, const u32 **src_addr, usize *len_addr,
+                                                           bool *continuous_out) {
     // prepare
     const u32 *src = *src_addr;
     usize len = *len_addr;
@@ -1196,7 +1145,8 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop4(u8 *dst, const u32 **
     return dst;
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop4_raw_utf8(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop4_raw_utf8(u8 *dst, const u32 **src_addr, usize *len_addr,
+                                                                    bool *continuous_out) {
     // prepare
     const u32 *src = *src_addr;
     usize len = *len_addr;
@@ -1243,10 +1193,7 @@ force_inline void check_ascii_in_ucs4_and_get_done_count(vector_a vec, bool *out
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_IS_X64 && _CompileVectorBits == 512
     u32 m;
-    m = cmpeq_bitmask(vec, t1) |
-        cmpeq_bitmask(vec, t2) |
-        signed_cmpgt_bitmask(t3, vec) |
-        signed_cmpgt_bitmask(vec, t4);
+    m = cmpeq_bitmask(vec, t1) | cmpeq_bitmask(vec, t2) | signed_cmpgt_bitmask(t3, vec) | signed_cmpgt_bitmask(vec, t4);
 #elif SSRJSON_IS_X64
     vector_a m;
     m = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, t4);
@@ -1256,18 +1203,16 @@ force_inline void check_ascii_in_ucs4_and_get_done_count(vector_a vec, bool *out
 #endif
     bool checked = testz_escape_mask(m);
     *out_checked = checked;
-    if (unlikely(!checked)) {
-        *out_done_count = escape_anymask_to_done_count_no_eq0(m);
-    }
+    if (unlikely(!checked)) { *out_done_count = escape_anymask_to_done_count_no_eq0(m); }
 }
 
-force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
+force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked,
+                                                                  usize *out_done_count) {
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
 #if SSRJSON_IS_X64 && _CompileVectorBits == 512
     u32 m;
-    m = signed_cmpgt_bitmask(t3, vec) |
-        signed_cmpgt_bitmask(vec, t4);
+    m = signed_cmpgt_bitmask(t3, vec) | signed_cmpgt_bitmask(vec, t4);
 #elif SSRJSON_IS_X64
     vector_a m;
     m = signed_cmpgt(t3, vec) | signed_cmpgt(vec, t4);
@@ -1277,12 +1222,11 @@ force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_count(vector_a vec, 
 #endif
     bool checked = testz_escape_mask(m);
     *out_checked = checked;
-    if (unlikely(!checked)) {
-        *out_done_count = escape_anymask_to_done_count_no_eq0(m);
-    }
+    if (unlikely(!checked)) { *out_done_count = escape_anymask_to_done_count_no_eq0(m); }
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop(u8 *dst, const u32 **src_addr, usize *len_addr,
+                                                          bool *continuous_out) {
     // prepare
     const u32 *src = *src_addr;
     usize len = *len_addr;
@@ -1314,7 +1258,8 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop(u8 *dst, const u32 **s
     return dst;
 }
 
-force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop_raw_utf8(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop_raw_utf8(u8 *dst, const u32 **src_addr, usize *len_addr,
+                                                                   bool *continuous_out) {
     // prepare
     const u32 *src = *src_addr;
     usize len = *len_addr;
@@ -1361,12 +1306,11 @@ force_inline void check_2bytes_in_ucs4_and_get_done_count(vector_a vec, bool *ou
 #endif
     bool checked = testz_escape_mask(m);
     *out_checked = checked;
-    if (unlikely(!checked)) {
-        *out_done_count = escape_anymask_to_done_count_no_eq0(m);
-    }
+    if (unlikely(!checked)) { *out_done_count = escape_anymask_to_done_count_no_eq0(m); }
 }
 
-force_inline ssrjson_nofail u8 *_2bytes_in_ucs4_encode_loop(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *_2bytes_in_ucs4_encode_loop(u8 *dst, const u32 **src_addr, usize *len_addr,
+                                                            bool *continuous_out) {
     // prepare
     const u32 *src = *src_addr;
     usize len = *len_addr;
@@ -1408,7 +1352,8 @@ force_inline ssrjson_nofail u8 *_2bytes_in_ucs4_encode_loop(u8 *dst, const u32 *
     return dst;
 }
 
-force_inline ssrjson_nofail u8 *_3bytes_in_ucs4_encode_loop(u8 *dst, const u32 **src_addr, usize *len_addr, bool *continuous_out) {
+force_inline ssrjson_nofail u8 *_3bytes_in_ucs4_encode_loop(u8 *dst, const u32 **src_addr, usize *len_addr,
+                                                            bool *continuous_out) {
     // prepare
     const u32 *src = *src_addr;
     usize len = *len_addr;
@@ -1465,17 +1410,13 @@ force_inline u8 *bytes_write_ucs4(u8 *writer, const u32 *src, usize len, ssrjson
             if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs4_encode_loop4(writer, &src, &len, &continuous);
-                    if (unlikely(!continuous)) {
-                        goto encode_one;
-                    }
+                    if (unlikely(!continuous)) { goto encode_one; }
                 }
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
                 writer = ascii_in_ucs4_encode_loop(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -1483,9 +1424,7 @@ force_inline u8 *bytes_write_ucs4(u8 *writer, const u32 *src, usize len, ssrjson
             bool continuous;
             while (CAN_LOOP) {
                 writer = _2bytes_in_ucs4_encode_loop(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -1494,9 +1433,7 @@ force_inline u8 *bytes_write_ucs4(u8 *writer, const u32 *src, usize len, ssrjson
             bool continuous;
             while (CAN_LOOP) {
                 writer = _3bytes_in_ucs4_encode_loop(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -1510,9 +1447,7 @@ force_inline u8 *bytes_write_ucs4(u8 *writer, const u32 *src, usize len, ssrjson
         unicode = *src;
     do_encode_one:;
         writer = encode_one_ucs4(writer, unicode);
-        if (unlikely(!writer)) {
-            return NULL;
-        }
+        if (unlikely(!writer)) { return NULL; }
         src++;
         len--;
     }
@@ -1534,17 +1469,13 @@ force_inline u8 *bytes_write_ucs4_raw_utf8(u8 *writer, const u32 *src, usize len
             if (ssrjson_consteval(!is_key)) {
                 while (CAN_LOOP4) {
                     writer = ascii_in_ucs4_encode_loop4_raw_utf8(writer, &src, &len, &continuous);
-                    if (unlikely(!continuous)) {
-                        goto encode_one;
-                    }
+                    if (unlikely(!continuous)) { goto encode_one; }
                 }
                 assert(!CAN_LOOP4);
             }
             while (CAN_LOOP) {
                 writer = ascii_in_ucs4_encode_loop_raw_utf8(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -1552,9 +1483,7 @@ force_inline u8 *bytes_write_ucs4_raw_utf8(u8 *writer, const u32 *src, usize len
             bool continuous;
             while (CAN_LOOP) {
                 writer = _2bytes_in_ucs4_encode_loop(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -1563,9 +1492,7 @@ force_inline u8 *bytes_write_ucs4_raw_utf8(u8 *writer, const u32 *src, usize len
             bool continuous;
             while (CAN_LOOP) {
                 writer = _3bytes_in_ucs4_encode_loop(writer, &src, &len, &continuous);
-                if (unlikely(!continuous)) {
-                    goto encode_one;
-                }
+                if (unlikely(!continuous)) { goto encode_one; }
             }
             assert(!CAN_LOOP);
             break;
@@ -1579,9 +1506,7 @@ force_inline u8 *bytes_write_ucs4_raw_utf8(u8 *writer, const u32 *src, usize len
         unicode = *src;
     do_encode_one:;
         writer = encode_one_ucs4_noescape(writer, unicode);
-        if (unlikely(!writer)) {
-            return NULL;
-        }
+        if (unlikely(!writer)) { return NULL; }
         src++;
         len--;
     }

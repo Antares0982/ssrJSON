@@ -55,10 +55,8 @@
  *   - leaf depth (nd-1): write all elements inline, set remaining = 0
  *   - remaining == 0: close bracket, pop frame
  */
-static ssrjson_nofail u8 *_ndarray_traverse_fn(
-        u8 *writer,
-        const PyArrayInterface *array,
-        Py_ssize_t base_nested_depth) {
+static ssrjson_nofail u8 *_ndarray_traverse_fn(u8 *writer, const PyArrayInterface *array,
+                                               Py_ssize_t base_nested_depth) {
     NdarrayFrame stack[MAX_NDARRAY_DIMENSION];
     int nd = array->nd;
     Py_ssize_t *shape = array->shape;

@@ -45,11 +45,8 @@ force_inline usize escape_mask_to_done_count_track_max(vector_a mask, vector_a *
     return ret;
 }
 
-force_inline usize joined4_escape_mask_to_done_count_track_max(vector_a mask1,
-                                                               vector_a mask2,
-                                                               vector_a mask3,
-                                                               vector_a mask4,
-                                                               vector_a *max_vec,
+force_inline usize joined4_escape_mask_to_done_count_track_max(vector_a mask1, vector_a mask2, vector_a mask3,
+                                                               vector_a mask4, vector_a *max_vec,
                                                                unionvector_a_x4 src_vecs) {
     const usize bitsize = 16;
     usize cnt;

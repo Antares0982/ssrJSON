@@ -77,9 +77,7 @@ typedef enum AARCH64SIMDFeatureLevel {
 
 #    define PLATFORM_SIMD_LEVEL AARCH64SIMDFeatureLevelNEON
 
-force_inline AARCH64SIMDFeatureLevel get_simd_feature(void) {
-    return AARCH64SIMDFeatureLevelNEON;
-}
+force_inline AARCH64SIMDFeatureLevel get_simd_feature(void) { return AARCH64SIMDFeatureLevelNEON; }
 #endif
 
 const char *_update_simd_features(void);
@@ -92,7 +90,8 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
             return ssrjson_concat2(_func_name_, interface)(self, args, nargsf, kwnames);                     \
         }
 
-#    define SET_INTERFACE(_func_name_, _feature_name_) ssrjson_concat2(_func_name_, interface) = ssrjson_concat2(_func_name_, _feature_name_)
+#    define SET_INTERFACE(_func_name_, _feature_name_) \
+        ssrjson_concat2(_func_name_, interface) = ssrjson_concat2(_func_name_, _feature_name_)
 
 #    define BATCH_SET_INTERFACE(_feature_name_)                   \
         SET_INTERFACE(ssrjson_Dumps, _feature_name_);             \
@@ -105,11 +104,15 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
         SET_INTERFACE(long_cvt_noinline_u32_u8, _feature_name_);  \
         SET_INTERFACE(long_cvt_noinline_u16_u8, _feature_name_);
 #    if SSRJSON_IS_X64
-#        define DECLARE_MULTILIB_PYFASTFUNCTION(_func_name_)                                                                                    \
-            PyObject *ssrjson_concat2(_func_name_, avx512)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);       \
-            PyObject *ssrjson_concat2(_func_name_, avx2)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);         \
-            PyObject *ssrjson_concat2(_func_name_, sse4_2)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);       \
-            typedef PyObject *(*ssrjson_concat2(_func_name_, t))(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
+#        define DECLARE_MULTILIB_PYFASTFUNCTION(_func_name_)                                       \
+            PyObject *ssrjson_concat2(_func_name_, avx512)(                                        \
+                    PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
+            PyObject *ssrjson_concat2(_func_name_, avx2)(                                          \
+                    PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
+            PyObject *ssrjson_concat2(_func_name_, sse4_2)(                                        \
+                    PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
+            typedef PyObject *(*ssrjson_concat2(_func_name_, t))(                                  \
+                    PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 #        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)      \
             _ret_type_ ssrjson_concat2(_func_name_, avx512)(__VA_ARGS__);       \
@@ -119,9 +122,11 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 
 #    elif SSRJSON_IS_AARCH64
-#        define DECLARE_MULTILIB_PYFASTFUNCTION(_func_name_)                                                                                    \
-            PyObject *ssrjson_concat2(_func_name_, neon)(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames);         \
-            typedef PyObject *(*ssrjson_concat2(_func_name_, t))(PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
+#        define DECLARE_MULTILIB_PYFASTFUNCTION(_func_name_)                                       \
+            PyObject *ssrjson_concat2(_func_name_, neon)(                                          \
+                    PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
+            typedef PyObject *(*ssrjson_concat2(_func_name_, t))(                                  \
+                    PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 #        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)      \
             _ret_type_ ssrjson_concat2(_func_name_, neon)(__VA_ARGS__);         \
@@ -133,12 +138,18 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
 DECLARE_MULTILIB_PYFASTFUNCTION(ssrjson_Dumps)
 DECLARE_MULTILIB_PYFASTFUNCTION(ssrjson_Decode)
 DECLARE_MULTILIB_PYFASTFUNCTION(ssrjson_DumpsToBytes)
-DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u16_u32, void, u32 *restrict write_start, const u16 *restrict read_start, usize _len)
-DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u8_u32, void, u32 *restrict write_start, const u8 *restrict read_start, usize _len)
-DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u8_u16, void, u16 *restrict write_start, const u8 *restrict read_start, usize _len)
-DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u32_u16, void, u16 *restrict write_start, const u32 *restrict read_start, usize _len)
-DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u32_u8, void, u8 *restrict write_start, const u32 *restrict read_start, usize _len)
-DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u16_u8, void, u8 *restrict write_start, const u16 *restrict read_start, usize _len)
+DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u16_u32, void, u32 *restrict write_start, const u16 *restrict read_start,
+                             usize _len)
+DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u8_u32, void, u32 *restrict write_start, const u8 *restrict read_start,
+                             usize _len)
+DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u8_u16, void, u16 *restrict write_start, const u8 *restrict read_start,
+                             usize _len)
+DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u32_u16, void, u16 *restrict write_start, const u32 *restrict read_start,
+                             usize _len)
+DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u32_u8, void, u8 *restrict write_start, const u32 *restrict read_start,
+                             usize _len)
+DECLARE_MULTILIB_ANYFUNCTION(long_cvt_noinline_u16_u8, void, u8 *restrict write_start, const u16 *restrict read_start,
+                             usize _len)
 
 
 #else // BUILD_MULTI_LIB

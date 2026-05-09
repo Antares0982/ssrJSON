@@ -54,6 +54,3 @@
 #undef fast_skip_spaces_u8
 #undef fast_skip_spaces_u16
 #undef fast_skip_spaces_u32
-//
-#undef STR_WRITER_NOINDENT_IMPL
-#undef KEY_WRITER_NOINDENT_IMPL

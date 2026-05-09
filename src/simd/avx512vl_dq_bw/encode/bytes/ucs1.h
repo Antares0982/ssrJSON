@@ -67,7 +67,8 @@ restart:;
         u8 escape_unicode = src[done_count];
         src += done_count + 1;
         len -= done_count + 1;
-        if (escape_unicode >= _ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash && escape_unicode != _Quote) {
+        if (escape_unicode >= _ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash &&
+            escape_unicode != _Quote) {
             ssrjson_unreachable();
         } else {
             writer = encode_one_special_ucs1(writer, escape_unicode);

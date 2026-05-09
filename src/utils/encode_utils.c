@@ -26,51 +26,51 @@
 #define RESERVE_MAX ((~(usize)PY_SSIZE_T_MAX) >> 1)
 static_assert((ssrjson_cast(usize, RESERVE_MAX) & (ssrjson_cast(usize, RESERVE_MAX) - 1)) == 0, "");
 
-EncodeUnicodeBufferInfo _unicode_buffer_reserve(EncodeUnicodeBufferInfo unicode_buffer_info, usize target_size) {
+EncodeUBufInfo _u_buf_reserve(EncodeUBufInfo u_buf_info, usize target_size) {
 #if ENCODE_RESERVE_DEBUG
-    void *new_ptr = PyObject_Realloc(unicode_buffer_info.head, target_size);
+    void *new_ptr = PyObject_Realloc(u_buf_info.head, target_size);
     if (unlikely(!new_ptr)) {
         PyErr_NoMemory();
-        unicode_buffer_info.head = unicode_buffer_info.end = NULL;
-        return unicode_buffer_info;
+        u_buf_info.head = u_buf_info.end = NULL;
+        return u_buf_info;
     }
-    unicode_buffer_info.head = new_ptr;
-    unicode_buffer_info.end = ssrjson_cast(u8 *, unicode_buffer_info.head) + target_size;
-    return unicode_buffer_info;
+    u_buf_info.head = new_ptr;
+    u_buf_info.end = ssrjson_cast(u8 *, u_buf_info.head) + target_size;
+    return u_buf_info;
 #else
-    usize u8len = ssrjson_cast(uintptr_t, unicode_buffer_info.end) - ssrjson_cast(uintptr_t, unicode_buffer_info.head);
+    usize u8len = ssrjson_cast(uintptr_t, u_buf_info.end) - ssrjson_cast(uintptr_t, u_buf_info.head);
     assert((u8len & (u8len - 1)) == 0);
     while (target_size > u8len) {
         if (u8len & RESERVE_MAX) {
             PyErr_NoMemory();
-            unicode_buffer_info.head = unicode_buffer_info.end = NULL;
-            return unicode_buffer_info;
+            u_buf_info.head = u_buf_info.end = NULL;
+            return u_buf_info;
         }
         u8len = (u8len << 1);
     }
-    void *new_ptr = PyObject_Realloc(unicode_buffer_info.head, u8len);
+    void *new_ptr = PyObject_Realloc(u_buf_info.head, u8len);
     if (unlikely(!new_ptr)) {
         PyErr_NoMemory();
-        unicode_buffer_info.head = unicode_buffer_info.end = NULL;
-        return unicode_buffer_info;
+        u_buf_info.head = u_buf_info.end = NULL;
+        return u_buf_info;
     }
-    unicode_buffer_info.head = new_ptr;
-    unicode_buffer_info.end = ssrjson_cast(u8 *, unicode_buffer_info.head) + u8len;
-    return unicode_buffer_info;
+    u_buf_info.head = new_ptr;
+    u_buf_info.end = ssrjson_cast(u8 *, u_buf_info.head) + u8len;
+    return u_buf_info;
 #endif
 }
 
-bool resize_to_fit_pyunicode(EncodeUnicodeBufferInfo *unicode_buffer_info, Py_ssize_t len, int ucs_type) {
+bool resize_to_fit_pyunicode(EncodeUBufInfo *u_buf_info, Py_ssize_t len, int ucs_type) {
     Py_ssize_t char_size = ucs_type ? ucs_type : 1;
     Py_ssize_t struct_size = ucs_type ? sizeof(PyCompactUnicodeObject) : sizeof(PyASCIIObject);
     assert(len <= ((PY_SSIZE_T_MAX - struct_size) / char_size - 1));
     // Resizes to a smaller size. It *should* always be successful
-    void *new_ptr = PyObject_Realloc(unicode_buffer_info->head, struct_size + (len + 1) * char_size);
+    void *new_ptr = PyObject_Realloc(u_buf_info->head, struct_size + (len + 1) * char_size);
     if (unlikely(!new_ptr)) {
         PyErr_NoMemory();
         return false;
     }
-    unicode_buffer_info->head = new_ptr;
+    u_buf_info->head = new_ptr;
     return true;
 }
 

@@ -32,7 +32,7 @@ BreakBeforeBinaryOperators: None
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeColon
 BreakInheritanceList: BeforeColon
-ColumnLimit: 0
+ColumnLimit: 120
 CompactNamespaces: false
 ContinuationIndentWidth: 8
 IndentCaseLabels: true
@@ -67,3 +67,5 @@ AlignEscapedNewlines: Left
 InsertNewlineAtEOF: true
 SeparateDefinitionBlocks: Always
 IncludeBlocks: Preserve
+PenaltyBreakAssignment: 100
+PenaltyBreakBeforeFirstCallParameter: 0

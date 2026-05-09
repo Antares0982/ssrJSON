@@ -60,17 +60,11 @@
 
 #define setzero_512 _mm512_setzero_si512
 
-force_inline u64 len_to_maskz(usize len) {
-    return _LenToMaskZTable[len];
-}
+force_inline u64 len_to_maskz(usize len) { return _LenToMaskZTable[len]; }
 
-force_inline vector_a_u32_512 cvt_u16_to_u32_512(vector_a_u16_256 y) {
-    return _mm512_cvtepu16_epi32(y);
-}
+force_inline vector_a_u32_512 cvt_u16_to_u32_512(vector_a_u16_256 y) { return _mm512_cvtepu16_epi32(y); }
 
-force_inline vector_a_u32_512 cvt_u8_to_u32_512(vector_a_u8_128 x) {
-    return _mm512_cvtepu8_epi32(x);
-}
+force_inline vector_a_u32_512 cvt_u8_to_u32_512(vector_a_u8_128 x) { return _mm512_cvtepu8_epi32(x); }
 
 force_inline vector_a_u16_256 cvt_u32_to_u16_512(vector_a_u32_512 z) {
     vector_a_u32_128 x1 = extract_128_from_512(z, 0);
@@ -94,12 +88,8 @@ force_inline vector_a_u8_256 cvt_u16_to_u8_512(vector_a_u16_512 z) {
     return _mm256_packus_epi16(y1, y2);
 }
 
-force_inline u64 get_low_bitmask_512(usize len) {
-    return (1ULL << len) - 1;
-}
+force_inline u64 get_low_bitmask_512(usize len) { return (1ULL << len) - 1; }
 
-force_inline u64 get_high_bitmask_512(usize len) {
-    return ~get_low_bitmask_512(64 - len);
-}
+force_inline u64 get_high_bitmask_512(usize len) { return ~get_low_bitmask_512(64 - len); }
 
 #endif // SSRJSON_SIMD_AVX512FCD_COMMON_H

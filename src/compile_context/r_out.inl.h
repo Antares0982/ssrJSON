@@ -67,7 +67,7 @@
 #undef loads_root_minify
 #undef loads_root_single
 #undef check_and_reserve_str_buffer
-#undef get_unicode_buffer_final_len
+#undef get_u_buf_final_len
 #undef decode_str
 #undef decode_str_with_escape
 #undef make_unicode_from_src

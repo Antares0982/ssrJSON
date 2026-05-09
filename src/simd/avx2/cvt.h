@@ -41,17 +41,11 @@ force_inline u64 get_high_bitmask_512(usize len);
 force_inline vector_a_u16_512 cvt_u8_to_u16_512(vector_a_u8_256 y);
 #endif
 
-force_inline vector_a_u16_256 cvt_u8_to_u16_256(vector_a_u8_128 x) {
-    return _mm256_cvtepu8_epi16(x);
-}
+force_inline vector_a_u16_256 cvt_u8_to_u16_256(vector_a_u8_128 x) { return _mm256_cvtepu8_epi16(x); }
 
-force_inline vector_a_u32_256 cvt_u8_to_u32_256(vector_a_u8_128 x) {
-    return _mm256_cvtepu8_epi32(x);
-}
+force_inline vector_a_u32_256 cvt_u8_to_u32_256(vector_a_u8_128 x) { return _mm256_cvtepu8_epi32(x); }
 
-force_inline vector_a_u32_256 cvt_u16_to_u32_256(vector_a_u16_128 x) {
-    return _mm256_cvtepu16_epi32(x);
-}
+force_inline vector_a_u32_256 cvt_u16_to_u32_256(vector_a_u16_128 x) { return _mm256_cvtepu16_epi32(x); }
 
 // cvt up
 
@@ -90,13 +84,9 @@ force_inline void cvt_to_dst_u16_u32_256(u32 *dst, vector_a_u16_256 y) {
 
 // cvt down
 
-force_inline void cvt_to_dst_u16_u8_256(u8 *dst, vector_a_u16_256 y) {
-    *(vector_u_u8_128 *)dst = cvt_u16_to_u8_256(y);
-}
+force_inline void cvt_to_dst_u16_u8_256(u8 *dst, vector_a_u16_256 y) { *(vector_u_u8_128 *)dst = cvt_u16_to_u8_256(y); }
 
-force_inline void cvt_to_dst_u32_u8_256(u8 *dst, vector_a_u32_256 y) {
-    *(vector_u_u8_64 *)dst = cvt_u32_to_u8_256(y);
-}
+force_inline void cvt_to_dst_u32_u8_256(u8 *dst, vector_a_u32_256 y) { *(vector_u_u8_64 *)dst = cvt_u32_to_u8_256(y); }
 
 force_inline void cvt_to_dst_u32_u16_256(u16 *dst, vector_a_u32_256 y) {
     *(vector_u_u16_128 *)dst = cvt_u32_to_u16_256(y);

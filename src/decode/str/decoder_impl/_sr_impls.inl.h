@@ -53,9 +53,7 @@ force_inline EscapeInfo do_decode_escape(const src_t *const src, const src_t *sr
         case 'u': {
             u16 hi;
             if (unlikely(!verify_escape_hex(src, src_end, 2) || !to_hex(src + 2, &hi))) {
-                if (!PyErr_Occurred()) {
-                    PyErr_SetString(JSONDecodeError, "Invalid escape sequence in string");
-                }
+                if (!PyErr_Occurred()) { PyErr_SetString(JSONDecodeError, "Invalid escape sequence in string"); }
                 RETURN_DECODE_ERR;
             }
             if (likely((hi & 0xF800) != 0xD800)) {
@@ -72,9 +70,7 @@ force_inline EscapeInfo do_decode_escape(const src_t *const src, const src_t *sr
                     RETURN_DECODE_ERR;
                 }
                 if (unlikely(!verify_escape_hex(src, src_end, 8) || !to_hex(src + 8, &lo))) {
-                    if (!PyErr_Occurred()) {
-                        PyErr_SetString(JSONDecodeError, "Invalid escaped sequence in string");
-                    }
+                    if (!PyErr_Occurred()) { PyErr_SetString(JSONDecodeError, "Invalid escaped sequence in string"); }
                     RETURN_DECODE_ERR;
                 }
                 if (unlikely((lo & 0xFC00) != 0xDC00)) {

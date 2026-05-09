@@ -40,35 +40,15 @@
 
 force_inline void ucs2_encode_3bytes_utf8_neon(u8 *writer, vector_a x) {
     static const vector_a_u8_128 t1 = {
-            0x80, 0x80, 0,
-            0x80, 0x80, 4,
-            0x80, 0x80, 8,
-            0x80, 0x80, 12,
-            0x80, 0x80, 0x80, 0x80};
+            0x80, 0x80, 0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12, 0x80, 0x80, 0x80, 0x80};
     static const vector_a_u8_128 t2 = {
-            0x80, 0, 0x80,
-            0x80, 4, 0x80,
-            0x80, 8, 0x80,
-            0x80, 12, 0x80,
-            0x80, 0x80, 0x80, 0x80};
+            0x80, 0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12, 0x80, 0x80, 0x80, 0x80, 0x80};
     static const vector_a_u8_128 t3 = {
-            0, 0x80, 0x80,
-            4, 0x80, 0x80,
-            8, 0x80, 0x80,
-            12, 0x80, 0x80,
-            0x80, 0x80, 0x80, 0x80};
+            0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
     static const vector_a_u8_128 m1 = {
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
-            0xff, 0xff, 0xff, 0xff};
+            0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f, 0xff, 0xff, 0xff, 0xff};
     static const vector_a_u8_128 m2 = {
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            0, 0, 0, 0};
+            0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80, 0, 0, 0, 0};
     uint16x4_t low = vget_low_u16(x);
     uint16x4_t high = vget_high_u16(x);
     vector_a_u32_128 x1 = vmovl_u16(low);
@@ -181,7 +161,8 @@ ascii:;
             src = last_batch_start + done_count + 1;
             writer += real_done_count;
             len = READ_BATCH_COUNT - done_count - 1;
-            if (escape_unicode >= _ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash && escape_unicode != _Quote) {
+            if (escape_unicode >= _ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash &&
+                escape_unicode != _Quote) {
                 ssrjson_unreachable();
             } else {
                 writer = encode_one_ucs2(writer, escape_unicode);
@@ -223,7 +204,8 @@ _2bytes:;
     }
 _3bytes:;
     {
-        const vector_a m_not_3bytes = (broadcast(0x800) > vec) | (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec));
+        const vector_a m_not_3bytes = (broadcast(0x800) > vec) |
+                                      (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec));
         m = high_mask(m_not_3bytes, len);
         shift = sizeof(u16) * (READ_BATCH_COUNT - len);
         tail_vec = runtime_byte_rshift_128(vec, shift);
@@ -346,7 +328,8 @@ _2bytes:;
     }
 _3bytes:;
     {
-        const vector_a m_not_3bytes = (broadcast(0x800) > vec) | (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec));
+        const vector_a m_not_3bytes = (broadcast(0x800) > vec) |
+                                      (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec));
         m = high_mask(m_not_3bytes, len);
         shift = sizeof(u16) * (READ_BATCH_COUNT - len);
         tail_vec = runtime_byte_rshift_128(vec, shift);

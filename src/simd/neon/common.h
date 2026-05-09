@@ -39,9 +39,7 @@
 #define unsigned_max_u16_128 vmaxq_u16
 #define unsigned_max_u32_128 vmaxq_u32
 
-force_inline vector_a_u8_128 setzero_128(void) {
-    return vdupq_n_u8(0);
-}
+force_inline vector_a_u8_128 setzero_128(void) { return vdupq_n_u8(0); }
 
 #define broadcast_u8_128 vdupq_n_u8
 #define broadcast_u16_128 vdupq_n_u16

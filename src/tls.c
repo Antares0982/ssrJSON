@@ -48,9 +48,7 @@ TLS_KEY_TYPE _DecoderKeyCache_Key;
 /*==============================================================================
  * Thread local destructors
  *============================================================================*/
-void _tls_simple_destructor(void *ptr) {
-    SSRJSON_TLS_FREE(ptr);
-}
+void _tls_simple_destructor(void *ptr) { SSRJSON_TLS_FREE(ptr); }
 
 void _tls_decode_buffer_destructor(void *ptr) {
     if (ptr) {
@@ -75,9 +73,7 @@ void _tls_decode_key_cache_destructor(void *ptr) {
         PyThreadState *tstate = PyThreadState_GetUnchecked();
         if (unlikely(tstate) && Py_IsInitialized()) {
             decode_cache_t *key_cache_arr = ptr;
-            for (usize i = 0; i < SSRJSON_KEY_CACHE_SIZE; ++i) {
-                Py_XDECREF(key_cache_arr[i].key);
-            }
+            for (usize i = 0; i < SSRJSON_KEY_CACHE_SIZE; ++i) { Py_XDECREF(key_cache_arr[i].key); }
         }
         SSRJSON_TLS_FREE(ptr);
     }

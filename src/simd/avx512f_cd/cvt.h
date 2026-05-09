@@ -29,17 +29,11 @@
 #include "common.h"
 #include "simd/sse2/common.h"
 
-force_inline void cvt_to_dst_u8_u8_512(u8 *dst, vector_a_u8_512 x) {
-    *(vector_u_u8_512 *)dst = x;
-}
+force_inline void cvt_to_dst_u8_u8_512(u8 *dst, vector_a_u8_512 x) { *(vector_u_u8_512 *)dst = x; }
 
-force_inline void cvt_to_dst_u16_u16_512(u16 *dst, vector_a_u16_512 x) {
-    *(vector_u_u16_512 *)dst = x;
-}
+force_inline void cvt_to_dst_u16_u16_512(u16 *dst, vector_a_u16_512 x) { *(vector_u_u16_512 *)dst = x; }
 
-force_inline void cvt_to_dst_u32_u32_512(u32 *dst, vector_a_u32_512 x) {
-    *(vector_u_u32_512 *)dst = x;
-}
+force_inline void cvt_to_dst_u32_u32_512(u32 *dst, vector_a_u32_512 x) { *(vector_u_u32_512 *)dst = x; }
 
 // cvt_to_dst_u8_u16_512: AVX512VL+DQ+BW
 
@@ -66,9 +60,7 @@ force_inline void cvt_to_dst_u32_u16_512(u16 *dst, vector_a_u32_512 z) {
     *(vector_u_u16_256 *)dst = cvt_u32_to_u16_512(z);
 }
 
-force_inline void cvt_to_dst_u16_u8_512(u8 *dst, vector_a_u16_512 z) {
-    *(vector_u_u8_256 *)dst = cvt_u16_to_u8_512(z);
-}
+force_inline void cvt_to_dst_u16_u8_512(u8 *dst, vector_a_u16_512 z) { *(vector_u_u8_256 *)dst = cvt_u16_to_u8_512(z); }
 
 // cvt_to_dst_u32_u8_512: AVX512VL+DQ+BW
 

@@ -31,32 +31,20 @@
 
 #include "compile_context/r_in.inl.h"
 
-force_inline bool digi_is_digit(src_t d) {
-    return d <= U8MAX && _digi_is_digit((u8)d);
-}
+force_inline bool digi_is_digit(src_t d) { return d <= U8MAX && _digi_is_digit((u8)d); }
 
-force_inline bool digi_is_digit_or_fp(src_t d) {
-    return d <= U8MAX && _digi_is_digit_or_fp((u8)d);
-}
+force_inline bool digi_is_digit_or_fp(src_t d) { return d <= U8MAX && _digi_is_digit_or_fp((u8)d); }
 
-force_inline bool digi_is_exp(src_t d) {
-    return d <= U8MAX && _digi_is_exp((u8)d);
-}
+force_inline bool digi_is_exp(src_t d) { return d <= U8MAX && _digi_is_exp((u8)d); }
 
-force_inline bool digi_is_sign(src_t d) {
-    return d <= U8MAX && _digi_is_sign((u8)d);
-}
+force_inline bool digi_is_sign(src_t d) { return d <= U8MAX && _digi_is_sign((u8)d); }
 
-force_inline bool digi_is_fp(src_t d) {
-    return d <= U8MAX && _digi_is_fp((u8)d);
-}
+force_inline bool digi_is_fp(src_t d) { return d <= U8MAX && _digi_is_fp((u8)d); }
 
 #define DIGI_IS_NONZERO make_r_name(digi_is_nonzero)
 
 ////////////////
-force_inline bool DIGI_IS_NONZERO(src_t d) {
-    return d <= U8MAX && _digi_is_nonzero((u8)d);
-}
+force_inline bool DIGI_IS_NONZERO(src_t d) { return d <= U8MAX && _digi_is_nonzero((u8)d); }
 
 /*==============================================================================
  * JSON Number Reader (IEEE-754)
@@ -110,10 +98,8 @@ internal_simd_noinline PyObject *loads_number(const src_t **ptr, const src_t *bu
         return PyFloat_FromDouble(*(double *)&temp); \
     } while (false)
 
-#define return_inf()                 \
-    do {                             \
-        return_f64_bin(F64_RAW_INF); \
-    } while (false)
+#define return_inf() \
+    do { return_f64_bin(F64_RAW_INF); } while (false)
 
     const src_t *sig_cut = NULL; /* significant part cutting position for long number */
     const src_t *sig_end = NULL; /* significant part ending position */
@@ -144,18 +130,14 @@ internal_simd_noinline PyObject *loads_number(const src_t **ptr, const src_t *bu
                 *end = cur;
                 return number_obj;
             }
-            if (unlikely(!PyErr_Occurred())) {
-                return_err(cur, "no digit after minus sign");
-            }
+            if (unlikely(!PyErr_Occurred())) { return_err(cur, "no digit after minus sign"); }
             return NULL;
         }
         /* begin with 0 */
         if (likely(!digi_is_digit_or_fp(*++cur))) return_0();
         if (likely(*cur == '.')) {
             dot_pos = cur++;
-            if (unlikely(!digi_is_digit(*cur))) {
-                return_err(cur, "no digit after decimal point");
-            }
+            if (unlikely(!digi_is_digit(*cur))) { return_err(cur, "no digit after decimal point"); }
             while (unlikely(*cur == '0')) cur++;
             if (likely(digi_is_digit(*cur))) {
                 /* first non-zero digit after decimal point */
@@ -164,14 +146,10 @@ internal_simd_noinline PyObject *loads_number(const src_t **ptr, const src_t *bu
                 goto digi_frac_1; /* continue read fraction part */
             }
         }
-        if (unlikely(digi_is_digit(*cur))) {
-            return_err(cur - 1, "number with leading zero is not allowed");
-        }
+        if (unlikely(digi_is_digit(*cur))) { return_err(cur - 1, "number with leading zero is not allowed"); }
         if (unlikely(digi_is_exp(*cur))) { /* 0 with any exponent is still 0 */
             cur += (usize)1 + digi_is_sign(cur[1]);
-            if (unlikely(!digi_is_digit(*cur))) {
-                return_err(cur, "no digit after exponent sign");
-            }
+            if (unlikely(!digi_is_digit(*cur))) { return_err(cur, "no digit after exponent sign"); }
             while (digi_is_digit(*++cur));
         }
         return_f64_bin(0);
@@ -223,9 +201,8 @@ internal_simd_noinline PyObject *loads_number(const src_t **ptr, const src_t *bu
 
 
     /* read fraction part */
-#define expr_frac(i)                                                      \
-    digi_frac_##i : if (likely((num = (u64)(cur[i + 1] - (u8)'0')) <= 9)) \
-                            sig = num + sig * 10;                         \
+#define expr_frac(i)                                                                            \
+    digi_frac_##i : if (likely((num = (u64)(cur[i + 1] - (u8)'0')) <= 9)) sig = num + sig * 10; \
     else { goto digi_stop_##i; }
             repeat_incr_in_1_18(expr_frac)
 #undef expr_frac
@@ -248,14 +225,11 @@ internal_simd_noinline PyObject *loads_number(const src_t **ptr, const src_t *bu
         if (!digi_is_digit_or_fp(cur[1])) {
             /* this number is an integer consisting of 20 digits */
             num = (u64)(*cur - '0');
-            if ((sig < (U64_MAX / 10)) ||
-                (sig == (U64_MAX / 10) && num <= (U64_MAX % 10))) {
+            if ((sig < (U64_MAX / 10)) || (sig == (U64_MAX / 10) && num <= (U64_MAX % 10))) {
                 sig = num + sig * 10;
                 cur++;
                 /* convert to double if overflow */
-                if (sign) {
-                    return_f64(normalized_u64_to_f64(sig));
-                }
+                if (sign) { return_f64(normalized_u64_to_f64(sig)); }
                 return_u64(sig);
             }
         }
@@ -268,9 +242,7 @@ internal_simd_noinline PyObject *loads_number(const src_t **ptr, const src_t *bu
 
     if (*cur == '.') {
         dot_pos = cur++;
-        if (!digi_is_digit(*cur)) {
-            return_err(cur, "no digit after decimal point");
-        }
+        if (!digi_is_digit(*cur)) { return_err(cur, "no digit after decimal point"); }
     }
 
 
@@ -282,9 +254,7 @@ digi_frac_more:
     if (!dot_pos) {
         dot_pos = cur;
         if (*cur == '.') {
-            if (!digi_is_digit(*++cur)) {
-                return_err(cur, "no digit after decimal point");
-            }
+            if (!digi_is_digit(*++cur)) { return_err(cur, "no digit after decimal point"); }
             while (digi_is_digit(*cur)) cur++;
         }
     }
@@ -306,15 +276,11 @@ digi_frac_more:
 
     /* fraction part end */
 digi_frac_end:
-    if (unlikely(dot_pos + 1 == cur)) {
-        return_err(cur, "no digit after decimal point");
-    }
+    if (unlikely(dot_pos + 1 == cur)) { return_err(cur, "no digit after decimal point"); }
     sig_end = cur;
     exp_sig = -(i64)((u64)(cur - dot_pos) - 1);
     if (likely(!digi_is_exp(*cur))) {
-        if (unlikely(exp_sig < F64_MIN_DEC_EXP - 19)) {
-            return_f64_bin(0); /* underflow */
-        }
+        if (unlikely(exp_sig < F64_MIN_DEC_EXP - 19)) { return_f64_bin(0); /* underflow */ }
         exp = (i32)exp_sig;
         goto digi_finish;
     } else {
@@ -326,16 +292,12 @@ digi_frac_end:
 digi_exp_more:
     exp_sign = (*++cur == '-');
     cur += digi_is_sign(*cur);
-    if (unlikely(!digi_is_digit(*cur))) {
-        return_err(cur, "no digit after exponent sign");
-    }
+    if (unlikely(!digi_is_digit(*cur))) { return_err(cur, "no digit after exponent sign"); }
     while (*cur == '0') cur++;
 
     /* read exponent literal */
     tmp = cur;
-    while (digi_is_digit(*cur)) {
-        exp_lit = (i64)((u64)(*cur++ - '0') + (u64)exp_lit * 10);
-    }
+    while (digi_is_digit(*cur)) { exp_lit = (i64)((u64)(*cur++ - '0') + (u64)exp_lit * 10); }
     if (unlikely(cur - tmp >= U64_SAFE_DIG)) {
         if (exp_sign) {
             return_f64_bin(0); /* underflow */
@@ -348,12 +310,8 @@ digi_exp_more:
 
     /* validate exponent value */
 digi_exp_finish:
-    if (unlikely(exp_sig < F64_MIN_DEC_EXP - 19)) {
-        return_f64_bin(0); /* underflow */
-    }
-    if (unlikely(exp_sig > F64_MAX_DEC_EXP)) {
-        return_inf(); /* overflow */
-    }
+    if (unlikely(exp_sig < F64_MIN_DEC_EXP - 19)) { return_f64_bin(0); /* underflow */ }
+    if (unlikely(exp_sig > F64_MAX_DEC_EXP)) { return_inf(); /* overflow */ }
     exp = (i32)exp_sig;
 
 
@@ -373,9 +331,7 @@ digi_finish:
      more complicated, and not friendly to branch predictor.
      */
 #if SSRJSON_DOUBLE_MATH_CORRECT
-    if (sig < ((u64)1 << 53) &&
-        exp >= -F64_POW10_EXP_MAX_EXACT &&
-        exp <= +F64_POW10_EXP_MAX_EXACT) {
+    if (sig < ((u64)1 << 53) && exp >= -F64_POW10_EXP_MAX_EXACT && exp <= +F64_POW10_EXP_MAX_EXACT) {
         f64 dbl = (f64)sig;
         if (exp < 0) {
             dbl /= f64_pow10_table[-exp];
@@ -392,9 +348,7 @@ digi_finish:
      To keep it simple, we only accept normal number here,
      let the slow path to handle subnormal and infinity number.
      */
-    if (likely(!sig_cut &&
-               exp > -F64_MAX_DEC_EXP + 1 &&
-               exp < +F64_MAX_DEC_EXP - 20)) {
+    if (likely(!sig_cut && exp > -F64_MAX_DEC_EXP + 1 && exp < +F64_MAX_DEC_EXP - 20)) {
         /*
          The result value is exactly equal to (sig * 10^exp),
          the exponent part (10^exp) can be converted to (sig2 * 2^exp2).
@@ -608,8 +562,7 @@ digi_finish:
         /* get IEEE double raw value */
         raw = diy_fp_to_ieee_raw(fp);
         if (unlikely(raw == F64_RAW_INF)) return_inf();
-        if (likely(precision_bits <= half_way - fp_err ||
-                   precision_bits >= half_way + fp_err)) {
+        if (likely(precision_bits <= half_way - fp_err || precision_bits >= half_way + fp_err)) {
             return_f64_bin(raw); /* number is accurate */
         }
         /* now the number is the correct value, or the next lower value */

@@ -25,14 +25,29 @@
 #include "iw_in.inl.h"
 #include "srw_in.inl.h"
 
+/* Generate function names with indent level, reader type and writer type. */
+#define make_irw_name(_x_) ssrjson_concat4(_x_, src_t, dst_t, __INDENT_NAME)
 /* Generate function names with SIMD level, indent level, reader type and writer type. */
 #define make_sirw_name(_x_) ssrjson_concat5(_x_, src_t, dst_t, __INDENT_NAME, _CompileVectorBits)
 
-#define unicode_buffer_append_key_internal make_sirw_name(_unicode_buffer_append_key_internal)
-#define unicode_buffer_append_str_internal make_sirw_name(_unicode_buffer_append_str_internal)
+#define u_buf_apd_key make_irw_name(u_buf_apd_key)
+#define u_buf_apd_key_rsv_idt make_irw_name(u_buf_apd_key_rsv_idt)
+#define u_buf_apd_str make_irw_name(u_buf_apd_str)
+#define u_buf_apd_str_rsv_idt make_irw_name(u_buf_apd_str_rsv_idt)
 //
-#define STR_WRITER_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_str_internal, r_t, w_t, __INDENT_NAME, _CompileVectorBits)
-#define KEY_WRITER_IMPL(r_t, w_t) ssrjson_concat5(_unicode_buffer_append_key_internal, r_t, w_t, __INDENT_NAME, _CompileVectorBits)
+#define u_buf_apd_str_u8_u8 ssrjson_concat2(u_buf_apd_str_u8_u8, __INDENT_NAME)
+#define u_buf_apd_str_u8_u16 ssrjson_concat2(u_buf_apd_str_u8_u16, __INDENT_NAME)
+#define u_buf_apd_str_u8_u32 ssrjson_concat2(u_buf_apd_str_u8_u32, __INDENT_NAME)
+#define u_buf_apd_str_u16_u16 ssrjson_concat2(u_buf_apd_str_u16_u16, __INDENT_NAME)
+#define u_buf_apd_str_u16_u32 ssrjson_concat2(u_buf_apd_str_u16_u32, __INDENT_NAME)
+#define u_buf_apd_str_u32_u32 ssrjson_concat2(u_buf_apd_str_u32_u32, __INDENT_NAME)
+
+#define u_buf_apd_key_u8_u8 ssrjson_concat2(u_buf_apd_key_u8_u8, __INDENT_NAME)
+#define u_buf_apd_key_u8_u16 ssrjson_concat2(u_buf_apd_key_u8_u16, __INDENT_NAME)
+#define u_buf_apd_key_u8_u32 ssrjson_concat2(u_buf_apd_key_u8_u32, __INDENT_NAME)
+#define u_buf_apd_key_u16_u16 ssrjson_concat2(u_buf_apd_key_u16_u16, __INDENT_NAME)
+#define u_buf_apd_key_u16_u32 ssrjson_concat2(u_buf_apd_key_u16_u32, __INDENT_NAME)
+#define u_buf_apd_key_u32_u32 ssrjson_concat2(u_buf_apd_key_u32_u32, __INDENT_NAME)
 
 
 #ifdef COMPILE_UCS_LEVEL
@@ -40,22 +55,24 @@
 #    define make_iu_name(_x_) ssrjson_concat3(_x_, __UCS_NAME, __INDENT_NAME)
 //
 #    define prepare_unicode_write make_iu_name(_prepare_unicode_write)
-#    define unicode_buffer_append_key make_iu_name(_unicode_buffer_append_key)
-#    define unicode_buffer_append_key_distribute2 make_iu_name(_unicode_buffer_append_key_distribute2)
-#    define unicode_buffer_append_key_distribute4 make_iu_name(_unicode_buffer_append_key_distribute4)
-#    define unicode_buffer_append_str make_iu_name(_unicode_buffer_append_str)
-#    define unicode_buffer_append_str_distribute2 make_iu_name(_unicode_buffer_append_str_distribute2)
-#    define unicode_buffer_append_str_distribute4 make_iu_name(_unicode_buffer_append_str_distribute4)
-#    define unicode_buffer_append_bool make_iu_name(_unicode_buffer_append_bool)
-#    define unicode_buffer_append_null make_iu_name(_unicode_buffer_append_null)
-#    define unicode_buffer_append_float make_iu_name(_unicode_buffer_append_numpy_float)
-#    define unicode_buffer_append_f32 make_iu_name(_unicode_buffer_append_f32)
-#    define unicode_buffer_append_empty_arr make_iu_name(_unicode_buffer_append_empty_arr)
-#    define unicode_buffer_append_arr_begin make_iu_name(_unicode_buffer_append_arr_begin)
-#    define unicode_buffer_append_arr_end make_iu_name(_unicode_buffer_append_arr_end)
-#    define unicode_buffer_append_empty_obj make_iu_name(_unicode_buffer_append_empty_obj)
-#    define unicode_buffer_append_obj_begin make_iu_name(_unicode_buffer_append_obj_begin)
-#    define unicode_buffer_append_obj_end make_iu_name(_unicode_buffer_append_obj_end)
+#    define u_buf_apd_key_wrapped make_iu_name(u_buf_apd_key_wrapped)
+#    define u_buf_apd_key_distribute2 make_iu_name(u_buf_apd_key_distribute2)
+#    define u_buf_apd_key_distribute4 make_iu_name(u_buf_apd_key_distribute4)
+#    define u_buf_apd_str_wrapped make_iu_name(u_buf_apd_str_wrapped)
+#    define u_buf_apd_str_dict make_iu_name(u_buf_apd_str_dict)
+#    define u_buf_apd_str_list make_iu_name(u_buf_apd_str_list)
+#    define u_buf_apd_str_distribute2 make_iu_name(u_buf_apd_str_distribute2)
+#    define u_buf_apd_str_distribute4 make_iu_name(u_buf_apd_str_distribute4)
+#    define u_buf_apd_bool make_iu_name(_u_buf_apd_bool)
+#    define u_buf_apd_null make_iu_name(_u_buf_apd_null)
+#    define u_buf_apd_float make_iu_name(_u_buf_apd_numpy_float)
+#    define u_buf_apd_f32 make_iu_name(_u_buf_apd_f32)
+#    define u_buf_apd_empty_arr make_iu_name(_u_buf_apd_empty_arr)
+#    define u_buf_apd_arr_begin make_iu_name(_u_buf_apd_arr_begin)
+#    define u_buf_apd_arr_end make_iu_name(_u_buf_apd_arr_end)
+#    define u_buf_apd_empty_obj make_iu_name(_u_buf_apd_empty_obj)
+#    define u_buf_apd_obj_begin make_iu_name(_u_buf_apd_obj_begin)
+#    define u_buf_apd_obj_end make_iu_name(_u_buf_apd_obj_end)
 #    define ssrjson_dumps_obj make_iu_name(_ssrjson_dumps_obj)
 //
 #    define encode_process_val make_iu_name(encode_process_val)

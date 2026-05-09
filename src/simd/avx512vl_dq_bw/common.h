@@ -22,7 +22,8 @@
 
 #ifndef SSRJSON_SIMD_AVX512VLDQBW_COMMON_H
 #define SSRJSON_SIMD_AVX512VLDQBW_COMMON_H
-#if !defined(__AVX512VL__) || !__AVX512VL__ || !defined(__AVX512DQ__) || !__AVX512DQ__ || !defined(__AVX512BW__) || !__AVX512BW__
+#if !defined(__AVX512VL__) || !__AVX512VL__ || !defined(__AVX512DQ__) || !__AVX512DQ__ || !defined(__AVX512BW__) || \
+        !__AVX512BW__
 #    error "AVX512VL, AVX512DQ and AVX512BW is required for this file"
 #endif
 
@@ -75,43 +76,16 @@
 //     return (u16)_mm512_movepi32_mask(z);
 // }
 
-force_inline vector_a_u16_512 cvt_u8_to_u16_512(vector_a_u8_256 y) {
-    return _mm512_cvtepu8_epi16(y);
-}
+force_inline vector_a_u16_512 cvt_u8_to_u16_512(vector_a_u8_256 y) { return _mm512_cvtepu8_epi16(y); }
 
 force_inline vector_a_u8_128 cvt_u32_to_u8_512(vector_a_u32_512 z) {
-    vector_a_u8_512 shuffler = {
-            0, 4, 8, 12,
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            //
-            0x80, 0x80,
-            0x80, 0x80,
-            0, 4, 8, 12,
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            //
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            0, 4, 8, 12,
-            0x80, 0x80,
-            0x80, 0x80,
-            //
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            0x80, 0x80,
-            0, 4, 8, 12};
+    vector_a_u8_512 shuffler = {0, 4, 8, 12, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+                                //
+                                0x80, 0x80, 0x80, 0x80, 0, 4, 8, 12, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+                                //
+                                0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0, 4, 8, 12, 0x80, 0x80, 0x80, 0x80,
+                                //
+                                0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0, 4, 8, 12};
     vector_a_u8_512 shuffled = shuffle_512(z, shuffler);
     vector_a_u8_128 x1 = extract_128_from_512(shuffled, 0);
     vector_a_u8_128 x2 = extract_128_from_512(shuffled, 1);

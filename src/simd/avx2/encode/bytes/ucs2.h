@@ -38,24 +38,9 @@
 
 force_inline vector_a_u16_256 __ucs2_encode_2bytes_utf8_avx2_impl(vector_a y) {
     /* abcdefgh|12300000 -> gh123[mmm]|abcdef[mm] */
-    vector_a_u8_256 t1 = {
-            0x80, 0,
-            0x80, 2,
-            0x80, 4,
-            0x80, 6,
-            0x80, 8,
-            0x80, 10,
-            0x80, 12,
-            0x80, 14,
-            //
-            0x80, 0,
-            0x80, 2,
-            0x80, 4,
-            0x80, 6,
-            0x80, 8,
-            0x80, 10,
-            0x80, 12,
-            0x80, 14};
+    vector_a_u8_256 t1 = {0x80, 0, 0x80, 2, 0x80, 4, 0x80, 6, 0x80, 8, 0x80, 10, 0x80, 12, 0x80, 14,
+                          //
+                          0x80, 0, 0x80, 2, 0x80, 4, 0x80, 6, 0x80, 8, 0x80, 10, 0x80, 12, 0x80, 14};
     /*y1 = gh123000|00000000 */
     vector_a_u8_256 y1 = rshift_u16(y, 6);
     /*y2 = 00000000|abcdefgh */
@@ -100,68 +85,25 @@ force_inline void ucs2_encode_2bytes_utf8_avx2_trailing(const u16 *src, const u1
     *ssrjson_cast(vector_u_u16_256 *, writer) = __ucs2_encode_2bytes_utf8_avx2_impl(y);
 }
 
-force_inline void __ucs2_encode_3bytes_utf8_avx2_impl(vector_a y, vector_a_u8_128 *out_x1, vector_a_u8_128 *out_x2, vector_a_u8_128 *out_x3, vector_a_u8_128 *out_x4) {
+force_inline void __ucs2_encode_3bytes_utf8_avx2_impl(vector_a y, vector_a_u8_128 *out_x1, vector_a_u8_128 *out_x2,
+                                                      vector_a_u8_128 *out_x3, vector_a_u8_128 *out_x4) {
     /* abcdefgh|12345678|00000000|00000000 -> 5678[mmmm]|gh1234[mm]|abcdef[mm] */
-    vector_a_u8_256 t1 = {
-            0x80, 0x80, 0x80, 0x80,
-            0x80, 0x80, 0,
-            0x80, 0x80, 4,
-            0x80, 0x80, 8,
-            0x80, 0x80, 12,
-            //
-            0x80, 0x80, 0,
-            0x80, 0x80, 4,
-            0x80, 0x80, 8,
-            0x80, 0x80, 12,
-            0x80, 0x80, 0x80, 0x80};
-    vector_a_u8_256 t2 = {
-            0x80, 0x80, 0x80, 0x80,
-            0x80, 0, 0x80,
-            0x80, 4, 0x80,
-            0x80, 8, 0x80,
-            0x80, 12, 0x80,
-            //
-            0x80, 0, 0x80,
-            0x80, 4, 0x80,
-            0x80, 8, 0x80,
-            0x80, 12, 0x80,
-            0x80, 0x80, 0x80, 0x80};
-    vector_a_u8_256 t3 = {
-            0x80, 0x80, 0x80, 0x80,
-            0, 0x80, 0x80,
-            4, 0x80, 0x80,
-            8, 0x80, 0x80,
-            12, 0x80, 0x80,
-            //
-            0, 0x80, 0x80,
-            4, 0x80, 0x80,
-            8, 0x80, 0x80,
-            12, 0x80, 0x80,
-            0x80, 0x80, 0x80, 0x80};
+    vector_a_u8_256 t1 = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12,
+                          //
+                          0x80, 0x80, 0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12, 0x80, 0x80, 0x80, 0x80};
+    vector_a_u8_256 t2 = {0x80, 0x80, 0x80, 0x80, 0x80, 0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12, 0x80,
+                          //
+                          0x80, 0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12, 0x80, 0x80, 0x80, 0x80, 0x80};
+    vector_a_u8_256 t3 = {0x80, 0x80, 0x80, 0x80, 0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12, 0x80, 0x80,
+                          //
+                          0, 0x80, 0x80, 4, 0x80, 0x80, 8, 0x80, 0x80, 12, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
     vector_a_u8_256 m1 = {
-            0xff, 0xff, 0xff, 0xff,
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
+            0xff, 0xff, 0xff, 0xff, 0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f,
             //
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
-            0xff, 0x3f, 0x3f,
-            0xff, 0xff, 0xff, 0xff};
-    vector_a_u8_256 m2 = {
-            0, 0, 0, 0,
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            //
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            0xe0, 0x80, 0x80,
-            0, 0, 0, 0};
+            0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f, 0xff, 0x3f, 0x3f, 0xff, 0xff, 0xff, 0xff};
+    vector_a_u8_256 m2 = {0, 0, 0, 0, 0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80,
+                          //
+                          0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80, 0xe0, 0x80, 0x80, 0, 0, 0, 0};
 
     vector_a_u32_256 y1, y2;
     y1 = cvt_u16_to_u32_256(extract_128_from_256(y, 0));
@@ -288,7 +230,8 @@ restart:;
     ssrjson_unreachable();
 ascii:;
     {
-        const vector_a m_not_ascii = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, broadcast(0x7f));
+        const vector_a m_not_ascii = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) |
+                                     signed_cmpgt(vec, broadcast(0x7f));
         vector_a m = high_mask(m_not_ascii, len);
         // excess bytes written: 16 - max_json_bytes_per_unicode = 10
         avx2_trailing_cvt(src, src_end, writer);
@@ -303,7 +246,8 @@ ascii:;
             src = last_batch_start + done_count + 1;
             writer += real_done_count;
             len = READ_BATCH_COUNT - done_count - 1;
-            if (escape_unicode >= _ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash && escape_unicode != _Quote) {
+            if (escape_unicode >= _ControlMax && escape_unicode < 0x80 && escape_unicode != _Slash &&
+                escape_unicode != _Quote) {
                 ssrjson_unreachable();
             } else {
                 // excess bytes written: 16 - max_json_bytes_per_unicode = 10
@@ -346,7 +290,8 @@ _2bytes:;
     }
 _3bytes:;
     {
-        const vector_a m_not_3bytes = unsigned_saturate_minus(broadcast(0x800), vec) | (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec));
+        const vector_a m_not_3bytes = unsigned_saturate_minus(broadcast(0x800), vec) |
+                                      (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec));
         vector_a m = high_mask(m_not_3bytes, len);
         // excess bytes written: 48 - max_json_bytes_per_unicode = 42
         ucs2_encode_3bytes_utf8_avx2_trailing(src, src_end, writer);
@@ -463,7 +408,8 @@ _2bytes:;
     }
 _3bytes:;
     {
-        const vector_a m_not_3bytes = unsigned_saturate_minus(broadcast(0x800), vec) | (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec));
+        const vector_a m_not_3bytes = unsigned_saturate_minus(broadcast(0x800), vec) |
+                                      (signed_cmpgt(vec, broadcast(0xd7ff)) & signed_cmpgt(broadcast(0xe000), vec));
         vector_a m = high_mask(m_not_3bytes, len);
         // excess bytes written: 48 - max_utf8_bytes_per_ucs2 = 45
         ucs2_encode_3bytes_utf8_avx2_trailing(src, src_end, writer);

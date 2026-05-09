@@ -37,7 +37,8 @@
 //
 #include "compile_context/sr_in.inl.h"
 
-force_inline PyObject *make_unicode_from_src_ascii(const src_t *start, usize count, bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+force_inline PyObject *make_unicode_from_src_ascii(const src_t *start, usize count,
+                                                   bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     PyObject *ret;
     decode_keyhash_t hash;
     bool should_cache = is_key && count <= 64;
@@ -45,17 +46,13 @@ force_inline PyObject *make_unicode_from_src_ascii(const src_t *start, usize cou
     if (should_cache) {
         hash = XXH3_64bits(start, count);
         ret = get_key_cache(start, hash, count, 0 DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
-        if (ret) {
-            goto done;
-        }
+        if (ret) { goto done; }
     }
     ret = create_empty_unicode(count, 0);
     if (likely(ret)) {
         u8 *const target = ssrjson_pyunicode_ascii_start(ret);
         ssrjson_memcpy(target, start, count);
-        if (should_cache) {
-            add_key_cache(hash, ret, count, 0 DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
-        }
+        if (should_cache) { add_key_cache(hash, ret, count, 0 DECODER_TLS_KEYCACHE_ADDITIONAL_ARG); }
         if (should_hash) {
             assert(count && ssrjson_pyascii_cast(ret)->hash == -1);
             make_hash(ssrjson_pyascii_cast(ret), start, count);
@@ -92,9 +89,7 @@ force_inline PyObject *make_unicode_ucs2(void *src_buffer, usize u8count, usize 
     if (likely(ret)) {
         u16 *const target = ssrjson_pyunicode_ucs2_start(ret);
         // not use inline version
-        if (u8count) {
-            SIMD_NAME_MODIFIER(long_cvt_noinline_u8_u16)(target, src_buffer, u8count);
-        }
+        if (u8count) { SIMD_NAME_MODIFIER(long_cvt_noinline_u8_u16)(target, src_buffer, u8count); }
         memcpy(target + u8count, ssrjson_cast(u16 *, src_buffer) + u8count, (total_count - u8count) * 2);
         if (should_hash) {
             assert(total_count && ssrjson_pyascii_cast(ret)->hash == -1);
@@ -106,7 +101,8 @@ done:;
 }
 
 /* Slow path unicode maker, which never caches. */
-force_inline PyObject *make_unicode_ucs4(void *src_buffer, usize u8count, usize u16count, usize total_count, bool is_key) {
+force_inline PyObject *make_unicode_ucs4(void *src_buffer, usize u8count, usize u16count, usize total_count,
+                                         bool is_key) {
     assert(total_count > 0 && total_count >= u8count + u16count);
     PyObject *ret;
     bool should_hash = is_key;
@@ -114,13 +110,13 @@ force_inline PyObject *make_unicode_ucs4(void *src_buffer, usize u8count, usize 
     if (likely(ret)) {
         u32 *const target = ssrjson_pyunicode_ucs4_start(ret);
         // not use inline version
-        if (u8count) {
-            SIMD_NAME_MODIFIER(long_cvt_noinline_u8_u32)(target, src_buffer, u8count);
-        }
+        if (u8count) { SIMD_NAME_MODIFIER(long_cvt_noinline_u8_u32)(target, src_buffer, u8count); }
         if (u16count) {
-            SIMD_NAME_MODIFIER(long_cvt_noinline_u16_u32)(target + u8count, ssrjson_cast(u16 *, src_buffer) + u8count, u16count);
+            SIMD_NAME_MODIFIER(long_cvt_noinline_u16_u32)(
+                    target + u8count, ssrjson_cast(u16 *, src_buffer) + u8count, u16count);
         }
-        memcpy(target + u8count + u16count, ssrjson_cast(u32 *, src_buffer) + u8count + u16count, (total_count - u8count - u16count) * 4);
+        memcpy(target + u8count + u16count, ssrjson_cast(u32 *, src_buffer) + u8count + u16count,
+               (total_count - u8count - u16count) * 4);
         if (should_hash) {
             assert(total_count && ssrjson_pyascii_cast(ret)->hash == -1);
             make_hash(ssrjson_pyascii_cast(ret), target, total_count * 4);
@@ -138,7 +134,8 @@ force_inline int decode_str_fast_loop4_ascii(const src_t **src_addr, const src_t
     anymask_t check_mask_total;
     //
     _decode_str_loop4_read_src_impl(*src_addr, &vec, check_mask, &check_mask_total);
-    _decode_str_loop4_decoder_impl(src_addr, src_end, check_mask, check_mask_total, &ret, true, NULL, vec, escapeval_addr);
+    _decode_str_loop4_decoder_impl(
+            src_addr, src_end, check_mask, check_mask_total, &ret, true, NULL, vec, escapeval_addr);
     //
     return ret;
 }
@@ -155,7 +152,8 @@ force_inline int decode_str_fast_loop_ascii(const src_t **src_addr, const src_t 
     return ret;
 }
 
-force_inline int decode_str_fast_trailing_ascii(const src_t **src_addr, const src_t *src_end, EscapeInfo *escape_info_addr) {
+force_inline int decode_str_fast_trailing_ascii(const src_t **src_addr, const src_t *src_end,
+                                                EscapeInfo *escape_info_addr) {
     int ret;
     //
     vector_a vec;
@@ -167,7 +165,8 @@ force_inline int decode_str_fast_trailing_ascii(const src_t **src_addr, const sr
     return ret;
 }
 
-force_inline int decode_str_copy_loop4_ascii_u8(u8 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop4_ascii_u8(u8 **dst_addr, const src_t **src_addr, const src_t *src_end,
+                                                EscapeInfo *escapeval_addr) {
     int ret;
     //
     unionvector_a_x4 vec;
@@ -176,12 +175,14 @@ force_inline int decode_str_copy_loop4_ascii_u8(u8 **dst_addr, const src_t **src
     //
     _decode_str_loop4_read_src_impl(*src_addr, &vec, check_mask, &check_mask_total);
     memcpy(*dst_addr, &vec, sizeof(unionvector_a_x4));
-    usize moved_count = _decode_str_loop4_decoder_impl(src_addr, src_end, check_mask, check_mask_total, &ret, true, NULL, vec, escapeval_addr);
+    usize moved_count = _decode_str_loop4_decoder_impl(
+            src_addr, src_end, check_mask, check_mask_total, &ret, true, NULL, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
 }
 
-force_inline int decode_str_copy_loop_ascii_u8(u8 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop_ascii_u8(u8 **dst_addr, const src_t **src_addr, const src_t *src_end,
+                                               EscapeInfo *escapeval_addr) {
     int ret;
     //
     vector_a vec;
@@ -189,7 +190,8 @@ force_inline int decode_str_copy_loop_ascii_u8(u8 **dst_addr, const src_t **src_
     //
     _decode_str_loop_read_src_impl(*src_addr, &vec, &check_mask);
     memcpy(*dst_addr, &vec, sizeof(vector_a));
-    usize moved_count = _decode_str_loop_decoder_impl(src_addr, src_end, check_mask, &ret, true, NULL, vec, escapeval_addr);
+    usize moved_count = _decode_str_loop_decoder_impl(
+            src_addr, src_end, check_mask, &ret, true, NULL, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
 }
@@ -207,7 +209,8 @@ force_inline int decode_str_copy_trailing_ascii_u8(u8 **dst_addr, const src_t **
 #else
     *(vector_u *)(*dst_addr) = vec;
 #endif
-    usize done_count = _decode_str_trailing_decoder_impl(src_addr, src_end, check_mask, &ret, false, NULL, vec, escape_info_addr);
+    usize done_count = _decode_str_trailing_decoder_impl(
+            src_addr, src_end, check_mask, &ret, false, NULL, vec, escape_info_addr);
     *dst_addr += done_count;
     //
     return ret;
@@ -226,15 +229,14 @@ force_inline int decode_str_copy_trailing_ascii_u16(u16 **dst_addr, const src_t 
 #else
     make_s_name(cvt_to_dst_u8_u16)(*dst_addr, vec);
 #endif
-    usize done_count = _decode_str_trailing_decoder_impl(src_addr, src_end, check_mask, &ret, false, NULL, vec, escape_info_addr);
+    usize done_count = _decode_str_trailing_decoder_impl(
+            src_addr, src_end, check_mask, &ret, false, NULL, vec, escape_info_addr);
     *dst_addr += done_count;
     //
     return ret;
 }
 
-force_inline int decode_str_copy_trailing_ascii_u32(u32 **dst_addr,
-                                                    const src_t **src_addr,
-                                                    const src_t *src_end,
+force_inline int decode_str_copy_trailing_ascii_u32(u32 **dst_addr, const src_t **src_addr, const src_t *src_end,
                                                     EscapeInfo *escape_info_addr) {
     int ret;
     //
@@ -247,13 +249,16 @@ force_inline int decode_str_copy_trailing_ascii_u32(u32 **dst_addr,
 #else
     make_s_name(cvt_to_dst_u8_u32)(*dst_addr, vec);
 #endif
-    usize done_count = _decode_str_trailing_decoder_impl(src_addr, src_end, check_mask, &ret, false, NULL, vec, escape_info_addr);
+    usize done_count = _decode_str_trailing_decoder_impl(
+            src_addr, src_end, check_mask, &ret, false, NULL, vec, escape_info_addr);
     *dst_addr += done_count;
     //
     return ret;
 }
 
-force_inline int process_escape_ascii_u8(EscapeInfo escape_info, u8 **u8writer_addr, u16 **u16writer_addr, u32 **u32writer_addr, usize *u8size_addr, bool *is_ascii_addr, void *temp_buffer) {
+force_inline int process_escape_ascii_u8(EscapeInfo escape_info, u8 **u8writer_addr, u16 **u16writer_addr,
+                                         u32 **u32writer_addr, usize *u8size_addr, bool *is_ascii_addr,
+                                         void *temp_buffer) {
     u32 escape_val;
     usize escape_len;
     escape_val = escape_info.escape_val;
@@ -286,7 +291,8 @@ force_inline int process_escape_ascii_u8(EscapeInfo escape_info, u8 **u8writer_a
     }
 }
 
-force_inline int decode_str_copy_loop4_ascii_u16(u16 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop4_ascii_u16(u16 **dst_addr, const src_t **src_addr, const src_t *src_end,
+                                                 EscapeInfo *escapeval_addr) {
     int ret;
     //
     unionvector_a_x4 vec;
@@ -295,15 +301,15 @@ force_inline int decode_str_copy_loop4_ascii_u16(u16 **dst_addr, const src_t **s
     //
     _decode_str_loop4_read_src_impl(*src_addr, &vec, check_mask, &check_mask_total);
     u16 *dst = *dst_addr;
-    for (int i = 0; i < 4; ++i) {
-        make_s_name(cvt_to_dst_u8_u16)((dst + i * READ_BATCH_COUNT), vec.x[i]);
-    }
-    usize moved_count = _decode_str_loop4_decoder_impl(src_addr, src_end, check_mask, check_mask_total, &ret, false, NULL, vec, escapeval_addr);
+    for (int i = 0; i < 4; ++i) { make_s_name(cvt_to_dst_u8_u16)((dst + i * READ_BATCH_COUNT), vec.x[i]); }
+    usize moved_count = _decode_str_loop4_decoder_impl(
+            src_addr, src_end, check_mask, check_mask_total, &ret, false, NULL, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
 }
 
-force_inline int decode_str_copy_loop_ascii_u16(u16 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop_ascii_u16(u16 **dst_addr, const src_t **src_addr, const src_t *src_end,
+                                                EscapeInfo *escapeval_addr) {
     int ret;
     //
     vector_a vec;
@@ -311,12 +317,14 @@ force_inline int decode_str_copy_loop_ascii_u16(u16 **dst_addr, const src_t **sr
     //
     _decode_str_loop_read_src_impl(*src_addr, &vec, &check_mask);
     make_s_name(cvt_to_dst_u8_u16)(*dst_addr, vec);
-    usize moved_count = _decode_str_loop_decoder_impl(src_addr, src_end, check_mask, &ret, false, NULL, vec, escapeval_addr);
+    usize moved_count = _decode_str_loop_decoder_impl(
+            src_addr, src_end, check_mask, &ret, false, NULL, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
 }
 
-force_inline int process_escape_ascii_u16(EscapeInfo escape_info, u16 **u16writer_addr, u32 **u32writer_addr, usize *u16size_addr, usize u8size, void *temp_buffer) {
+force_inline int process_escape_ascii_u16(EscapeInfo escape_info, u16 **u16writer_addr, u32 **u32writer_addr,
+                                          usize *u16size_addr, usize u8size, void *temp_buffer) {
     u32 escape_val;
     usize escape_len;
     escape_val = escape_info.escape_val;
@@ -336,7 +344,8 @@ force_inline int process_escape_ascii_u16(EscapeInfo escape_info, u16 **u16write
     }
 }
 
-force_inline int decode_str_copy_loop4_ascii_u32(u32 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop4_ascii_u32(u32 **dst_addr, const src_t **src_addr, const src_t *src_end,
+                                                 EscapeInfo *escapeval_addr) {
     int ret;
     //
     unionvector_a_x4 vec;
@@ -345,15 +354,15 @@ force_inline int decode_str_copy_loop4_ascii_u32(u32 **dst_addr, const src_t **s
     //
     _decode_str_loop4_read_src_impl(*src_addr, &vec, check_mask, &check_mask_total);
     u32 *dst = *dst_addr;
-    for (int i = 0; i < 4; ++i) {
-        make_s_name(cvt_to_dst_u8_u32)((dst + i * READ_BATCH_COUNT), vec.x[i]);
-    }
-    usize moved_count = _decode_str_loop4_decoder_impl(src_addr, src_end, check_mask, check_mask_total, &ret, false, NULL, vec, escapeval_addr);
+    for (int i = 0; i < 4; ++i) { make_s_name(cvt_to_dst_u8_u32)((dst + i * READ_BATCH_COUNT), vec.x[i]); }
+    usize moved_count = _decode_str_loop4_decoder_impl(
+            src_addr, src_end, check_mask, check_mask_total, &ret, false, NULL, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
 }
 
-force_inline int decode_str_copy_loop_ascii_u32(u32 **dst_addr, const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
+force_inline int decode_str_copy_loop_ascii_u32(u32 **dst_addr, const src_t **src_addr, const src_t *src_end,
+                                                EscapeInfo *escapeval_addr) {
     int ret;
     //
     vector_a vec;
@@ -361,7 +370,8 @@ force_inline int decode_str_copy_loop_ascii_u32(u32 **dst_addr, const src_t **sr
     //
     _decode_str_loop_read_src_impl(*src_addr, &vec, &check_mask);
     make_s_name(cvt_to_dst_u8_u32)(*dst_addr, vec);
-    usize moved_count = _decode_str_loop_decoder_impl(src_addr, src_end, check_mask, &ret, false, NULL, vec, escapeval_addr);
+    usize moved_count = _decode_str_loop_decoder_impl(
+            src_addr, src_end, check_mask, &ret, false, NULL, vec, escapeval_addr);
     *dst_addr += moved_count;
     return ret;
 }
@@ -374,13 +384,9 @@ force_inline void process_escape_ascii_u32(EscapeInfo escape_info, u32 **u32writ
     *(*u32writer_addr)++ = escape_val;
 }
 
-internal_simd_noinline PyObject *decode_str_with_escape_ascii(
-        const src_t *src_start,
-        const src_t **src_addr,
-        const src_t *src_end,
-        void *temp_buffer,
-        bool is_key,
-        EscapeInfo in_escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+internal_simd_noinline PyObject *
+decode_str_with_escape_ascii(const src_t *src_start, const src_t **src_addr, const src_t *src_end, void *temp_buffer,
+                             bool is_key, EscapeInfo in_escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
 #define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
     //
@@ -443,9 +449,7 @@ decode_loop_ucs1:;
                 continue;                               \
             }                                           \
             case DECODE_LOOPSTATE_END: {                \
-                if (is_ascii) {                         \
-                    goto done_ascii;                    \
-                }                                       \
+                if (is_ascii) { goto done_ascii; }      \
                 goto done_ucs1;                         \
             }                                           \
             case DECODE_LOOPSTATE_ESCAPE: {             \
@@ -477,7 +481,8 @@ decode_loop_ucs1:;
             }                                           \
         }                                               \
     }
-#define ON_ESCAPE process_escape_ascii_u8(escape_info, &u8writer, &u16writer, &u32writer, &u8size, &is_ascii, temp_buffer)
+#define ON_ESCAPE \
+    process_escape_ascii_u8(escape_info, &u8writer, &u16writer, &u32writer, &u8size, &is_ascii, temp_buffer)
         while (CAN_LOOP4()) {
             EscapeInfo escape_info;
             int state_code = decode_str_copy_loop4_ascii_u8(&u8writer, &src, src_end, &escape_info);
@@ -621,30 +626,28 @@ decode_loop_ucs2:;
     }
 decode_loop_ucs4:;
     {
-#define LOOP_SWITCHER(_status_code_)            \
-    {                                           \
-        switch ((_status_code_)) {              \
-            case DECODE_LOOPSTATE_CONTINUE: {   \
-                continue;                       \
-            }                                   \
-            case DECODE_LOOPSTATE_END: {        \
-                goto done_ucs4;                 \
-            }                                   \
-            case DECODE_LOOPSTATE_ESCAPE: {     \
-                src += escape_info.escape_size; \
-                process_escape_ascii_u32(       \
-                        escape_info,            \
-                        &u32writer);            \
-                continue;                       \
-            }                                   \
-            case DECODE_LOOPSTATE_INVALID: {    \
-                assert(PyErr_Occurred());       \
-                goto failed;                    \
-            }                                   \
-            default: {                          \
-                ssrjson_unreachable();          \
-            }                                   \
-        }                                       \
+#define LOOP_SWITCHER(_status_code_)                               \
+    {                                                              \
+        switch ((_status_code_)) {                                 \
+            case DECODE_LOOPSTATE_CONTINUE: {                      \
+                continue;                                          \
+            }                                                      \
+            case DECODE_LOOPSTATE_END: {                           \
+                goto done_ucs4;                                    \
+            }                                                      \
+            case DECODE_LOOPSTATE_ESCAPE: {                        \
+                src += escape_info.escape_size;                    \
+                process_escape_ascii_u32(escape_info, &u32writer); \
+                continue;                                          \
+            }                                                      \
+            case DECODE_LOOPSTATE_INVALID: {                       \
+                assert(PyErr_Occurred());                          \
+                goto failed;                                       \
+            }                                                      \
+            default: {                                             \
+                ssrjson_unreachable();                             \
+            }                                                      \
+        }                                                          \
     }
         while (CAN_LOOP4()) {
             EscapeInfo escape_info;
@@ -666,9 +669,7 @@ decode_loop_ucs4:;
                 }
                 case DECODE_LOOPSTATE_ESCAPE: {
                     src += escape_info.escape_size;
-                    process_escape_ascii_u32(
-                            escape_info,
-                            &u32writer);
+                    process_escape_ascii_u32(escape_info, &u32writer);
                     goto trailing_ucs4;
                 }
                 case DECODE_LOOPSTATE_INVALID: {
@@ -687,7 +688,8 @@ decode_loop_ucs4:;
     }
 done_ascii:;
     {
-        PyObject *ret = make_unicode_from_src_ascii(temp_buffer, u8writer - ssrjson_cast(u8 *, temp_buffer), is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+        PyObject *ret = make_unicode_from_src_ascii(
+                temp_buffer, u8writer - ssrjson_cast(u8 *, temp_buffer), is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         *src_addr = src + 1;
         return ret;
     }
@@ -705,7 +707,8 @@ done_ucs2:;
     }
 done_ucs4:;
     {
-        PyObject *ret = make_unicode_ucs4(temp_buffer, u8size, u16size, u32writer - ssrjson_cast(u32 *, temp_buffer), is_key);
+        PyObject *ret = make_unicode_ucs4(
+                temp_buffer, u8size, u16size, u32writer - ssrjson_cast(u32 *, temp_buffer), is_key);
         *src_addr = src + 1;
         return ret;
     }
@@ -717,39 +720,31 @@ failed:;
 #undef CAN_LOOP
 }
 
-force_inline PyObject *decode_str_ascii(
-        const src_t **src_addr,
-        const src_t *const src_end,
-        void *temp_buffer,
-        bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+force_inline PyObject *decode_str_ascii(const src_t **src_addr, const src_t *const src_end, void *temp_buffer,
+                                        bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
 #define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
 #define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
-#define LOOP_SWITCHER(_status_code_)                                          \
-    switch (status_code) {                                                    \
-        case DECODE_LOOPSTATE_CONTINUE: {                                     \
-            continue;                                                         \
-        }                                                                     \
-        case DECODE_LOOPSTATE_END: {                                          \
-            goto done;                                                        \
-        }                                                                     \
-        case DECODE_LOOPSTATE_ESCAPE: {                                       \
-            PyObject *ret =                                                   \
-                    decode_str_with_escape_ascii(                             \
-                            original_src,                                     \
-                            &src, src_end,                                    \
-                            temp_buffer,                                      \
-                            is_key,                                           \
-                            escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARG); \
-            *src_addr = src;                                                  \
-            return ret;                                                       \
-        }                                                                     \
-        case DECODE_LOOPSTATE_INVALID: {                                      \
-            assert(PyErr_Occurred());                                         \
-            goto failed;                                                      \
-        }                                                                     \
-        default: {                                                            \
-            ssrjson_unreachable();                                            \
-        }                                                                     \
+#define LOOP_SWITCHER(_status_code_)                                                                       \
+    switch (status_code) {                                                                                 \
+        case DECODE_LOOPSTATE_CONTINUE: {                                                                  \
+            continue;                                                                                      \
+        }                                                                                                  \
+        case DECODE_LOOPSTATE_END: {                                                                       \
+            goto done;                                                                                     \
+        }                                                                                                  \
+        case DECODE_LOOPSTATE_ESCAPE: {                                                                    \
+            PyObject *ret = decode_str_with_escape_ascii(original_src, &src, src_end, temp_buffer, is_key, \
+                                                         escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARG); \
+            *src_addr = src;                                                                               \
+            return ret;                                                                                    \
+        }                                                                                                  \
+        case DECODE_LOOPSTATE_INVALID: {                                                                   \
+            assert(PyErr_Occurred());                                                                      \
+            goto failed;                                                                                   \
+        }                                                                                                  \
+        default: {                                                                                         \
+            ssrjson_unreachable();                                                                         \
+        }                                                                                                  \
     }
 
 
@@ -778,13 +773,8 @@ force_inline PyObject *decode_str_ascii(
                 goto done;
             }
             case DECODE_LOOPSTATE_ESCAPE: {
-                PyObject *ret =
-                        decode_str_with_escape_ascii(
-                                original_src,
-                                &src, src_end,
-                                temp_buffer,
-                                is_key,
-                                escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+                PyObject *ret = decode_str_with_escape_ascii(original_src, &src, src_end, temp_buffer, is_key,
+                                                             escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
                 *src_addr = src;
                 return ret;
             }
@@ -813,8 +803,7 @@ failed:;
 #undef CAN_LOOP
 }
 
-internal_simd_noinline PyObject *decode_str_ascii_not_key(const src_t **src_addr,
-                                                          const src_t *const src_end,
+internal_simd_noinline PyObject *decode_str_ascii_not_key(const src_t **src_addr, const src_t *const src_end,
                                                           void *temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     return decode_str_ascii(src_addr, src_end, temp_buffer, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 }

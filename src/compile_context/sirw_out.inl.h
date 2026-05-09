@@ -25,33 +25,48 @@
 #include "iw_out.inl.h"
 #include "srw_out.inl.h"
 //
+#undef make_irw_name
 #undef make_sirw_name
 //
-#undef unicode_buffer_append_key_internal
-#undef unicode_buffer_append_str_internal
+#undef u_buf_apd_key
+#undef u_buf_apd_key_rsv_idt
+#undef u_buf_apd_str
+#undef u_buf_apd_str_rsv_idt
 //
-#undef STR_WRITER_IMPL
-#undef KEY_WRITER_IMPL
+#undef u_buf_apd_str_u8_u8
+#undef u_buf_apd_str_u8_u16
+#undef u_buf_apd_str_u8_u32
+#undef u_buf_apd_str_u16_u16
+#undef u_buf_apd_str_u16_u32
+#undef u_buf_apd_str_u32_u32
+#undef u_buf_apd_key_u8_u8
+#undef u_buf_apd_key_u8_u16
+#undef u_buf_apd_key_u8_u32
+#undef u_buf_apd_key_u16_u16
+#undef u_buf_apd_key_u16_u32
+#undef u_buf_apd_key_u32_u32
 //
 #undef make_iu_name
 //
 #undef prepare_unicode_write
-#undef unicode_buffer_append_key
-#undef unicode_buffer_append_key_distribute2
-#undef unicode_buffer_append_key_distribute4
-#undef unicode_buffer_append_str
-#undef unicode_buffer_append_str_distribute2
-#undef unicode_buffer_append_str_distribute4
-#undef unicode_buffer_append_bool
-#undef unicode_buffer_append_null
-#undef unicode_buffer_append_float
-#undef unicode_buffer_append_f32
-#undef unicode_buffer_append_empty_arr
-#undef unicode_buffer_append_arr_begin
-#undef unicode_buffer_append_arr_end
-#undef unicode_buffer_append_empty_obj
-#undef unicode_buffer_append_obj_begin
-#undef unicode_buffer_append_obj_end
+#undef u_buf_apd_key_wrapped
+#undef u_buf_apd_key_distribute2
+#undef u_buf_apd_key_distribute4
+#undef u_buf_apd_str_wrapped
+#undef u_buf_apd_str_dict
+#undef u_buf_apd_str_list
+#undef u_buf_apd_str_distribute2
+#undef u_buf_apd_str_distribute4
+#undef u_buf_apd_bool
+#undef u_buf_apd_null
+#undef u_buf_apd_float
+#undef u_buf_apd_f32
+#undef u_buf_apd_empty_arr
+#undef u_buf_apd_arr_begin
+#undef u_buf_apd_arr_end
+#undef u_buf_apd_empty_obj
+#undef u_buf_apd_obj_begin
+#undef u_buf_apd_obj_end
 #undef ssrjson_dumps_obj
 //
 #undef encode_process_val
