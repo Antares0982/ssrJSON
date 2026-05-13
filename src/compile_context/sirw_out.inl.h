@@ -53,8 +53,6 @@
 #undef u_buf_apd_key_distribute2
 #undef u_buf_apd_key_distribute4
 #undef u_buf_apd_str_wrapped
-#undef u_buf_apd_str_dict
-#undef u_buf_apd_str_list
 #undef u_buf_apd_str_distribute2
 #undef u_buf_apd_str_distribute4
 #undef u_buf_apd_bool

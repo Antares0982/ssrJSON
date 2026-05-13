@@ -70,14 +70,14 @@
 
 /* Encodes non-container types. */
 force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, ssrjson_compiletime bool to_bytes_obj,
-                                                     bool is_write_cache) {
+                                                     bool is_write_cache, ssrjson_compiletime bool is_compact) {
     EncodeUnicodeWriter writer;
-    EncodeUBufInfo _u_buf_info; //, new_u_buf_info;
+    EncodeUBufInfo _u_buf_info;
     _u_buf_info.head = PyObject_Malloc(SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE);
     return_if_no_memory(_u_buf_info.head);
     //
     bool compact = ssrjson_pyascii_cast(unicode)->state.compact;
-    assert(compact);
+    assert((!!compact) == (!!is_compact));
     usize len;
     int unicode_kind;
     bool is_ascii;
@@ -96,11 +96,10 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, ssrjson_
     //
     bool success;
     if (ssrjson_consteval(to_bytes_obj)) {
+        const void *src_voidp = get_src_voidp(unicode, is_ascii, is_compact);
         // pass `is_in_obj = true` to avoid unwanted indent check
-        WRITER_AS_U8(writer) = b_buf_apd_str_indent0(
-                WRITER_AS_U8(writer), unicode_kind,
-                is_ascii ? ssrjson_pyunicode_ascii_start(unicode) : ssrjson_pyunicode_ucs1_start(unicode), len, unicode,
-                is_ascii, is_write_cache, &_u_buf_info, 0, true);
+        WRITER_AS_U8(writer) = b_buf_apd_str_indent0(WRITER_AS_U8(writer), unicode_kind, src_voidp, len, unicode,
+                                                     is_ascii, is_write_cache, &_u_buf_info, 0, true, is_compact);
         success = !!writer;
         WRITER_AS_U8(writer)
         --;
@@ -108,28 +107,29 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, ssrjson_
         switch (unicode_kind) {
             // pass `is_in_obj = true` to avoid unwanted indent check
             case 1: {
-                const u8 *src = is_ascii ? ssrjson_pyunicode_ascii_start(unicode)
-                                         : ssrjson_pyunicode_ucs1_start(unicode);
+                const u8 *src = get_src_voidp(unicode, is_ascii, is_compact);
                 WRITER_AS_U8(writer) = u_buf_apd_str_u8_u8_indent0(
-                        src, len, WRITER_AS_U8(writer), &_u_buf_info, 0, true);
+                        WRITER_AS_U8(writer), src, len, &_u_buf_info, 0, true, is_compact);
                 success = !!writer;
                 WRITER_AS_U8(writer)
                 --;
                 break;
             }
             case 2: {
-                const u16 *src = ssrjson_pyunicode_ucs2_start(unicode);
+                const u16 *src = ssrjson_consteval(is_compact) ? ssrjson_pyunicode_ucs2_start(unicode)
+                                                               : ssrjson_pyunicode_cast(unicode)->data.any;
                 WRITER_AS_U16(writer) = u_buf_apd_str_u16_u16_indent0(
-                        src, len, WRITER_AS_U16(writer), &_u_buf_info, 0, true);
+                        WRITER_AS_U16(writer), src, len, &_u_buf_info, 0, true, is_compact);
                 success = !!writer;
                 WRITER_AS_U16(writer)
                 --;
                 break;
             }
             case 4: {
-                const u32 *src = ssrjson_pyunicode_ucs4_start(unicode);
+                const u32 *src = ssrjson_consteval(is_compact) ? ssrjson_pyunicode_ucs4_start(unicode)
+                                                               : ssrjson_pyunicode_cast(unicode)->data.any;
                 WRITER_AS_U32(writer) = u_buf_apd_str_u32_u32_indent0(
-                        src, len, WRITER_AS_U32(writer), &_u_buf_info, 0, true);
+                        WRITER_AS_U32(writer), src, len, &_u_buf_info, 0, true, is_compact);
                 success = !!writer;
                 WRITER_AS_U32(writer)
                 --;
@@ -168,11 +168,20 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, ssrjson_
 }
 
 static force_noinline PyObject *ssrjson_dumps_single_unicode_to_str(PyObject *unicode) {
-    return _ssrjson_dumps_single_unicode(unicode, false, false);
+    return _ssrjson_dumps_single_unicode(unicode, false, false, true);
 }
 
 static force_noinline PyObject *ssrjson_dumps_single_unicode_to_bytes(PyObject *unicode, bool is_write_cache) {
-    return _ssrjson_dumps_single_unicode(unicode, true, is_write_cache);
+    return _ssrjson_dumps_single_unicode(unicode, true, is_write_cache, true);
+}
+
+static force_noinline PyObject *ssrjson_dumps_single_unicode_non_compact_to_str(PyObject *unicode) {
+    return _ssrjson_dumps_single_unicode(unicode, false, false, false);
+}
+
+static force_noinline PyObject *ssrjson_dumps_single_unicode_non_compact_to_bytes(PyObject *unicode,
+                                                                                  bool is_write_cache) {
+    return _ssrjson_dumps_single_unicode(unicode, true, is_write_cache, false);
 }
 
 #include "compile_context/s_out.inl.h"
@@ -228,7 +237,7 @@ force_inline PyObject *_ssrjson_dumps_single_inf_nan(double v, ssrjson_compileti
 }
 
 force_inline PyObject *ssrjson_dumps_single_float_from_f64(double v, ssrjson_compiletime bool to_bytes_obj) {
-    u8 buffer[ssrjson_dtoa_write_length];
+    u8 buffer[ssrjson_dtoa_allocate_length];
     u8 *buffer_end;
     if (ssrjson_consteval(!ssrjson_dtoa_handle_inf_nan) && unlikely(isinf(v) || isnan(v))) {
         return _ssrjson_dumps_single_inf_nan(v, to_bytes_obj);
@@ -241,7 +250,7 @@ force_inline PyObject *ssrjson_dumps_single_float_from_f64(double v, ssrjson_com
 }
 
 force_inline PyObject *ssrjson_dumps_single_float_from_f32(float v, ssrjson_compiletime bool to_bytes_obj) {
-    u8 buffer[ssrjson_ftoa_write_length];
+    u8 buffer[ssrjson_ftoa_allocate_length];
     u8 *buffer_end;
     if (ssrjson_consteval(!ssrjson_ftoa_handle_inf_nan) && unlikely(isinf(v) || isnan(v))) {
         return _ssrjson_dumps_single_inf_nan(v, to_bytes_obj);
@@ -552,6 +561,9 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Dumps)(PyObject *self, PyObject *const *arg
         case T_Float: {
             goto dumps_float;
         }
+        case T_UnicodeNonCompact: {
+            return ssrjson_dumps_single_unicode_non_compact_to_str(obj);
+        }
         case T_NumpyArray:
             return ssrjson_dumps_single_ndarray(obj, indent_int, false);
         case T_NumpyFloat16:
@@ -771,6 +783,9 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_DumpsToBytes)(PyObject *self, PyObject *con
         }
         case T_Float: {
             goto dumps_float;
+        }
+        case T_UnicodeNonCompact: {
+            return ssrjson_dumps_single_unicode_non_compact_to_bytes(obj, is_write_cache);
         }
         case T_NumpyArray:
             return ssrjson_dumps_single_ndarray(obj, indent_int, true);

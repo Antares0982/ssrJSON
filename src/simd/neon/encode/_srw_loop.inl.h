@@ -36,8 +36,8 @@
 
 #include "compile_context/srw_in.inl.h"
 
-extern const dst_t ControlEscapeTable[(_Slash + 1) * 8];
-extern const Py_ssize_t _ControlJump[_Slash + 1];
+extern const dst_t ControlEscapeTable[256 * 8];
+extern const Py_ssize_t _ControlJump[256];
 
 force_inline void _addr_cvt(dst_t *restrict dst, const src_t *restrict src) {
     for (usize i = 0; i < READ_BATCH_COUNT; ++i) { dst[i] = (dst_t)src[i]; }

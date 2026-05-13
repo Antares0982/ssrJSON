@@ -37,8 +37,8 @@
 
 #include "compile_context/srw_in.inl.h"
 
-extern const dst_t ControlEscapeTable[(_Slash + 1) * 8];
-extern const Py_ssize_t _ControlJump[_Slash + 1];
+extern const dst_t ControlEscapeTable[256 * 8];
+extern const Py_ssize_t _ControlJump[256];
 
 force_inline ssrjson_nofail dst_t *encode_unicode_loop4(register dst_t *dst, const src_t **src_addr, usize *len_addr) {
     register usize len = *len_addr;

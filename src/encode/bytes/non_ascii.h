@@ -32,7 +32,8 @@
 #include "compile_context/s_in.inl.h"
 
 force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize len, const u8 **utf8_cache_out,
-                                   usize *utf8_length_out, ssrjson_compiletime bool is_key) {
+                                   usize *utf8_length_out, ssrjson_compiletime bool is_key,
+                                   ssrjson_compiletime bool is_compact) {
     // Alloc to max size
     void *new_buffer;
     u8 *writer;
@@ -43,7 +44,7 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
                                               __excess_bytes_write_ucs1_raw_utf8_trailing);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);
-            writer = bytes_write_ucs1_raw_utf8(writer, src_voidp, len, is_key);
+            writer = bytes_write_ucs1_raw_utf8_wrapped(writer, src_voidp, len, is_key, is_compact);
             break;
         }
         case 2: {
@@ -51,7 +52,7 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
                                               __excess_bytes_write_ucs2_raw_utf8_trailing);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);
-            writer = bytes_write_ucs2_raw_utf8(writer, src_voidp, len, is_key);
+            writer = bytes_write_ucs2_raw_utf8_wrapped(writer, src_voidp, len, is_key, is_compact);
             if (unlikely(!writer)) goto fail;
             break;
         }
@@ -60,7 +61,7 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
                                               __excess_bytes_write_ucs4_raw_utf8_trailing);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);
-            writer = bytes_write_ucs4_raw_utf8(writer, src_voidp, len, is_key);
+            writer = bytes_write_ucs4_raw_utf8_wrapped(writer, src_voidp, len, is_key, is_compact);
             if (unlikely(!writer)) goto fail;
             break;
         }
@@ -84,37 +85,47 @@ fail:;
     return false;
 }
 
-static force_noinline u8 *b_buf_apd_nonascii_str_write_cache(u8 *writer, const void *src_voidp, usize len,
-                                                             int src_pykind, PyObject *str) {
-    assert(ssrjson_pyascii_cast(str)->state.compact);
+force_inline u8 *b_buf_apd_nonascii_str_write_cache(u8 *writer, const void *src_voidp, usize len, int src_pykind,
+                                                    PyObject *str, ssrjson_compiletime bool is_compact) {
     const u8 *utf8_cache;
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
     if (!utf8_cache) {
-        if (unlikely(!write_cache_impl(src_voidp, src_pykind, len, &utf8_cache, &utf8_length, false))) return NULL;
+        if (!USING_AVX512 && len < 6) {
+            // For short strings, directly encode without caching
+            // Why is 6: we assume that each character encodes to 3 bytes in most cases,
+            // and 3 * 6 = 18 >= 16.
+            goto no_cache_encode;
+        }
+        if (unlikely(!write_cache_impl(src_voidp, src_pykind, len, &utf8_cache, &utf8_length, false, is_compact)))
+            return NULL;
         set_cache(str, &utf8_cache, utf8_length);
     }
     assert(utf8_cache);
 
     // Also see comment in bytes_write_utf8
     if (USING_AVX512 || utf8_length >= 16) {
-        writer = bytes_write_utf8(writer, utf8_cache, utf8_length, false);
+        // is_compact is not needed here.
+        *writer++ = '"';
+        writer = bytes_write_ascii_str_noinline(writer, utf8_cache, utf8_length);
         *writer++ = '"';
         *writer++ = ',';
         return writer;
     } else {
+    no_cache_encode:;
+        *writer++ = '"';
         switch (src_pykind) {
             case 1: {
-                writer = bytes_write_ucs1(writer, src_voidp, len, false);
+                writer = bytes_write_ucs1_str(writer, src_voidp, len, is_compact);
                 break;
             }
             case 2: {
-                writer = bytes_write_ucs2(writer, src_voidp, len, false);
+                writer = bytes_write_ucs2_str(writer, src_voidp, len, is_compact);
                 if (unlikely(!writer)) return NULL;
                 break;
             }
             case 4: {
-                writer = bytes_write_ucs4(writer, src_voidp, len, false);
+                writer = bytes_write_ucs4_str(writer, src_voidp, len, is_compact);
                 if (unlikely(!writer)) return NULL;
                 break;
             }
@@ -128,31 +139,33 @@ static force_noinline u8 *b_buf_apd_nonascii_str_write_cache(u8 *writer, const v
     }
 }
 
-static force_noinline u8 *b_buf_apd_nonascii_str_no_write_cache(u8 *writer, const void *src_voidp, usize len,
-                                                                int src_pykind, PyObject *str) {
-    assert(ssrjson_pyascii_cast(str)->state.compact);
+force_inline u8 *b_buf_apd_nonascii_str_no_write_cache(u8 *writer, const void *src_voidp, usize len, int src_pykind,
+                                                       PyObject *str, ssrjson_compiletime bool is_compact) {
     const u8 *utf8_cache;
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
     // Also see comment in bytes_write_utf8
     if (utf8_cache && (USING_AVX512 || utf8_length >= 16)) {
-        writer = bytes_write_utf8(writer, utf8_cache, utf8_length, false);
+        // is_compact is not needed here.
+        *writer++ = '"';
+        writer = bytes_write_ascii_str_noinline(writer, utf8_cache, utf8_length);
         *writer++ = '"';
         *writer++ = ',';
         return writer;
     } else {
+        *writer++ = '"';
         switch (src_pykind) {
             case 1: {
-                writer = bytes_write_ucs1(writer, src_voidp, len, false);
+                writer = bytes_write_ucs1_str(writer, src_voidp, len, is_compact);
                 break;
             }
             case 2: {
-                writer = bytes_write_ucs2(writer, src_voidp, len, false);
+                writer = bytes_write_ucs2_str(writer, src_voidp, len, is_compact);
                 if (unlikely(!writer)) return NULL;
                 break;
             }
             case 4: {
-                writer = bytes_write_ucs4(writer, src_voidp, len, false);
+                writer = bytes_write_ucs4_str(writer, src_voidp, len, is_compact);
                 if (unlikely(!writer)) return NULL;
                 break;
             }

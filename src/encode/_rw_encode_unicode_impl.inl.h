@@ -29,6 +29,8 @@
 #        include "utils/unicode.h"
 #        define COMPILE_READ_UCS_LEVEL 1
 #        define COMPILE_WRITE_UCS_LEVEL 1
+#        undef USING_AVX512
+#        define USING_AVX512 0
 #        include "simd/compile_feature_check.h"
 #    endif
 #endif
@@ -36,19 +38,39 @@
 /* Macro IN */
 #include "compile_context/srw_in.inl.h"
 
+static force_noinline ssrjson_nofail dst_t *encode_unicode_key_noinline(dst_t *writer, const src_t *str_data,
+                                                                        usize len) {
+    return encode_unicode_impl(writer, str_data, len, true);
+}
+
 // call u_buf_apd_key_rsv_idt before calling this.
-static force_noinline ssrjson_nofail dst_t *u_buf_apd_key_impl(dst_t *writer, const src_t *str_data, usize len) {
+force_inline ssrjson_nofail dst_t *u_buf_apd_key_impl(dst_t *writer, const src_t *str_data, usize len,
+                                                      ssrjson_compiletime bool is_compact) {
     *writer++ = '"';
-    writer = encode_unicode_impl(writer, str_data, len, true);
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 16 / COMPILE_READ_UCS_LEVEL) {
+        writer = encode_scalar(writer, str_data, len);
+    } else {
+        writer = encode_unicode_key_noinline(writer, str_data, len);
+    }
     *writer++ = '"';
     *writer++ = ':';
     return writer;
 }
 
+static force_noinline ssrjson_nofail dst_t *encode_unicode_str_noinline(dst_t *writer, const src_t *str_data,
+                                                                        usize len) {
+    return encode_unicode_impl(writer, str_data, len, false);
+}
+
 // call u_buf_apd_str_rsv_idt before calling this.
-static force_noinline ssrjson_nofail dst_t *u_buf_apd_str_impl(dst_t *writer, const src_t *str_data, usize len) {
+force_inline ssrjson_nofail dst_t *u_buf_apd_str_impl(dst_t *writer, const src_t *str_data, usize len,
+                                                      ssrjson_compiletime bool is_compact) {
     *writer++ = '"';
-    writer = encode_unicode_impl_no_key(writer, str_data, len);
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 16 / COMPILE_READ_UCS_LEVEL) {
+        writer = encode_scalar(writer, str_data, len);
+    } else {
+        writer = encode_unicode_str_noinline(writer, str_data, len);
+    }
     *writer++ = '"';
     *writer++ = ',';
     return writer;

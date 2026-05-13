@@ -360,6 +360,11 @@ force_inline void init_pybytes(PyObject *in_new_bytes, usize final_len) {
     new_bytes->ob_sval[final_len] = 0;
 }
 
+force_inline const void *get_src_voidp(PyObject *unicode, bool is_ascii, bool is_compact) {
+    return is_compact ? (is_ascii ? ssrjson_pyunicode_ascii_start(unicode) : ssrjson_pyunicode_ucs1_start(unicode))
+                      : ssrjson_pyunicode_cast(unicode)->data.any;
+}
+
 /*==============================================================================
  * Writer
  *============================================================================*/
@@ -420,6 +425,14 @@ force_inline bool resize_to_fit_pybytes(EncodeUBufInfo *u_buf_info, usize len) {
     u_buf_info->head = new_ptr;
     return true;
 }
+
+/* Scalar encoder. */
+u8 *encode_scalar_u8_u8(u8 *restrict writer, const u8 *restrict src, usize len);
+u16 *encode_scalar_u8_u16(u16 *restrict writer, const u8 *restrict src, usize len);
+u32 *encode_scalar_u8_u32(u32 *restrict writer, const u8 *restrict src, usize len);
+u16 *encode_scalar_u16_u16(u16 *restrict writer, const u16 *restrict src, usize len);
+u32 *encode_scalar_u16_u32(u32 *restrict writer, const u16 *restrict src, usize len);
+u32 *encode_scalar_u32_u32(u32 *restrict writer, const u32 *restrict src, usize len);
 
 /*==============================================================================
  * Integer Writer

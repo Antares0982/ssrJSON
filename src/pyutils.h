@@ -166,7 +166,6 @@ force_inline const u8 *pyunicode_get_utf8_cache(PyObject *unicode) {
 }
 
 force_inline void get_utf8_cache(PyObject *unicode, const u8 **utf8_cache_out, usize *utf8_length_out) {
-    assert(ssrjson_pyascii_cast(unicode)->state.compact);
     assert(!ssrjson_pyascii_cast(unicode)->state.ascii);
     *utf8_cache_out = (const u8 *)pyunicode_get_utf8_cache(unicode);
     *utf8_length_out = (usize)ssrjson_pycompactunicode_cast(unicode)->utf8_length;

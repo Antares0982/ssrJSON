@@ -65,8 +65,9 @@
  */
 #define unicode_indent_writer make_iw_name(unicode_indent_writer)
 
+#define b_buf_apd_key_rsv_idt make_i_name(b_buf_apd_key_rsv_idt)
 #define b_buf_apd_key make_i_name(b_buf_apd_key)
-#define b_buf_apd_str_reserve make_i_name(b_buf_apd_str_reserve)
+#define b_buf_apd_str_rsv_idt make_i_name(b_buf_apd_str_rsv_idt)
 #define b_buf_apd_str_impl make_i_name(b_buf_apd_str_impl)
 #define b_buf_apd_str make_i_name(b_buf_apd_str)
 #define b_buf_apd_nonascii_key_write_cache make_i_name(b_buf_apd_nonascii_key_write_cache)

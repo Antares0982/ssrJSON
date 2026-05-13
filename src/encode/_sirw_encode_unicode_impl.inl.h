@@ -25,6 +25,7 @@
 #        define COMPILE_CONTEXT_ENCODE
 #    endif
 #    ifndef COMPILE_INDENT_LEVEL
+#        include "bytes/encode_utf8.h"
 #        include "encode/indent_writer.h"
 #        include "encode_shared.h"
 #        include "simd/simd_detect.h"
@@ -60,12 +61,12 @@ force_inline dst_t *u_buf_apd_key_rsv_idt(dst_t *writer, usize len, EncodeUBufIn
 }
 
 force_inline dst_t *u_buf_apd_key(const src_t *str_data, usize len, dst_t *writer, EncodeUBufInfo *u_buf_info,
-                                  usize cur_nested_depth) {
+                                  usize cur_nested_depth, ssrjson_compiletime bool is_compact) {
     static_assert(
             COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL, "COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL");
     writer = u_buf_apd_key_rsv_idt(writer, len, u_buf_info, cur_nested_depth);
     if (likely(writer)) {
-        writer = u_buf_apd_key_impl(writer, str_data, len);
+        writer = u_buf_apd_key_impl(writer, str_data, len, is_compact);
 #if COMPILE_INDENT_LEVEL > 0
         *writer++ = ' ';
 #    if COMPILE_WRITE_UCS_LEVEL < 4
@@ -105,14 +106,15 @@ force_inline dst_t *u_buf_apd_str_rsv_idt(dst_t *writer, usize len, EncodeUBufIn
     }
 }
 
-force_inline dst_t *u_buf_apd_str(const src_t *str_data, usize len, dst_t *writer, EncodeUBufInfo *u_buf_info,
-                                  usize cur_nested_depth, ssrjson_compiletime bool is_in_obj) {
+force_inline dst_t *u_buf_apd_str(dst_t *writer, const src_t *str_data, usize len, EncodeUBufInfo *u_buf_info,
+                                  usize cur_nested_depth, ssrjson_compiletime bool is_in_obj,
+                                  ssrjson_compiletime bool is_compact) {
     static_assert(
             COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL, "COMPILE_READ_UCS_LEVEL <= COMPILE_WRITE_UCS_LEVEL");
     //
     writer = u_buf_apd_str_rsv_idt(writer, len, u_buf_info, cur_nested_depth, is_in_obj);
     if (likely(writer)) {
-        writer = u_buf_apd_str_impl(writer, str_data, len);
+        writer = u_buf_apd_str_impl(writer, str_data, len, is_compact);
         assert(check_unicode_writer_valid(writer, u_buf_info));
     }
     return writer;

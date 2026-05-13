@@ -24,6 +24,10 @@ import random
 import ssrjson
 
 
+class SubStr(str):
+    pass
+
+
 def random_concat_string(
     pool1, pool2=None, long_length=10000, long_string_probability=0.1, is_bytes=False
 ):
@@ -180,16 +184,40 @@ def get_random_bytes_for_loads():
 
 
 class TestStr:
+    @staticmethod
+    def _to_substr(obj):
+        if isinstance(obj, str):
+            return SubStr(obj)
+        elif isinstance(obj, list):
+            return [TestStr._to_substr(item) for item in obj]
+        elif isinstance(obj, dict):
+            return {
+                TestStr._to_substr(k): TestStr._to_substr(v) for k, v in obj.items()
+            }
+        return obj
+
     def _test_dumps_str(self, d):
         x = ssrjson.dumps(d)
         assert x == json.dumps(d, ensure_ascii=False).replace(" ", "")
         assert ssrjson.dumps(d, indent=2) == json.dumps(d, indent=2, ensure_ascii=False)
         assert ssrjson.dumps(d, indent=4) == json.dumps(d, indent=4, ensure_ascii=False)
+
+        sub_d = self._to_substr(d)
+        assert ssrjson.dumps(sub_d) == json.dumps(d, ensure_ascii=False).replace(
+            " ", ""
+        )
+        assert ssrjson.dumps(sub_d, indent=2) == json.dumps(
+            d, indent=2, ensure_ascii=False
+        )
+        assert ssrjson.dumps(sub_d, indent=4) == json.dumps(
+            d, indent=4, ensure_ascii=False
+        )
+
         return x
 
     def _test_dumps_bytes(self, d):
         def _do_test(is_write_cache: bool):
-            b = ssrjson.dumps_to_bytes(d)
+            b = ssrjson.dumps_to_bytes(d, is_write_cache=is_write_cache)
             assert b == json.dumps(d, ensure_ascii=False).replace(" ", "").encode(
                 "utf-8"
             )

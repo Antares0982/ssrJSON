@@ -33,8 +33,9 @@
 #undef write_unicode_indent
 #undef unicode_indent_writer
 //
+#undef b_buf_apd_key_rsv_idt
 #undef b_buf_apd_key
-#undef b_buf_apd_str_reserve
+#undef b_buf_apd_str_rsv_idt
 #undef b_buf_apd_str_impl
 #undef b_buf_apd_str
 #undef b_buf_apd_nonascii_key_write_cache

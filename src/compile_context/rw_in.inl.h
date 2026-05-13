@@ -34,6 +34,9 @@
 #define avx2_trailing_cvt make_rw_name(avx2_trailing_cvt)
 #define u_buf_apd_key_impl make_rw_name(u_buf_apd_key_impl)
 #define u_buf_apd_str_impl make_rw_name(u_buf_apd_str_impl)
+#define encode_unicode_key_noinline make_rw_name(encode_unicode_key_noinline)
+#define encode_unicode_str_noinline make_rw_name(encode_unicode_str_noinline)
+#define encode_scalar make_rw_name(encode_scalar)
 
 #ifdef COMPILE_UCS_LEVEL
 /* Generate function names with unicode type and writer type. */

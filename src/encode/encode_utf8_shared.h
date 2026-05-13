@@ -25,9 +25,17 @@
 
 #include "ssrjson.h"
 
-extern const u8 ControlEscapeTable_u8[(_Slash + 1) * 8];
-extern const Py_ssize_t _ControlJump[_Slash + 1];
+extern const u8 ControlEscapeTable_u8[256 * 8];
+extern const Py_ssize_t _ControlJump[256];
 extern PyObject *JSONEncodeError;
+
+u8 *ssrjson_nofail encode_bytes_ucs1_scalar(u8 *writer, const u8 *src, usize len);
+u8 *encode_bytes_ucs2_scalar(u8 *writer, const u16 *src, usize len);
+u8 *encode_bytes_ucs4_scalar(u8 *writer, const u32 *src, usize len);
+
+u8 *ssrjson_nofail encode_bytes_ucs1_raw_utf8_scalar(u8 *writer, const u8 *src, usize len);
+u8 *encode_bytes_ucs2_raw_utf8_scalar(u8 *writer, const u16 *src, usize len);
+u8 *encode_bytes_ucs4_raw_utf8_scalar(u8 *writer, const u32 *src, usize len);
 
 /* UCS1 src. */
 force_inline ssrjson_nofail u8 *encode_one_special_ucs1(u8 *writer, u8 unicode) {
