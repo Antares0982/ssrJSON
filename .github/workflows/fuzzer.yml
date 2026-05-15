@@ -65,3 +65,75 @@ jobs:
         ASAN_OPTIONS=detect_leaks=0 PYTHONPATH=${{ github.workspace }}/test_data/fuzzer \
           ./ssrjson_encode_fuzzer -dict=encode_fuzzer.dict \
           -max_total_time=${{ inputs.max-total-time || '300' }}
+
+  Run-Decode-Fuzzer-MacOS:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.14'
+
+    - name: Install LLVM
+      run: brew install llvm
+
+    - name: Build Fuzzer
+      run: |
+        export PATH="$(brew --prefix llvm)/bin:$PATH"
+        export CC=clang
+        export CXX=clang++
+        INCLUDE=$(python3 -c "import sysconfig,os;print(os.path.dirname(sysconfig.get_config_h_filename()))")
+        MINOR=$(python3 -c "import sys;print(sys.version_info.minor)")
+        LIBDIR=$(python3 -c "import sysconfig;print(sysconfig.get_config_var('LIBDIR'))")
+        export Python3_INCLUDE_DIR="$INCLUDE"
+        export Python3_LIBRARY="$LIBDIR/libpython3.$MINOR.dylib"
+        bash ci/macos_build_fuzz.sh build-fuzz
+
+    - name: Run Decode Fuzzer
+      run: |
+        export PATH="$(brew --prefix llvm)/bin:$PATH"
+        cd build-fuzz
+        ASAN_OPTIONS=detect_leaks=0 \
+        PYTHONPATH=${{ github.workspace }}/test_data/fuzzer \
+        MallocNanoZone=0 \
+          ./ssrjson_decode_fuzzer -dict=fuzzer.dict \
+          -max_total_time=${{ inputs.max-total-time || '300' }} decode_corpus
+
+  Run-Encode-Fuzzer-MacOS:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.14'
+
+    - name: Install LLVM
+      run: brew install llvm
+
+    - name: Build Fuzzer
+      run: |
+        export PATH="$(brew --prefix llvm)/bin:$PATH"
+        export CC=clang
+        export CXX=clang++
+        INCLUDE=$(python3 -c "import sysconfig,os;print(os.path.dirname(sysconfig.get_config_h_filename()))")
+        MINOR=$(python3 -c "import sys;print(sys.version_info.minor)")
+        LIBDIR=$(python3 -c "import sysconfig;print(sysconfig.get_config_var('LIBDIR'))")
+        export Python3_INCLUDE_DIR="$INCLUDE"
+        export Python3_LIBRARY="$LIBDIR/libpython3.$MINOR.dylib"
+        bash ci/macos_build_fuzz.sh build-fuzz
+
+    - name: Run Encode Fuzzer
+      run: |
+        export PATH="$(brew --prefix llvm)/bin:$PATH"
+        cd build-fuzz
+        ASAN_OPTIONS=detect_leaks=0 \
+        PYTHONPATH=${{ github.workspace }}/test_data/fuzzer \
+        MallocNanoZone=0 \
+          ./ssrjson_encode_fuzzer -dict=encode_fuzzer.dict \
+          -max_total_time=${{ inputs.max-total-time || '300' }}

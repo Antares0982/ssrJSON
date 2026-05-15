@@ -118,7 +118,7 @@ force_inline ssrjson_nofail dst_t *encode_trailing_copy_with_cvt(register dst_t 
 restart:;
     vector_a escape_mask = high_mask(old_escape_mask, copy_len);
     vector_a vec_shifted = runtime_byte_rshift_128(vec, 16 - copy_len * sizeof(src_t));
-    _addr_cvt4(dst, (const src_t *)&vec_shifted);
+    _addr_cvt(dst, (const src_t *)&vec_shifted);
     if (likely(testz(escape_mask))) {
         dst += copy_len;
     } else {

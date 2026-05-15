@@ -25,3 +25,24 @@ jobs:
       if: contains(matrix.pyver, 't')
       run: |
         nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./ci/linux_test.py --asan --lockfree
+
+  ASAN-CHECK-MACOS:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+    - name: Set up Python ${{ matrix.pyver }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.pyver }}
+    - name: Install test dependencies
+      run: pip install pytest pytest-xdist pytest-random-order numpy
+    - name: Run asan check
+      run: python ./ci/macos_asan_test.py --asan
+    - name: Run asan check (lockfree)
+      if: contains(matrix.pyver, 't')
+      run: python ./ci/macos_asan_test.py --asan --lockfree

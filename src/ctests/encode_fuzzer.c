@@ -27,7 +27,7 @@ PyObject *encode_fuzz_module = NULL;
 PyObject *fuzz_encode_func = NULL;
 
 int LLVMFuzzerInitialize(int *argc, char ***argv) {
-    initialize_cpython();
+    if (!initialize_cpython()) goto fail;
     // import ssrjson to ensure it's available
     PyObject *ssrjson_module = import_ssrjson();
     if (!ssrjson_module) goto fail;
