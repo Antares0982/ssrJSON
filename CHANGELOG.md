@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.0.19
+
+### New Features
+- Add non-compact unicode encoder to support subclasses of Python str (#33)
+
+### Bug Fixes
+- Fix aarch64 NEON encoder heap buffer overflow in `encode_trailing_copy_with_cvt` - all prior versions recommended to upgrade
+- Fix stack buffer overflow related to xjb32
+
+### Performance
+- Implement `no_memmove` feature in xjb for improved float-to-string performance [xjb#7](https://github.com/xjb714/xjb/pull/7)
+
+### Code Quality
+- Refactor key/str writer, reduce binary size, and remove magic numbers
+
+### Build & CI
+- Use trusted publisher for PyPI
+- Add aarch64-MacOS ASAN tests and fuzzer
+
 ## 0.0.18
 
 ### Bug Fixes
