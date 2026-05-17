@@ -185,11 +185,6 @@ jobs:
       run: |
         echo "PYTHONPATH=build-testing/lib/python3.${{ matrix.pyver }}/site-packages" >> $GITHUB_OUTPUT
 
-    - name: Setup cachix
-      uses: cachix/cachix-action@v17
-      with:
-        name: antares0982
-
     - name: Build Wheel
       id: build-wheel
       run: |
