@@ -678,7 +678,7 @@ force_inline EncodeUnicodeWriter encode_process_val(EncodeUnicodeWriter writer, 
                 }
 
                 t_iu8_nonzero:;
-                    write_indent_return_if_fail(writer, u_buf_info, *cur_nested_depth_addr, is_in_obj, 4);
+                    write_indent_return_if_fail(writer, u_buf_info, *cur_nested_depth_addr, is_in_obj, 5);
                     _CAST_WRITER(writer) = u8_to_unicode(_CAST_WRITER(writer), value, sign);
                     *_CAST_WRITER(writer)++ = ',';
                     break;

@@ -514,7 +514,7 @@ force_inline u8 *encode_bytes_process_val(u8 *writer, EncodeValJumpFlag *jump_fl
                 }
 
                 t_iu8_nonzero:;
-                    writer = unicode_indent_writer(writer, u_buf_info, *cur_nested_depth_addr, is_in_obj, 4);
+                    writer = unicode_indent_writer(writer, u_buf_info, *cur_nested_depth_addr, is_in_obj, 5);
                     return_jump_fail_if_unlikely(!writer);
                     writer = u8_to_unicode_u8(writer, value, sign);
                     *writer++ = ',';
