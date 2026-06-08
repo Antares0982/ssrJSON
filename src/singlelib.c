@@ -52,6 +52,12 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     err = PyDict_SetItemString(
             ret, "lockfree", (!SSRJSON_GIL_ENABLED && SSRJSON_FREE_THREADING_LOCKFREE) ? Py_True : Py_False);
     if (err) goto fail;
+#    ifdef SSRJSON_PGO_USE
+    err = PyDict_SetItemString(ret, "pgo", Py_True);
+#    else
+    err = PyDict_SetItemString(ret, "pgo", Py_False);
+#    endif
+    if (err) goto fail;
 
 #    if HAS_AVX512
     DICT_SET_STRING_ITEM("simd", "AVX512");

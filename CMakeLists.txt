@@ -9,6 +9,10 @@ option(BUILD_FREE_THREADING "Build with free-threading support" OFF)
 option(FREE_THREADING_LOCKFREE "Use lock-free free-threading encoding" OFF)
 option(ASAN_ENABLED "Build with asan" OFF)
 option(BUILD_COVERAGE "Build with coverage" OFF)
+option(BUILD_PGO_GENERATE "Build with PGO instrumentation" OFF)
+set(BUILD_PGO_USE
+    ""
+    CACHE FILEPATH "Path to PGO profile file (.profdata)")
 option(BUILD_CTESTS "Build tests" ON)
 option(BUILD_SHIPPING_SIMD "Build all simd for shipping" ON)
 option(BUILD_AVX512 "Force build avx512, non-shipping" OFF)
@@ -19,6 +23,14 @@ option(SEARCH_PYTHON3_USE_ENV
        "Search python3 using environment variables without cmake way" OFF)
 option(USE_LTO "Use LTO" ON)
 option(BUILD_FUZZER "Build fuzzer" OFF)
+
+if(BUILD_PGO_GENERATE AND BUILD_PGO_USE)
+  message(FATAL_ERROR "Cannot enable both BUILD_PGO_GENERATE and BUILD_PGO_USE")
+endif()
+if(BUILD_PGO_GENERATE AND BUILD_COVERAGE)
+  message(
+    FATAL_ERROR "Cannot enable both BUILD_PGO_GENERATE and BUILD_COVERAGE")
+endif()
 
 if(BUILD_SHIPPING_SIMD)
   if(BUILD_AVX512
@@ -145,11 +157,39 @@ endif()
 
 if(USE_LTO AND NOT CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo)$")
   target_compile_options(commonBuild INTERFACE -flto)
-  target_link_options(commonBuild INTERFACE -flto)
+  if(NOT CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_link_options(commonBuild INTERFACE -flto)
+  endif()
 endif()
 
 if(BUILD_COVERAGE)
   target_compile_definitions(commonBuild INTERFACE SSRJSON_COVERAGE=1)
+endif()
+
+if(BUILD_PGO_GENERATE)
+  target_compile_definitions(commonBuild INTERFACE SSRJSON_PGO_GENERATE=1)
+  if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(commonBuild
+                           INTERFACE /clang:-fprofile-instr-generate)
+  else()
+    target_compile_options(commonBuild INTERFACE -fprofile-instr-generate)
+    target_link_options(commonBuild INTERFACE -fprofile-instr-generate)
+  endif()
+endif()
+
+if(BUILD_PGO_USE)
+  target_compile_definitions(commonBuild INTERFACE SSRJSON_PGO_USE=1)
+  if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(
+      commonBuild INTERFACE /clang:-fprofile-instr-use=${BUILD_PGO_USE}
+                            -Wno-profile-instr-unprofiled)
+  else()
+    target_compile_options(
+      commonBuild INTERFACE -fprofile-instr-use=${BUILD_PGO_USE}
+                            -Wno-profile-instr-unprofiled)
+    target_link_options(commonBuild INTERFACE
+                        -fprofile-instr-use=${BUILD_PGO_USE})
+  endif()
 endif()
 
 # custom target: update SCM file

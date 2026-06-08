@@ -8,6 +8,8 @@
   callPackage,
   useNoGIL ? false,
   macOSTargetVersion ? 11,
+  usePgo ? true,
+  sde,
   ...
 }:
 let
@@ -15,35 +17,41 @@ let
   abiflags = import ./wheel-abiflags.nix;
   abiflag = abiflags.${system};
   ssrJSONVersion = callPackage ./ssrjson_version.nix { };
+  pgoProfile =
+    if usePgo then
+      callPackage ./build_pgo_profile.nix {
+        inherit
+          clangStdenv
+          python
+          cmake
+          lib
+          callPackage
+          useNoGIL
+          sde
+          ;
+      }
+    else
+      null;
+  commonCmakeFlags = [
+    "-DPREDEFINED_VERSION=${ssrJSONVersion}"
+    "-DBUILD_CTESTS=OFF"
+    "-DBUILD_SHIPPING_SIMD=ON"
+  ]
+  ++ lib.optional (
+    clangStdenv.hostPlatform.isDarwin && forNonNix
+  ) "-DCMAKE_OSX_DEPLOYMENT_TARGET=${builtins.toString macOSTargetVersion}.0"
+  ++ lib.optional useNoGIL "-DBUILD_FREE_THREADING=ON"
+  ++ lib.optional (pgoProfile != null) "-DBUILD_PGO_USE=${pgoProfile}/ssrjson.profdata";
+  pyver-abiname = (builtins.toString python.sourceVersion.minor) + (lib.optionalString useNoGIL "t");
+  srcFilter = import ./source_filter.nix { inherit lib; };
 in
-clangStdenv.mkDerivation rec {
+clangStdenv.mkDerivation {
   pname = "ssrjson";
   version = ssrJSONVersion;
-  src = builtins.path {
-    path = ./../..;
-    name = "ssrjson-src";
-    filter =
-      path: type:
-      let
-        rel = lib.removePrefix (toString ./../..) path;
-        allowed = [
-          "/CMakeLists.txt"
-          "/src"
-          "/cmake"
-          "/pysrc"
-          "/dev_tools/symbol_analyze.py"
-          "/ci/scm.py"
-        ];
-      in
-      lib.any (prefix: lib.hasPrefix prefix rel) allowed
-      || (type == "directory" && lib.any (prefix: lib.hasPrefix rel prefix) allowed);
-  };
+  src = srcFilter.mkSrc "ssrjson-src";
   postInstall =
-    let
-      pyver-abiname = (builtins.toString python.sourceVersion.minor) + (lib.optionalString useNoGIL "t");
-    in
     lib.optionalString (system != "aarch64-darwin") ''
-      PATH=${pax-utils}/bin:$PATH ${python}/bin/python ../dev_tools/symbol_analyze.py $out/ssrjson.so --find-needless | xargs -n 1 basename | while read tmplib; do
+      PATH=${pax-utils}/bin:$PATH ${python}/bin/python ../ci/symbol_analyze.py $out/ssrjson.so --find-needless | xargs -n 1 basename | while read tmplib; do
         patchelf $out/ssrjson.so --remove-needed $tmplib
       done
       patchelf --remove-needed libpython3.${pyver-abiname}.so.1.0 $out/ssrjson.so
@@ -61,13 +69,5 @@ clangStdenv.mkDerivation rec {
     cmake
   ];
   buildInputs = [ python ];
-  cmakeFlags = [
-    "-DPREDEFINED_VERSION=${version}"
-    "-DBUILD_CTESTS=OFF"
-    "-DBUILD_SHIPPING_SIMD=ON"
-  ]
-  ++ (lib.optional (
-    clangStdenv.hostPlatform.isDarwin && forNonNix
-  ) "-DCMAKE_OSX_DEPLOYMENT_TARGET=${builtins.toString macOSTargetVersion}.0")
-  ++ (lib.optional useNoGIL "-DBUILD_FREE_THREADING=ON");
+  cmakeFlags = commonCmakeFlags;
 }

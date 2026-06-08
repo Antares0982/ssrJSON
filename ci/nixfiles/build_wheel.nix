@@ -7,6 +7,8 @@
   forNonNix ? true,
   useNoGIL ? false,
   macOSTargetVersion ? 11,
+  usePgo ? true,
+  sde,
   ...
 }:
 let
@@ -18,6 +20,8 @@ let
       cmake
       forNonNix
       useNoGIL
+      usePgo
+      sde
       ;
   };
 
@@ -44,31 +48,12 @@ let
   ssrJSONVersion = pkgs.callPackage ./ssrjson_version.nix { };
   linuxOnlyString = lib.optionalString (system != "aarch64-darwin");
   darwinOnlyString = lib.optionalString (system == "aarch64-darwin");
+  srcFilter = import ./source_filter.nix { inherit lib; };
 in
 clangStdenv.mkDerivation {
   pname = "ssrjson-wheel";
   version = ssrJSONVersion;
-  src = builtins.path {
-    path = ./../..;
-    name = "ssrjson-src";
-    filter =
-      path: type:
-      let
-        rel = lib.removePrefix (toString ./../..) path;
-        allowed = [
-          "/CMakeLists.txt"
-          "/pyproject.toml"
-          "/setup.py"
-          "/MANIFEST.in"
-          "/README.md"
-          "/pysrc"
-          "/licenses"
-          "/ci/check_glibc_version.py"
-        ];
-      in
-      lib.any (prefix: lib.hasPrefix prefix rel) allowed
-      || (type == "directory" && lib.any (prefix: lib.hasPrefix rel prefix) allowed);
-  };
+  src = srcFilter.mkSrc "ssrjson-src";
   buildPhase =
     let
       pyver-abiname = (builtins.toString python.sourceVersion.minor) + (lib.optionalString useNoGIL "t");

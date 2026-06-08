@@ -2,10 +2,12 @@ include CMakeLists.txt
 include LICENSE
 include README.md
 include ci/scm.py
+include ci/pgo_train.py
 recursive-include src *
 recursive-include python-test *
 recursive-include cmake *
 recursive-include ssrjson *
 recursive-include test_data *
+recursive-include bench *
 recursive-include licenses *
 recursive-include pics *

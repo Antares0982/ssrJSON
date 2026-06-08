@@ -29,6 +29,7 @@
             }
           )
         );
+      sde = ssrjson-nix-dev.packages.x86_64-linux.sde;
       ssrjson-devShells = ssrjson-nix-dev.devShells;
       FreeThreadingUpdate = map (p: {
         path = [
@@ -58,6 +59,7 @@
             name = "ssrjson-py3" + (builtins.toString ver);
             value = pkgs.callPackage "${nixfiles}/build_package.nix" {
               python = versionUtils.pyVerToPyPackage ver;
+              inherit sde;
             };
           };
           verToPackageDefNoGIL = ver: {
@@ -65,12 +67,29 @@
             value = pkgs.callPackage "${nixfiles}/build_package.nix" {
               python = versionUtils.pyVerToPyPackageNoGIL ver;
               useNoGIL = true;
+              inherit sde;
+            };
+          };
+          verToPgoProfileDef = ver: {
+            name = "ssrjson-pgo-profile-py3" + (builtins.toString ver);
+            value = pkgs.callPackage "${nixfiles}/build_pgo_profile.nix" {
+              python = versionUtils.pyVerToPyPackage ver;
+              inherit sde;
+            };
+          };
+          verToPgoProfileDefNoGIL = ver: {
+            name = "ssrjson-pgo-profile-py3" + (builtins.toString ver) + "t";
+            value = pkgs.callPackage "${nixfiles}/build_pgo_profile.nix" {
+              python = versionUtils.pyVerToPyPackageNoGIL ver;
+              useNoGIL = true;
+              inherit sde;
             };
           };
           verToWheelDef = ver: {
             name = "ssrjson-wheel-py3" + (builtins.toString ver);
             value = pkgs.callPackage "${nixfiles}/build_wheel.nix" {
               python = versionUtils.pyVerToPyPackage ver;
+              inherit sde;
             };
           };
           verToWheelDefNoGIL = ver: {
@@ -78,6 +97,7 @@
             value = pkgs.callPackage "${nixfiles}/build_wheel.nix" {
               python = versionUtils.pyVerToPyPackageNoGIL ver;
               useNoGIL = true;
+              inherit sde;
             };
           };
           toPackageName = ver: "python3" + (toString ver) + "Packages";
@@ -85,6 +105,7 @@
             name = "ssrjson-pypackage-py3" + (builtins.toString ver);
             value = pkgs.callPackage "${nixfiles}/build_py_package.nix" rec {
               python = versionUtils.pyVerToPyPackage ver;
+              inherit sde;
             };
           };
           verToPyPackageDefNoGIL = ver: {
@@ -92,11 +113,18 @@
             value = pkgs.callPackage "${nixfiles}/build_py_package.nix" rec {
               python = versionUtils.pyVerToPyPackageNoGIL ver;
               useNoGIL = true;
+              inherit sde;
             };
           };
           ssrjsonPackages = builtins.listToAttrs (map verToPackageDef versionUtils.versions);
           ssrjsonPackagesNoGIL = builtins.listToAttrs (
             map verToPackageDefNoGIL versionUtils.versionsSupportNoGIL
+          );
+          ssrjsonPgoProfiles = builtins.listToAttrs (
+            map verToPgoProfileDef versionUtils.wheelBuildableVersions
+          );
+          ssrjsonPgoProfilesNoGIL = builtins.listToAttrs (
+            map verToPgoProfileDefNoGIL versionUtils.wheelBuildableVersionsSupportNoGIL
           );
           ssrjsonWheels = builtins.listToAttrs (map verToWheelDef versionUtils.wheelBuildableVersions);
           ssrjsonWheelsNoGIL = builtins.listToAttrs (
@@ -124,6 +152,8 @@
         // ssrjsonPackagesNoGIL
         // ssrjsonWheelsNoGIL
         // ssrjsonPyPackagesNoGIL
+        // ssrjsonPgoProfiles
+        // ssrjsonPgoProfilesNoGIL
       );
     };
 }

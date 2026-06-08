@@ -79,6 +79,7 @@ jobs:
     - name: Print Location
       run: |
         python -c "import ssrjson;print(ssrjson.__file__)"
+        python -c "import ssrjson;print(ssrjson.get_current_features())"
 
     - name: Run Python Tests
       run: |
@@ -128,6 +129,7 @@ jobs:
     - name: Print Location
       run: |
         python -c "import ssrjson;print(ssrjson.__file__)"
+        python -c "import ssrjson;print(ssrjson.get_current_features())"
 
     - name: Upload Wheel To Artifact
       uses: actions/upload-artifact@v7
@@ -238,6 +240,7 @@ jobs:
     - name: Print Location
       run: |
         python -c "import ssrjson;print(ssrjson.__file__)"
+        python -c "import ssrjson;print(ssrjson.get_current_features())"
 
     - name: Run Python Tests
       run: |
@@ -261,7 +264,14 @@ jobs:
         python-version: 3.${{ matrix.pyver }}
         allow-prereleases: true
 
+    - name: PGO Generate (SDE)
+      run: |
+        .\ci\pgo_generate_windows.ps1
+
     - name: Build Wheel
+      env:
+        SSRJSON_ENABLE_PGO: 1
+        SSRJSON_PGO_PROFILE: test_data\pgo\merged.profdata
       run: |
         .\ci\build-package.bat
 
@@ -273,6 +283,7 @@ jobs:
     - name: Print Location
       run: |
         python -c "import ssrjson;print(ssrjson.__file__)"
+        python -c "import ssrjson;print(ssrjson.get_current_features())"
 
     - name: Upload Wheel To Artifact
       uses: actions/upload-artifact@v7
@@ -318,6 +329,7 @@ jobs:
     - name: Print Location
       run: |
         python -c "import ssrjson;print(ssrjson.__file__)"
+        python -c "import ssrjson;print(ssrjson.get_current_features())"
 
     - name: Run Python Tests
       run: |
@@ -371,6 +383,7 @@ jobs:
     - name: Print Location
       run: |
         python -c "import ssrjson;print(ssrjson.__file__)"
+        python -c "import ssrjson;print(ssrjson.get_current_features())"
 
     - name: Upload Wheel To Artifact
       uses: actions/upload-artifact@v7

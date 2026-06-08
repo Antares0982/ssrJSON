@@ -15,39 +15,18 @@ let
     ]
   );
   ssrJSONVersion = callPackage ./ssrjson_version.nix { };
+  srcFilter = import ./source_filter.nix { inherit lib; };
 in
 clangStdenv.mkDerivation {
   pname = "ssrjson-tarball";
   version = ssrJSONVersion;
-  src = builtins.path {
-    path = ./../..;
-    name = "ssrjson-src";
-    filter =
-      path: type:
-      let
-        rel = lib.removePrefix (toString ./../..) path;
-        allowed = [
-          "/CMakeLists.txt"
-          "/pyproject.toml"
-          "/setup.py"
-          "/MANIFEST.in"
-          "/README.md"
-          "/pysrc"
-          "/licenses"
-          "/src"
-          "/cmake"
-          "/ci/scm.py"
-        ];
-      in
-      lib.any (prefix: lib.hasPrefix prefix rel) allowed
-      || (type == "directory" && lib.any (prefix: lib.hasPrefix rel prefix) allowed);
-  };
+  src = srcFilter.mkSrc "ssrjson-src";
   buildPhase = ''
     export PATH=${cmake}/bin:$PATH
     cp -r pysrc ssrjson
     cp licenses/* .
     rm -r licenses
-    python -m build --no-isolation
+    python -m build --sdist --no-isolation
     mkdir -p $out
     cp dist/*.tar.gz $out
   '';
