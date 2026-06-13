@@ -38,9 +38,8 @@
 /* Macro IN */
 #include "compile_context/srw_in.inl.h"
 
-static force_noinline ssrjson_nofail dst_t *encode_unicode_key_noinline(dst_t *writer, const src_t *str_data,
-                                                                        usize len) {
-    return encode_unicode_impl(writer, str_data, len, true);
+static force_noinline ssrjson_nofail dst_t *encode_unicode_noinline(dst_t *writer, const src_t *str_data, usize len) {
+    return encode_unicode_impl(writer, str_data, len);
 }
 
 // call u_buf_apd_key_rsv_idt before calling this.
@@ -50,16 +49,11 @@ force_inline ssrjson_nofail dst_t *u_buf_apd_key_impl(dst_t *writer, const src_t
     if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 16 / COMPILE_READ_UCS_LEVEL) {
         writer = encode_scalar(writer, str_data, len);
     } else {
-        writer = encode_unicode_key_noinline(writer, str_data, len);
+        writer = encode_unicode_noinline(writer, str_data, len);
     }
     *writer++ = '"';
     *writer++ = ':';
     return writer;
-}
-
-static force_noinline ssrjson_nofail dst_t *encode_unicode_str_noinline(dst_t *writer, const src_t *str_data,
-                                                                        usize len) {
-    return encode_unicode_impl(writer, str_data, len, false);
 }
 
 // call u_buf_apd_str_rsv_idt before calling this.
@@ -69,7 +63,7 @@ force_inline ssrjson_nofail dst_t *u_buf_apd_str_impl(dst_t *writer, const src_t
     if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 16 / COMPILE_READ_UCS_LEVEL) {
         writer = encode_scalar(writer, str_data, len);
     } else {
-        writer = encode_unicode_str_noinline(writer, str_data, len);
+        writer = encode_unicode_noinline(writer, str_data, len);
     }
     *writer++ = '"';
     *writer++ = ',';

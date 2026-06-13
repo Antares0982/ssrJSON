@@ -39,44 +39,6 @@
 extern const dst_t ControlEscapeTable[256 * 8];
 extern const Py_ssize_t _ControlJump[256];
 
-force_inline ssrjson_nofail dst_t *encode_unicode_loop4(register dst_t *dst, const src_t **src_addr, usize *len_addr) {
-    register usize len = *len_addr;
-    register const src_t *src = *src_addr;
-    while (len >= READ_BATCH_COUNT * 4) {
-        union {
-            vector_a x[4];
-        } union_vec;
-
-        union {
-            vector_a x[4];
-        } escape_union_vec;
-
-        memcpy(&union_vec, src, sizeof(union_vec));
-        for (usize i = 0; i < 4; ++i) { cvt_to_dst(dst + READ_BATCH_COUNT * i, union_vec.x[i]); }
-        for (usize i = 0; i < 4; ++i) { escape_union_vec.x[i] = get_escape_mask(union_vec.x[i]); }
-        if (likely(testz(escape_union_vec.x[0] | escape_union_vec.x[1] | escape_union_vec.x[2] |
-                         escape_union_vec.x[3]))) {
-            src += 4 * READ_BATCH_COUNT;
-            dst += 4 * READ_BATCH_COUNT;
-            len -= 4 * READ_BATCH_COUNT;
-        } else {
-            usize done_count = joined4_escape_mask_to_done_count(
-                    escape_union_vec.x[0], escape_union_vec.x[1], escape_union_vec.x[2], escape_union_vec.x[3]);
-            const src_t *escape_pos = src + done_count;
-            src += done_count + 1;
-            src_t escape_unicode = *escape_pos;
-            assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < _ControlMax);
-            dst += done_count;
-            len -= done_count + 1;
-            memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(dst_t));
-            dst += _ControlJump[escape_unicode];
-        }
-    }
-    *len_addr = len;
-    *src_addr = src;
-    return dst;
-}
-
 force_inline ssrjson_nofail dst_t *encode_unicode_loop(register dst_t *dst, const src_t **src_addr, usize *len_addr) {
     register usize len = *len_addr;
     register const src_t *src = *src_addr;
@@ -133,15 +95,12 @@ restart:;
     return dst;
 }
 
-force_inline ssrjson_nofail dst_t *encode_unicode_impl(dst_t *dst, const src_t *src, usize len, bool is_key) {
-    if (!is_key) dst = encode_unicode_loop4(dst, &src, &len);
+// excess written count = ssrjson_max(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode
+// 10 >= excess written count >= 2
+force_inline ssrjson_nofail dst_t *encode_unicode_impl(dst_t *dst, const src_t *src, usize len) {
     dst = encode_unicode_loop(dst, &src, &len);
     if (len) dst = encode_trailing_copy_with_cvt(dst, src, len);
     return dst;
-}
-
-force_inline ssrjson_nofail dst_t *encode_unicode_impl_no_key(dst_t *dst, const src_t *src, usize len) {
-    return encode_unicode_impl(dst, src, len, false);
 }
 
 #include "compile_context/srw_out.inl.h"

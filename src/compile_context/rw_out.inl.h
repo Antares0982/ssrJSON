@@ -30,8 +30,7 @@
 #undef avx2_trailing_cvt
 #undef u_buf_apd_key_impl
 #undef u_buf_apd_str_impl
-#undef encode_unicode_key_noinline
-#undef encode_unicode_str_noinline
+#undef encode_unicode_noinline
 #undef encode_scalar
 //
 #undef make_ucs_w_name

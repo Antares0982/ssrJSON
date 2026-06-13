@@ -103,11 +103,11 @@ force_inline u8 *b_buf_apd_nonascii_str_write_cache(u8 *writer, const void *src_
     }
     assert(utf8_cache);
 
-    // Also see comment in bytes_write_utf8
+    // Also see comment in b_buf_apd_ascii_key
     if (USING_AVX512 || utf8_length >= 16) {
         // is_compact is not needed here.
         *writer++ = '"';
-        writer = bytes_write_ascii_str_noinline(writer, utf8_cache, utf8_length);
+        writer = bytes_write_ascii_noinline(writer, utf8_cache, utf8_length);
         *writer++ = '"';
         *writer++ = ',';
         return writer;
@@ -144,11 +144,11 @@ force_inline u8 *b_buf_apd_nonascii_str_no_write_cache(u8 *writer, const void *s
     const u8 *utf8_cache;
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
-    // Also see comment in bytes_write_utf8
+    // Also see comment in b_buf_apd_ascii_key
     if (utf8_cache && (USING_AVX512 || utf8_length >= 16)) {
         // is_compact is not needed here.
         *writer++ = '"';
-        writer = bytes_write_ascii_str_noinline(writer, utf8_cache, utf8_length);
+        writer = bytes_write_ascii_noinline(writer, utf8_cache, utf8_length);
         *writer++ = '"';
         *writer++ = ',';
         return writer;

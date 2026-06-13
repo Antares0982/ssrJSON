@@ -33,11 +33,8 @@
 #define encode_trailing_copy_with_cvt make_srw_name(encode_trailing_copy_with_cvt)
 #define cvt_to_dst make_srw_name(cvt_to_dst)
 #define _addr_cvt make_srw_name(_addr_cvt)
-#define _addr_cvt4 make_srw_name(_addr_cvt4)
 #define encode_unicode_loop make_srw_name(encode_unicode_loop)
-#define encode_unicode_loop4 make_srw_name(encode_unicode_loop4)
 #define encode_unicode_impl make_srw_name(encode_unicode_impl)
-#define encode_unicode_impl_no_key make_srw_name(encode_unicode_impl_no_key)
 #define long_cvt make_srw_name(long_cvt)
 #define long_back_cvt make_srw_name(long_back_cvt)
 #endif // SSRJSON_COMPILE_CONTEXT_SRW

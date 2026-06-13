@@ -32,10 +32,7 @@
 #undef encode_trailing_copy_with_cvt
 #undef cvt_to_dst
 #undef _addr_cvt
-#undef _addr_cvt4
 #undef encode_unicode_loop
-#undef encode_unicode_loop4
 #undef encode_unicode_impl
-#undef encode_unicode_impl_no_key
 #undef long_cvt
 #undef long_back_cvt

@@ -61,7 +61,7 @@ force_inline u8 *b_buf_apd_nonascii_key_write_cache(u8 *writer, int src_pykind, 
         set_cache(key, &utf8_cache, utf8_length);
     }
     assert(utf8_cache);
-    // Also see comment in bytes_write_utf8
+    // Also see comment in b_buf_apd_ascii_key
     if (USING_AVX512 || utf8_length >= 16) {
         return b_buf_apd_ascii_key(writer, utf8_cache, utf8_length, !!COMPILE_INDENT_LEVEL, is_compact);
     } else {
@@ -102,7 +102,7 @@ force_inline u8 *b_buf_apd_nonascii_key_no_write_cache(u8 *writer, int src_pykin
     const u8 *utf8_cache;
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
-    // Also see comment in bytes_write_utf8
+    // Also see comment in b_buf_apd_ascii_key
     if (utf8_cache && (USING_AVX512 || utf8_length >= 16)) {
         return b_buf_apd_ascii_key(writer, utf8_cache, utf8_length, !!COMPILE_INDENT_LEVEL, is_compact);
     } else {
@@ -141,7 +141,7 @@ force_inline u8 *b_buf_apd_key_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
     // write_unicode_indent and '"' writes `get_indent_char_count() + 1` bytes
     // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
     // excess `16 - max_json_bytes_per_unicode` bytes written
-    // in bytes_write_utf8 or bytes_write_ascii (see comments in AVX2 impl of encode_unicode_impl)
+    // in bytes_write_ascii (see comments in AVX2 impl of encode_unicode_impl)
     // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
     // when indent level > 0, more 4 unicodes are written, else 2 unicodes
     const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
@@ -192,7 +192,7 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
         // '"' writes 1 byte
         // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
         // excess `16 - max_json_bytes_per_unicode` bytes written
-        // in bytes_write_utf8 or bytes_write_ascii (see comments in AVX2 impl of encode_unicode_impl)
+        // in bytes_write_ascii (see comments in AVX2 impl of encode_unicode_impl)
         // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = 1;
@@ -201,7 +201,7 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
         // write_unicode_indent and '"' writes `get_indent_char_count() + 1` bytes
         // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
         // excess `16 - max_json_bytes_per_unicode` bytes written
-        // in bytes_write_utf8 or bytes_write_ascii (see comments in AVX2 impl of encode_unicode_impl)
+        // in bytes_write_ascii (see comments in AVX2 impl of encode_unicode_impl)
         // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;

@@ -88,7 +88,7 @@ force_inline dst_t *u_buf_apd_str_rsv_idt(dst_t *writer, usize len, EncodeUBufIn
         // '"' writes 1 unicode
         // max_json_bytes_per_unicode * len is the written count when every character needs to be escaped
         // excess `ssrjson_max(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode` unicodes written
-        // in encode_unicode_impl_no_key (see comments in AVX2 impl of encode_unicode_impl)
+        // in encode_unicode_impl (see comments in AVX2 impl of encode_unicode_impl)
         // '"' and ',': 2 unicodes
         const usize excess_count_before = 1;
         return u_buf_reserve(writer, u_buf_info, excess_count_before + reserve_count_in_encoding + excess_count_after);
@@ -96,7 +96,7 @@ force_inline dst_t *u_buf_apd_str_rsv_idt(dst_t *writer, usize len, EncodeUBufIn
         // write_unicode_indent and '"' writes `get_indent_char_count() + 1` unicodes
         // max_json_bytes_per_unicode * len is the written count when every character needs to be escaped
         // excess `ssrjson_max(READ_BATCH_COUNT, 8) - max_json_bytes_per_unicode` unicodes written
-        // in encode_unicode_impl_no_key (see comments in AVX2 impl of encode_unicode_impl)
+        // in encode_unicode_impl (see comments in AVX2 impl of encode_unicode_impl)
         // '"' and ',': 2 unicodes
         const usize excess_count_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
         writer = u_buf_reserve(
