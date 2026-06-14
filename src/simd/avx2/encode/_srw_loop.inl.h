@@ -36,8 +36,7 @@
 
 #include "compile_context/srw_in.inl.h"
 
-extern const dst_t ControlEscapeTable[256 * 8];
-extern const Py_ssize_t _ControlJump[256];
+extern const dst_t ControlEscapeTable[256 * CT_ROW_STRIDE];
 
 force_inline ssrjson_nofail dst_t *encode_unicode_loop(register dst_t *dst, const src_t **src_addr, usize *len_addr) {
     register usize len = *len_addr;
@@ -60,8 +59,8 @@ force_inline ssrjson_nofail dst_t *encode_unicode_loop(register dst_t *dst, cons
             dst += done_count;
             len -= done_count + 1;
             // excess written count = 2
-            memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(dst_t));
-            dst += _ControlJump[escape_unicode];
+            memcpy(dst, ControlEscapeTable + escape_unicode * CT_ROW_STRIDE, 8 * sizeof(dst_t));
+            dst += *ssrjson_cast(const u64 *, ControlEscapeTable + escape_unicode * CT_ROW_STRIDE + CT_COUNT_OFFSET);
         }
     }
     *len_addr = len;
@@ -95,8 +94,8 @@ restart:;
         len -= real_done_count + 1;
         assert(unicode == _Slash || unicode == _Quote || unicode < _ControlMax);
         // excess written count = 8 - max_json_bytes_per_unicode = 2
-        memcpy(dst, &ControlEscapeTable[unicode * 8], 8 * sizeof(dst_t));
-        dst += _ControlJump[unicode];
+        memcpy(dst, ControlEscapeTable + unicode * CT_ROW_STRIDE, 8 * sizeof(dst_t));
+        dst += *ssrjson_cast(const u64 *, ControlEscapeTable + unicode * CT_ROW_STRIDE + CT_COUNT_OFFSET);
         if (len) goto restart;
     }
     // finally the excess written count is max(READ_BATCH_COUNT - max_json_bytes_per_unicode, 2)

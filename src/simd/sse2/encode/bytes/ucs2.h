@@ -127,8 +127,8 @@ restart:;
     switch (unicode_type) {
         case 1: {
             if (unlikely(is_escaped)) {
-                memcpy(writer, &ControlEscapeTable_u8[cur_unicode * 8], 8);
-                writer += _ControlJump[cur_unicode];
+                memcpy(writer, ControlEscapeTable_u8 + cur_unicode * 16, 8);
+                writer += *ssrjson_cast(const u64 *, ControlEscapeTable_u8 + cur_unicode * 16 + 8);
                 src++;
                 len--;
                 if (len) goto restart;

@@ -36,8 +36,7 @@
 
 #include "compile_context/srw_in.inl.h"
 
-extern const dst_t ControlEscapeTable[256 * 8];
-extern const Py_ssize_t _ControlJump[256];
+extern const dst_t ControlEscapeTable[256 * CT_ROW_STRIDE];
 
 force_inline void _addr_cvt(dst_t *restrict dst, const src_t *restrict src) {
     for (usize i = 0; i < READ_BATCH_COUNT; ++i) { dst[i] = (dst_t)src[i]; }
@@ -62,8 +61,8 @@ force_inline ssrjson_nofail dst_t *encode_unicode_loop(register dst_t *dst, cons
             assert(escape_unicode == _Quote || escape_unicode == _Slash || escape_unicode < _ControlMax);
             dst += done_count;
             len -= done_count + 1;
-            memcpy(dst, &ControlEscapeTable[escape_unicode * 8], 8 * sizeof(dst_t));
-            dst += _ControlJump[escape_unicode];
+            memcpy(dst, ControlEscapeTable + escape_unicode * CT_ROW_STRIDE, 8 * sizeof(dst_t));
+            dst += *ssrjson_cast(const u64 *, ControlEscapeTable + escape_unicode * CT_ROW_STRIDE + CT_COUNT_OFFSET);
         }
     }
     *len_addr = len;
@@ -92,8 +91,8 @@ restart:;
         copy_len -= real_done_count + 1;
         usize unicode = *escape_ptr;
         assert(unicode < _ControlMax || unicode == _Slash || unicode == _Quote);
-        memcpy(dst, ControlEscapeTable + unicode * 8, 8 * sizeof(dst_t));
-        dst += _ControlJump[unicode];
+        memcpy(dst, ControlEscapeTable + unicode * CT_ROW_STRIDE, 8 * sizeof(dst_t));
+        dst += *ssrjson_cast(const u64 *, ControlEscapeTable + unicode * CT_ROW_STRIDE + CT_COUNT_OFFSET);
         if (copy_len) goto restart;
     }
     return dst;

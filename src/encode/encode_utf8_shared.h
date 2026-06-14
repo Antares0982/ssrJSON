@@ -25,8 +25,7 @@
 
 #include "ssrjson.h"
 
-extern const u8 ControlEscapeTable_u8[256 * 8];
-extern const Py_ssize_t _ControlJump[256];
+extern const u8 ControlEscapeTable_u8[256 * 16];
 extern PyObject *JSONEncodeError;
 
 u8 *ssrjson_nofail encode_bytes_ucs1_scalar(u8 *writer, const u8 *src, usize len);
@@ -45,8 +44,8 @@ force_inline ssrjson_nofail u8 *encode_one_special_ucs1(u8 *writer, u8 unicode) 
         *writer++ = (unicode & 0x3f) | 0x80;
     } else {
         assert(unicode < _ControlMax || unicode == _Quote || unicode == _Slash);
-        memcpy(writer, &ControlEscapeTable_u8[unicode * 8], 8);
-        writer += _ControlJump[unicode];
+        memcpy(writer, ControlEscapeTable_u8 + unicode * 16, 8);
+        writer += *ssrjson_cast(const u64 *, ControlEscapeTable_u8 + unicode * 16 + 8);
     }
 
     return writer;
@@ -76,8 +75,8 @@ force_inline u8 *encode_one_ucs2(u8 *writer, u16 unicode) {
         if (unicode >= _ControlMax && unicode != _Slash && unicode != _Quote) {
             *writer++ = unicode;
         } else {
-            memcpy(writer, &ControlEscapeTable_u8[unicode * 8], 8);
-            writer += _ControlJump[unicode];
+            memcpy(writer, ControlEscapeTable_u8 + unicode * 16, 8);
+            writer += *ssrjson_cast(const u64 *, ControlEscapeTable_u8 + unicode * 16 + 8);
         }
     } else if (unicode < 0x800) {
         // 2 bytes
@@ -132,8 +131,8 @@ force_inline u8 *encode_one_ucs4(u8 *writer, u32 unicode) {
         if (unicode >= _ControlMax && unicode != _Slash && unicode != _Quote) {
             *writer++ = unicode;
         } else {
-            memcpy(writer, &ControlEscapeTable_u8[unicode * 8], 8);
-            writer += _ControlJump[unicode];
+            memcpy(writer, ControlEscapeTable_u8 + unicode * 16, 8);
+            writer += *ssrjson_cast(const u64 *, ControlEscapeTable_u8 + unicode * 16 + 8);
         }
     } else if (unicode < 0x800) {
         // 2 bytes

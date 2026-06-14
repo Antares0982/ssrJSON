@@ -27,6 +27,9 @@
 //
 #undef dst_t
 //
+#undef CT_ROW_STRIDE
+#undef CT_COUNT_OFFSET
+//
 #undef make_w_name
 //
 #undef u_buf_reserve
