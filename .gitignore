@@ -19,6 +19,9 @@ bench/*.py
 /.github/prompts
 /.github/skills
 /openspec
+/localfiles
+/.claude
+/.opencode
 
 # reserved for packaging
 /result
