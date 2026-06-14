@@ -12,13 +12,14 @@ from typing import Any
 _FILE_WEIGET = {
     "apache": 10,
     "canada": 1,
+    "ctm": 1,
     "github": 10,
     "instruments": 3,
     "mesh": 1,
     "truenull": 0,
     "tweet": 10,
     "twitter": 3,
-    "MotionsQuestions": 1,
+    "MotionsQuestionsAnswersQuestions2016": 1,
 }
 
 
@@ -84,7 +85,7 @@ def run_dumps(obj, weight: int):
 def run_loads(dumps_result: DumpsResult, weight: int):
     import ssrjson
 
-    if weiget <= 0:
+    if weight <= 0:
         return
 
     for _ in range(weight):
@@ -152,14 +153,14 @@ def main() -> int:
         fname = os.path.basename(fpath)
         print(f"  {fname}")
         assert fname.endswith(".json")
-        weiget = _FILE_WEIGET[fname[: len(fname) - 5]]
-        obj = generate_raw_object(fname)
+        weight = _FILE_WEIGET[fname[: len(fname) - 5]]
+        obj = generate_raw_object(fpath)
 
         # loads: bytes input
-        dumps_result = run_dumps(obj, weiget)
+        dumps_result = run_dumps(obj, weight)
 
         # loads: str input
-        run_loads(dumps_result, weiget)
+        run_loads(dumps_result, weight)
 
     print(f"PGO training complete. Profiles in {pgo_data_dir}")
     return 0

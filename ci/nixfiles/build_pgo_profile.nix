@@ -50,14 +50,16 @@ clangStdenv.mkDerivation {
       ''
         ${sde}/bin/sde64 -clx -- ${python}/bin/python ../ci/pgo_train.py \
           --build-dir "$PWD/pgo-instr" --bench-dir "$PWD/../bench" \
-          --profile-dir "$PWD/pgo_data/avx512" &
+          --profile-dir "$PWD/pgo_data/avx512" & pid1=$!
         ${sde}/bin/sde64 -rpl -- ${python}/bin/python ../ci/pgo_train.py \
           --build-dir "$PWD/pgo-instr" --bench-dir "$PWD/../bench" \
-          --profile-dir "$PWD/pgo_data/avx2" &
+          --profile-dir "$PWD/pgo_data/avx2" & pid2=$!
         ${sde}/bin/sde64 -ivb -- ${python}/bin/python ../ci/pgo_train.py \
           --build-dir "$PWD/pgo-instr" --bench-dir "$PWD/../bench" \
-          --profile-dir "$PWD/pgo_data/sse42" &
-        wait
+          --profile-dir "$PWD/pgo_data/sse42" & pid3=$!
+        wait $pid1 > /dev/null 2>&1 || exit $?
+        wait $pid2 > /dev/null 2>&1 || exit $?
+        wait $pid3 > /dev/null 2>&1 || exit $?
       ''
     else
       ''

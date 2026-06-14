@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.20
+
+### API Changes
+- `ssrjson.get_current_features()["pgo"]` now returns whether the current build is PGO-optimized (#36)
+
+### Bug Fixes
+- Fix 1-byte heap overflow when writing numpy i8 in range -128 ~ -100 (#35)
+
+### Performance
+- Add PGO (Profile-Guided Optimization) support: wheel builds use PGO by default; installing from tarball requires `SSRJSON_ENABLE_PGO=1` environment variable and LLVM toolchain (#36)
+- Remove loop4 from encode SIMD kernels to simplify code and improve runtime performance (#37)
+
 ## 0.0.19
 
 ### New Features
