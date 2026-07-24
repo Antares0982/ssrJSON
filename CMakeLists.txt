@@ -181,12 +181,14 @@ if(BUILD_PGO_USE)
   target_compile_definitions(commonBuild INTERFACE SSRJSON_PGO_USE=1)
   if(CMAKE_C_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
     target_compile_options(
-      commonBuild INTERFACE /clang:-fprofile-instr-use=${BUILD_PGO_USE}
-                            -Wno-profile-instr-unprofiled)
+      commonBuild
+      INTERFACE /clang:-fprofile-instr-use=${BUILD_PGO_USE}
+                -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date)
   else()
     target_compile_options(
-      commonBuild INTERFACE -fprofile-instr-use=${BUILD_PGO_USE}
-                            -Wno-profile-instr-unprofiled)
+      commonBuild
+      INTERFACE -fprofile-instr-use=${BUILD_PGO_USE}
+                -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date)
     target_link_options(commonBuild INTERFACE
                         -fprofile-instr-use=${BUILD_PGO_USE})
   endif()
