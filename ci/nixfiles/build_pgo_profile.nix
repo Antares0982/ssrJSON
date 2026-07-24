@@ -34,6 +34,14 @@ clangStdenv.mkDerivation {
     llvmPackages.llvm
   ];
 
+  # Keep hardening consistent with the final build (build_package.nix) so the
+  # PGO profile is collected from code generated with the same flags.
+  hardeningDisable = [
+    "fortify"
+    "zerocallusedregs"
+    "libcxxhardeningfast"
+  ];
+
   buildPhase = ''
     runHook preBuild
 

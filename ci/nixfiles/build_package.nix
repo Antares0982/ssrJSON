@@ -70,4 +70,14 @@ clangStdenv.mkDerivation {
   ];
   buildInputs = [ python ];
   cmakeFlags = commonCmakeFlags;
+  # Disable hardening flags that affect codegen on the hot paths. These add
+  # runtime overhead without benefit for this performance-critical library
+  # (fortify: fortified libc wrappers; zerocallusedregs: register clearing on
+  # every function return; libcxxhardeningfast: libc++ bounds checks on the C++
+  # float-formatting path). Stack protector is already disabled via CMake.
+  hardeningDisable = [
+    "fortify"
+    "zerocallusedregs"
+    "libcxxhardeningfast"
+  ];
 }
