@@ -70,9 +70,24 @@ if((CMAKE_C_COMPILER_ID MATCHES Clang)
   )
 
   # Encoding fuzzer
-  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/test_data/fuzzer/encode_fuzzer.dict"
-       DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-  add_executable(ssrjson_encode_fuzzer ${SRC_ENCODE_FUZZER})
+  #
+  # No -dict: the encode fuzzer input is an opaque control-byte stream consumed
+  # positionally by the C generator, not JSON text, so a token dictionary does
+  # not help guide mutation. The corpus carries the useful state.
+
+  # Object generator: compiled hot (-O2) and WITHOUT SanitizerCoverage so that
+  # the generator's own branches are not counted as fuzzer coverage (which would
+  # dilute the coverage signal for ssrJSON). ASAN is kept to guard the raw
+  # unicode buffer fills.
+  add_library(ssrjson_encode_fuzz_gen OBJECT src/ctests/encode_fuzz_gen.c)
+  target_link_libraries(ssrjson_encode_fuzz_gen PUBLIC commonBuild)
+  target_compile_options(ssrjson_encode_fuzz_gen PRIVATE -g -O2)
+  if(ASAN_ENABLED)
+    add_asan_compile_option(ssrjson_encode_fuzz_gen)
+  endif()
+
+  add_executable(ssrjson_encode_fuzzer
+                 ${SRC_ENCODE_FUZZER} $<TARGET_OBJECTS:ssrjson_encode_fuzz_gen>)
   target_link_libraries(ssrjson_encode_fuzzer PUBLIC commonBuild
                                                      ${Python3_LIBRARIES})
 
@@ -86,7 +101,7 @@ if((CMAKE_C_COMPILER_ID MATCHES Clang)
 
   add_test(ssrjson_encode_fuzzer
            ${CMAKE_CURRENT_BINARY_DIR}/ssrjson_encode_fuzzer
-           -dict=encode_fuzzer.dict -max_total_time=1800)
+           -max_total_time=1800)
   set_tests_properties(
     ssrjson_encode_fuzzer
     PROPERTIES

@@ -21,10 +21,11 @@
  *============================================================================*/
 
 
+#include "encode_fuzz_gen.h"
 #include "test_common.h"
 
 PyObject *encode_fuzz_module = NULL;
-PyObject *fuzz_encode_func = NULL;
+PyObject *verify_encode_func = NULL;
 
 int LLVMFuzzerInitialize(int *argc, char ***argv) {
     if (!initialize_cpython()) goto fail;
@@ -32,11 +33,13 @@ int LLVMFuzzerInitialize(int *argc, char ***argv) {
     PyObject *ssrjson_module = import_ssrjson();
     if (!ssrjson_module) goto fail;
     Py_DECREF(ssrjson_module);
-    // import the encode_fuzz module
+    // import the encode_fuzz module (verification side)
     encode_fuzz_module = PyImport_ImportModule("encode_fuzz");
     if (!encode_fuzz_module) goto fail;
-    fuzz_encode_func = PyObject_GetAttrString(encode_fuzz_module, "fuzz_encode");
-    if (!fuzz_encode_func) goto fail;
+    verify_encode_func = PyObject_GetAttrString(encode_fuzz_module, "verify_encode");
+    if (!verify_encode_func) goto fail;
+    // resolve the C generator's Python-side references (subclasses, numpy)
+    if (!encode_fuzz_gen_init(encode_fuzz_module)) goto fail;
     return 0;
 fail:;
     PyErr_Print();
@@ -48,19 +51,26 @@ fail:;
 
 int LLVMFuzzerTestOneInput(const u8 *data, usize size) {
     if (size < 5) return 0;
-    PyObject *input_bytes = PyBytes_FromStringAndSize((const char *)data, (Py_ssize_t)size);
-    if (!input_bytes) {
+
+    // Build the object tree directly from the fuzzer bytes (fast, byte-local).
+    bool has_surrogate = false;
+    PyObject *obj = encode_fuzz_gen_build(data, size, &has_surrogate);
+    if (!obj) {
+        // Generation failure (e.g. MemoryError) is not a finding; skip.
         PyErr_Clear();
-        return -1;
+        return 0;
     }
-    PyObject *ret = PyObject_Vectorcall(fuzz_encode_func, &input_bytes, 1, NULL);
+
+    // Hand the object to the Python verifier: verify_encode(obj, has_surrogate).
+    PyObject *args[2] = {obj, has_surrogate ? Py_True : Py_False};
+    PyObject *ret = PyObject_Vectorcall(verify_encode_func, args, 2, NULL);
     if (!ret) {
         PyErr_Print();
-        Py_DECREF(input_bytes);
+        Py_DECREF(obj);
         assert(false);
         __builtin_trap();
     }
     Py_DECREF(ret);
-    Py_DECREF(input_bytes);
+    Py_DECREF(obj);
     return 0;
 }

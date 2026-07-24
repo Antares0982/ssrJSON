@@ -63,7 +63,7 @@ jobs:
       run: |
         cd build-fuzz
         ASAN_OPTIONS=detect_leaks=0 PYTHONPATH=${{ github.workspace }}/test_data/fuzzer \
-          ./ssrjson_encode_fuzzer -dict=encode_fuzzer.dict \
+          ./ssrjson_encode_fuzzer \
           -max_total_time=${{ inputs.max-total-time || '300' }}
 
   Run-Decode-Fuzzer-MacOS:
@@ -135,5 +135,5 @@ jobs:
         ASAN_OPTIONS=detect_leaks=0 \
         PYTHONPATH=${{ github.workspace }}/test_data/fuzzer \
         MallocNanoZone=0 \
-          ./ssrjson_encode_fuzzer -dict=encode_fuzzer.dict \
+          ./ssrjson_encode_fuzzer \
           -max_total_time=${{ inputs.max-total-time || '300' }}
