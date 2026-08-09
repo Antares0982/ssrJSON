@@ -106,8 +106,8 @@ force_inline usize get_ndarray_reserve_cnt(const PyArrayInterface *array, Py_ssi
     usize ret = 0;
     // write \n and indent for list
     if (COMPILE_INDENT_LEVEL > 0 && !is_in_obj) { ret += COMPILE_INDENT_LEVEL * base_nested_depth + 1; }
-    const usize padding = 9; // reserve some extra padding for safety
-    assert(padding >= 3);    // for writing bool, we write 8 bytes at once
+    const usize padding = 10; // reserve some extra padding for safety
+    assert(padding >= 3);     // for writing bool, we write 8 bytes at once
     assert(padding >= ssrjson_dtoa_write_length - ssrjson_dtoa_output_maxlen);
     assert(padding >= ssrjson_ftoa_write_length - ssrjson_ftoa_output_maxlen);
     return ret + padding + get_ndarray_reserve_cnt_internal(nd, shape, base_nested_depth + 1, ndatype, is_in_obj);

@@ -134,7 +134,7 @@
 
 #define ssrjson_dtoa_handle_inf_nan 1
 #define ssrjson_dtoa_allocate_length 64
-#define ssrjson_dtoa_write_length 33
+#define ssrjson_dtoa_write_length 34
 #define ssrjson_dtoa_output_maxlen 24
 #define ssrjson_ftoa_handle_inf_nan 1
 #define ssrjson_ftoa_allocate_length 24
