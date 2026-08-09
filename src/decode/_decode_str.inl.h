@@ -181,7 +181,7 @@ force_inline bool should_loads_pretty(const src_t *buffer, const src_t *end) {
 }
 
 internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnicodeObject *in_unicode,
-                                        PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+                                        PyObject *object_hook, PyObject *array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     // some checks
     assert(in_unicode);
     PyASCIIObject *ascii_head = ssrjson_pyascii_cast(in_unicode);
@@ -217,10 +217,10 @@ internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnico
     if (likely(*buffer <= U8MAX && char_is_container(*buffer))) {
         if (should_loads_pretty(buffer, end)) {
             ret = loads_root_pretty(
-                    decoder_context, buffer, end - buffer, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+                    decoder_context, buffer, end - buffer, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         } else {
             ret = loads_root_minify(
-                    decoder_context, buffer, end - buffer, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+                    decoder_context, buffer, end - buffer, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         }
     } else {
         ret = loads_root_single(decoder_context, buffer, end - buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
