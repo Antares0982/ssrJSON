@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.0.21
+
+### Bug Fixes
+- Fix 1-byte heap overflow in xjb float-to-string when `XJB_NO_MEMMOVE` is 0: the buffer requirement was under-counted by one byte
+- Fix 1-byte heap overflow when encoding numpy arrays containing extreme float values
+
+### Performance
+- Enable `no_memmove` in xjb for generic aarch64 NEON
+- Mitigate a pow10 table load regression on Zen4 under `-fPIC` in xjb (up to ~1.85x slowdown on the double path); enabled for all x86-64 PIC builds since Zen4 cannot be detected, costing ~2% on Intel
+- Remove Nix hardening flags (`fortify`, `zerocallusedregs`, `libcxxhardeningfast`) that degrade codegen on hot paths in wheel builds
+
+### Code Quality
+- Fix NEON intrinsic type punning in xjb, add debug-only buffer bounds checks, and remove dead code
+
+### Build & CI
+- Fix release workflow: suppress `-Wprofile-instr-out-of-date` in PGO builds
+- Reimplement the encode fuzzer input generator in C, replacing the Python generator and fuzzer dictionary
+
 ## 0.0.20
 
 ### API Changes
