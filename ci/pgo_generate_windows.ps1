@@ -57,10 +57,16 @@ if ($LASTEXITCODE -ne 0) { throw "cmake build failed" }
 Write-Host "Running PGO training (3 jobs)..."
 Remove-Item -Recurse -Force $PgoData -ErrorAction SilentlyContinue
 
+# VCRUNTIME140.dll picks its memmove implementation from a Windows feature-detection
+# API that SDE does not intercept, so it uses AVX2 even under -ivb and trips chip check.
+# CPUID emulation (what our own dispatch reads) is unaffected; ISA validation is done by
+# the SDE test jobs, not here.
+$NoChipCheck = @("-chip_check_disable", "1")
+
 $trainArgs = @(
-    @{ Name = "avx512"; Exe = $Sde;    Args = @("-clx", "--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\avx512") },
-    @{ Name = "avx2";   Exe = $Sde;    Args = @("-rpl", "--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\avx2") },
-    @{ Name = "sse42";  Exe = $Sde;    Args = @("-ivb", "--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\sse42") }
+    @{ Name = "avx512"; Exe = $Sde;    Args = @("-clx") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\avx512") },
+    @{ Name = "avx2";   Exe = $Sde;    Args = @("-rpl") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\avx2") },
+    @{ Name = "sse42";  Exe = $Sde;    Args = @("-ivb") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\sse42") }
 )
 
 foreach ($job in $trainArgs) {
