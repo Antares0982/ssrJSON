@@ -49,7 +49,7 @@ internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr,
                                                      u8 *write_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
 internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const u8 *dat, usize len,
-                                                PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+                                                PyObject *object_hook, PyObject *array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     // container stack info
     DecodeCtnWithSize *ctn = NULL;
     DecodeCtnWithSize *ctn_start = NULL;
@@ -388,8 +388,8 @@ obj_val_end:
 
 obj_end:
     assert(!decode_ctn_is_arr(ctn));
-    if (unlikely(!decode_obj(
-                &decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, get_decode_ctn_len(ctn), object_hook)))
+    if (unlikely(!decode_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end,
+                            get_decode_ctn_len(ctn), object_hook, array_hook)))
         goto failed_cleanup;
     /* pop container */
     /* point to the next value */
