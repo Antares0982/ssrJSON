@@ -48,11 +48,7 @@
 #    define cvt_ascii_to_dst cvt_to_dst_u8_u32_128
 #endif
 
-/*
- * Scalar decode, stopping at `limit`. Used both to walk to a byte the vector
- * loop has to report, and to decode a block whose sequence lengths are mixed.
- * Reaching `limit` returns DECODE_LOOPSTATE_CONTINUE.
- */
+/* Scalar decode up to `limit`; reaching it returns DECODE_LOOPSTATE_CONTINUE. */
 force_inline int decode_bytes_block_scalar(dst_t **dst_addr, const u8 **src_addr, const u8 *src_end,
                                            bool *is_ascii_addr, const u8 *limit) {
     const u8 *src = *src_addr;
@@ -87,12 +83,9 @@ force_inline int decode_bytes_block_scalar(dst_t **dst_addr, const u8 **src_addr
             ret = DECODE_LOOPSTATE_INVALID;
             goto done;
         }
-        /*
-         * A run of non-ASCII sequences, one length at a time. No `limit` test:
-         * overshooting costs nothing and a run stops on its own at the NUL
-         * that terminates the source buffer. Lengths are tried in the order
-         * this destination width makes likely.
-         */
+        /* A run of non-ASCII sequences, one length at a time. No `limit` test:
+         * overshooting costs nothing and the NUL terminating the source buffer
+         * stops every run. */
         run_start = src;
         uni = byte_load_4(src);
 #if COMPILE_WRITE_UCS_LEVEL == 1
@@ -141,14 +134,11 @@ force_inline int decode_bytes_block_scalar(dst_t **dst_addr, const u8 **src_addr
         }
         if (src != run_start) continue;
 #endif
-        /*
-         * Nothing was consumed: the byte at `src` either starts a sequence too
-         * wide for this state, or no valid sequence at all.
-         */
+        /* Nothing consumed: the byte at `src` starts a sequence too wide for
+         * this state, or no valid sequence at all. */
 #if COMPILE_WRITE_UCS_LEVEL != 4
-        /* Too wide for this state. Stop on the lead byte; the caller widens
-         * the buffer. Invalid sequences are reported here rather than after
-         * widening, so the error position matches the input. */
+        /* Too wide: stop on the lead byte, the caller widens the buffer.
+         * Reporting invalid sequences here keeps the error position exact. */
 #    if COMPILE_WRITE_UCS_LEVEL == 1
         if (likely(utf8_is_seq_2(uni) || utf8_is_seq_3(uni, tmp) || utf8_is_seq_4(uni, tmp)))
 #    else
@@ -171,36 +161,21 @@ done:;
 }
 
 /*
- * Decode UTF-8 source bytes into `dst_t` units until something happens that
- * the caller has to deal with.
+ * Decode UTF-8 into `dst_t` units until a DECODE_LOOPSTATE_* event the caller
+ * must handle. `*src_addr` enters on a lead byte and stops on the triggering
+ * byte; PROMOTE leaves its sequence unconsumed for the wider variant.
  *
- * On entry `*src_addr` points at a lead byte inside a JSON string. Both the
- * source and the destination pointer are advanced past everything consumed and
- * produced. The return value is one of:
- *
- *   DECODE_LOOPSTATE_CONTINUE  progress was made, nothing else happened
- *   DECODE_LOOPSTATE_END       src points at the closing '"'
- *   DECODE_LOOPSTATE_ESCAPE    src points at a '\\'
- *   DECODE_LOOPSTATE_PROMOTE   src points at the lead byte of a sequence whose
- *                              code point does not fit dst_t; the sequence is
- *                              *not* consumed, the caller widens the buffer and
- *                              re-enters the wider variant of this function
- *   DECODE_LOOPSTATE_INVALID   a Python exception has been set
- *
- * The caller guarantees a whole SIMD register can always be loaded from
- * `*src_addr`: the source buffer has SSRJSON_MEMCPY_SIMD_SIZE bytes of slack
- * past `src_end` and `*src_end` is a NUL, which stops the scan. It also
- * guarantees 4 * SSRJSON_MEMCPY_SIMD_SIZE bytes of slack past the destination,
- * since whole registers are stored even when only some lanes hold real output.
+ * The caller owes SSRJSON_MEMCPY_SIMD_SIZE readable bytes past `src_end`, with
+ * `*src_end` a NUL to stop the scan, and 4 * SSRJSON_MEMCPY_SIMD_SIZE writable
+ * bytes past the destination: whole registers are loaded and stored however
+ * few lanes hold real data.
  */
 force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const u8 *src_end, bool *is_ascii_addr) {
     const u8 *src = *src_addr;
     dst_t *dst = *dst_addr;
-    /*
-     * How far the scalar fallback may run in one go. Doubled per consecutive
-     * mixed block and reset as soon as a shape matches, so text that never
-     * matches one stops paying the block preamble.
-     */
+    /* How far the scalar fallback may run in one go. Doubled per consecutive
+     * mixed block, reset when a shape matches, so text that never matches one
+     * stops paying the block preamble. */
     usize budget = _MinScalarBudget;
 
     while (1) {
@@ -228,14 +203,10 @@ force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const
          * utf8_end_of_cp_bitmask_128 */
         utf8_eocp_t eocp = utf8_end_of_cp_bitmask_128(in, src[16]);
 
-        /*
-         * Pick the shape of the block. The homogeneous shapes are keyed on the
-         * mask alone, and each validates itself out of its own composed
-         * result.
-         */
+        /* The homogeneous shapes are keyed on the mask alone, and each
+         * validates itself out of its own composed result. */
         {
             if ((eocp & _UTF8_EOCP_ALL) == _UTF8_EOCP_SEQ2X8) {
-                /* eight two byte sequences filling the register */
                 const vector_a_u8_128 sh = _UTF8_SHUF_SWAP2;
                 vector_a_u16_128 composed = utf8_compose_upto2_128(shuffle_128(in, sh));
                 if (unlikely(utf8_seq2x8_has_error_128(in))) goto invalid_block;
@@ -253,7 +224,6 @@ force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const
             }
 #if COMPILE_WRITE_UCS_LEVEL == 4
             if ((eocp & _UTF8_EOCP_ALL) == _UTF8_EOCP_SEQ4X4) {
-                /* four four byte sequences filling the register */
                 const vector_a_u8_128 sh = _UTF8_SHUF_REV4;
                 vector_a_u32_128 composed = utf8_compose_4_128(shuffle_128(in, sh));
                 if (unlikely(utf8_seq4x4_has_error_128(in, composed))) goto invalid_block;
@@ -266,7 +236,6 @@ force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const
 #endif
 #if COMPILE_WRITE_UCS_LEVEL != 1
             if ((eocp & _UTF8_EOCP_LOW12) == _UTF8_EOCP_SEQ3X4) {
-                /* four three byte sequences in the low twelve bytes */
                 const vector_a_u8_128 sh = _UTF8_SHUF_REV3;
                 vector_a_u32_128 composed = utf8_compose_upto3_128(shuffle_128(in, sh));
                 if (unlikely(utf8_seq3x4_has_error_128(in, composed))) goto invalid_block;
@@ -281,18 +250,15 @@ force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const
                 continue;
             }
 #endif
-/*
- * The shuffle table path, x86 only. Handles a mixed run of one and two byte
- * sequences, which is what Cyrillic, Greek, Hebrew and Arabic text looks like.
- * Measured slower than the scalar fallback on NEON, so it is not built there.
- */
+/* The shuffle table path: a mixed run of one and two byte sequences, which is
+ * what Cyrillic, Greek, Hebrew and Arabic text looks like. x86 only, the
+ * scalar fallback measured faster than this on NEON. */
 #if COMPILE_WRITE_UCS_LEVEL != 4 && SSRJSON_IS_X64
             /* the shuffle gathers six code points, worth its two dependent
              * loads only when they cover most of the register */
             if (__builtin_popcount(get_bitmask_from_u8_128(in)) >= 12 && !utf8_any_byte_above_128(in, 0xdf)) {
-                /* lengths are not known in advance here, so the general
-                 * validator is needed, and it has to run first: the index
-                 * below only names a six code point shuffle for a valid block */
+                /* The general validator, and it has to run first: the index
+                 * below only names a six code point shuffle for a valid block. */
                 u32 m12;
                 u8 idx;
                 vector_a_u16_128 composed;
@@ -303,7 +269,6 @@ force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const
                  * points always fit in twelve bytes */
                 assert(idx < 64);
                 composed = utf8_compose_upto2_128(shuffle_128(in, *(const vector_u_u8_128 *)_Utf8ToUcsShuffle[idx]));
-                /* the guard above leaves only levels 1 and 2 here */
 #    if COMPILE_WRITE_UCS_LEVEL == 1
                 *(vector_u_u8_64 *)dst = cvt_u16_to_u8_128(composed);
 #    else
@@ -317,11 +282,9 @@ force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const
 #endif
         }
 
-        /*
-         * Mixed lengths, and not dense enough for the shuffle table, so decode
-         * scalar. The limit spreads this block's load, masks and validation
-         * over two registers worth of input instead of over one code point.
-         */
+        /* Mixed lengths, not dense enough for the shuffle table. The limit
+         * spreads this block's load, masks and validation over two registers
+         * worth of input instead of over one code point. */
         {
             int ret = decode_bytes_block_scalar(&dst, &src, src_end, is_ascii_addr, src + budget);
             if (budget < _MaxScalarBudget) budget *= 2;

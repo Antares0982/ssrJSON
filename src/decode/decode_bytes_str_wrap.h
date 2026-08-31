@@ -21,19 +21,15 @@
  *============================================================================*/
 
 /*
- * Decoding of JSON strings out of a `bytes` document.
+ * Decoding of JSON strings out of a `bytes` document. Which of the four
+ * PyUnicode kinds comes out is only known once the whole string has been seen,
+ * so the decoder is a state machine over the destination width, u8 -> u16 ->
+ * u32, which only ever widens.
  *
- * The result of decoding UTF-8 can be any of the four PyUnicode kinds, and
- * which one is only known once the whole string has been seen.
- * The decoder is therefore a small state machine over the destination width,
- * u8 -> u16 -> u32, which only ever widens.
- *
- *   - The fast path scans for the first byte that is not plain ASCII text.
- *     If that byte is the closing quote, the PyUnicode is built straight from
- *     the source bytes, with no intermediate copy at all.
- *   - Anything else jumps once into `decode_bytes_utf8`,
- *     which copies what has been scanned so far into the temporary buffer
- *     and then runs the state machine. Widening the buffer is done in-place.
+ * A string that is plain ASCII up to the closing quote is built straight from
+ * the source bytes, with no intermediate copy. Anything else jumps once into
+ * `decode_bytes_utf8`, which copies what was scanned into the temporary buffer
+ * and widens it in place.
  */
 
 #ifndef SSRJSON_DECODE_DECODE_BYTES_STR_WRAP_H
@@ -50,7 +46,6 @@
 //
 #include "simd/compile_feature_check.h"
 
-/* The per-destination-width block decoders. */
 #define COMPILE_WRITE_UCS_LEVEL 1
 #include "bytes/_w_utf8_block.inl.h"
 #undef COMPILE_WRITE_UCS_LEVEL
@@ -79,10 +74,7 @@ force_inline anymask_t get_bytes_stop_anymask(vector_a x) {
 #endif
 }
 
-/*
- * Scan one register length of source. Returns false when a stop byte was found,
- * leaving src on it, and true when the whole register was plain ASCII text.
- */
+/* Scans one register; returns false on a stop byte, leaving `src` on it. */
 force_inline bool decode_bytes_scan_loop(const u8 **src_addr) {
     vector_a vec = *ssrjson_cast(vector_u *, *src_addr);
     anymask_t check_mask = get_bytes_stop_anymask(vec);
@@ -121,9 +113,7 @@ internal_simd_noinline PyObject *decode_bytes_utf8(const u8 *src_start, const u8
     bool is_ascii = true;
     PyObject *ret;
 
-    /*
-     * Short and cold: noinline memcpy is enough.
-     */
+    /* Short and cold: a noinline memcpy is enough. */
     {
         usize pre_copy_size = (usize)(src - src_start);
         ssrjson_memcpy_noinline(temp_buffer, src_start, pre_copy_size);
@@ -285,23 +275,18 @@ failed:;
     return NULL;
 }
 
-/* Read a JSON string out of a bytes document. */
 force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, const u8 *src_end,
                                    ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     assert(**ptr == _Quote);
     const u8 *src = *ptr + 1;
     const u8 *const src_start = src;
 
-    /*
-     * A whole register can always be read at any src <= src_end, see the
-     * padding reserved by `_alloc_aligned_b_buf`.
-     * Reading past the string is harmless since *src_end is 0.
-     */
+    /* A whole register can be read at any src <= src_end, see the padding
+     * reserved by `_alloc_aligned_b_buf`; *src_end is 0, so reading past the
+     * string is harmless. */
     if (ssrjson_consteval(!is_key)) {
-        /*
-         * Most string values are shorter than two registers and we don't want to 
-         * pay for the four way mask join.
-         */
+        /* Most values are shorter than two registers, so start without paying
+         * for the four way mask join. */
         if (!decode_bytes_scan_loop(&src)) goto scan_stopped;
         if (!decode_bytes_scan_loop(&src)) goto scan_stopped;
         while ((usize)(src_end - src) >= 3 * READ_BATCH_COUNT) {

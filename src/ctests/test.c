@@ -466,14 +466,8 @@ int SIMD_NAME_MODIFIER(test_long_cvt)(void) {
 #    include "decode/bytes/utf8_simd128.h"
 #endif
 
-/*
- * Every block that reaches the shuffle table holds one and two byte sequences
- * only: the caller rejects any byte above 0xdf and validates the block first.
- * _Utf8ToUcsShuffle keeps just the 64 rows that the masks reachable that way
- * select, so a row index of 64 or more would read past the table. Release
- * builds drop the assert at the call site, which leaves this as the only thing
- * holding that bound.
- */
+/* The shuffle path only ever sees one and two byte sequences. Release builds
+ * drop the assert at the call site, so this is what bounds the row index. */
 #if SSRJSON_IS_X64
 static int _walk_eocp_masks(u8 *cont, int pos, u8 *seen, u32 *distinct) {
     if (pos < 13) {
@@ -492,7 +486,6 @@ static int _walk_eocp_masks(u8 *cont, int pos, u8 *seen, u32 *distinct) {
         (*distinct)++;
     }
     CHECK(_Utf8ToUcsIndex[mask][0] < count_of(_Utf8ToUcsShuffle));
-    /* the byte count must be the span of the six code points the row gathers */
     int bytes = 0;
     for (int cp = 0; cp < 6; cp++) { bytes += cont[bytes + 1] ? 2 : 1; }
     CHECK(_Utf8ToUcsIndex[mask][1] == bytes);
@@ -513,8 +506,7 @@ int SIMD_NAME_MODIFIER(test_utf8_shuffle_index_bound)(void) {
     int ret = _walk_eocp_masks(cont, 0, seen, &distinct);
     free(seen);
     if (ret != PASSED) return ret;
-    /* guards the enumeration itself: if it stopped covering the reachable
-     * masks the bound above would pass without proving anything */
+    /* every reachable mask; a lower count means the walk stopped covering them */
     CHECK(distinct == 377);
     return PASSED;
 #endif

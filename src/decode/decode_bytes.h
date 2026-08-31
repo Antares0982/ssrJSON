@@ -152,10 +152,10 @@ force_inline bool _skip_starting_space(char **buffer_addr, Py_ssize_t *len_addr)
 }
 
 /*
- * Copy destination for the document itself.
- *
- * The copy starts at an offset of up to SSRJSON_MEMCPY_SIMD_SIZE - 1
- * inside the allocation (to reproduce the alignment of the input).
+ * Copy destination for the document itself. The copy starts at an offset of up
+ * to SSRJSON_MEMCPY_SIMD_SIZE - 1 inside the allocation, reproducing the
+ * alignment of the input, and the reserve leaves a whole register readable
+ * past the terminating NUL.
  */
 force_inline void _alloc_aligned_b_buf(DecoderBuffers *decoder_context, Py_ssize_t len, bool *dynamic, u8 **buffer) {
     if (unlikely(len > (Py_ssize_t)PY_SSIZE_T_MAX - 3 * SSRJSON_MEMCPY_SIMD_SIZE - 4)) {
