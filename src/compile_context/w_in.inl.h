@@ -65,6 +65,8 @@
 #define f32_to_unicode make_w_name(f32_to_unicode)
 #define inf_nan_to_unicode make_w_name(inf_nan_to_unicode)
 #define ControlEscapeTable make_w_name(ControlEscapeTable)
+#define decode_bytes_block make_w_name(decode_bytes_block)
+#define decode_bytes_block_scalar make_w_name(decode_bytes_block_scalar)
 //
 #define write_unicode_bool make_w_name(_write_unicode_bool)
 #define write_unicode_bool_numpy make_w_name(_write_unicode_bool_numpy)

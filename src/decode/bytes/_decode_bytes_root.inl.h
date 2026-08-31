@@ -28,6 +28,7 @@
 #ifdef SSRJSON_CLANGD_CHECKING
 #    ifndef DECODE_READ_PRETTY
 #        define COMPILE_CONTEXT_DECODE 1
+#        include "decode/bytes/utf8_shared.h"
 #        include "decode/decode_float_wrap.h"
 #        include "decode/decode_shared.h"
 #        include "decode/str/tools.h"
@@ -45,8 +46,8 @@
         do { _u8ptr++; } while (char_is_space(*_u8ptr)); \
     } while (0)
 
-internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr,
-                                                     u8 *write_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
+internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_buffer,
+                                                     const u8 *src_end DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
 internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const u8 *dat, usize len,
                                                 PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
@@ -58,17 +59,16 @@ internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context,
     decode_obj_stack_ptr_t decode_obj_writer = NULL;
     decode_obj_stack_ptr_t decode_obj_stack = NULL;
     decode_obj_stack_ptr_t decode_obj_stack_end = NULL;
+    // string buffer info
+    u8 *string_buffer_head = NULL;
+    bool need_dealloc = false;
     // init
     if (!init_decode_ctn_stack_info(decoder_context, &ctn_start, &ctn, &ctn_end) ||
         !init_decode_obj_stack_info(decoder_context, &decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end))
         goto failed_cleanup;
-    u8 *string_buffer_head = (u8 *)decoder_context->decoder_ctx_temp_buffer;
-
-    //
-    if (unlikely(len > ((size_t)(-1)) / 4)) { goto fail_alloc; }
-    if (unlikely(4 * len > SSRJSON_STRING_BUFFER_SIZE)) {
-        string_buffer_head = SSRJSON_MALLOC(4 * len);
-        if (!string_buffer_head) goto fail_alloc;
+    if (unlikely(!check_and_reserve_bytes_str_buffer(
+                decoder_context, (Py_ssize_t)len, &string_buffer_head, &need_dealloc))) {
+        goto fail_alloc;
     }
     //
     const u8 *cur = (const u8 *)dat;
@@ -116,7 +116,7 @@ arr_val_begin:
         goto fail_number;
     }
     if (*cur == '"') {
-        PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+        PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head, end DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (likely(str_obj &&
                    _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
@@ -236,7 +236,7 @@ obj_key_begin:
 #endif
 
     if (likely(*cur == '"')) {
-        PyObject *str_obj = loads_bytes(&cur, string_buffer_head, true DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+        PyObject *str_obj = loads_bytes(&cur, string_buffer_head, end, true DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (likely(str_obj &&
                    _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             goto obj_key_end;
@@ -278,7 +278,7 @@ obj_key_end:
 
 obj_val_begin:
     if (*cur == '"') {
-        PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+        PyObject *str_obj = loads_bytes_not_key(&cur, string_buffer_head, end DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (likely(str_obj &&
                    _decoder_push_obj(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, str_obj))) {
             incr_decode_ctn_size(ctn);
@@ -420,7 +420,7 @@ success:;
     assert(obj->ob_refcnt == 1);
 #endif
     // free string buffer
-    if (unlikely(string_buffer_head != decoder_context->decoder_ctx_temp_buffer)) { SSRJSON_FREE(string_buffer_head); }
+    free_bytes_str_buffer(string_buffer_head, need_dealloc);
     // free obj stack buffer if allocated dynamically
     if (unlikely(decode_obj_stack_end - decode_obj_stack > SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE)) {
         SSRJSON_FREE(decode_obj_stack);
@@ -472,7 +472,7 @@ failed_cleanup:
         Py_XDECREF(*obj_ptr);
     }
     // free string buffer
-    if (unlikely(string_buffer_head != decoder_context->decoder_ctx_temp_buffer)) { SSRJSON_FREE(string_buffer_head); }
+    free_bytes_str_buffer(string_buffer_head, need_dealloc);
     // free obj stack buffer if allocated dynamically
     if (unlikely(decode_obj_stack_end - decode_obj_stack > SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE)) {
         SSRJSON_FREE(decode_obj_stack);

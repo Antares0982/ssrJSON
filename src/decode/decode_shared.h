@@ -85,6 +85,8 @@ typedef union {
 #define DECODE_LOOPSTATE_END 1
 #define DECODE_LOOPSTATE_ESCAPE 2
 #define DECODE_LOOPSTATE_INVALID 3
+/* Only produced by the bytes decoder: the destination buffer must be widened. */
+#define DECODE_LOOPSTATE_PROMOTE 4
 
 extern PyObject *JSONDecodeError;
 
@@ -361,7 +363,7 @@ force_inline bool _decoder_push_obj(decode_obj_stack_ptr_t *decode_obj_writer_ad
                                     decode_obj_stack_ptr_t *decode_obj_stack_addr,
                                     decode_obj_stack_ptr_t *decode_obj_stack_end_addr, pyobj_ptr_t obj);
 
-force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer,
+force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, const u8 *src_end,
                                    ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
 force_inline bool decode_true(decode_obj_stack_ptr_t *decode_obj_writer_addr,

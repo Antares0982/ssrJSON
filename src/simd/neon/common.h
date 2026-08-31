@@ -70,6 +70,9 @@ force_inline vector_a_u8_32 cvt_u32_to_u8_128(vector_a_u32_128 x) {
     return *(vector_a_u8_32 *)&z;
 }
 
+#define unsigned_saturate_minus_u8_128 vqsubq_u8
+#define unsigned_saturate_minus_u16_128 vqsubq_u16
+
 #define cmpeq_u8_128 vceqq_u8
 #define cmpeq_u16_128 vceqq_u16
 #define cmpeq_u32_128 vceqq_u32
@@ -85,6 +88,9 @@ force_inline vector_a_u8_32 cvt_u32_to_u8_128(vector_a_u32_128 x) {
 #define shuffle_128 vqtbl1q_u8
 
 #define alignr_128 vextq_u8
+
+/* Shift the whole register towards higher byte indices, filling with zeros. */
+#define byte_lshift_128(_x_, _imm_) vextq_u8(setzero_128(), (_x_), 16 - (_imm_))
 
 #define testz2_128(_a_, _b_) testz_128((_a_) & (_b_))
 

@@ -460,3 +460,62 @@ int SIMD_NAME_MODIFIER(test_long_cvt)(void) {
     }
     return PASSED;
 }
+
+/* the tables the test below walks are x86 only */
+#if SSRJSON_IS_X64
+#    include "decode/bytes/utf8_simd128.h"
+#endif
+
+/*
+ * Every block that reaches the shuffle table holds one and two byte sequences
+ * only: the caller rejects any byte above 0xdf and validates the block first.
+ * _Utf8ToUcsShuffle keeps just the 64 rows that the masks reachable that way
+ * select, so a row index of 64 or more would read past the table. Release
+ * builds drop the assert at the call site, which leaves this as the only thing
+ * holding that bound.
+ */
+#if SSRJSON_IS_X64
+static int _walk_eocp_masks(u8 *cont, int pos, u8 *seen, u32 *distinct) {
+    if (pos < 13) {
+        cont[pos] = 0;
+        if (_walk_eocp_masks(cont, pos + 1, seen, distinct) != PASSED) return FAILED;
+        cont[pos + 1] = 1;
+        if (_walk_eocp_masks(cont, pos + 2, seen, distinct) != PASSED) return FAILED;
+        return PASSED;
+    }
+    u32 mask = 0;
+    for (int i = 0; i < 12; i++) {
+        if (!cont[i + 1]) mask |= 1u << i;
+    }
+    if (!seen[mask]) {
+        seen[mask] = 1;
+        (*distinct)++;
+    }
+    CHECK(_Utf8ToUcsIndex[mask][0] < count_of(_Utf8ToUcsShuffle));
+    /* the byte count must be the span of the six code points the row gathers */
+    int bytes = 0;
+    for (int cp = 0; cp < 6; cp++) { bytes += cont[bytes + 1] ? 2 : 1; }
+    CHECK(_Utf8ToUcsIndex[mask][1] == bytes);
+    return PASSED;
+}
+#endif
+
+int SIMD_NAME_MODIFIER(test_utf8_shuffle_index_bound)(void) {
+#if !SSRJSON_IS_X64
+    return SKIPPED;
+#else
+    GUARDED_SIMD;
+    u8 cont[16];
+    u8 *seen = (u8 *)calloc(4096, 1);
+    if (!seen) return FAILED;
+    ZERO_FILL(cont);
+    u32 distinct = 0;
+    int ret = _walk_eocp_masks(cont, 0, seen, &distinct);
+    free(seen);
+    if (ret != PASSED) return ret;
+    /* guards the enumeration itself: if it stopped covering the reachable
+     * masks the bound above would pass without proving anything */
+    CHECK(distinct == 377);
+    return PASSED;
+#endif
+}

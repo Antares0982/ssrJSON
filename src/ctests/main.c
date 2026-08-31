@@ -121,6 +121,7 @@ bool run_c_tests(void) {
     RUN_TESTS(test_ucs4_encode_2bytes_utf8);
     RUN_TESTS(test_long_back_cvt_u8_u16);
     RUN_TESTS(test_long_cvt);
+    RUN_TESTS(test_utf8_shuffle_index_bound);
 
     RUN_ONE_TEST(test_ndarray_reserve_cnt_indent0);
     RUN_ONE_TEST(test_ndarray_reserve_cnt_indent2);

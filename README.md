@@ -113,7 +113,7 @@ The encoding performance of JSON libraries is not significantly limited by CPyth
 
 #### Overview of Decoding
 
-The main performance bottleneck in JSON decoding is the speed of creating Python objects. To address this, ssrJSON adopts the short-key caching mechanism from orjson, which greatly reduces the overhead of creating Python string objects. For string handling, when the input is of `str` type, ssrJSON applies SIMD optimizations similar to those used in encoding, speeding up the decoding process. For `bytes` inputs, ssrJSON uses a customized version of yyjson’s string decoding algorithm. Beyond string handling, ssrJSON extensively leverages yyjson’s codebase, including its numeric decoding algorithms and core decoding logic.
+The main performance bottleneck in JSON decoding is the speed of creating Python objects. To address this, ssrJSON adopts the short-key caching mechanism from orjson, which greatly reduces the overhead of creating Python string objects. For string handling, when the input is of `str` type, ssrJSON applies SIMD optimizations similar to those used in encoding, speeding up the decoding process. For `bytes` inputs, string decoding is vectorized as well: a block of source bytes is validated and transcoded to the destination's UCS width with SIMD, and the destination widens in place (ASCII → UCS1 → UCS2 → UCS4) as wider code points appear. This part adapts simdutf's UTF-8 transcoding shapes and Lemire's block validation; blocks whose sequence lengths are too mixed for a vector shape fall back to yyjson's per-sequence decoding. Beyond string handling, ssrJSON extensively leverages yyjson’s codebase, including its numeric decoding algorithms and core decoding logic.
 
 ## Limitations
 
@@ -426,4 +426,5 @@ We would like to express our gratitude to the outstanding libraries and their au
 - [xjb64](https://github.com/xjb714/xjb): ssrJSON employs xjb64 for high-performance floating-point encoding.
 - [xxHash](https://github.com/Cyan4973/xxHash): ssrJSON leverages xxHash to efficiently compute hash values for key caching.
 - [klib](https://github.com/attractivechaos/klib): ssrJSON uses khash to implement circular detection in free-threading build.
+- [simdutf](https://github.com/simdutf/simdutf): the vectorized UTF-8 decoder used for `bytes` input adapts simdutf's UTF-8 to UTF-16 transcoding shapes and its lookup tables, together with Lemire's `utf8_lookup4` block validation algorithm.
 

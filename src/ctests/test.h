@@ -112,6 +112,7 @@ DECLARE_TEST(test_ucs4_encode_3bytes_utf8)
 DECLARE_TEST(test_ucs4_encode_2bytes_utf8)
 DECLARE_TEST(test_long_back_cvt_u8_u16)
 DECLARE_TEST(test_long_cvt)
+DECLARE_TEST(test_utf8_shuffle_index_bound)
 
 /* ndarray reserve count tests (not SIMD-dependent, per indent level) */
 int test_ndarray_reserve_cnt_indent0(void);
