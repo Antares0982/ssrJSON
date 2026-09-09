@@ -6,7 +6,10 @@
 
 A SIMD boosted high-performance and correct Python JSON parsing library, faster than the fastest.
 
+[中文](https://github.com/Antares0982/ssrJSON/blob/main/README.zh-CN.md)
+
 </div>
+
 
 ## Introduction
 
@@ -58,7 +61,7 @@ This will generate a PDF report of the results. If you choose to, you may submit
 
 ### SIMD Acceleration
 
-ssrJSON is designed for modern hardware and extensively leverages SIMD instruction sets to accelerate encoding and decoding processes. This includes operations such as memory copying, integer type conversions, JSON encoding, and UTF-8 encoding. Currently, ssrJSON supports x86-64-v2 and above (requiring at least SSE4.2) as well as aarch64 devices. It does not support 32-bit systems or older x86-64 and ARM hardware with limited SIMD capabilities.
+ssrJSON is designed for modern hardware and extensively leverages SIMD instruction sets to accelerate encoding and decoding processes. This includes operations such as memory copying, integer type conversions, JSON encoding, and UTF-8 encoding. Currently, ssrJSON supports x86-64-v2 and above (requiring at least SSE4.2) as well as aarch64 devices. It does not support 32-bit systems or older x86-64 hardware with limited SIMD capabilities.
 
 On the x86-64 platform, ssrJSON provides three distinct SIMD libraries optimized for SSE4.2, AVX2, and AVX512, respectively, automatically selecting the most appropriate library based on the device’s capabilities. For aarch64 architectures, it utilizes the NEON instruction set. Combined with Clang’s powerful vector extensions and compiler optimizations, ssrJSON can almost fully exploit CPU performance during encoding operations.
 
@@ -68,26 +71,15 @@ On the x86-64 platform, ssrJSON provides three distinct SIMD libraries optimized
 
 Non-ASCII `str` objects may store a cached representation of their UTF-8 encoding (within the corresponding C structure `PyUnicodeObject`, represented as a `const char *` and a length with type `Py_ssize_t`) to minimize the overhead of subsequent UTF-8 encoding operations. When `PyUnicode_AsUTF8AndSize` (or other similar functions) is invoked, the CPython implementation utilizes it to store the C string along with its length. This mechanism ensures that the caller does not need to manage the lifetime of the returned C string. The `str.encode("utf-8")` operation does not write to the cache; however, if the cache is already present, it utilizes the cached data to create the `bytes` object.
 
-To the best of author's knowledge, existing third-party Python JSON libraries typically utilize certain CPython APIs to indirectly write the UTF-8 cache when performing `dumps` on non-ASCII `str` objects when the cache does not exist. This results in benchmark tests appearing more favorable than they actually are, since the same object is repeatedly dumped during performance measurements and the cache written will be utilized. But in reality, UTF-8 encoding is computationally intensive on the CPU and often becomes a major performance bottleneck in the dumping process. Also, writing cache will increase the memory usage. Also it is worth noting that during JSON encoding and decoding in Python, converting between `str` objects does not involve any UTF-8-related operations. However, some third-party JSON libraries still directly or indirectly invoke UTF-8 encoding APIs, which are resource-intensive. This explains why other third-party libraries exhibit poor performance when performing `loads` on `str` inputs, or when their `dumps` function outputs `str` types.
+Some third-party Python JSON libraries typically use certain CPython APIs to indirectly write UTF-8 results to the cache when performing `dumps` on non-ASCII `str` objects whose cache has not yet been populated. This makes benchmarks look better than real-world performance: the same object is repeatedly dumped during measurement, allowing the populated cache to be reused. In reality, UTF-8 encoding is CPU-intensive and is often the main performance bottleneck; writing the cache also increases memory usage.
 
-`ssrjson.dumps_to_bytes` addresses this by leveraging SIMD instruction sets for UTF-8 encoding, achieving significantly better performance than conventional encoding algorithms implemented in CPython. Furthermore, ssrJSON grants users explicit control over whether or not to write this cache. It is recommended that users evaluate their projects for repeated encoding of each `str` object to decide on enabling or disabling this caching mechanism accordingly. (Note that `ssrjson.dumps` produces a `str` object; there is nothing related to this topic.)
+`ssrjson.dumps_to_bytes` addresses this by leveraging SIMD instruction sets for UTF-8 encoding, achieving significantly better performance than conventional encoding algorithms implemented in CPython. Furthermore, ssrJSON lets users control whether to write this cache. Enabling it may make subsequent `dumps_to_bytes` calls on the same `str` object faster after the first call; the tradeoff is higher memory usage, as each visited non-ASCII `str` occupies additional memory corresponding to the length of its UTF-8 representation until the object is deallocated. Users should evaluate whether their projects repeatedly encode the same `str` objects before deciding whether to enable the cache.
 
 Also, the [ssrjson-benchmark](https://github.com/Nambers/ssrJSON-benchmark) project takes this aspect into account by differentiating test scenarios based on the presence or absence of this cache. The results demonstrate that ssrJSON **maintains a substantial performance advantage over other third-party Python JSON libraries regardless of whether the cache exists**.
 
-If you decide to enable writing cache, ssrJSON will first ensure the cache. The following `dumps_to_bytes` calls on the same `str` object will be faster, but the first time may be slower and memory cost may grow.
+Writing the cache is enabled globally by default. You can control this behavior globally with `ssrjson.write_utf8_cache`, or specify it per call to `ssrjson.dumps_to_bytes` with the `is_write_cache` argument.
 
-Pros:
-
-* The following calls after the first call to `dumps_to_bytes` on the same `str` might be faster.
-
-Cons:
-
-* The first call to `dumps_to_bytes` (when visiting a non-ASCII `str` without cache) might be slower.
-* The memory cost will grow. Each non-ASCII `str`  visited will result in memory usage corresponding to the length of its UTF-8 representation. The memory will be released only when the `str` object is deallocated.
-
-If you decide to disable it, ssrJSON will not write cache; but if the cache already exists, ssrJSON will still use it.
-
-By default, writing cache is enabled globally. You can use `ssrjson.write_utf8_cache` to control this behavior globally, or pass `is_write_cache` to `ssrjson.dumps_to_bytes` in each call.
+> `ssrjson.dumps` produces a `str` object and is unrelated to this section.
 
 ### xjb64
 
@@ -103,7 +95,7 @@ Random double on AMD R7-7840H:
 
 ### JSON Module compatibility
 
-The design goal of ssrJSON is to provide a straightforward and highly compatible approach to replace the inherently slower Python standard JSON encoding and decoding implementation with a significantly more efficient and high-performance alternative. If your module exclusively utilizes `dumps` and `loads`, you can replace the current JSON implementation by importing ssrJSON as `import ssrjson as json`. To facilitate this, ssrJSON maintains compatibility with the argument formats of `json.dumps` and `json.loads`; however, it does not guarantee identical results to the standard JSON module, as many features are either intentionally omitted or not yet supported. For further information, please refer to the section [Features](#Features).
+The design goal of ssrJSON is to provide a straightforward and highly compatible approach to replace the inherently slower Python standard JSON encoding and decoding implementation with a significantly more efficient and high-performance alternative. If your module exclusively utilizes `dumps` and `loads`, you can replace the current JSON implementation by importing ssrJSON as `import ssrjson as json`. To facilitate this, ssrJSON maintains compatibility with the argument formats of `json.dumps` and `json.loads`; however, it does not guarantee identical results to the standard JSON module, as many features are either intentionally omitted or not yet supported. For further information, please refer to the [Behavior](#behavior) section.
 
 ### Other Implementation Details
 
@@ -119,7 +111,10 @@ The main performance bottleneck in JSON decoding is the speed of creating Python
 
 Please note that ssrJSON is currently in its beta development stage, and some common features have yet to be implemented. We welcome your contributions to help build a highly performant Python JSON library.
 
-ssrJSON will strive to minimize the addition of new features that are rarely used to maintain its stability. There are two main reasons for this approach: first, ssrJSON aims to serve as a high-performance foundational library rather than one overloaded with various elaborate features; second, although leveraging C language brings significant performance advantages, it also introduces considerable potential instability. Drawing from software engineering experience, limiting new features that are rarely used will help reduce the incidence of critical vulnerabilities.
+To maintain stability, ssrJSON strives to minimize the addition of rarely used features for two reasons:
+
+* ssrJSON aims to serve as a high-performance foundational library rather than one overloaded with elaborate features.
+* Although C provides significant performance advantages, it also introduces considerable risks to stability. Software engineering experience shows that limiting rarely used features helps reduce critical vulnerabilities.
 
 ## How To Install
 
@@ -203,9 +198,7 @@ Supported NumPy types:
 
 `np.float64` is a subclass of Python `float` and is always handled by the standard float path, regardless of whether `setup_numpy_types` has been called.
 
-ndarray encoding writes element data directly from the array's memory buffer, bypassing Python object creation. Combined with the existing xjb64/xjb32 and yyjson-derived (for integers) encoding routines, this gives ssrJSON a significant performance advantage over converting to Python lists first. Indent is fully supported for ndarray output.
-
-> **Note:** `setup_numpy_types` must be called before any concurrent encoding in free-threading builds. The function itself is not thread-safe with respect to concurrent `dumps`/`dumps_to_bytes` calls. Once setup is complete, encoding is safe to call concurrently.
+When encoding an ndarray, ssrJSON reads element data directly from the array's memory buffer. Combined with the xjb64/xjb32 floating-point encoding algorithms and yyjson-derived integer encoding algorithms, this gives ssrJSON a significant performance advantage.
 
 Simple benchmark shows ssrJSON outperforms orjson in encoding numpy arrays:
 
@@ -301,22 +294,22 @@ ValueError: integer indent must be 2 or 4
 
 Arguments like `ensure_ascii`, `parse_float` provided by `json` module can be recognized but *ignored by design*. To treat passing these arguments as an error, call `ssrjson.strict_argparse(True)` once and it will take effect globally.
 
-### Inspect Module Features and Settings
+### Inspect Features
 
-Call `get_current_features` to get current features and settings of ssrJSON.
+Call `get_current_features` to get ssrJSON's current build configuration and settings.
 
 ```python
 >>> ssrjson.get_current_features()
 {'multi_lib': True, 'write_utf8_cache': True, 'strict_arg_parse': False, 'free_threading': False, 'lockfree': False, 'simd': 'AVX2'}
 ```
 
-## Features
+## Behavior
 
-Generally, `ssrjson.dumps` behaves like `json.dumps` with `ensure_ascii=False`, and `ssrjson.loads` behaves like `json.loads`. Below we explain some feature details of ssrJSON, which might be different from `json` module or other third-party JSON libraries.
+Generally, `ssrjson.dumps` behaves like `json.dumps` with `ensure_ascii=False`, and `ssrjson.loads` behaves like `json.loads`. Below we explain some behavior details of ssrJSON, which might differ from the standard `json` module or other third-party JSON libraries.
 
 ### Strings
 
-Code points within the range `[0xd800, 0xdfff]` cannot be represented in UTF-8 encoding, and the standard JSON specification typically prohibits the presence of such characters. However, since Python's `str` type is not encoded in UTF-8, ssrJSON aims to maintain compatibility with the Python json module's behavior, while other third-party Python JSON libraries may complain about this. In contrast, for the `dumps_to_bytes` function, which encodes output in UTF-8, the inclusion of these characters in the input is considered invalid.
+Code points within the range `[0xd800, 0xdfff]` cannot be represented in UTF-8 encoding, and the standard JSON specification typically prohibits the presence of such characters. However, since Python's `str` type is not stored as UTF-8, `ssrjson.dumps` allows these characters to remain compatible with the Python `json` module, while other third-party Python JSON libraries may reject them. In contrast, `ssrjson.dumps_to_bytes` produces UTF-8 output and treats these characters in the input as invalid.
 
 ```python
 >>> s = chr(0xd800)
@@ -359,7 +352,7 @@ Traceback (most recent call last):
 ssrjson.JSONEncodeError: convert value to unsigned long long failed
 ```
 
-`ssrjson.loads` treats overflow integers as `float` objects.
+`ssrjson.loads` parses integers outside the ranges of `int64_t` and `uint64_t` as `float` objects.
 
 ```python
 >>> ssrjson.loads('-9223372036854775809')  # -(1<<63)-1
@@ -391,7 +384,7 @@ Encoding and decoding `math.inf` are supported. `ssrjson.dumps` outputs the same
 [inf, inf, inf, inf]
 ```
 
-The case of `math.nan` is similar. Note that NaN never has a sign.
+The case of `math.nan` is similar, but NaN has no sign: both positive and negative NaN are encoded as `NaN`.
 
 ```python
 >>> json.dumps(math.nan)
@@ -422,9 +415,8 @@ We would like to express our gratitude to the outstanding libraries and their au
 
 - [CPython](https://github.com/python/cpython)
 - [yyjson](https://github.com/ibireme/yyjson): ssrJSON draws extensively from yyjson’s highly optimized implementations, including the core decoding logic, the decoding of bytes objects, the integer encoding and number decoding routines.
-- [orjson](https://github.com/ijl/orjson): ssrJSON references parts of orjson’s SIMD-based ASCII string encoding and decoding algorithms, as well as the key caching mechanism. Additionally, ssrJSON utilizes orjson’s pytest framework for testing purposes.
-- [xjb64](https://github.com/xjb714/xjb): ssrJSON employs xjb64 for high-performance floating-point encoding.
+- [orjson](https://github.com/ijl/orjson): ssrJSON references parts of orjson’s SIMD-based ASCII string encoding and decoding algorithms, as well as its short-key caching mechanism. Additionally, ssrJSON used orjson's pytest code as its initial test code.
+- [xjb64](https://github.com/xjb714/xjb): ssrJSON employs the xjb32/64 algorithms for high-performance floating-point encoding.
 - [xxHash](https://github.com/Cyan4973/xxHash): ssrJSON leverages xxHash to efficiently compute hash values for key caching.
 - [klib](https://github.com/attractivechaos/klib): ssrJSON uses khash to implement circular detection in free-threading build.
 - [simdutf](https://github.com/simdutf/simdutf): the vectorized UTF-8 decoder used for `bytes` input adapts simdutf's UTF-8 to UTF-16 transcoding shapes and its lookup tables, together with Lemire's `utf8_lookup4` block validation algorithm.
-

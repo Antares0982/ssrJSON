@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.22
+
+### Performance
+- Replace old scalar bytes (UTF-8) decoder with SIMD-accelerated UTF-8 decoder. Proved to be faster on both x86-64 and aarch64-apple (#24)
+
+### Documentation
+- Add Chinese README
+
 ## 0.0.21
 
 ### Bug Fixes
