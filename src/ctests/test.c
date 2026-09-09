@@ -460,3 +460,51 @@ int SIMD_NAME_MODIFIER(test_long_cvt)(void) {
     }
     return PASSED;
 }
+
+#if SSRJSON_IS_X64
+#    include "decode/bytes/utf8_simd128.h"
+#endif
+
+#if SSRJSON_IS_X64
+static int _walk_eocp_masks(u8 *cont, int pos, u8 *seen, u32 *distinct) {
+    if (pos < 13) {
+        cont[pos] = 0;
+        if (_walk_eocp_masks(cont, pos + 1, seen, distinct) != PASSED) return FAILED;
+        cont[pos + 1] = 1;
+        if (_walk_eocp_masks(cont, pos + 2, seen, distinct) != PASSED) return FAILED;
+        return PASSED;
+    }
+    u32 mask = 0;
+    for (int i = 0; i < 12; i++) {
+        if (!cont[i + 1]) mask |= 1u << i;
+    }
+    if (!seen[mask]) {
+        seen[mask] = 1;
+        (*distinct)++;
+    }
+    CHECK(_Utf8ToUcsIndex[mask][0] < count_of(_Utf8ToUcsShuffle));
+    int bytes = 0;
+    for (int cp = 0; cp < 6; cp++) { bytes += cont[bytes + 1] ? 2 : 1; }
+    CHECK(_Utf8ToUcsIndex[mask][1] == bytes);
+    return PASSED;
+}
+#endif
+
+int SIMD_NAME_MODIFIER(test_utf8_shuffle_index_bound)(void) {
+#if !SSRJSON_IS_X64
+    return SKIPPED;
+#else
+    GUARDED_SIMD;
+    u8 cont[16];
+    u8 *seen = (u8 *)calloc(4096, 1);
+    if (!seen) return FAILED;
+    ZERO_FILL(cont);
+    u32 distinct = 0;
+    int ret = _walk_eocp_masks(cont, 0, seen, &distinct);
+    free(seen);
+    if (ret != PASSED) return ret;
+    /* All 377 masks must remain reachable. */
+    CHECK(distinct == 377);
+    return PASSED;
+#endif
+}

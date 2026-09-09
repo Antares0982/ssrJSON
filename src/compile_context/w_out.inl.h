@@ -38,6 +38,8 @@
 #undef f32_to_unicode
 #undef inf_nan_to_unicode
 #undef ControlEscapeTable
+#undef decode_bytes_block
+#undef decode_bytes_block_scalar
 //
 #undef write_unicode_bool
 #undef write_unicode_bool_numpy

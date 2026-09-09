@@ -275,7 +275,8 @@ set(SRC_FILES
     src/utils/decode_utils.c
     src/utils/encode_utils.c
     src/utils/float_tables.c
-    src/utils/mask_table.c)
+    src/utils/mask_table.c
+    src/utils/utf8_tables.c)
 
 set(SRC_WITH_SIMD src/decode/decode.c src/encode/encode.c src/simd/cvt.c)
 
