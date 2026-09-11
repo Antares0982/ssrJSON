@@ -19,7 +19,9 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
  *============================================================================*/
-#define ENCODE_RESERVE_DEBUG 0
+#ifndef ENCODE_RESERVE_DEBUG
+#    define ENCODE_RESERVE_DEBUG 0
+#endif
 #include "encode/encode_shared.h"
 #include "encode/encode_utf8_shared.h"
 
