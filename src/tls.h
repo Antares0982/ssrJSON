@@ -73,7 +73,7 @@ bool _ssrjson_library_tls_init(void);
 bool _ssrjson_library_tls_free(void);
 
 /*==============================================================================
- * Thread local decode buffer linked list, for object_hook
+ * Thread local decode buffers
  *============================================================================*/
 extern TLS_KEY_TYPE _DecoderBufferLinkedList_Key;
 

@@ -188,7 +188,8 @@ force_inline bool should_loads_bytes_pretty(const u8 *buffer, Py_ssize_t len) {
 }
 
 internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_context, char *_buffer, Py_ssize_t len,
-                                                      PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+                                                      PyObject *object_hook,
+                                                      PyObject *array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     if (unlikely(!len)) {
         PyErr_Format(JSONDecodeError, "input data is empty");
         return NULL;
@@ -222,10 +223,10 @@ internal_simd_noinline PyObject *ssrjson_decode_bytes(DecoderBuffers *decoder_co
     if (likely(char_is_container(*buffer))) {
         if (should_loads_bytes_pretty(buffer, len)) {
             ret = loads_bytes_root_pretty(
-                    decoder_context, buffer, len, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+                    decoder_context, buffer, len, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         } else {
             ret = loads_bytes_root_minify(
-                    decoder_context, buffer, len, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+                    decoder_context, buffer, len, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         }
     } else {
         ret = loads_root_single_bytes(decoder_context, buffer, len DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);

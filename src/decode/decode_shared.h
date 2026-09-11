@@ -379,7 +379,7 @@ force_inline bool decode_null(decode_obj_stack_ptr_t *decode_obj_writer_addr,
 
 force_inline bool decode_arr(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_addr,
-                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize arr_len);
+                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize arr_len, PyObject *array_hook);
 
 force_inline bool decode_obj(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_addr,

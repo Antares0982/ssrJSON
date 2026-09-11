@@ -164,7 +164,7 @@ force_inline bool _decoder_push_obj(decode_obj_stack_ptr_t *decode_obj_writer_ad
 
 force_inline bool decode_arr(decode_obj_stack_ptr_t *decode_obj_writer_addr,
                              decode_obj_stack_ptr_t *decode_obj_stack_addr,
-                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize arr_len) {
+                             decode_obj_stack_ptr_t *decode_obj_stack_end_addr, usize arr_len, PyObject *array_hook) {
     assert(arr_len >= 0);
     PyObject *list = PyList_New(arr_len);
     return_if_unlikely(!list);
@@ -176,6 +176,12 @@ force_inline bool decode_arr(decode_obj_stack_ptr_t *decode_obj_writer_addr,
         PyList_SET_ITEM(list, j, val); // this never fails
     }
     (*decode_obj_writer_addr) -= arr_len;
+    if (unlikely(array_hook)) {
+        PyObject *hooked_arr = PyObject_CallOneArg(array_hook, list);
+        Py_DECREF(list);
+        if (unlikely(!hooked_arr)) { return false; }
+        return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, hooked_arr);
+    }
     return _decoder_push_obj(decode_obj_writer_addr, decode_obj_stack_addr, decode_obj_stack_end_addr, list);
 }
 
@@ -255,10 +261,11 @@ force_inline bool decode_nan(decode_obj_stack_ptr_t *decode_obj_writer_addr,
 }
 
 force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, PyObject *kwnames, PyObject **s_out,
-                                          PyObject **object_hook_out) {
+                                          PyObject **object_hook_out, PyObject **array_hook_out) {
     assert(kwnames);
     PyObject *s;
     PyObject *object_hook;
+    PyObject *array_hook;
     //
     const bool nonstrict_argparse = _NonstrictArgparse;
     bool invalid_arg_checked = _InvalidArgChecked;
@@ -269,12 +276,15 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
     //
     s = npargs ? args[0] : NULL;
     object_hook = NULL;
+    array_hook = NULL;
     //
     const char *func_name = "loads";
     const char *_s_str = "s";
     const usize _s_str_len = strlen(_s_str);
     const char *_oh_str = "object_hook";
     const usize _oh_str_len = strlen(_oh_str);
+    const char *_ah_str = "array_hook";
+    const usize _ah_str_len = strlen(_ah_str);
     //
     if (unlikely(npargs > 1)) {
         PyErr_Format(PyExc_TypeError, "loads() takes 1 positional argument but %d were given", (int)npargs);
@@ -290,6 +300,9 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
         if (likely(is_ascii)) {
             if (char_count == _oh_str_len && memcmp(char_data, _oh_str, _oh_str_len) == 0) {
                 object_hook = args[npargs + i];
+                continue;
+            } else if (char_count == _ah_str_len && memcmp(char_data, _ah_str, _ah_str_len) == 0) {
+                array_hook = args[npargs + i];
                 continue;
             } else if (char_count == _s_str_len && memcmp(char_data, _s_str, _s_str_len) == 0) {
                 if (unlikely(s)) {
@@ -319,6 +332,7 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
     }
     *s_out = s;
     *object_hook_out = (object_hook && !Py_IsNone(object_hook)) ? object_hook : NULL;
+    *array_hook_out = (array_hook && !Py_IsNone(array_hook)) ? array_hook : NULL;
     return true;
 }
 
@@ -327,6 +341,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
     PyObject *ret;
     PyObject *s;
     PyObject *object_hook = NULL;
+    PyObject *array_hook = NULL;
     DecoderBuffers *decoder_context;
 #if !SSRJSON_GIL_ENABLED
     decode_cache_t *decoder_key_cache_arr;
@@ -346,12 +361,16 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
             return NULL;
         }
         s = args[0];
-    } else if (!decode_argparse_with_kw(args, npargs, kwnames, &s, &object_hook)) {
+    } else if (!decode_argparse_with_kw(args, npargs, kwnames, &s, &object_hook, &array_hook)) {
         return NULL;
     }
     //
     if (unlikely(object_hook && !PyCallable_Check(object_hook))) {
         PyErr_SetString(PyExc_TypeError, "object_hook must be callable");
+        return NULL;
+    }
+    if (unlikely(array_hook && !PyCallable_Check(array_hook))) {
+        PyErr_SetString(PyExc_TypeError, "array_hook must be callable");
         return NULL;
     }
 #if !SSRJSON_GIL_ENABLED
@@ -362,7 +381,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
     }
 #endif
 #if SSRJSON_GIL_ENABLED
-    if (likely(!object_hook)) {
+    if (likely(!object_hook && !array_hook)) {
         decoder_context = &_DefaultDecoderCtx;
     } else
 #endif
@@ -423,19 +442,23 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
         int pyunicode_kind = ascii_head->state.ascii ? 0 : ascii_head->state.kind;
         switch (pyunicode_kind) {
             case SSRJSON_STRING_TYPE_ASCII: {
-                ret = decode_ascii(decoder_context, in_unicode, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+                ret = decode_ascii(
+                        decoder_context, in_unicode, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
                 break;
             }
             case SSRJSON_STRING_TYPE_LATIN1: {
-                ret = decode_ucs1(decoder_context, in_unicode, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+                ret = decode_ucs1(
+                        decoder_context, in_unicode, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
                 break;
             }
             case SSRJSON_STRING_TYPE_UCS2: {
-                ret = decode_ucs2(decoder_context, in_unicode, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+                ret = decode_ucs2(
+                        decoder_context, in_unicode, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
                 break;
             }
             case SSRJSON_STRING_TYPE_UCS4: {
-                ret = decode_ucs4(decoder_context, in_unicode, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+                ret = decode_ucs4(
+                        decoder_context, in_unicode, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
                 break;
             }
             default: {
@@ -453,14 +476,16 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
             ret = NULL;
             goto done;
         }
-        ret = ssrjson_decode_bytes(decoder_context, buffer, length, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+        ret = ssrjson_decode_bytes(
+                decoder_context, buffer, length, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         goto done;
     }
     //
     if (PyByteArray_Check(s)) {
         char *buffer = PyByteArray_AS_STRING(s);
         Py_ssize_t length = PyByteArray_GET_SIZE(s);
-        ret = ssrjson_decode_bytes(decoder_context, buffer, length, object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+        ret = ssrjson_decode_bytes(
+                decoder_context, buffer, length, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         goto done;
     }
 
@@ -469,7 +494,7 @@ fail:;
     PyErr_Format(PyExc_TypeError, "the JSON object must be str, bytes or bytearray, not %s", Py_TYPE(s)->tp_name);
 
 done:;
-    if (ssrjson_consteval(!SSRJSON_GIL_ENABLED) || unlikely(object_hook)) {
+    if (ssrjson_consteval(!SSRJSON_GIL_ENABLED) || unlikely(object_hook || array_hook)) {
         DecoderBufferLinkedList *used_buffer = tls_data_ptr->cur_buffer;
         DecoderBufferLinkedList *goback_buffer = used_buffer->prev;
         if (unlikely(used_buffer->next)) {

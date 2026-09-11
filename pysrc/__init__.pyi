@@ -48,11 +48,12 @@ def loads(
     s: str | bytes,
     *,
     cls: Any = None,  # invalid
-    object_hook: Any = None,  # invalid
+    object_hook: Any = None,
     parse_float: Any = None,  # invalid
     parse_int: Any = None,  # invalid
     parse_constant: Any = None,  # invalid
     object_pairs_hook: Any = None,  # invalid
+    array_hook: Any = None,
 ): ...
 def get_current_features() -> Dict[str, str]: ...
 def suppress_api_warning() -> None: ...

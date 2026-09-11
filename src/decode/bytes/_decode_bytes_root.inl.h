@@ -50,7 +50,8 @@ internal_simd_noinline PyObject *loads_bytes_not_key(const u8 **ptr, u8 *write_b
                                                      const u8 *src_end DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF);
 
 internal_simd_noinline PyObject *READ_ROOT_IMPL(DecoderBuffers *decoder_context, const u8 *dat, usize len,
-                                                PyObject *object_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+                                                PyObject *object_hook,
+                                                PyObject *array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     // container stack info
     DecodeCtnWithSize *ctn = NULL;
     DecodeCtnWithSize *ctn_start = NULL;
@@ -210,7 +211,7 @@ arr_val_end:
 
 arr_end:
     assert(decode_ctn_is_arr(ctn));
-    if (!decode_arr(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, get_decode_ctn_len(ctn)))
+    if (!decode_arr(&decode_obj_writer, &decode_obj_stack, &decode_obj_stack_end, get_decode_ctn_len(ctn), array_hook))
         goto failed_cleanup;
     /* pop parent as current container */
     if (unlikely(ctn-- == ctn_start)) { goto doc_end; }
@@ -416,7 +417,7 @@ success:;
     assert(decode_obj_writer == decode_obj_stack + 1);
     assert(obj && !PyErr_Occurred());
 #if SSRJSON_GIL_ENABLED
-    assert(obj->ob_refcnt == 1);
+    assert(object_hook || array_hook || obj->ob_refcnt == 1);
 #endif
     // free string buffer
     free_bytes_str_buffer(string_buffer_head, need_dealloc);

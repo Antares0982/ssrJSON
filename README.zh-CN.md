@@ -289,7 +289,7 @@ ValueError: integer indent must be 2 or 4
 
 ### Python `json` 支持的其他参数
 
-`object_hook` 可在 `ssrjson.loads` 中使用，其行为与 `json.loads` 相同。
+`object_hook` 和 `array_hook` 可在 `ssrjson.loads` 中使用，其行为与 `json.loads` 相同。
 
 `json` 模块里的 `ensure_ascii`、`parse_float` 等参数能被识别，但会*被刻意忽略*。如果想改成在传入这些参数时报错，调用一次 `ssrjson.strict_argparse(True)` 即可，该设置全局生效。
 
