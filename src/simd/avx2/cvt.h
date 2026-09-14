@@ -101,22 +101,17 @@ force_inline void cvt_to_dst_u32_u16_256(u16 *dst, vector_a_u32_256 y) {
  *============================================================================*/
 
 force_inline void __avx2_trailing_cvt_same_size(const void *__src, const void *__src_end, void *__dst) {
-    const size_t half = 32 / 2;
     const u8 *const src = ssrjson_cast(u8 *, __src);
-    // 16 bytes before src_end
-    const u8 *t1 = ssrjson_cast(u8 *, __src_end) - half;
-    const bool t1_before_src = t1 < src;
-    //
-    vector_a_u8_128 s1, s2;
-    s1 = *(vector_u_u8_128 *)(t1_before_src ? t1 : src);
-    s2 = *(vector_u_u8_128 *)t1;
-    const int shl1 = (src - t1);
-    const int shl2 = (half - (t1 - src));
-    s1 = runtime_byte_rshift_128(s1, (t1_before_src ? shl1 : 0));
-    s2 = runtime_byte_rshift_128(s2, (t1_before_src ? 0 : shl2));
-    //
-    *(ssrjson_cast(vector_u_u8_128 *, __dst) + 0) = s1;
-    *(ssrjson_cast(vector_u_u8_128 *, __dst) + 1) = s2;
+    const u8 *const end = ssrjson_cast(u8 *, __src_end);
+    u8 *const dst = ssrjson_cast(u8 *, __dst);
+    const usize len = end - src;
+    const usize shift = len < 16 ? 16 - len : 0;
+    const usize offset = len < 16 ? 0 : len - 16;
+    vector_a_u8_128 head = *(vector_u_u8_128 *)(src - shift);
+    vector_a_u8_128 tail = *(vector_u_u8_128 *)(end - 16);
+    head = runtime_byte_rshift_128(head, shift);
+    *(vector_u_u8_128 *)(dst + offset) = tail;
+    *(vector_u_u8_128 *)dst = head;
 }
 
 force_inline void avx2_trailing_cvt_u8_u8(const u8 *src, const u8 *src_end, u8 *dst) {
