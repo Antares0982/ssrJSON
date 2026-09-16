@@ -55,6 +55,8 @@
 #undef u_buf_apd_str_wrapped
 #undef u_buf_apd_str_distribute2
 #undef u_buf_apd_str_distribute4
+#undef encode_noncompact_val
+#undef encode_ndarray_val
 #undef u_buf_apd_bool
 #undef u_buf_apd_null
 #undef u_buf_apd_float

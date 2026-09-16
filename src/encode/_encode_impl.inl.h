@@ -280,6 +280,76 @@ force_inline EncodeUnicodeWriter u_buf_apd_str_wrapped(EncodeUnicodeWriter write
     }
 }
 
+static force_noinline EncodeUnicodeWriter encode_noncompact_val(EncodeUnicodeWriter writer,
+                                                                EncodeValJumpFlag *jump_flag_out,
+                                                                EncodeUBufInfo *u_buf_info, PyObject *val,
+                                                                EncodeUnicodeInfo *unicode_info,
+                                                                Py_ssize_t cur_nested_depth, bool is_in_obj) {
+    writer = u_buf_apd_str_wrapped(writer, val, u_buf_info, unicode_info, cur_nested_depth, is_in_obj, false);
+    if (unlikely(!writer)) {
+        *jump_flag_out = JumpFlag_Fail;
+        return NULL;
+    }
+    if (ssrjson_consteval(COMPILE_UCS_LEVEL < 4) && unlikely(unicode_info->cur_ucs_type > COMPILE_UCS_LEVEL)) {
+#if COMPILE_UCS_LEVEL < 1
+        if (unicode_info->cur_ucs_type == 1) {
+            *jump_flag_out = is_in_obj ? JumpFlag_Elevate1_ObjVal : JumpFlag_Elevate1_ArrVal;
+            return writer;
+        }
+#endif
+#if COMPILE_UCS_LEVEL < 2
+        if (unicode_info->cur_ucs_type == 2) {
+            *jump_flag_out = is_in_obj ? JumpFlag_Elevate2_ObjVal : JumpFlag_Elevate2_ArrVal;
+            return writer;
+        }
+#endif
+#if COMPILE_UCS_LEVEL < 4
+        assume(unicode_info->cur_ucs_type == 4);
+        *jump_flag_out = is_in_obj ? JumpFlag_Elevate4_ObjVal : JumpFlag_Elevate4_ArrVal;
+        return writer;
+#endif
+    }
+    assert(check_unicode_writer_valid(_CAST_WRITER(writer), u_buf_info));
+    *jump_flag_out = JumpFlag_Default;
+    return writer;
+}
+
+static force_noinline EncodeUnicodeWriter encode_ndarray_val(EncodeUnicodeWriter writer,
+                                                             EncodeValJumpFlag *jump_flag_out,
+                                                             EncodeUBufInfo *u_buf_info, PyObject *val,
+                                                             Py_ssize_t cur_nested_depth, bool is_in_obj) {
+#if COMPILE_WRITE_UCS_LEVEL > 1
+    const usize original_u8_offset = ssrjson_cast(u8 *, writer) - ssrjson_cast(u8 *, u_buf_info->head);
+#endif
+    u8 *new_writer = u8_buffer_append_ndarray(ssrjson_cast(u8 *, writer), u_buf_info, cur_nested_depth, val, is_in_obj);
+#if COMPILE_WRITE_UCS_LEVEL > 1
+    if (unlikely(!new_writer)) goto fail;
+    const usize after_write_new_u8_offset = new_writer - ssrjson_cast(u8 *, u_buf_info->head);
+    const usize written_cnt = after_write_new_u8_offset - original_u8_offset;
+    dst_t *target_ptr = ssrjson_cast(
+            dst_t *, ssrjson_cast(u8 *, u_buf_info->head) + original_u8_offset + written_cnt * COMPILE_WRITE_UCS_LEVEL);
+    if (unlikely(target_ptr > ssrjson_cast(dst_t *, u_buf_info->end))) {
+        usize target_u8_size = ssrjson_cast(u8 *, target_ptr) - ssrjson_cast(u8 *, u_buf_info->head);
+        EncodeUBufInfo new_u_buf_info = _u_buf_reserve(*u_buf_info, target_u8_size);
+        if (unlikely(!new_u_buf_info.head)) goto fail;
+        *u_buf_info = new_u_buf_info;
+    }
+    _CAST_WRITER(writer) = ssrjson_cast(dst_t *, ssrjson_cast(u8 *, u_buf_info->head) + original_u8_offset);
+    SIMD_NAME_MODIFIER(ssrjson_concat2(long_back_cvt_noinline_u8, dst_t))(
+            _CAST_WRITER(writer), ssrjson_cast(u8 *, writer), written_cnt);
+    _CAST_WRITER(writer) += written_cnt;
+#else
+    _CAST_WRITER(writer) = new_writer;
+    if (unlikely(!writer)) goto fail;
+#endif
+    assert(check_unicode_writer_valid(_CAST_WRITER(writer), u_buf_info));
+    *jump_flag_out = JumpFlag_Default;
+    return writer;
+fail:;
+    *jump_flag_out = JumpFlag_Fail;
+    return NULL;
+}
+
 force_inline dst_t *u_buf_apd_bool(dst_t *writer, EncodeUBufInfo *u_buf_info, Py_ssize_t cur_nested_depth,
                                    bool is_in_obj, bool is_false) {
     write_indent_return_if_fail(writer, u_buf_info, cur_nested_depth, is_in_obj, _WriteBoolCopyCnt);
@@ -555,40 +625,11 @@ force_inline EncodeUnicodeWriter encode_process_val(EncodeUnicodeWriter writer, 
             break;
         }
         case T_UnicodeNonCompact: {
-            writer = u_buf_apd_str_wrapped(
-                    writer, val, u_buf_info, unicode_info_addr, *cur_nested_depth_addr, is_in_obj, false);
-            goto t_unicode_after;
+            return encode_noncompact_val(
+                    writer, jump_flag_out, u_buf_info, val, unicode_info_addr, *cur_nested_depth_addr, is_in_obj);
         }
         case T_NumpyArray: {
-#if COMPILE_WRITE_UCS_LEVEL > 1
-            // keep the original offset here, because u8_buffer_append_ndarray may realloc buffer
-            const usize original_u8_offset = ssrjson_cast(u8 *, writer) - ssrjson_cast(u8 *, u_buf_info->head);
-#endif
-            u8 *new_writer = u8_buffer_append_ndarray(
-                    ssrjson_cast(u8 *, writer), u_buf_info, *cur_nested_depth_addr, val, is_in_obj);
-#if COMPILE_WRITE_UCS_LEVEL > 1
-            return_jump_fail_if_unlikely(!new_writer);
-            const usize after_write_new_u8_offset = new_writer - ssrjson_cast(u8 *, u_buf_info->head);
-            const usize written_cnt = after_write_new_u8_offset - original_u8_offset;
-            dst_t *target_ptr = ssrjson_cast(dst_t *, ssrjson_cast(u8 *, u_buf_info->head) + original_u8_offset +
-                                                              written_cnt * COMPILE_WRITE_UCS_LEVEL);
-            if (unlikely(target_ptr > ssrjson_cast(dst_t *, u_buf_info->end))) {
-                usize target_u8_size = ssrjson_cast(u8 *, target_ptr) - ssrjson_cast(u8 *, u_buf_info->head);
-                // reserve
-                EncodeUBufInfo new_u_buf_info = _u_buf_reserve(*u_buf_info, target_u8_size);
-                return_jump_fail_if_unlikely(!new_u_buf_info.head);
-                *u_buf_info = new_u_buf_info;
-            }
-            _CAST_WRITER(writer) = ssrjson_cast(dst_t *, ssrjson_cast(u8 *, u_buf_info->head) + original_u8_offset);
-            // long back cvt
-            SIMD_NAME_MODIFIER(ssrjson_concat2(long_back_cvt_noinline_u8, dst_t))(
-                    _CAST_WRITER(writer), ssrjson_cast(u8 *, writer), written_cnt);
-            _CAST_WRITER(writer) += written_cnt;
-#else
-            _CAST_WRITER(writer) = new_writer;
-            return_jump_fail_if_unlikely(!writer);
-#endif
-            break;
+            return encode_ndarray_val(writer, jump_flag_out, u_buf_info, val, *cur_nested_depth_addr, is_in_obj);
         }
 
             {

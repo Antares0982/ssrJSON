@@ -72,6 +72,8 @@
 #define b_buf_apd_str make_i_name(b_buf_apd_str)
 #define b_buf_apd_nonascii_key_write_cache make_i_name(b_buf_apd_nonascii_key_write_cache)
 #define b_buf_apd_nonascii_key_no_write_cache make_i_name(b_buf_apd_nonascii_key_no_write_cache)
+#define encode_bytes_noncompact_val make_i_name(encode_bytes_noncompact_val)
+#define encode_bytes_ndarray_val make_i_name(encode_bytes_ndarray_val)
 #define encode_bytes_process_val make_i_name(encode_bytes_process_val)
 #define ssrjson_dumps_to_bytes_obj make_i_name(ssrjson_dumps_to_bytes_obj)
 #define ndarray_traverse_dispatch make_i_name(ndarray_traverse_dispatch)
