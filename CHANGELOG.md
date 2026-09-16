@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.23
+
+### New Features
+- Add `array_hook` to `loads` to transform decoded arrays, including nested arrays; supports use together with `object_hook` (#34)
+
+### Bug Fixes
+- Fix invalid memory reads when encoding short `str` subclasses and short UTF-8 caches with `PYTHONMALLOC=malloc`
+
+### Performance
+- Optimize dictionary iteration for combined Unicode-key dictionaries on CPython 3.11-3.15 GIL builds
+- Optimize AVX2 tail copies with branchless overlapping stores, reuse byte tail escape bitmasks, and move escape retries out of the hot path
+- Move NumPy array and non-compact string bytes encoding out of the hot path
+- Improve UTF-8 encoding of UCS4 strings containing characters that require three UTF-8 bytes
+
+### Build & CI
+- Allow `ENCODE_RESERVE_DEBUG` to be defined through build flags
+
 ## 0.0.22
 
 ### Performance
