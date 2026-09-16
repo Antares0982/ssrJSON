@@ -31,6 +31,7 @@
 
 #define trailing_copy_with_cvt make_srw_name(trailing_copy_with_cvt)
 #define encode_trailing_copy_with_cvt make_srw_name(encode_trailing_copy_with_cvt)
+#define encode_tail_escaped make_srw_name(encode_tail_escaped)
 #define cvt_to_dst make_srw_name(cvt_to_dst)
 #define _addr_cvt make_srw_name(_addr_cvt)
 #define encode_unicode_loop make_srw_name(encode_unicode_loop)

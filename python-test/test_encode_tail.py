@@ -3,6 +3,18 @@ import json
 import ssrjson
 
 
+def test_short_clean_tail():
+    for length in range(66):
+        for escape in ("", '"', "\\", "\n", "\x00"):
+            for position in range(length + 1):
+                text = "a" * position + escape + "b" * (length - position)
+                value = {text: [text, text * 3]}
+                for indent in (None, 2, 4):
+                    expected = json.dumps(value, ensure_ascii=False, indent=indent)
+                    assert json.loads(ssrjson.dumps(value, indent=indent)) == json.loads(expected)
+                    assert json.loads(ssrjson.dumps_to_bytes(value, indent=indent)) == json.loads(expected)
+
+
 def test_encode_tail():
     for char in ("a", "\u00ff", "\u597d", "\U0001f408", "\ud800"):
         for length in range(1, 66):

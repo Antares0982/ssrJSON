@@ -30,6 +30,7 @@
 //
 #undef trailing_copy_with_cvt
 #undef encode_trailing_copy_with_cvt
+#undef encode_tail_escaped
 #undef cvt_to_dst
 #undef _addr_cvt
 #undef encode_unicode_loop

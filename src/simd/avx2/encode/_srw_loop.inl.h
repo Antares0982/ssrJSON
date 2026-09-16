@@ -69,13 +69,20 @@ force_inline ssrjson_nofail dst_t *encode_unicode_loop(register dst_t *dst, cons
     return dst;
 }
 
+#if COMPILE_READ_UCS_LEVEL == 1 && COMPILE_WRITE_UCS_LEVEL == 1
+static force_noinline ssrjson_nofail dst_t *encode_tail_escaped(dst_t *dst, const src_t *src, usize len,
+                                                                u32 escape_mask) {
+#else
 force_inline ssrjson_nofail dst_t *encode_trailing_copy_with_cvt(register dst_t *dst, const src_t *src, usize len) {
+#endif
     assert(len && len < READ_BATCH_COUNT);
     dst_t *dst_old = dst;
     const src_t *src_end = src + len;
     const src_t *load_start = src_end - READ_BATCH_COUNT;
+#if COMPILE_READ_UCS_LEVEL != 1 || COMPILE_WRITE_UCS_LEVEL != 1
     const vector_a vec = *(vector_u *)load_start;
     const u32 escape_mask = escape_mask_to_bitmask(get_escape_mask(vec));
+#endif
 restart:;
     dst_t *write_start = dst + len - READ_BATCH_COUNT;
     u32 real_escape_mask = escape_mask & (UINT32_MAX << (32 - len * sizeof(src_t)));
@@ -105,6 +112,18 @@ restart:;
     assert(dst > dst_old);
     return dst;
 }
+
+#if COMPILE_READ_UCS_LEVEL == 1 && COMPILE_WRITE_UCS_LEVEL == 1
+force_inline ssrjson_nofail dst_t *encode_trailing_copy_with_cvt(dst_t *dst, const src_t *src, usize len) {
+    assert(len && len < READ_BATCH_COUNT);
+    const src_t *src_end = src + len;
+    const vector_a vec = *(vector_u *)(src_end - READ_BATCH_COUNT);
+    const u32 escape_mask = escape_mask_to_bitmask(get_escape_mask(vec)) & (UINT32_MAX << (32 - len));
+    if (unlikely(escape_mask)) return encode_tail_escaped(dst, src, len, escape_mask);
+    avx2_trailing_cvt(src, src_end, dst);
+    return dst + len;
+}
+#endif
 
 // excess written count = READ_BATCH_COUNT - max_json_bytes_per_unicode
 // 26 >= excess written count >= 2
