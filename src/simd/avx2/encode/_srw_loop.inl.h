@@ -47,7 +47,7 @@ force_inline ssrjson_nofail dst_t *encode_unicode_loop(register dst_t *dst, cons
         vector_a escape_mask = get_escape_mask(x);
         // no excess bytes written, 6 * len * sizeof(dst_t) should be reserved
         cvt_to_dst(dst, x);
-        if (likely(testz(escape_mask))) {
+        if (likely(COMPILE_READ_UCS_LEVEL == 1 ? !escape_mask_to_bitmask(escape_mask) : testz(escape_mask))) {
             src += READ_BATCH_COUNT;
             dst += READ_BATCH_COUNT;
             len -= READ_BATCH_COUNT;
@@ -75,19 +75,19 @@ force_inline ssrjson_nofail dst_t *encode_trailing_copy_with_cvt(register dst_t 
     const src_t *src_end = src + len;
     const src_t *load_start = src_end - READ_BATCH_COUNT;
     const vector_a vec = *(vector_u *)load_start;
-    const vector_a escape_mask = get_escape_mask(vec);
+    const u32 escape_mask = escape_mask_to_bitmask(get_escape_mask(vec));
 restart:;
     dst_t *write_start = dst + len - READ_BATCH_COUNT;
-    vector_a real_escape_mask = high_mask(escape_mask, len);
+    u32 real_escape_mask = escape_mask & (UINT32_MAX << (32 - len * sizeof(src_t)));
     // write READ_BATCH_COUNT unicodes
     // for the case len == 1 and every character escapes,
     // the reserved count is `max_json_bytes_per_unicode`.
     // excess written count = max(READ_BATCH_COUNT - max_json_bytes_per_unicode, 0)
     avx2_trailing_cvt(src, src_end, dst);
-    if (likely(testz(real_escape_mask))) {
+    if (likely(!real_escape_mask)) {
         dst += len;
     } else {
-        usize done_count = escape_mask_to_done_count(real_escape_mask);
+        usize done_count = u32_tz_bits(real_escape_mask) / sizeof(src_t);
         usize real_done_count = done_count - (src - load_start);
         src_t unicode = load_start[done_count];
         src = load_start + done_count + 1;
