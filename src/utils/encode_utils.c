@@ -130,43 +130,43 @@ extern const u32 ControlEscapeTable_u32[256 * 8];
     }
 
 u8 *ssrjson_nofail encode_scalar_u8_u8(u8 *restrict writer, const u8 *restrict src, usize len) {
-    assume(len < 16);
+    assume(len < 32);
     scalar_encoder(u8, u8);
     return writer;
 }
 
 u16 *ssrjson_nofail encode_scalar_u8_u16(u16 *restrict writer, const u8 *restrict src, usize len) {
-    assume(len < 16);
+    assume(len < 32);
     scalar_encoder(u8, u16);
     return writer;
 }
 
 u32 *ssrjson_nofail encode_scalar_u8_u32(u32 *restrict writer, const u8 *restrict src, usize len) {
-    assume(len < 16);
+    assume(len < 32);
     scalar_encoder(u8, u32);
     return writer;
 }
 
 u16 *ssrjson_nofail encode_scalar_u16_u16(u16 *restrict writer, const u16 *restrict src, usize len) {
-    assume(len < 8);
+    assume(len < 16);
     scalar_encoder(u16, u16);
     return writer;
 }
 
 u32 *ssrjson_nofail encode_scalar_u16_u32(u32 *restrict writer, const u16 *restrict src, usize len) {
-    assume(len < 8);
+    assume(len < 16);
     scalar_encoder(u16, u32);
     return writer;
 }
 
 u32 *ssrjson_nofail encode_scalar_u32_u32(u32 *restrict writer, const u32 *restrict src, usize len) {
-    assume(len < 4);
+    assume(len < 8);
     scalar_encoder(u32, u32);
     return writer;
 }
 
 u8 *ssrjson_nofail encode_bytes_ucs1_scalar(u8 *writer, const u8 *src, usize len) {
-    assume(len < 16);
+    assume(len < 32);
     const u8 *const src_end = src + len;
     while (src < src_end) {
         const u8 unicode = *src++;
@@ -177,7 +177,7 @@ u8 *ssrjson_nofail encode_bytes_ucs1_scalar(u8 *writer, const u8 *src, usize len
 
 u8 *encode_bytes_ucs2_scalar(u8 *writer, const u16 *src, usize len) {
     // encode ucs2 may fail.
-    assume(len < 8);
+    assume(len < 16);
     const u16 *const src_end = src + len;
     while (src < src_end) {
         const u16 unicode = *src++;
@@ -189,7 +189,7 @@ u8 *encode_bytes_ucs2_scalar(u8 *writer, const u16 *src, usize len) {
 
 u8 *encode_bytes_ucs4_scalar(u8 *writer, const u32 *src, usize len) {
     // encode ucs4 may fail.
-    assume(len < 4);
+    assume(len < 8);
     const u32 *const src_end = src + len;
     while (src < src_end) {
         const u32 unicode = *src++;
@@ -200,7 +200,7 @@ u8 *encode_bytes_ucs4_scalar(u8 *writer, const u32 *src, usize len) {
 }
 
 u8 *ssrjson_nofail encode_bytes_ucs1_raw_utf8_scalar(u8 *writer, const u8 *src, usize len) {
-    assume(len < 16);
+    assume(len < 32);
     const u8 *const src_end = src + len;
     while (src < src_end) { writer = encode_one_ucs1_noescape(writer, *src++); }
     return writer;
@@ -208,7 +208,7 @@ u8 *ssrjson_nofail encode_bytes_ucs1_raw_utf8_scalar(u8 *writer, const u8 *src, 
 
 u8 *encode_bytes_ucs2_raw_utf8_scalar(u8 *writer, const u16 *src, usize len) {
     // encode ucs2 may fail.
-    assume(len < 8);
+    assume(len < 16);
     const u16 *const src_end = src + len;
     while (src < src_end) {
         writer = encode_one_ucs2_noescape(writer, *src++);
@@ -219,7 +219,7 @@ u8 *encode_bytes_ucs2_raw_utf8_scalar(u8 *writer, const u16 *src, usize len) {
 
 u8 *encode_bytes_ucs4_raw_utf8_scalar(u8 *writer, const u32 *src, usize len) {
     // encode ucs4 may fail.
-    assume(len < 4);
+    assume(len < 8);
     const u32 *const src_end = src + len;
     while (src < src_end) {
         writer = encode_one_ucs4_noescape(writer, *src++);

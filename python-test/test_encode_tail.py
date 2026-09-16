@@ -11,8 +11,12 @@ def test_short_clean_tail():
                 value = {text: [text, text * 3]}
                 for indent in (None, 2, 4):
                     expected = json.dumps(value, ensure_ascii=False, indent=indent)
-                    assert json.loads(ssrjson.dumps(value, indent=indent)) == json.loads(expected)
-                    assert json.loads(ssrjson.dumps_to_bytes(value, indent=indent)) == json.loads(expected)
+                    assert json.loads(
+                        ssrjson.dumps(value, indent=indent)
+                    ) == json.loads(expected)
+                    assert json.loads(
+                        ssrjson.dumps_to_bytes(value, indent=indent)
+                    ) == json.loads(expected)
 
 
 def test_encode_tail():

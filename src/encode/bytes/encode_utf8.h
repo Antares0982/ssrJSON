@@ -64,7 +64,8 @@ force_inline u8 *ssrjson_nofail b_buf_apd_ascii_key(u8 *writer, const u8 *src, u
                                                     ssrjson_compiletime bool is_indented,
                                                     ssrjson_compiletime bool is_compact) {
     *writer++ = '"';
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 16) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
+        // if src is utf-8 encoded, the result will be wrong in this case.
         writer = encode_bytes_ucs1_scalar(writer, src, len);
     } else {
         writer = bytes_write_ascii_noinline(writer, src, len);
@@ -78,10 +79,24 @@ force_inline u8 *ssrjson_nofail b_buf_apd_ascii_key(u8 *writer, const u8 *src, u
     return writer;
 }
 
+force_inline u8 *ssrjson_nofail b_buf_apd_utf8_cache(u8 *writer, const u8 *src, usize len,
+                                                     ssrjson_compiletime bool is_indented) {
+    assert(USING_AVX512 || len >= READ_BATCH_COUNT);
+    *writer++ = '"';
+    writer = bytes_write_ascii_noinline(writer, src, len);
+    *writer++ = '"';
+    *writer++ = ':';
+    if (ssrjson_consteval(is_indented)) {
+        *writer++ = ' ';
+        *writer = 0;
+    }
+    return writer;
+}
+
 force_inline u8 *ssrjson_nofail b_buf_apd_ascii_str(u8 *writer, const u8 *src, usize len,
                                                     ssrjson_compiletime bool is_compact) {
     *writer++ = '"';
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 16) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         writer = encode_bytes_ucs1_scalar(writer, src, len);
     } else {
         writer = bytes_write_ascii_noinline(writer, src, len);
@@ -224,7 +239,7 @@ static force_noinline ssrjson_nofail u8 *bytes_write_ucs1_noinline(u8 *writer, c
 
 force_inline ssrjson_nofail u8 *bytes_write_ucs1_key(u8 *writer, const u8 *src, usize len,
                                                      ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 16) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs1_scalar(writer, src, len);
     }
     return bytes_write_ucs1_noinline(writer, src, len);
@@ -232,7 +247,7 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1_key(u8 *writer, const u8 *src, 
 
 force_inline ssrjson_nofail u8 *bytes_write_ucs1_str(u8 *writer, const u8 *src, usize len,
                                                      ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 16) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs1_scalar(writer, src, len);
     }
     return bytes_write_ucs1_noinline(writer, src, len);
@@ -272,7 +287,7 @@ static force_noinline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8_noinline(u8 *
 
 force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8_key(u8 *writer, const u8 *src, usize len,
                                                               ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 16) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs1_raw_utf8_scalar(writer, src, len);
     }
     return bytes_write_ucs1_raw_utf8_noinline(writer, src, len);
@@ -280,7 +295,7 @@ force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8_key(u8 *writer, const 
 
 force_inline ssrjson_nofail u8 *bytes_write_ucs1_raw_utf8_str(u8 *writer, const u8 *src, usize len,
                                                               ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 16) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs1_raw_utf8_scalar(writer, src, len);
     }
     return bytes_write_ucs1_raw_utf8_noinline(writer, src, len);
@@ -496,28 +511,6 @@ force_inline void check_3bytes_in_ucs2_and_get_done_count(vector_a vec, bool *ou
     }
 }
 
-force_inline void check_3bytes_in_ucs4_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
-    vector_a t1 = broadcast(0x800);
-    vector_a t2 = broadcast(0xd7ff);
-    vector_a t3 = broadcast(0xe000);
-    vector_a t4 = broadcast(0xffff);
-
-#if SSRJSON_IS_X64 && _CompileVectorBits == 512
-    u32 m;
-    m = unsigned_cmpgt_bitmask(t1, vec) | (unsigned_cmpgt_bitmask(vec, t2) & unsigned_cmpgt_bitmask(t3, vec)) |
-        unsigned_cmpgt_bitmask(vec, t4);
-#elif SSRJSON_IS_X64
-    vector_a m;
-    m = signed_cmpgt(t1, vec) | (signed_cmpgt(vec, t2) & signed_cmpgt(t3, vec)) | signed_cmpgt(vec, t4);
-#elif SSRJSON_IS_AARCH64
-    vector_a m;
-    m = (vec < t1) | ((vec > t2) & (vec < t3)) | (vec > t4);
-#endif
-    bool checked = testz_escape_mask(m);
-    *out_checked = checked;
-    if (unlikely(!checked)) { *out_done_count = escape_anymask_to_done_count_no_eq0(m); }
-}
-
 force_inline ssrjson_nofail u8 *_3bytes_in_ucs2_encode_loop(u8 *dst, const u16 **src_addr, usize *len_addr,
                                                             bool *continuous_out) {
     // prepare
@@ -617,14 +610,14 @@ static force_noinline u8 *bytes_write_ucs2_noinline(u8 *writer, const u16 *src, 
 }
 
 force_inline u8 *bytes_write_ucs2_key(u8 *writer, const u16 *src, usize len, ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 8) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs2_scalar(writer, src, len);
     }
     return bytes_write_ucs2_noinline(writer, src, len);
 }
 
 force_inline u8 *bytes_write_ucs2_str(u8 *writer, const u16 *src, usize len, ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 8) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs2_scalar(writer, src, len);
     }
     return bytes_write_ucs2_noinline(writer, src, len);
@@ -684,7 +677,7 @@ static force_noinline u8 *bytes_write_ucs2_raw_utf8_noinline(u8 *writer, const u
 
 force_inline u8 *bytes_write_ucs2_raw_utf8_key(u8 *writer, const u16 *src, usize len,
                                                ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 8) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs2_raw_utf8_scalar(writer, src, len);
     }
     return bytes_write_ucs2_raw_utf8_noinline(writer, src, len);
@@ -692,7 +685,7 @@ force_inline u8 *bytes_write_ucs2_raw_utf8_key(u8 *writer, const u16 *src, usize
 
 force_inline u8 *bytes_write_ucs2_raw_utf8_str(u8 *writer, const u16 *src, usize len,
                                                ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 8) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs2_raw_utf8_scalar(writer, src, len);
     }
     return bytes_write_ucs2_raw_utf8_noinline(writer, src, len);
@@ -882,6 +875,28 @@ force_inline ssrjson_nofail u8 *_2bytes_in_ucs4_encode_loop(u8 *dst, const u32 *
     return dst;
 }
 
+force_inline void check_3bytes_in_ucs4_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
+    vector_a t1 = broadcast(0x800);
+    vector_a t2 = broadcast(0xd7ff);
+    vector_a t3 = broadcast(0xe000);
+    vector_a t4 = broadcast(0xffff);
+
+#if SSRJSON_IS_X64 && _CompileVectorBits == 512
+    u32 m;
+    m = unsigned_cmpgt_bitmask(t1, vec) | (unsigned_cmpgt_bitmask(vec, t2) & unsigned_cmpgt_bitmask(t3, vec)) |
+        unsigned_cmpgt_bitmask(vec, t4);
+#elif SSRJSON_IS_X64
+    vector_a m;
+    m = signed_cmpgt(t1, vec) | (signed_cmpgt(vec, t2) & signed_cmpgt(t3, vec)) | signed_cmpgt(vec, t4);
+#elif SSRJSON_IS_AARCH64
+    vector_a m;
+    m = (vec < t1) | ((vec > t2) & (vec < t3)) | (vec > t4);
+#endif
+    bool checked = testz_escape_mask(m);
+    *out_checked = checked;
+    if (unlikely(!checked)) { *out_done_count = escape_anymask_to_done_count_no_eq0(m); }
+}
+
 force_inline ssrjson_nofail u8 *_3bytes_in_ucs4_encode_loop(u8 *dst, const u32 **src_addr, usize *len_addr,
                                                             bool *continuous_out) {
     // prepare
@@ -983,14 +998,14 @@ static force_noinline u8 *bytes_write_ucs4_noinline(u8 *writer, const u32 *src, 
 }
 
 force_inline u8 *bytes_write_ucs4_key(u8 *writer, const u32 *src, usize len, ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 4) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs4_scalar(writer, src, len);
     }
     return bytes_write_ucs4_noinline(writer, src, len);
 }
 
 force_inline u8 *bytes_write_ucs4_str(u8 *writer, const u32 *src, usize len, ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 4) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs4_scalar(writer, src, len);
     }
     return bytes_write_ucs4_noinline(writer, src, len);
@@ -1052,7 +1067,7 @@ static force_noinline u8 *bytes_write_ucs4_raw_utf8_noinline(u8 *writer, const u
 
 force_inline u8 *bytes_write_ucs4_raw_utf8_key(u8 *writer, const u32 *src, usize len,
                                                ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 4) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs4_raw_utf8_scalar(writer, src, len);
     }
     return bytes_write_ucs4_raw_utf8_noinline(writer, src, len);
@@ -1060,7 +1075,7 @@ force_inline u8 *bytes_write_ucs4_raw_utf8_key(u8 *writer, const u32 *src, usize
 
 force_inline u8 *bytes_write_ucs4_raw_utf8_str(u8 *writer, const u32 *src, usize len,
                                                ssrjson_compiletime bool is_compact) {
-    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < 4) {
+    if (ssrjson_consteval(!USING_AVX512 && !is_compact) && len < READ_BATCH_COUNT) {
         return encode_bytes_ucs4_raw_utf8_scalar(writer, src, len);
     }
     return bytes_write_ucs4_raw_utf8_noinline(writer, src, len);

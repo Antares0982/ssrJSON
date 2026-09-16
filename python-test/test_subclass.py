@@ -134,6 +134,31 @@ class TestSubclass:
             json.dumps(large_obj)
         )
 
+    def test_subclass_str_short_tail(self):
+        for char, length in (
+            ("a", 16),
+            ("a", 31),
+            ("\u00ff", 16),
+            ("\u00ff", 31),
+            ("\u597d", 8),
+            ("\u597d", 15),
+            ("\U0001f408", 4),
+            ("\U0001f408", 7),
+        ):
+            text = char * length
+            expected = json.dumps(text, ensure_ascii=False)
+            encoded = expected.encode()
+            assert ssrjson.dumps(SubStr(text)) == expected
+            assert ssrjson.dumps([SubStr(text)]) == "[" + expected + "]"
+            assert ssrjson.dumps_to_bytes(SubStr(text)) == encoded
+            assert ssrjson.dumps_to_bytes([SubStr(text)]) == b"[" + encoded + b"]"
+            assert json.loads(ssrjson.dumps({SubStr(text): 1})) == {text: 1}
+            assert json.loads(ssrjson.dumps_to_bytes({SubStr(text): 1})) == {text: 1}
+            assert ssrjson.dumps_to_bytes(SubStr(text), is_write_cache=False) == encoded
+            assert json.loads(
+                ssrjson.dumps_to_bytes({SubStr(text): 1}, is_write_cache=False)
+            ) == {text: 1}
+
     def test_subclass_str_top_level_bytes(self):
         assert ssrjson.dumps_to_bytes(SubStr("a")) == b'"a"'
         assert ssrjson.dumps_to_bytes(SubStr("")) == b'""'

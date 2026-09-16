@@ -118,6 +118,7 @@ def test(build_dir: str, asan: bool):
 
     if asan:
         new_env["LD_PRELOAD"] = find_libasan_ldd(build_dir)
+        new_env["PYTHONMALLOC"] = "malloc"
         minor_ver = get_minor_version(python_exe)
         is_below_314 = minor_ver < 14
         # known leak issues in python < 3.14
@@ -128,7 +129,11 @@ def test(build_dir: str, asan: bool):
             warnings.warn(
                 "Disable ASAN leak detection due to CPython memory leak issues"
             )
-    cmd = [python_exe, "-m", "pytest", "--random-order", "python-test"]
+    cmd = [python_exe, "-m", "pytest"]
+    if asan:
+        # -s keeps ASAN reports off pytest's fd capture
+        cmd.append("-s")
+    cmd += ["--random-order", "python-test"]
     subprocess.run(cmd, check=True, env=new_env)
 
 

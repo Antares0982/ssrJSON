@@ -414,3 +414,33 @@ class TestStr:
         s = '{"\\u00ffÿ":"好ÿ","ÿ\\u00ff":"\\/\\"/\\f/a\\r\\b\\/\\f"}'
         obj = ssrjson.loads(s)
         assert obj == {"ÿÿ": '/"/\x0c/a\r\x08/\x0c'}
+
+
+def test_nonascii_short_tail_bytes_cache():
+    for text in (
+        "\u00e9" * 8,
+        "\u597d" * 6,
+        "\u597d" * 8,
+        "\u00e9" * 15,
+        "\U0001f408" * 4,
+        "\U0001f408" * 7,
+        "\u00e9" * 16,
+    ):
+        quoted = json.dumps(text, ensure_ascii=False).encode()
+        assert ssrjson.dumps_to_bytes(text) == quoted
+        assert ssrjson.dumps_to_bytes([text]) == b"[" + quoted + b"]"
+        assert ssrjson.dumps_to_bytes({text: 1}) == b"{" + quoted + b":1}"
+        assert ssrjson.dumps_to_bytes(text, is_write_cache=False) == quoted
+        assert (
+            ssrjson.dumps_to_bytes({text: 1}, is_write_cache=False)
+            == b"{" + quoted + b":1}"
+        )
+
+
+def test_ucs4_mixed_batch_bytes():
+    for n3 in (3, 7, 15, 31):
+        text = "\u597d" * n3 + "\U0001f408" + "\u597d" * 16
+        quoted = json.dumps(text, ensure_ascii=False).encode()
+        assert ssrjson.dumps_to_bytes(text) == quoted
+        assert ssrjson.dumps_to_bytes([text]) == b"[" + quoted + b"]"
+        assert ssrjson.dumps_to_bytes({text: 1}) == b"{" + quoted + b":1}"
