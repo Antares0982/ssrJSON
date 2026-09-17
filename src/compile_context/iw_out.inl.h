@@ -40,8 +40,9 @@
 #undef b_buf_apd_str
 #undef b_buf_apd_nonascii_key_write_cache
 #undef b_buf_apd_nonascii_key_no_write_cache
+#undef encode_bytes_noncompact_val_in_obj
+#undef encode_bytes_noncompact_val_not_obj
 #undef encode_bytes_noncompact_val
-#undef encode_bytes_ndarray_val
 #undef encode_bytes_process_val
 #undef ssrjson_dumps_to_bytes_obj
 #undef ndarray_traverse_dispatch

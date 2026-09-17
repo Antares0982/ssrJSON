@@ -236,34 +236,33 @@ force_inline u8 *b_buf_apd_str(u8 *writer, int src_pykind, const void *src_voidp
     return writer;
 }
 
-static force_noinline u8 *encode_bytes_noncompact_val(u8 *writer, EncodeValJumpFlag *jump_flag_out,
-                                                      EncodeUBufInfo *u_buf_info, PyObject *val,
-                                                      Py_ssize_t cur_nested_depth, bool is_in_obj,
-                                                      bool is_write_cache) {
+static force_noinline u8 *encode_bytes_noncompact_val_in_obj(u8 *writer, EncodeUBufInfo *u_buf_info, PyObject *val,
+                                                             Py_ssize_t cur_nested_depth, bool is_write_cache) {
     usize s_len = PyUnicode_GET_LENGTH(val);
     int src_pykind = PyUnicode_KIND(val);
     bool is_ascii = PyUnicode_IS_ASCII(val);
     const void *src_voidp = ssrjson_pyunicode_cast(val)->data.any;
-    writer = b_buf_apd_str(writer, src_pykind, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
-                           ssrjson_cast(usize, cur_nested_depth), is_in_obj, false);
-    if (unlikely(!writer)) {
-        *jump_flag_out = JumpFlag_Fail;
-        return NULL;
-    }
-    *jump_flag_out = JumpFlag_Default;
-    return writer;
+    return b_buf_apd_str(writer, src_pykind, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
+                         ssrjson_cast(usize, cur_nested_depth), true, false);
 }
 
-static force_noinline u8 *encode_bytes_ndarray_val(u8 *writer, EncodeValJumpFlag *jump_flag_out,
-                                                   EncodeUBufInfo *u_buf_info, PyObject *val,
-                                                   Py_ssize_t cur_nested_depth, bool is_in_obj) {
-    writer = u8_buffer_append_ndarray(writer, u_buf_info, cur_nested_depth, val, is_in_obj);
-    if (unlikely(!writer)) {
-        *jump_flag_out = JumpFlag_Fail;
-        return NULL;
-    }
-    *jump_flag_out = JumpFlag_Default;
-    return writer;
+static force_noinline u8 *encode_bytes_noncompact_val_not_obj(u8 *writer, EncodeUBufInfo *u_buf_info, PyObject *val,
+                                                              Py_ssize_t cur_nested_depth, bool is_write_cache) {
+
+    usize s_len = PyUnicode_GET_LENGTH(val);
+    int src_pykind = PyUnicode_KIND(val);
+    bool is_ascii = PyUnicode_IS_ASCII(val);
+    const void *src_voidp = ssrjson_pyunicode_cast(val)->data.any;
+    return b_buf_apd_str(writer, src_pykind, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
+                         ssrjson_cast(usize, cur_nested_depth), false, false);
+}
+
+force_inline u8 *encode_bytes_noncompact_val(u8 *writer, EncodeUBufInfo *u_buf_info, PyObject *val,
+                                             Py_ssize_t cur_nested_depth, ssrjson_compiletime bool is_in_obj,
+                                             bool is_write_cache) {
+    if (ssrjson_consteval(is_in_obj))
+        return encode_bytes_noncompact_val_in_obj(writer, u_buf_info, val, cur_nested_depth, is_write_cache);
+    return encode_bytes_noncompact_val_not_obj(writer, u_buf_info, val, cur_nested_depth, is_write_cache);
 }
 
 force_inline u8 *encode_bytes_process_val(u8 *writer, EncodeValJumpFlag *jump_flag_out, EncodeUBufInfo *u_buf_info,
@@ -441,11 +440,15 @@ force_inline u8 *encode_bytes_process_val(u8 *writer, EncodeValJumpFlag *jump_fl
             break;
         }
         case T_UnicodeNonCompact: {
-            return encode_bytes_noncompact_val(
-                    writer, jump_flag_out, u_buf_info, val, *cur_nested_depth_addr, is_in_obj, is_write_cache);
+            writer = encode_bytes_noncompact_val(
+                    writer, u_buf_info, val, *cur_nested_depth_addr, is_in_obj, is_write_cache);
+            return_jump_fail_if_unlikely(!writer);
+            break;
         }
         case T_NumpyArray: {
-            return encode_bytes_ndarray_val(writer, jump_flag_out, u_buf_info, val, *cur_nested_depth_addr, is_in_obj);
+            writer = u8_buffer_append_ndarray(writer, u_buf_info, *cur_nested_depth_addr, val, is_in_obj);
+            return_jump_fail_if_unlikely(!writer);
+            break;
         }
 
             {
