@@ -33,6 +33,7 @@ clangStdenv.mkDerivation {
     patchelf
     llvmPackages.llvm
   ];
+  cmakeFlags = commonCmakeFlags;
 
   # Keep hardening consistent with the final build (build_package.nix) so the
   # PGO profile is collected from code generated with the same flags.

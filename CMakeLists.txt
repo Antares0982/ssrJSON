@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.30)
 project(ssrjson LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
@@ -94,6 +94,10 @@ if(SEARCH_PYTHON3_USE_ENV)
     find_program(Python3_EXECUTABLE NAMES python3 python REQUIRED)
   endif()
 else()
+  if(BUILD_FREE_THREADING)
+    # pydebug, pymalloc, unicode, gil_disabled
+    set(Python3_FIND_ABI "OFF" "ANY" "ANY" "ON")
+  endif()
   find_package(
     Python3
     COMPONENTS Interpreter Development
@@ -138,6 +142,7 @@ target_include_directories(
   commonBuild INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 target_include_directories(commonBuild SYSTEM INTERFACE ${Python3_INCLUDE_DIRS})
 if(BUILD_FREE_THREADING)
+  set(Python3_FIND_ABI "OFF" "ANY" "ANY" "ON")
   message("GIL: Disabled")
   target_compile_definitions(commonBuild INTERFACE Py_GIL_DISABLED=1)
   if(FREE_THREADING_LOCKFREE)
