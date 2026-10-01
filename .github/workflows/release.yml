@@ -52,7 +52,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14"]
+        pyver: ["10", "11", "12", "13", "14", "15", "15t"]
 
     steps:
     - name: Checkout
@@ -91,7 +91,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "14t"]
+        pyver: ["10", "11", "12", "13", "14", "15", "14t", "15t"]
 
     steps:
     - name: Checkout
@@ -148,7 +148,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14"]
+        pyver: ["10", "11", "12", "13", "14", "15", "15t"]
 
     steps:
     - name: Checkout
@@ -176,7 +176,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "14t"]
+        pyver: ["10", "11", "12", "13", "14", "15", "14t", "15t"]
 
     steps:
     - name: Checkout
@@ -214,7 +214,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14"]
+        pyver: ["10", "11", "12", "13", "14", "15", "15t"]
 
     steps:
     - name: Checkout
@@ -252,7 +252,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "14t"]
+        pyver: ["10", "11", "12", "13", "14", "15", "14t", "15t"]
 
     steps:
     - name: Checkout
@@ -302,7 +302,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14"]
+        pyver: ["10", "11", "12", "13", "14", "15", "15t"]
 
     steps:
     - name: Checkout
@@ -341,7 +341,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "14t"]
+        pyver: ["10", "11", "12", "13", "14", "15", "14t", "15t"]
 
     steps:
     - name: Checkout
@@ -374,7 +374,7 @@ jobs:
 
     - name: Verify Wheel Compatibility
       run: |
-        bash ci/macos_verify_wheel.sh ${{ steps.build-wheel.outputs.ARTIFACT_NAME }} python3.${{ matrix.pyver }}
+        bash ci/macos_verify_wheel.sh ${{ steps.build-wheel.outputs.ARTIFACT_NAME }} python
 
     - name: Install Wheel
       run: |

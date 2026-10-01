@@ -96,11 +96,11 @@
         "uv2nix": "uv2nix"
       },
       "locked": {
-        "lastModified": 1789572150,
-        "narHash": "sha256-b70CRTzAtrQv+snE2MCkgJrKwCW715w5rAk2EriC+A0=",
+        "lastModified": 1790846738,
+        "narHash": "sha256-aqOcBnJ5zczSxGLTBsRvscGEhHJ8dR4xBxrWYoGvOKw=",
         "owner": "Antares0982",
         "repo": "ssrjson-nix-dev",
-        "rev": "984915275608f1ecf6fe21864a33d4f2e8d84a4a",
+        "rev": "8ee45aed0bba3f22777e6d9992b78fa12c874069",
         "type": "github"
       },
       "original": {

@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15", "14t"]
+        pyver: ["10", "11", "12", "13", "14", "15", "14t", "15t"]
     steps:
     - name: Checkout
       uses: actions/checkout@v5
@@ -69,7 +69,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: ["14t"]
+        pyver: ["14t", "15t"]
     steps:
     - name: Checkout
       uses: actions/checkout@v5

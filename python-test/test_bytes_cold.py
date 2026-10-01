@@ -1,14 +1,21 @@
 import json
 
-import numpy as np
 import pytest
 import ssrjson
+
+try:
+    import numpy as np
+
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
 
 
 class SubStr(str):
     pass
 
 
+@pytest.mark.skipif(not HAS_NUMPY, reason="numpy not installed")
 def test_cold_values():
     ssrjson.setup_numpy_types(np)
     text = SubStr("\u597d" * 32768)

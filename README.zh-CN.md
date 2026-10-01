@@ -125,7 +125,7 @@ PyPI 上提供了预构建的 wheel，你可以使用 pip 安装。
 pip install ssrjson
 ```
 
-注意：在 x86-64 上，ssrJSON 至少需要 SSE4.2（[x86-64-v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels)）或 aarch64 架构，不支持 32 位平台，也无法在 CPython 以外的 Python 实现上运行。目前支持的 CPython 版本为 3.10、3.11、3.12、3.13、3.14、3.15，其中 Python ≥ 3.15 需要从源码构建。
+注意：在 x86-64 上，ssrJSON 至少需要 SSE4.2（[x86-64-v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels)）或 aarch64 架构，不支持 32 位平台，也无法在 CPython 以外的 Python 实现上运行。目前支持的 CPython 版本为 3.10、3.11、3.12、3.13、3.14、3.15。
 
 ### 从源码构建
 
