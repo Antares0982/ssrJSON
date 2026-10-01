@@ -6,7 +6,7 @@ include ci/pgo_train.py
 recursive-include src *
 recursive-include python-test *
 recursive-include cmake *
-recursive-include ssrjson *
+recursive-include pysrc *
 recursive-include test_data *
 recursive-include bench *
 recursive-include licenses *

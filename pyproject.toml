@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -32,6 +32,7 @@ classifiers = [
 
 [tool.setuptools]
 packages = ["ssrjson"]
+package-dir = { ssrjson = "pysrc" }
 zip-safe = false
 
 

@@ -65,19 +65,18 @@ clangStdenv.mkDerivation {
       SSRJSON_SONAME=ssrjson.so
     ''
     + ''
-      cp -r pysrc ssrjson
       cp licenses/* .
-      cp ${dylib}/$SSRJSON_SONAME ssrjson
-      chmod 700 ssrjson/$SSRJSON_SONAME
+      cp ${dylib}/$SSRJSON_SONAME pysrc
+      chmod 700 pysrc/$SSRJSON_SONAME
     ''
     + (lib.optionalString (system == "aarch64-darwin" && forNonNix) ''
-      install_name_tool -id "@rpath/ssrjson.so" ssrjson/$SSRJSON_SONAME
+      install_name_tool -id "@rpath/ssrjson.so" pysrc/$SSRJSON_SONAME
     '')
     + ''
-      strip --strip-all ssrjson/$SSRJSON_SONAME
+      strip --strip-all pysrc/$SSRJSON_SONAME
     ''
     + linuxOnlyString ''
-      python ci/check_glibc_version.py ssrjson/$SSRJSON_SONAME ${targetGLIBCVerString}
+      python ci/check_glibc_version.py pysrc/$SSRJSON_SONAME ${targetGLIBCVerString}
     ''
     + ''
       SSRJSON_USE_NIX_PREBUILT=1 python -m build --no-isolation

@@ -86,6 +86,7 @@ else:
 
             common_flags = [
                 "-DCMAKE_BUILD_TYPE=Release",
+                f"-DPython3_EXECUTABLE={sys.executable}",
                 f"-DPREDEFINED_VERSION={VERSION_STRING}",
                 "-DBUILD_CTESTS=OFF",
             ]
@@ -96,6 +97,7 @@ else:
                     include_dir, library_file = find_windows_python_cmake_env()
                     env["Python3_INCLUDE_DIR"] = include_dir
                     env["Python3_LIBRARY"] = library_file
+                    env["Python3_EXECUTABLE"] = sys.executable
 
             if os.name == "nt":
                 cmake_cmd = ["cmake", "-T", "ClangCL"] + common_flags + [".", "-B"]

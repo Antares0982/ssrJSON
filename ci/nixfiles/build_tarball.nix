@@ -23,7 +23,6 @@ clangStdenv.mkDerivation {
   src = srcFilter.mkSrc "ssrjson-src";
   buildPhase = ''
     export PATH=${cmake}/bin:$PATH
-    cp -r pysrc ssrjson
     cp licenses/* .
     rm -r licenses
     python -m build --sdist --no-isolation

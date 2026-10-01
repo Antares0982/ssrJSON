@@ -129,7 +129,7 @@ pip install ssrjson
 
 ### 从源码构建
 
-ssrJSON 使用了 Clang 的向量扩展，因此必须用 Clang 编译，无法在 GCC 或纯 MSVC 环境中编译；Windows 上可以使用 `clang-cl`。确保已经安装 CMake、Clang 和 Python 后，通过下面的命令即可轻松构建：
+ssrJSON 使用了 Clang 的向量扩展，因此必须用 Clang 编译，无法在 GCC 或纯 MSVC 环境中编译；Windows 上可以使用 `clang-cl`。确保已经安装 CMake >= 3.30、Clang 和含开发头文件及库的 Python 后，通过下面的命令即可构建：
 
 ```bash
 # 在 Linux 上：
@@ -143,7 +143,6 @@ cmake --build build
 或者，如果你更习惯用 `pip`：
 
 ```
-mv pysrc ssrjson  # 重命名 Python 源码目录，使其可以安装
 pip install .
 ```
 
