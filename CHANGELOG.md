@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.24
+
+No code change since 0.0.23.
+
+### Build & CI
+- Build Python 3.15(t) wheels
+- Support lock version using git SHA
+
 ## 0.0.23
 
 ### New Features
