@@ -301,7 +301,10 @@ jobs:
         arch: x64
 
     - name: Build compatible NumPy
-      run: python -m pip install --force-reinstall --no-binary=numpy --config-settings=setup-args=-Dcpu-baseline=none --config-settings=setup-args=-Dcpu-dispatch=none --config-settings=setup-args=-Dallow-noblas=true numpy
+      env:
+        CC: clang-cl
+        CXX: clang-cl
+      run: python -m pip install --force-reinstall --no-cache-dir --no-binary=numpy --config-settings=setup-args=-Dcpu-baseline=none --config-settings=setup-args=-Dcpu-dispatch=none --config-settings=setup-args=-Dallow-noblas=true numpy
 
     - name: Verify wheel on legacy CPU
       run: |

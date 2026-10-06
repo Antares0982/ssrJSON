@@ -37,8 +37,8 @@ if ($LASTEXITCODE -ne 0) { throw "cmake configure failed" }
 cmake --build build-pgo-instr --config Release
 if ($LASTEXITCODE -ne 0) { throw "cmake build failed" }
 
-# PGO training: 4 jobs (native + 3 SDE CPU levels) in parallel via ForEach -Parallel
-Write-Host "Running PGO training (3 jobs)..."
+# Train each CPU variant.
+Write-Host "Running PGO training (4 jobs)..."
 Remove-Item -Recurse -Force $PgoData -ErrorAction SilentlyContinue
 
 # VCRUNTIME140.dll picks its memmove implementation from a Windows feature-detection

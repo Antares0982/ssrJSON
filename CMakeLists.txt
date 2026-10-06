@@ -104,14 +104,11 @@ else()
     set(Python3_FIND_ABI "OFF" "ANY" "ANY" "ON")
   endif()
   find_package(
-    Python3
+    Python3 REQUIRED
     COMPONENTS Interpreter Development.Module
-    REQUIRED)
-  if(BUILD_CTESTS OR BUILD_FUZZER)
-    find_package(
-      Python3
-      COMPONENTS Development.Embed
-      QUIET)
+    OPTIONAL_COMPONENTS Development.Embed)
+  if(NOT Python3_Development.Embed_FOUND AND NOT WIN32)
+    set(Python3_LIBRARIES "")
   endif()
 endif()
 

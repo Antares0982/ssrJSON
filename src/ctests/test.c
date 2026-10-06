@@ -439,6 +439,12 @@ static inline int _test_long_cvt(size_t from_size, size_t to_size) {
 #define TEST_LONG_CVT_IMPL(_from_type_, _to_type_)                                                           \
     _func = find_extension_symbol(                                                                           \
             TEST_STRINGIZE(SIMD_NAME_MODIFIER(ssrjson_concat3(long_cvt_noinline, _from_type_, _to_type_)))); \
+    if (!_func) {                                                                                            \
+        free(buffer_from);                                                                                   \
+        free(buffer_to);                                                                                     \
+        free(buffer_ref);                                                                                    \
+        return FAILED;                                                                                       \
+    }                                                                                                        \
     ssrjson_cast(void (*)(_to_type_ *, _from_type_ *, usize), _func)(                                        \
             ssrjson_cast(_to_type_ *, buffer_to + random_start_index * sizeof(_to_type_)),                   \
             ssrjson_cast(_from_type_ *, buffer_from + random_start_index * sizeof(_from_type_)), length);    \

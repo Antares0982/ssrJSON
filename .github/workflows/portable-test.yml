@@ -57,7 +57,7 @@ jobs:
         with:
           name: ssrjson-tarball
           path: dist
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         with:
           path: .portable-pip-cache
           key: portable-pip-${{ matrix.target }}-${{ matrix.pyver }}-${{ hashFiles('ci/portable_linux.sh') }}
@@ -67,6 +67,11 @@ jobs:
           EMULATED: ${{ matrix.target == 'armv7l' && '1' || '' }}
         run: |
           docker run --rm -v "$PWD:/io" -e SSRJSON_EMULATED="$EMULATED" -e PIP_CACHE_DIR=/io/.portable-pip-cache quay.io/pypa/${{ matrix.image }} bash /io/ci/portable_linux.sh '${{ matrix.pyver }}' $RELEASE
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .portable-pip-cache
+          key: portable-pip-${{ matrix.target }}-${{ matrix.pyver }}-${{ hashFiles('ci/portable_linux.sh') }}
       - uses: actions/upload-artifact@v7
         with:
           name: linux-${{ matrix.target }}-ssrjson-wheel-python3${{ matrix.pyver }}
@@ -102,7 +107,10 @@ jobs:
         run: python -m pip install build pytest pytest-random-order numpy
       - name: Build compatible NumPy
         if: matrix.arch == 'x64'
-        run: python -m pip install --force-reinstall --no-binary=numpy --config-settings=setup-args=-Dcpu-baseline=none --config-settings=setup-args=-Dcpu-dispatch=none --config-settings=setup-args=-Dallow-noblas=true numpy
+        env:
+          CC: clang-cl
+          CXX: clang-cl
+        run: python -m pip install --force-reinstall --no-cache-dir --no-binary=numpy --config-settings=setup-args=-Dcpu-baseline=none --config-settings=setup-args=-Dcpu-dispatch=none --config-settings=setup-args=-Dallow-noblas=true numpy
       - name: Prepare old CPU emulation
         if: matrix.arch == 'x64'
         run: .\ci\setup_sde.ps1

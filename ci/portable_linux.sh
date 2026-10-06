@@ -12,6 +12,7 @@ if ! command -v clang >/dev/null; then
         dnf install -y clang lld gcc-gfortran openblas-devel
     fi
 fi
+unset PIP_NO_CACHE_DIR
 export CC=clang CXX=clang++
 export LDFLAGS="-fuse-ld=lld"
 if [[ $(uname -m) == arm* ]]; then
