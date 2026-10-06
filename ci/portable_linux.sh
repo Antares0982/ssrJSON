@@ -23,7 +23,12 @@ if [[ $(uname -m) == arm* ]]; then
     export CFLAGS='-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard'
     export CXXFLAGS="$CFLAGS"
 fi
-CC=gcc CXX=g++ python -m pip install --cache-dir "$PIP_CACHE_DIR" 'cmake>=3.30' build pytest pytest-random-order psutil numpy
+(
+    if [[ $(uname -m) == arm* ]]; then
+        export CC=gcc CXX=g++
+    fi
+    python -m pip install --cache-dir "$PIP_CACHE_DIR" 'cmake>=3.30' build pytest pytest-random-order psutil numpy
+)
 chmod -R a+rX "$PIP_CACHE_DIR"
 python -c 'import numpy; print(numpy.__version__)'
 cmake_bin=$(python -c 'import cmake; print(cmake.CMAKE_BIN_DIR)')
