@@ -296,7 +296,7 @@ jobs:
         python -m pip install pytest pytest-xdist pytest-random-order numpy
         python -m pytest --random-order python-test
 
-    - uses: ilammy/msvc-dev-cmd@v1
+    - uses: TheMrMilchmann/setup-msvc-dev@v4
       with:
         arch: x64
 
