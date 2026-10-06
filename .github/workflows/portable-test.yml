@@ -1,0 +1,118 @@
+name: Scalar and 32-bit platforms
+on:
+  push:
+    branches: [main, dev]
+    paths: ['src/**', 'python-test/**', 'cmake/**', 'CMakeLists.txt', 'ci/**', '.github/workflows/**', 'setup.py', 'pyproject.toml']
+  pull_request:
+    paths: ['src/**', 'python-test/**', 'cmake/**', 'CMakeLists.txt', 'ci/**', '.github/workflows/**', 'setup.py', 'pyproject.toml']
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release:
+        type: boolean
+        default: false
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.versions.outputs.versions }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: versions
+        env:
+          RELEASE: ${{ inputs.release || false }}
+        run: |
+          python - <<'PY'
+          import json, os
+          p = json.load(open('ci/pyver.json'))
+          versions = [str(p['curVer'])]
+          if os.environ['RELEASE'] == 'true':
+              versions = [str(v) for v in range(p['minSupportVer'], p['latestWheelBuildableVer'] + 1)]
+              versions += [f'{v}t' for v in range(p['minSupportNoGILVer'], p['latestWheelBuildableVer'] + 1)]
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('versions=' + json.dumps(versions) + '\n')
+          PY
+  linux:
+    needs: matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: ${{ fromJSON(needs.matrix.outputs.versions) }}
+        target: [i686, armv7l]
+        include:
+          - target: i686
+            image: manylinux_2_34_i686
+          - target: armv7l
+            image: manylinux_2_35_armv7l
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-qemu-action@v3
+        if: matrix.target == 'armv7l'
+        with:
+          platforms: arm
+      - uses: actions/download-artifact@v8
+        if: inputs.release
+        with:
+          name: ssrjson-tarball
+          path: dist
+      - uses: actions/cache@v4
+        with:
+          path: .portable-pip-cache
+          key: portable-pip-${{ matrix.target }}-${{ matrix.pyver }}-${{ hashFiles('ci/portable_linux.sh') }}
+      - name: Build, test and verify distributions
+        env:
+          RELEASE: ${{ inputs.release && '--release' || '' }}
+          EMULATED: ${{ matrix.target == 'armv7l' && '1' || '' }}
+        run: |
+          docker run --rm -v "$PWD:/io" -e SSRJSON_EMULATED="$EMULATED" -e PIP_CACHE_DIR=/io/.portable-pip-cache quay.io/pypa/${{ matrix.image }} bash /io/ci/portable_linux.sh '${{ matrix.pyver }}' $RELEASE
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-${{ matrix.target }}-ssrjson-wheel-python3${{ matrix.pyver }}
+          path: portable-dist/*.whl
+  windows:
+    needs: matrix
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: ${{ fromJSON(needs.matrix.outputs.versions) }}
+        arch: [x86, x64]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.${{ matrix.pyver }}
+          architecture: ${{ matrix.arch }}
+          allow-prereleases: true
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+      - uses: actions/download-artifact@v8
+        if: inputs.release
+        with:
+          name: ssrjson-tarball
+          path: dist
+      - uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: portable-pip-windows-${{ matrix.arch }}-${{ matrix.pyver }}
+      - name: Install dependencies
+        run: python -m pip install build pytest pytest-random-order numpy
+      - name: Prepare old CPU emulation
+        if: matrix.arch == 'x64'
+        run: .\ci\setup_sde.ps1
+      - name: Build, test and verify distributions
+        env:
+          RELEASE: ${{ inputs.release && '--release' || '' }}
+        run: |
+          $extra = @()
+          if ($env:SSRJSON_SDE) { $extra += @('--sde', $env:SSRJSON_SDE) }
+          if ($env:RELEASE) { $extra += $env:RELEASE }
+          python ci/portable_test.py @extra
+      - uses: actions/upload-artifact@v7
+        if: matrix.arch == 'x86'
+        with:
+          name: windows-x86-ssrjson-wheel-python3${{ matrix.pyver }}
+          path: portable-dist/*.whl

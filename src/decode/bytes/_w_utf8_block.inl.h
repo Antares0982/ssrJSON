@@ -221,7 +221,7 @@ force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const
                 continue;
             }
 #endif
-#if COMPILE_WRITE_UCS_LEVEL != 4 && SSRJSON_IS_X64
+#if COMPILE_WRITE_UCS_LEVEL != 4 && SSRJSON_SIMD_X86
             if (__builtin_popcount(get_bitmask_from_u8_128(in)) >= 12 && !utf8_any_byte_above_128(in, 0xdf)) {
                 /* Validate before indexing the shuffle table. */
                 u32 m12;

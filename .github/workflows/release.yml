@@ -296,6 +296,14 @@ jobs:
         python -m pip install pytest pytest-xdist pytest-random-order numpy
         python -m pytest --random-order python-test
 
+    - name: Verify wheel on legacy CPU
+      run: |
+        .\ci\setup_sde.ps1
+        & $env:SSRJSON_SDE -p4p -- python -c "import ssrjson; assert ssrjson.get_current_features()['simd'] == 'SCALAR'"
+        if ($LASTEXITCODE -ne 0) { throw "Scalar dispatch failed" }
+        & $env:SSRJSON_SDE -p4p -- python -m pytest --random-order python-test --ignore python-test/test_memory.py --ignore python-test/test_freethreading.py
+        if ($LASTEXITCODE -ne 0) { throw "Legacy CPU wheel tests failed" }
+
   MacOS-Test-Tarball:
     runs-on: macos-latest
     needs: Build-Tarball
@@ -396,6 +404,12 @@ jobs:
         python -m pip install pytest pytest-xdist pytest-random-order psutil numpy
         python -m pytest --random-order python-test
 
+  Portable-Platforms:
+    needs: Build-Tarball
+    uses: ./.github/workflows/portable-test.yml
+    with:
+      release: true
+
   Run-Fuzzer:
     if: github.event.inputs['dry-run'] == 'false'
     uses: ./.github/workflows/fuzzer.yml
@@ -419,6 +433,7 @@ jobs:
       - MacOS-Test-Tarball
       - MacOS-Build-And-Test-Wheel
       - Run-Fuzzer
+      - Portable-Platforms
     steps:
     - name: Checkout
       uses: actions/checkout@v5

@@ -61,6 +61,7 @@ static const int SKIPPED = 2;
 
 extern bool _SupportAVX512;
 extern bool _SupportAVX2;
+extern bool _SupportSSE4;
 
 /* Helper functions. */
 
@@ -92,6 +93,7 @@ force_inline u32 get_random_4bytes_u32(void) { return (u32)get_random_in_range(0
 /* DECLARE_TEST macro. */
 #if BUILD_MULTI_LIB && SSRJSON_IS_X64
 #    define DECLARE_TEST(_name)   \
+        int _name##_scalar(void); \
         int _name##_sse4_2(void); \
         int _name##_avx2(void);   \
         int _name##_avx512(void);

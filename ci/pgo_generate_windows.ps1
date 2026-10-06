@@ -1,26 +1,10 @@
 $ErrorActionPreference = "Stop"
 Set-Location (Join-Path $PSScriptRoot "..")
 
-$SdeUrl = "https://github.com/Antares0982/ssrjson-nix-dev/releases/download/v0.0.0/sde-external-10.8.0-2026-03-15-win.tar.xz"
-$SdeDir = Join-Path $env:TEMP "ssrjson-sde"
+& "$PSScriptRoot\setup_sde.ps1"
+$Sde = $env:SSRJSON_SDE
+$SdeDir = Split-Path $Sde
 $PgoData = "test_data\pgo"
-
-# Download and extract SDE if needed
-if (-not (Test-Path $SdeDir)) {
-    Write-Host "Downloading Intel SDE..."
-    New-Item -ItemType Directory -Force $SdeDir | Out-Null
-    $tar = Join-Path $SdeDir "sde.tar.xz"
-    Invoke-WebRequest -Uri $SdeUrl -OutFile $tar
-    Write-Host "Extracting..."
-    tar -xJf $tar -C $SdeDir
-    if ($LASTEXITCODE -ne 0) { throw "Failed to extract SDE" }
-    $inner = Get-ChildItem $SdeDir -Directory | Where-Object { $_.Name -like "sde-external-*" } | Select-Object -First 1
-    Get-ChildItem $inner.FullName | Move-Item -Destination $SdeDir -Force
-    $inner.Delete()
-    Remove-Item $tar
-}
-
-$Sde = (Resolve-Path "$SdeDir\sde.exe").Path
 
 # Smoke test: verify SDE works
 Write-Host "SDE smoke test..."
@@ -66,7 +50,8 @@ $NoChipCheck = @("-chip_check_disable", "1")
 $trainArgs = @(
     @{ Name = "avx512"; Exe = $Sde;    Args = @("-clx") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\avx512") },
     @{ Name = "avx2";   Exe = $Sde;    Args = @("-rpl") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\avx2") },
-    @{ Name = "sse42";  Exe = $Sde;    Args = @("-ivb") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\sse42") }
+    @{ Name = "sse42";  Exe = $Sde;    Args = @("-ivb") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\sse42") },
+    @{ Name = "scalar"; Exe = $Sde; Args = @("-p4p") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\scalar") }
 )
 
 foreach ($job in $trainArgs) {

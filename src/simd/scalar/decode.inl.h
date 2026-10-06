@@ -21,26 +21,15 @@
  *============================================================================*/
 
 #ifdef SSRJSON_CLANGD_CHECKING
-#    include "encode/encode_shared.h"
-#    include "utils/unicode.h"
+#    include "simd/scalar/common.h"
+#    define COMPILE_READ_UCS_LEVEL 1
 #endif
+#define _CompileVectorBits 128
+#include "compile_context/sr_in.inl.h"
 
-#include "compile_context/w_in.inl.h"
-
-force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usize size) {
-    usize offset = (u8 *)writer - (u8 *)u_buf_info->head;
-    usize target_size = size_add(offset, size_mul(size, sizeof(dst_t)));
-    if (unlikely(target_size > PY_SSIZE_T_MAX)) {
-        PyErr_NoMemory();
-        return NULL;
-    }
-    if (unlikely(target_size > (usize)((u8 *)u_buf_info->end - (u8 *)u_buf_info->head))) {
-        EncodeUBufInfo new_info = _u_buf_reserve(*u_buf_info, target_size);
-        return_if_unlikely(!new_info.head);
-        *u_buf_info = new_info;
-        writer = (dst_t *)((u8 *)u_buf_info->head + offset);
-    }
-    return writer;
+force_inline void fast_skip_spaces(const src_t **cur, const src_t *end) {
+    while (*cur < end && **cur == ' ') ++*cur;
 }
 
-#include "compile_context/w_out.inl.h"
+#include "compile_context/sr_out.inl.h"
+#undef _CompileVectorBits

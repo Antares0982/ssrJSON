@@ -31,6 +31,7 @@
 #if SSRJSON_IS_X64
 bool _SupportAVX512 = false;
 bool _SupportAVX2 = false;
+bool _SupportSSE4 = false;
 
 void check_avx512(void) {
     int info[4];
@@ -77,11 +78,12 @@ bool wrap_run_test(int (*func)(void), const char *name, TestCounter *counter) {
 
 #define RUN_ONE_TEST(_name) wrap_run_test(_name, #_name, &counter)
 #if BUILD_MULTI_LIB && SSRJSON_IS_X64
-#    define RUN_TESTS(_name)              \
-        do {                              \
-            RUN_ONE_TEST(_name##_avx512); \
-            RUN_ONE_TEST(_name##_avx2);   \
-            RUN_ONE_TEST(_name##_sse4_2); \
+#    define RUN_TESTS(_name)                                  \
+        do {                                                  \
+            RUN_ONE_TEST(_name##_scalar);                     \
+            if (_SupportAVX512) RUN_ONE_TEST(_name##_avx512); \
+            if (_SupportAVX2) RUN_ONE_TEST(_name##_avx2);     \
+            if (_SupportSSE4) RUN_ONE_TEST(_name##_sse4_2);   \
         } while (0)
 #elif BUILD_MULTI_LIB && SSRJSON_IS_AARCH64
 #    define RUN_TESTS(_name) \
@@ -145,6 +147,9 @@ int main(int argc, char **argv) {
     }
     srand((u32)time(NULL));
 #if SSRJSON_IS_X64
+    int info[4];
+    cpuid(info, 1);
+    _SupportSSE4 = (info[2] & (1 << 20)) != 0;
     check_avx2();
     check_avx512();
 #endif

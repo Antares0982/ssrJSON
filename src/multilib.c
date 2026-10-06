@@ -46,8 +46,8 @@ const char *_update_simd_features(void) {
     const char *err = NULL;
     X86SIMDFeatureLevel simd_feature = get_simd_feature();
     switch (simd_feature) {
-        case X86SIMDFeatureLevelSSE2: {
-            err = "Current hardware is not supported; SSE4.2 is required.";
+        case X86SIMDFeatureLevelScalar: {
+            BATCH_SET_INTERFACE(scalar);
             break;
         }
         case X86SIMDFeatureLevelSSE4_2: {
@@ -109,8 +109,8 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
             if (err) goto fail;                          \
         } while (0)
     switch (CurrentSIMDFeatureLevel) {
-        case X86SIMDFeatureLevelSSE2: {
-            DICT_SET_STRING_ITEM("simd", "SSE2");
+        case X86SIMDFeatureLevelScalar: {
+            DICT_SET_STRING_ITEM("simd", "SCALAR");
             break;
         }
         case X86SIMDFeatureLevelSSE4_2: {

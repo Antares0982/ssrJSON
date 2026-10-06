@@ -18,6 +18,7 @@ option(BUILD_SHIPPING_SIMD "Build all simd for shipping" ON)
 option(BUILD_AVX512 "Force build avx512, non-shipping" OFF)
 option(BUILD_AVX2 "Force build avx2, non-shipping" OFF)
 option(BUILD_SSE4 "Force build sse4, non-shipping" OFF)
+option(BUILD_SCALAR "Force scalar backend, non-shipping" OFF)
 option(BUILD_NATIVE "Force build with -march=native, non-shipping" OFF)
 option(SEARCH_PYTHON3_USE_ENV
        "Search python3 using environment variables without cmake way" OFF)
@@ -36,7 +37,8 @@ if(BUILD_SHIPPING_SIMD)
   if(BUILD_AVX512
      OR BUILD_AVX2
      OR BUILD_SSE4
-     OR BUILD_NATIVE)
+     OR BUILD_NATIVE
+     OR BUILD_SCALAR)
     message(
       FATAL_ERROR
         "BUILD_SHIPPING_SIMD cannot be enabled with BUILD_AVX512, BUILD_AVX2, BUILD_SSE4 or BUILD_NATIVE"
@@ -48,13 +50,16 @@ else()
   if((BUILD_AVX512
       OR BUILD_AVX2
       OR BUILD_SSE4)
-     AND BUILD_NATIVE)
+     AND (BUILD_NATIVE OR BUILD_SCALAR))
     message(
       FATAL_ERROR
         "BUILD_AVX512, BUILD_AVX2, BUILD_SSE4 cannot be enabled with BUILD_NATIVE"
     )
   endif()
 
+  if(BUILD_NATIVE AND BUILD_SCALAR)
+    message(FATAL_ERROR "BUILD_NATIVE and BUILD_SCALAR are mutually exclusive")
+  endif()
   set(BUILD_MULTI_LIB 0)
 endif()
 
@@ -134,6 +139,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ------------------------------------------------------------------------------
 # Libraries
+
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+  set(TARGET_SIMD_ARCH scalar)
+  set(BUILD_MULTI_LIB 0)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(^aarch64)|(^arm64)|(^ARM64)")
+  set(TARGET_SIMD_ARCH aarch)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(AMD64|amd64)|(^i.86$)")
+  set(TARGET_SIMD_ARCH x86)
+else()
+  message(FATAL_ERROR "Unsupported target architecture")
+endif()
 
 # common definitions
 add_library(commonBuild INTERFACE)
@@ -239,27 +255,13 @@ message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
 message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 message("CMAKE_SYSTEM_PROCESSOR = ${CMAKE_SYSTEM_PROCESSOR}")
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(^aarch64)|(^arm64)|(^ARM64)")
-  set(SSRJSON_DETECT_ARCH 1)
-  set(TARGET_SIMD_ARCH aarch)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^arm")
-  set(SSRJSON_DETECT_ARCH 1)
-  set(TARGET_SIMD_ARCH aarch)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(x86_64)|(AMD64|amd64)|(^i.86$)")
-  set(SSRJSON_DETECT_ARCH 1)
-  set(TARGET_SIMD_ARCH x86)
-else()
-  set(SSRJSON_DETECT_ARCH 0)
+if(TARGET_SIMD_ARCH STREQUAL "x86")
+  target_compile_definitions(commonBuild INTERFACE SSRJSON_IS_X64=1)
+elseif(TARGET_SIMD_ARCH STREQUAL "aarch")
+  target_compile_definitions(commonBuild INTERFACE SSRJSON_IS_AARCH64=1)
 endif()
-
-if(SSRJSON_DETECT_ARCH)
-  if("${TARGET_SIMD_ARCH}" STREQUAL "x86")
-    target_compile_definitions(commonBuild INTERFACE SSRJSON_IS_X64=1)
-  elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
-    target_compile_definitions(commonBuild INTERFACE SSRJSON_IS_AARCH64=1)
-  endif()
-else()
-  message(FATAL_ERROR "Cannot detect architecture")
+if(BUILD_SCALAR OR TARGET_SIMD_ARCH STREQUAL "scalar")
+  target_compile_definitions(commonBuild INTERFACE SSRJSON_SCALAR=1)
 endif()
 
 if(ASAN_ENABLED)
@@ -288,8 +290,15 @@ set(SRC_WITH_SIMD src/decode/decode.c src/encode/encode.c src/simd/cvt.c)
 set(SRC_XJB src/xjb/xjb.cpp)
 add_library(xjb OBJECT ${SRC_XJB})
 target_link_libraries(xjb PUBLIC commonBuild)
-if("${TARGET_SIMD_ARCH}" STREQUAL "x86")
-  add_ssse3_compile_option(xjb)
+target_compile_definitions(xjb PRIVATE XJB_USE_SIMD=0 xjb64=xjb64_scalar
+                                       xjb32=xjb32_scalar)
+if(NOT BUILD_SCALAR AND NOT TARGET_SIMD_ARCH STREQUAL "scalar")
+  add_library(xjb_simd OBJECT ${SRC_XJB})
+  target_link_libraries(xjb_simd PUBLIC commonBuild)
+  target_compile_definitions(xjb_simd PRIVATE xjb64=xjb64_simd xjb32=xjb32_simd)
+  if(TARGET_SIMD_ARCH STREQUAL "x86")
+    add_ssse3_compile_option(xjb_simd)
+  endif()
 endif()
 
 if(BUILD_FUZZER)
@@ -306,6 +315,9 @@ if(BUILD_MULTI_LIB)
     target_compile_definitions(_ssrjson_common PUBLIC SSRJSON_EXPORTS=1)
     target_compile_definitions(_ssrjson_common
                                PRIVATE DISABLE_INTERNAL_NOINLINE=1)
+    add_library(ssrjson_scalar OBJECT ${SRC_WITH_SIMD})
+    target_link_libraries(ssrjson_scalar PUBLIC _ssrjson_common)
+    target_compile_definitions(ssrjson_scalar PRIVATE SSRJSON_SCALAR=1)
     add_library(ssrjson_avx512 OBJECT ${SRC_WITH_SIMD})
     target_link_libraries(ssrjson_avx512 PUBLIC _ssrjson_common)
     add_library(ssrjson_avx2 OBJECT ${SRC_WITH_SIMD})
@@ -316,8 +328,8 @@ if(BUILD_MULTI_LIB)
     add_library(
       ssrjson SHARED
       $<TARGET_OBJECTS:ssrjson_avx512> $<TARGET_OBJECTS:ssrjson_avx2>
-      $<TARGET_OBJECTS:ssrjson_sse4> $<TARGET_OBJECTS:_ssrjson_common>
-      $<TARGET_OBJECTS:xjb>)
+      $<TARGET_OBJECTS:ssrjson_sse4> $<TARGET_OBJECTS:ssrjson_scalar>
+      $<TARGET_OBJECTS:_ssrjson_common> $<TARGET_OBJECTS:xjb>)
     target_link_libraries(ssrjson PUBLIC commonBuild)
 
     add_avx512_compile_option(ssrjson_avx512)
@@ -329,6 +341,7 @@ if(BUILD_MULTI_LIB)
       add_coverage_flags(ssrjson_avx512)
       add_coverage_flags(ssrjson_avx2)
       add_coverage_flags(ssrjson_sse4)
+      add_coverage_flags(ssrjson_scalar)
     endif()
 
     if(BUILD_FUZZER)
@@ -336,6 +349,7 @@ if(BUILD_MULTI_LIB)
       add_fuzzer_coverage_option(ssrjson_avx512)
       add_fuzzer_coverage_option(ssrjson_avx2)
       add_fuzzer_coverage_option(ssrjson_sse4)
+      add_fuzzer_coverage_option(ssrjson_scalar)
     endif()
 
   elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
@@ -367,11 +381,15 @@ if(BUILD_MULTI_LIB)
   endif()
 else()
   set(SRC_FILES ${SRC_FILES} src/singlelib.c)
-  add_library(ssrjson SHARED ${SRC_FILES} ${SRC_WITH_SIMD} ${SRC_XJB})
+  add_library(ssrjson SHARED ${SRC_FILES} ${SRC_WITH_SIMD}
+                             $<TARGET_OBJECTS:xjb>)
   target_compile_definitions(ssrjson PUBLIC SSRJSON_EXPORTS=1)
   target_link_libraries(ssrjson PUBLIC commonBuild)
 endif()
 
+if(TARGET xjb_simd)
+  target_sources(ssrjson PRIVATE $<TARGET_OBJECTS:xjb_simd>)
+endif()
 set_target_properties(ssrjson PROPERTIES PREFIX "")
 
 if(BUILD_COVERAGE)

@@ -59,7 +59,7 @@
 #define pyobj_scalar_value(T, obj) (*ssrjson_cast(T *, ssrjson_cast(PyObject *, (obj)) + 1))
 
 // copy 24 bytes in UCS4 case if only SSE is available
-#define _WriteBoolCopyCnt ((SSRJSON_IS_X64 && _CompileVectorBits <= 128 && COMPILE_WRITE_UCS_LEVEL == 4) ? 6 : 8)
+#define _WriteBoolCopyCnt ((SSRJSON_SIMD_X86 && _CompileVectorBits <= 128 && COMPILE_WRITE_UCS_LEVEL == 4) ? 6 : 8)
 
 #define WRITER_AS_U8(_writer_) (*ssrjson_cast(u8 **, &(_writer_)))
 #define WRITER_AS_U16(_writer_) (*ssrjson_cast(u16 **, &(_writer_)))

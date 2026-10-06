@@ -326,10 +326,12 @@ static force_noinline EncodeUnicodeWriter encode_ndarray_val(EncodeUnicodeWriter
     if (unlikely(!new_writer)) goto fail;
     const usize after_write_new_u8_offset = new_writer - ssrjson_cast(u8 *, u_buf_info->head);
     const usize written_cnt = after_write_new_u8_offset - original_u8_offset;
-    dst_t *target_ptr = ssrjson_cast(
-            dst_t *, ssrjson_cast(u8 *, u_buf_info->head) + original_u8_offset + written_cnt * COMPILE_WRITE_UCS_LEVEL);
-    if (unlikely(target_ptr > ssrjson_cast(dst_t *, u_buf_info->end))) {
-        usize target_u8_size = ssrjson_cast(u8 *, target_ptr) - ssrjson_cast(u8 *, u_buf_info->head);
+    usize target_u8_size = size_add(original_u8_offset, size_mul(written_cnt, COMPILE_WRITE_UCS_LEVEL));
+    if (unlikely(target_u8_size > PY_SSIZE_T_MAX)) {
+        PyErr_NoMemory();
+        goto fail;
+    }
+    if (unlikely(target_u8_size > (usize)((u8 *)u_buf_info->end - (u8 *)u_buf_info->head))) {
         EncodeUBufInfo new_u_buf_info = _u_buf_reserve(*u_buf_info, target_u8_size);
         if (unlikely(!new_u_buf_info.head)) goto fail;
         *u_buf_info = new_u_buf_info;

@@ -10,6 +10,9 @@ set(SRC_ENCODE_FUZZER src/ctests/encode_fuzzer.c)
 
 if(BUILD_MULTI_LIB)
   if("${TARGET_SIMD_ARCH}" STREQUAL "x86")
+    add_library(ssrjson_test_scalar OBJECT ${SRC_TEST_WITH_SIMD})
+    target_link_libraries(ssrjson_test_scalar PUBLIC commonBuild)
+    target_compile_definitions(ssrjson_test_scalar PRIVATE SSRJSON_SCALAR=1)
     add_library(ssrjson_test_sse4 OBJECT ${SRC_TEST_WITH_SIMD})
     target_link_libraries(ssrjson_test_sse4 PUBLIC commonBuild)
     add_library(ssrjson_test_avx2 OBJECT ${SRC_TEST_WITH_SIMD})
@@ -24,7 +27,8 @@ if(BUILD_MULTI_LIB)
     add_executable(
       ssrjson_test
       ${SRC_TEST} $<TARGET_OBJECTS:ssrjson_test_avx512>
-      $<TARGET_OBJECTS:ssrjson_test_avx2> $<TARGET_OBJECTS:ssrjson_test_sse4>)
+      $<TARGET_OBJECTS:ssrjson_test_avx2> $<TARGET_OBJECTS:ssrjson_test_sse4>
+      $<TARGET_OBJECTS:ssrjson_test_scalar>)
   elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
     add_library(ssrjson_test_neon OBJECT ${SRC_TEST_WITH_SIMD})
     target_link_libraries(ssrjson_test_neon PUBLIC commonBuild)

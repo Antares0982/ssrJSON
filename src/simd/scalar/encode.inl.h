@@ -21,26 +21,37 @@
  *============================================================================*/
 
 #ifdef SSRJSON_CLANGD_CHECKING
-#    include "encode/encode_shared.h"
-#    include "utils/unicode.h"
+#    include "simd/scalar/common.h"
+#    define COMPILE_READ_UCS_LEVEL 1
+#    define COMPILE_WRITE_UCS_LEVEL 1
 #endif
+#define _CompileVectorBits 128
+#include "compile_context/srw_in.inl.h"
+extern const dst_t ControlEscapeTable[256 * 8];
+extern const Py_ssize_t _ControlJump[256];
 
-#include "compile_context/w_in.inl.h"
-
-force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usize size) {
-    usize offset = (u8 *)writer - (u8 *)u_buf_info->head;
-    usize target_size = size_add(offset, size_mul(size, sizeof(dst_t)));
-    if (unlikely(target_size > PY_SSIZE_T_MAX)) {
-        PyErr_NoMemory();
-        return NULL;
+force_inline dst_t *encode_unicode_impl(dst_t *dst, const src_t *src, usize len) {
+    for (usize i = 0; i < len; ++i) {
+        src_t ch = src[i];
+        if (ch < _ControlMax || ch == _Quote || ch == _Slash) {
+            memcpy(dst, ControlEscapeTable + ch * 8, 8 * sizeof(dst_t));
+            dst += _ControlJump[ch];
+        } else
+            *dst++ = (dst_t)ch;
     }
-    if (unlikely(target_size > (usize)((u8 *)u_buf_info->end - (u8 *)u_buf_info->head))) {
-        EncodeUBufInfo new_info = _u_buf_reserve(*u_buf_info, target_size);
-        return_if_unlikely(!new_info.head);
-        *u_buf_info = new_info;
-        writer = (dst_t *)((u8 *)u_buf_info->head + offset);
-    }
-    return writer;
+    return dst;
 }
 
-#include "compile_context/w_out.inl.h"
+force_inline dst_t *encode_unicode_loop(dst_t *dst, const src_t **src, usize *len) {
+    dst = encode_unicode_impl(dst, *src, *len);
+    *src += *len;
+    *len = 0;
+    return dst;
+}
+
+force_inline dst_t *encode_trailing_copy_with_cvt(dst_t *dst, const src_t *src, usize len) {
+    return encode_unicode_impl(dst, src, len);
+}
+
+#include "compile_context/srw_out.inl.h"
+#undef _CompileVectorBits

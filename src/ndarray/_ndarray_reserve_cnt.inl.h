@@ -32,20 +32,11 @@
 // Requires: iw context active, ndarray_common.h included.
 
 force_inline usize get_1darray_reserve_cnt(usize cur_nested_depth, usize length, NDATypes ndatype) {
-#if COMPILE_INDENT_LEVEL > 0
-    if (unlikely(!length)) { return 3; }
-    // pre indent size (with '\n')
-    usize cnt = (cur_nested_depth * COMPILE_INDENT_LEVEL + 1) * (length + 1);
-    // elements
-    cnt += length * (get_elem_write_size(ndatype) + 1 + COMPILE_INDENT_LEVEL); // comma and extra indent
-    // brackets and last comma, also remove comma of last element
-    cnt += 3 - 1;
-    return cnt;
-#else
-    // calculate branchlessly
-    return length * (get_elem_write_size(ndatype) + 1) + 3 - 1 +
-           !length; // elements with comma, plus brackets and last comma, also remove comma of last element
-#endif
+    if (!length) return 3;
+    usize indent = size_mul(cur_nested_depth, COMPILE_INDENT_LEVEL);
+    usize element = size_add(
+            get_elem_write_size(ndatype) + 1 + COMPILE_INDENT_LEVEL, COMPILE_INDENT_LEVEL ? size_add(indent, 1) : 0);
+    return size_add(size_mul(length, element), COMPILE_INDENT_LEVEL ? size_add(indent, 3) : 2);
 }
 
 force_inline usize get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype,
@@ -89,12 +80,10 @@ unwind:
         usize length = stack[top].length;
 #if COMPILE_INDENT_LEVEL > 0
         usize depth = stack[top].depth;
-        cnt = cnt * length                                              // inner arrays
-              + ((depth + 1) * COMPILE_INDENT_LEVEL + 1) * (length - 1) // indent between inner arrays
-              + ((depth + 1) * COMPILE_INDENT_LEVEL + 1) + 1            // first bracket + '\n' + indent
-              + (depth * COMPILE_INDENT_LEVEL + 1) + 2 - 1; // last bracket + indent + comma - last inner comma
+        usize indent = size_add(size_mul(depth + 1, COMPILE_INDENT_LEVEL), 1);
+        cnt = size_add(size_mul(size_add(cnt, indent), length), size_add(size_mul(depth, COMPILE_INDENT_LEVEL), 3));
 #else
-        cnt = cnt * length + 1 + 2 - 1; // inner arrays + bracket + bracket + comma - last inner comma
+        cnt = size_add(size_mul(cnt, length), 2);
 #endif
     }
 
