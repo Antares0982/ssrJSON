@@ -38,3 +38,17 @@ def test_float_boundaries():
             assert float(encoded) == number
             assert ssrjson.loads(encoded) == number
             assert ssrjson.dumps_to_bytes(number).decode() == encoded
+
+
+def test_unicode_promotion():
+    for indent in (None, 2, 4):
+        for length in range(65):
+            for char in ("a", "\u00e9", "\u4e2d", "\U0001f600"):
+                value = {char * length: "\U0001f600"}
+                expected = json.dumps(
+                    value,
+                    ensure_ascii=False,
+                    indent=indent,
+                    separators=(",", ":") if indent is None else None,
+                )
+                assert ssrjson.dumps(value, indent=indent) == expected

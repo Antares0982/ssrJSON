@@ -24,7 +24,7 @@ def test(prefix, directory=None):
     if directory:
         env["PYTHONPATH"] = str(directory.resolve())
     probe = (
-        "import struct,ssrjson; "
+        "import struct,ssrjson,numpy; "
         f'assert struct.calcsize("P")=={struct.calcsize("P")}; '
         "print(ssrjson.__file__,ssrjson.get_current_features()); "
         'assert ssrjson.get_current_features()["simd"]=="SCALAR"'

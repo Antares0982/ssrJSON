@@ -341,8 +341,7 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_2bytes_utf8)(void) {
 #endif
 }
 
-int SIMD_NAME_MODIFIER(test_long_back_cvt_u8_u16)(void) {
-    GUARDED_SIMD;
+int SIMD_NAME_MODIFIER(test_long_back_cvt)(void) {
     GUARDED_SIMD;
     for (usize _ = 0; _ < 10; _++) {
 #define BUFFER_LEN (1 << 11)
@@ -379,6 +378,22 @@ int SIMD_NAME_MODIFIER(test_long_back_cvt_u8_u16)(void) {
         }
         // check content
         for (usize i = 0; i < out_u16_length; ++i) { CHECK(ref_start[i] == start[i]); }
+    }
+    uintptr_t symbol = find_extension_symbol(TEST_STRINGIZE(SIMD_NAME_MODIFIER(long_back_cvt_noinline_u16_u32)));
+    if (!symbol) return FAILED;
+    typedef void (*BackFunc)(u32 *, const u16 *, usize);
+    BackFunc convert = (BackFunc)symbol;
+    for (usize offset = 0; offset < 8; ++offset) {
+        for (usize delta = 0; delta < 8; ++delta) {
+            for (usize len = 0; len < 128; ++len) {
+                ssrjson_align(64) u32 buffer[256];
+                u16 *src = (u16 *)(buffer + offset);
+                u32 *dst = buffer + offset + delta;
+                for (usize i = 0; i < len; ++i) src[i] = (u16)(i + 1);
+                convert(dst, src, len);
+                for (usize i = 0; i < len; ++i) CHECK(dst[i] == i + 1);
+            }
+        }
     }
     return PASSED;
 }
@@ -480,7 +495,6 @@ static inline int _test_long_cvt(size_t from_size, size_t to_size) {
 }
 
 int SIMD_NAME_MODIFIER(test_long_cvt)(void) {
-    GUARDED_SIMD;
     GUARDED_SIMD;
     for (usize _ = 0; _ < 10; _++) {
         static size_t allow_sizes[3] = {1, 2, 4};
