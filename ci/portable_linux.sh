@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd /io
+git config --global --add safe.directory /io
 minor=${1%t}
 abi=$1
 export PATH="/opt/python/cp3${minor}-cp3${abi}/bin:$PATH"
@@ -19,5 +20,5 @@ if [[ $(uname -m) == arm* ]]; then
     export CFLAGS='-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard'
     export CXXFLAGS="$CFLAGS"
 fi
-python -m pip install 'cmake>=3.30' build pytest pytest-random-order psutil numpy
+python -m pip install --cache-dir "$PIP_CACHE_DIR" 'cmake>=3.30' build pytest pytest-random-order psutil numpy
 python ci/portable_test.py "${@:2}"
