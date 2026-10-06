@@ -16,14 +16,16 @@ fi
 unset PIP_NO_CACHE_DIR
 export PIP_CONFIG_FILE=/dev/null PIP_CACHE_DIR=/io/.portable-pip-cache
 mkdir -p "$PIP_CACHE_DIR"
+chown -R "$(id -u):$(id -g)" "$PIP_CACHE_DIR"
 export CC=clang CXX=clang++
 export LDFLAGS="-fuse-ld=lld"
 if [[ $(uname -m) == arm* ]]; then
     export CFLAGS='-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard'
     export CXXFLAGS="$CFLAGS"
 fi
-python -m pip install --cache-dir "$PIP_CACHE_DIR" 'cmake>=3.30' build pytest pytest-random-order psutil numpy
+CC=gcc CXX=g++ python -m pip install --cache-dir "$PIP_CACHE_DIR" 'cmake>=3.30' build pytest pytest-random-order psutil numpy
 chmod -R a+rX "$PIP_CACHE_DIR"
+python -c 'import numpy; print(numpy.__version__)'
 cmake_bin=$(python -c 'import cmake; print(cmake.CMAKE_BIN_DIR)')
 export PATH="$cmake_bin:$PATH"
 python ci/portable_test.py "${@:2}"
