@@ -116,12 +116,12 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
             typedef PyObject *(*ssrjson_concat2(_func_name_, t))(                                  \
                     PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
-#        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)      \
-            _ret_type_ ssrjson_concat2(_func_name_, avx512)(__VA_ARGS__);       \
-            _ret_type_ ssrjson_concat2(_func_name_, avx2)(__VA_ARGS__);         \
-            _ret_type_ ssrjson_concat2(_func_name_, scalar)(__VA_ARGS__);       \
-            _ret_type_ ssrjson_concat2(_func_name_, sse4_2)(__VA_ARGS__);       \
-            typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__); \
+#        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)                        \
+            SSRJSON_EXPORTED_SYMBOL _ret_type_ ssrjson_concat2(_func_name_, avx512)(__VA_ARGS__); \
+            SSRJSON_EXPORTED_SYMBOL _ret_type_ ssrjson_concat2(_func_name_, avx2)(__VA_ARGS__);   \
+            SSRJSON_EXPORTED_SYMBOL _ret_type_ ssrjson_concat2(_func_name_, scalar)(__VA_ARGS__); \
+            SSRJSON_EXPORTED_SYMBOL _ret_type_ ssrjson_concat2(_func_name_, sse4_2)(__VA_ARGS__); \
+            typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__);                   \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 
 #    elif SSRJSON_IS_AARCH64
@@ -131,9 +131,9 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
             typedef PyObject *(*ssrjson_concat2(_func_name_, t))(                                  \
                     PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
-#        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)      \
-            _ret_type_ ssrjson_concat2(_func_name_, neon)(__VA_ARGS__);         \
-            typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__); \
+#        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)                      \
+            SSRJSON_EXPORTED_SYMBOL _ret_type_ ssrjson_concat2(_func_name_, neon)(__VA_ARGS__); \
+            typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__);                 \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 #    endif // SSRJSON_IS_X64
 

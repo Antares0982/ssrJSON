@@ -27,9 +27,11 @@
  * Thread local macros
  *============================================================================*/
 #if defined(_POSIX_THREADS)
+#    define TLS_CALLBACK
 #    define DO_TLS_INIT(_key_, _destructor_) success = success && (0 == pthread_key_create(&_key_, _destructor_))
 #    define DO_TLS_FREE(_key_) success = success && (0 == pthread_key_delete(_key_))
 #else
+#    define TLS_CALLBACK NTAPI
 #    define DO_TLS_INIT(_key_, _destructor_)         \
         if (success) _key_ = FlsAlloc(_destructor_); \
         if (_key_ == FLS_OUT_OF_INDEXES) success = false
@@ -48,9 +50,9 @@ TLS_KEY_TYPE _DecoderKeyCache_Key;
 /*==============================================================================
  * Thread local destructors
  *============================================================================*/
-void _tls_simple_destructor(void *ptr) { SSRJSON_TLS_FREE(ptr); }
+void TLS_CALLBACK _tls_simple_destructor(void *ptr) { SSRJSON_TLS_FREE(ptr); }
 
-void _tls_decode_buffer_destructor(void *ptr) {
+void TLS_CALLBACK _tls_decode_buffer_destructor(void *ptr) {
     if (ptr) {
 #if !SSRJSON_GIL_ENABLED
         DecoderTLSData *tls_data_ptr = (DecoderTLSData *)ptr;
@@ -68,7 +70,7 @@ void _tls_decode_buffer_destructor(void *ptr) {
 }
 
 #if !SSRJSON_GIL_ENABLED
-void _tls_decode_key_cache_destructor(void *ptr) {
+void TLS_CALLBACK _tls_decode_key_cache_destructor(void *ptr) {
     if (ptr) {
         PyThreadState *tstate = PyThreadState_GetUnchecked();
         if (unlikely(tstate) && Py_IsInitialized()) {

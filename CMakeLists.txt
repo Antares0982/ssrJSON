@@ -105,12 +105,18 @@ else()
   endif()
   find_package(
     Python3
-    COMPONENTS Interpreter Development
+    COMPONENTS Interpreter Development.Module
     REQUIRED)
+  if(BUILD_CTESTS OR BUILD_FUZZER)
+    find_package(
+      Python3
+      COMPONENTS Development.Embed
+      QUIET)
+  endif()
 endif()
 
 # check for python3
-if((NOT Python3_INCLUDE_DIRS) OR (NOT Python3_LIBRARIES))
+if((NOT Python3_INCLUDE_DIRS) OR (WIN32 AND NOT Python3_LIBRARIES))
   message(FATAL_ERROR "Python3 not found")
 endif()
 

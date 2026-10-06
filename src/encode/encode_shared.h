@@ -321,8 +321,8 @@ typedef struct {
     PyObject *me_value;
 } DictUnicodeEntry;
 
-static_assert(offsetof(PyDictKeysObject, dk_indices) == 32, "dict keys layout");
-static_assert(sizeof(DictUnicodeEntry) == 16, "dict entry layout");
+static_assert(offsetof(PyDictKeysObject, dk_indices) == 3 * sizeof(Py_ssize_t) + 8, "dict keys layout");
+static_assert(sizeof(DictUnicodeEntry) == 2 * sizeof(PyObject *), "dict entry layout");
 #endif
 
 force_inline int pydict_next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {

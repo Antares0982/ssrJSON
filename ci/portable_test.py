@@ -50,7 +50,19 @@ def test(prefix, directory=None):
         executable = directory / (
             "ssrjson_test.exe" if os.name == "nt" else "ssrjson_test"
         )
-        run([*prefix, executable], env=env)
+        if executable.exists():
+            run([*prefix, executable], env=env)
+        else:
+            module = directory / "ssrjson_test.so"
+            run(
+                [
+                    *prefix,
+                    sys.executable,
+                    "-c",
+                    f"import ctypes; assert ctypes.PyDLL({str(module)!r}).ssrjson_run_tests() == 0",
+                ],
+                env=env,
+            )
 
 
 def main():
@@ -60,7 +72,19 @@ def main():
     args = parser.parse_args()
     os.chdir(ROOT)
     assert struct.calcsize("P") == (8 if args.sde else 4)
-    prefix = [args.sde, "-p4p", "--"] if args.sde else []
+    prefix = (
+        [
+            args.sde,
+            "-p4p",
+            "-chip_check_image",
+            "ssrjson.pyd",
+            "-chip_check_image",
+            "ssrjson_test.exe",
+            "--",
+        ]
+        if args.sde
+        else []
+    )
     flags = [f"-DPython3_EXECUTABLE={sys.executable}"]
     if sysconfig.get_config_var("Py_GIL_DISABLED"):
         flags += ["-DBUILD_FREE_THREADING=ON"]

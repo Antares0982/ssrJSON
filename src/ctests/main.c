@@ -132,13 +132,19 @@ bool run_c_tests(void) {
     return show_test_counter(&counter);
 }
 
+#if SSRJSON_TEST_MODULE
+__attribute__((visibility("default"))) int ssrjson_run_tests(void) {
+#else
 int main(int argc, char **argv) {
+#endif
     int ret = 0;
     PyObject *pModule = NULL;
+#if !SSRJSON_TEST_MODULE
     if (!initialize_cpython()) {
         fprintf(stderr, "Fail to initialize");
         return 1;
     }
+#endif
     pModule = import_ssrjson();
     if (!pModule) {
         fprintf(stderr, "Fail to import ssrjson");
@@ -160,6 +166,8 @@ int main(int argc, char **argv) {
 
 done:
     Py_XDECREF(pModule);
+#if !SSRJSON_TEST_MODULE
     Py_Finalize();
+#endif
     return ret;
 }
