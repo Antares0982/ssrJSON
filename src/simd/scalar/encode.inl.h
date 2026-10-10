@@ -33,7 +33,11 @@ extern const Py_ssize_t _ControlJump[256];
 force_inline dst_t *encode_unicode_impl(dst_t *dst, const src_t *src, usize len) {
     for (usize i = 0; i < len; ++i) {
         src_t ch = src[i];
+#if COMPILE_READ_UCS_LEVEL == 1
+        if (ControlEscapeTable[ch * 8 + 1]) {
+#else
         if (ch < _ControlMax || ch == _Quote || ch == _Slash) {
+#endif
             memcpy(dst, ControlEscapeTable + ch * 8, 8 * sizeof(dst_t));
             dst += _ControlJump[ch];
         } else

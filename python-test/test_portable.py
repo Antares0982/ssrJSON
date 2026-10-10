@@ -52,3 +52,22 @@ def test_unicode_promotion():
                     separators=(",", ":") if indent is None else None,
                 )
                 assert ssrjson.dumps(value, indent=indent) == expected
+
+
+def test_u8_escaping():
+    text = "".join(map(chr, range(256)))
+    for prefix in ("", "\u0100", "\U0001f600"):
+        for indent in (None, 2, 4):
+            value = [prefix, {text: text}]
+            expected = json.dumps(
+                value,
+                ensure_ascii=False,
+                indent=indent,
+                separators=(",", ":") if indent is None else None,
+            )
+            assert ssrjson.dumps(value, indent=indent) == expected
+            for cache in (False, True):
+                assert (
+                    ssrjson.dumps_to_bytes(value, indent=indent, is_write_cache=cache)
+                    == expected.encode()
+                )
