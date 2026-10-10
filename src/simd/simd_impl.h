@@ -30,7 +30,7 @@
 
 #if SSRJSON_SCALAR
 #    include "scalar/full.h"
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
 #    if __AVX512VL__ && __AVX512DQ__ && __AVX512BW__
 #        include "avx512vl_dq_bw/full.h"
 #    endif

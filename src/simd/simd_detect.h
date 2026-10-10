@@ -37,7 +37,7 @@
 #        define SSRJSON_SCALAR 0
 #    endif
 #endif
-#define SSRJSON_SIMD_X86 (SSRJSON_IS_X64 && !SSRJSON_SCALAR)
+#define SSRJSON_SIMD_X64 (SSRJSON_IS_X64 && !SSRJSON_SCALAR)
 #define SSRJSON_SIMD_NEON (SSRJSON_IS_AARCH64 && !SSRJSON_SCALAR)
 
 #define HAS_AVX512 0
@@ -47,7 +47,7 @@
 #define USING_AVX2 0
 #define USING_SSE4_2 0
 
-#if SSRJSON_SIMD_X86
+#if SSRJSON_SIMD_X64
 #    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
 #        define SIMD_FEATURE_NAME avx512
 #        undef USING_AVX512
@@ -109,7 +109,7 @@
 #    define SIMD_NAME_MODIFIER(x) x
 #endif
 
-#if SSRJSON_SIMD_X86
+#if SSRJSON_SIMD_X64
 #    include <immintrin.h>
 #    if defined(_MSC_VER)
 #        include <intrin.h>

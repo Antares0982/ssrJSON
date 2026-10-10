@@ -113,7 +113,7 @@ force_inline void check_ascii_in_ucs1_and_get_done_count(vector_a vec, bool *out
     vector_a t1 = checker_masks[0];
     vector_a t2 = checker_masks[1];
     vector_a t3 = checker_masks[2];
-#if SSRJSON_SIMD_X86 && _CompileVectorBits == 512
+#if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     u64 m;
 
     m = cmpeq_bitmask(vec, t1) | cmpeq_bitmask(vec, t2) | signed_cmpgt_bitmask(t3, vec);
@@ -130,7 +130,7 @@ force_inline void check_ascii_in_ucs1_and_get_done_count(vector_a vec, bool *out
 force_inline void check_ascii_in_ucs1_raw_utf8_and_get_done_count(vector_a vec, bool *out_checked,
                                                                   usize *out_done_count) {
     vector_a t = broadcast(0);
-#if SSRJSON_SIMD_X86 && _CompileVectorBits == 512
+#if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     u64 m;
 
     m = signed_cmpgt_bitmask(t, vec);
@@ -324,10 +324,10 @@ force_inline void check_ascii_in_ucs2_and_get_done_count(vector_a vec, bool *out
     vector_a t2 = checker_masks[1];
     vector_a t3 = checker_masks[2];
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_SIMD_X86 && _CompileVectorBits == 512
+#if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     u32 m;
     m = cmpeq_bitmask(vec, t1) | cmpeq_bitmask(vec, t2) | signed_cmpgt_bitmask(t3, vec) | signed_cmpgt_bitmask(vec, t4);
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
     vector_a m;
     m = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, t4);
 #elif SSRJSON_SIMD_NEON || SSRJSON_SCALAR
@@ -343,10 +343,10 @@ force_inline void check_ascii_in_ucs2_raw_utf8_and_get_done_count(vector_a vec, 
                                                                   usize *out_done_count) {
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_SIMD_X86 && _CompileVectorBits == 512
+#if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     u32 m;
     m = signed_cmpgt_bitmask(t3, vec) | signed_cmpgt_bitmask(vec, t4);
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
     vector_a m;
     m = signed_cmpgt(t3, vec) | signed_cmpgt(vec, t4);
 #elif SSRJSON_SIMD_NEON || SSRJSON_SCALAR
@@ -427,10 +427,10 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs2_encode_loop_raw_utf8(u8 *dst, cons
 force_inline void check_2bytes_in_ucs2_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
     vector_a t1 = broadcast(0x80);
     vector_a t2 = broadcast(0x7ff);
-#if SSRJSON_SIMD_X86 && _CompileVectorBits == 512
+#if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     u32 m;
     m = unsigned_cmpgt_bitmask(t1, vec) | unsigned_cmpgt_bitmask(vec, t2);
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
     vector_a m;
     m = signed_cmpgt(t1, vec) | signed_cmpgt(vec, t2);
 #else
@@ -454,7 +454,7 @@ force_inline ssrjson_nofail u8 *_2bytes_in_ucs2_encode_loop(u8 *dst, const u16 *
     vec = *(const vector_u *)src;
 
     // write
-#if SSRJSON_SIMD_X86
+#if SSRJSON_SIMD_X64
 #    if _CompileVectorBits == 512
     ucs2_encode_2bytes_utf8_avx512(dst, vec);
 #    elif _CompileVectorBits == 256
@@ -494,11 +494,11 @@ force_inline void check_3bytes_in_ucs2_and_get_done_count(vector_a vec, bool *ou
     vector_a t2 = broadcast(0xd7ff);
     vector_a t3 = broadcast(0xe000);
 
-#if SSRJSON_SIMD_X86 && _CompileVectorBits == 512
+#if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     u32 m;
 
     m = unsigned_cmplt_bitmask(vec, t1) | (unsigned_cmpgt_bitmask(vec, t2) & unsigned_cmplt_bitmask(vec, t3));
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
     // see CHECK_ESCAPE_LT512_USE_SIGNED_SATURATED_MINUS
     vector_a m;
     // use 2 signed_cmpgt to do unsigned range check
@@ -527,7 +527,7 @@ force_inline ssrjson_nofail u8 *_3bytes_in_ucs2_encode_loop(u8 *dst, const u16 *
     vec = *(const vector_u *)src;
 
     // write
-#if SSRJSON_SIMD_X86
+#if SSRJSON_SIMD_X64
 #    if USING_AVX512
     ucs2_encode_3bytes_utf8_avx512(dst, vec);
 #    elif USING_AVX2
@@ -722,10 +722,10 @@ force_inline void check_ascii_in_ucs4_and_get_done_count(vector_a vec, bool *out
     vector_a t2 = checker_masks[1];
     vector_a t3 = checker_masks[2];
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_SIMD_X86 && _CompileVectorBits == 512
+#if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     u32 m;
     m = cmpeq_bitmask(vec, t1) | cmpeq_bitmask(vec, t2) | signed_cmpgt_bitmask(t3, vec) | signed_cmpgt_bitmask(vec, t4);
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
     vector_a m;
     m = (vec == t1) | (vec == t2) | signed_cmpgt(t3, vec) | signed_cmpgt(vec, t4);
 #elif SSRJSON_SIMD_NEON || SSRJSON_SCALAR
@@ -741,10 +741,10 @@ force_inline void check_ascii_in_ucs4_raw_utf8_and_get_done_count(vector_a vec, 
                                                                   usize *out_done_count) {
     vector_a t3 = broadcast(0);
     vector_a t4 = broadcast(0x7f);
-#if SSRJSON_SIMD_X86 && _CompileVectorBits == 512
+#if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     u32 m;
     m = signed_cmpgt_bitmask(t3, vec) | signed_cmpgt_bitmask(vec, t4);
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
     vector_a m;
     m = signed_cmpgt(t3, vec) | signed_cmpgt(vec, t4);
 #elif SSRJSON_SIMD_NEON || SSRJSON_SCALAR
@@ -825,10 +825,10 @@ force_inline ssrjson_nofail u8 *ascii_in_ucs4_encode_loop_raw_utf8(u8 *dst, cons
 force_inline void check_2bytes_in_ucs4_and_get_done_count(vector_a vec, bool *out_checked, usize *out_done_count) {
     vector_a t1 = broadcast(0x80);
     vector_a t2 = broadcast(0x7ff);
-#if SSRJSON_SIMD_X86 && _CompileVectorBits == 512
+#if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     u32 m;
     m = unsigned_cmpgt_bitmask(t1, vec) | unsigned_cmpgt_bitmask(vec, t2);
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
     vector_a m;
     m = signed_cmpgt(t1, vec) | signed_cmpgt(vec, t2);
 #elif SSRJSON_SIMD_NEON || SSRJSON_SCALAR
@@ -852,7 +852,7 @@ force_inline ssrjson_nofail u8 *_2bytes_in_ucs4_encode_loop(u8 *dst, const u32 *
     vec = *(const vector_u *)src;
 
     // write
-#if SSRJSON_SIMD_X86
+#if SSRJSON_SIMD_X64
 #    if _CompileVectorBits == 512
     ucs4_encode_2bytes_utf8_avx512(dst, vec);
 #    elif _CompileVectorBits == 256
@@ -893,11 +893,11 @@ force_inline void check_3bytes_in_ucs4_and_get_done_count(vector_a vec, bool *ou
     vector_a t3 = broadcast(0xe000);
     vector_a t4 = broadcast(0xffff);
 
-#if SSRJSON_SIMD_X86 && _CompileVectorBits == 512
+#if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     u32 m;
     m = unsigned_cmpgt_bitmask(t1, vec) | (unsigned_cmpgt_bitmask(vec, t2) & unsigned_cmpgt_bitmask(t3, vec)) |
         unsigned_cmpgt_bitmask(vec, t4);
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
     vector_a m;
     m = signed_cmpgt(t1, vec) | (signed_cmpgt(vec, t2) & signed_cmpgt(t3, vec)) | signed_cmpgt(vec, t4);
 #elif SSRJSON_SIMD_NEON || SSRJSON_SCALAR
@@ -921,7 +921,7 @@ force_inline ssrjson_nofail u8 *_3bytes_in_ucs4_encode_loop(u8 *dst, const u32 *
     vec = *(const vector_u *)src;
 
     // write
-#if SSRJSON_SIMD_X86
+#if SSRJSON_SIMD_X64
 #    if USING_AVX512
     ucs4_encode_3bytes_utf8_avx512(dst, vec);
 #    elif USING_AVX2

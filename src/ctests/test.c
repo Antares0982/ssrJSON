@@ -31,7 +31,7 @@
 //
 #include "compile_context/s_in.inl.h"
 
-#if BUILD_MULTI_LIB && SSRJSON_SIMD_X86
+#if BUILD_MULTI_LIB && SSRJSON_SIMD_X64
 #    if _CompileVectorBits == 512
 #        define GUARDED_SIMD                         \
             do {                                     \
@@ -58,7 +58,7 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u16)(void) {
 #if (SSRJSON_SIMD_NEON || SSRJSON_SCALAR)
     u8 input[16];
     u16 dst[8];
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
 #    if _CompileVectorBits == 512
     GUARDED_SIMD;
     u8 input[32];
@@ -95,7 +95,7 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u32)(void) {
 #if (SSRJSON_SIMD_NEON || SSRJSON_SCALAR)
     u8 input[16];
     u32 dst[4];
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
 #    if _CompileVectorBits == 512
     GUARDED_SIMD;
     u8 input[16];
@@ -133,7 +133,7 @@ int SIMD_NAME_MODIFIER(test_cvt_u16_to_u32)(void) {
 #if (SSRJSON_SIMD_NEON || SSRJSON_SCALAR)
     u16 input[8];
     u32 dst[4];
-#elif SSRJSON_SIMD_X86
+#elif SSRJSON_SIMD_X64
 
 #    if _CompileVectorBits == 512
     GUARDED_SIMD;
@@ -509,11 +509,11 @@ int SIMD_NAME_MODIFIER(test_long_cvt)(void) {
     return PASSED;
 }
 
-#if SSRJSON_SIMD_X86
+#if SSRJSON_SIMD_X64
 #    include "decode/bytes/utf8_simd128.h"
 #endif
 
-#if SSRJSON_SIMD_X86
+#if SSRJSON_SIMD_X64
 static int _walk_eocp_masks(u8 *cont, int pos, u8 *seen, u32 *distinct) {
     if (pos < 13) {
         cont[pos] = 0;
@@ -540,7 +540,7 @@ static int _walk_eocp_masks(u8 *cont, int pos, u8 *seen, u32 *distinct) {
 
 int SIMD_NAME_MODIFIER(test_utf8_shuffle_index_bound)(void) {
     GUARDED_SIMD;
-#if !SSRJSON_SIMD_X86
+#if !SSRJSON_SIMD_X64
     return SKIPPED;
 #else
     GUARDED_SIMD;
