@@ -20,41 +20,16 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifndef SSRJSON_SIMD_IMPL_H
-#define SSRJSON_SIMD_IMPL_H
-
-#include "simd/simd_detect.h"
-#include "ssrjson.h"
-#include "vector_types.h"
-//
-
-#if SSRJSON_SCALAR
-#    include "scalar/full.h"
-#elif SSRJSON_SIMD_X64
-#    if __AVX512VL__ && __AVX512DQ__ && __AVX512BW__
-#        include "avx512vl_dq_bw/full.h"
-#    endif
-#    if __AVX512F__ && __AVX512CD__
-#        include "avx512f_cd/full.h"
-#    endif
-#    if __AVX2__
-#        include "avx2/full.h"
-#    endif
-#    if __AVX__
-#        include "avx/full.h"
-#    endif
-#    if __SSE4_1__
-#        include "sse4.1/full.h"
-#    endif
-#    if __SSSE3__
-#        include "ssse3/full.h"
-#    endif
-#    include "sse2/full.h"
-
-
-#elif SSRJSON_SIMD_NEON
-
-#    include "neon/full.h"
-
+#ifdef SSRJSON_CLANGD_CHECKING
+#    include "simd/scalar/common.h"
+#    define COMPILE_READ_UCS_LEVEL 1
 #endif
-#endif // SSRJSON_SIMD_IMPL_H
+#define _CompileVectorBits 128
+#include "compile_context/sr_in.inl.h"
+
+force_inline void fast_skip_spaces(const src_t **cur, const src_t *end) {
+    while (*cur < end && **cur == ' ') ++*cur;
+}
+
+#include "compile_context/sr_out.inl.h"
+#undef _CompileVectorBits

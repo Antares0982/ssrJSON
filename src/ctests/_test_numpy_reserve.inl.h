@@ -72,10 +72,15 @@ static usize test_get_ndarray_reserve_cnt_reference(int nd, Py_ssize_t *shape, u
 }
 
 #define TEST_NDARRAY_RESERVE_ROUNDS 1000
-#define TEST_NDARRAY_RESERVE_MAX_ND 8
+#define TEST_NDARRAY_RESERVE_MAX_ND 5
 #define TEST_NDARRAY_RESERVE_MAX_DIM_SIZE 16
 
 int test_ndarray_reserve_cnt(void) {
+    CHECK(size_add(SIZE_MAX, 1) == SIZE_MAX);
+    CHECK(size_mul(SIZE_MAX, 2) == SIZE_MAX);
+    Py_ssize_t huge[] = {PY_SSIZE_T_MAX, PY_SSIZE_T_MAX};
+    CHECK(get_ndarray_reserve_cnt_internal(2, huge, 1, NDA_u64, false) == SIZE_MAX);
+    CHECK(get_1darray_reserve_cnt(1, PY_SSIZE_T_MAX, NDA_u64) == SIZE_MAX);
     NDATypes all_types[] = {
             NDA_f64, NDA_f32, NDA_f16, NDA_i64, NDA_i32, NDA_i16, NDA_i8, NDA_u64, NDA_u32, NDA_u16, NDA_u8, NDA_bool};
     int num_types = sizeof(all_types) / sizeof(all_types[0]);

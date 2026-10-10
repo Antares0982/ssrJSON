@@ -31,6 +31,7 @@
 #if SSRJSON_IS_X64
 bool _SupportAVX512 = false;
 bool _SupportAVX2 = false;
+bool _SupportSSE4 = false;
 
 void check_avx512(void) {
     int info[4];
@@ -77,11 +78,12 @@ bool wrap_run_test(int (*func)(void), const char *name, TestCounter *counter) {
 
 #define RUN_ONE_TEST(_name) wrap_run_test(_name, #_name, &counter)
 #if BUILD_MULTI_LIB && SSRJSON_IS_X64
-#    define RUN_TESTS(_name)              \
-        do {                              \
-            RUN_ONE_TEST(_name##_avx512); \
-            RUN_ONE_TEST(_name##_avx2);   \
-            RUN_ONE_TEST(_name##_sse4_2); \
+#    define RUN_TESTS(_name)                                  \
+        do {                                                  \
+            RUN_ONE_TEST(_name##_scalar);                     \
+            if (_SupportAVX512) RUN_ONE_TEST(_name##_avx512); \
+            if (_SupportAVX2) RUN_ONE_TEST(_name##_avx2);     \
+            if (_SupportSSE4) RUN_ONE_TEST(_name##_sse4_2);   \
         } while (0)
 #elif BUILD_MULTI_LIB && SSRJSON_IS_AARCH64
 #    define RUN_TESTS(_name) \
@@ -119,7 +121,7 @@ bool run_c_tests(void) {
     RUN_TESTS(test_ucs2_encode_2bytes_utf8);
     RUN_TESTS(test_ucs4_encode_3bytes_utf8);
     RUN_TESTS(test_ucs4_encode_2bytes_utf8);
-    RUN_TESTS(test_long_back_cvt_u8_u16);
+    RUN_TESTS(test_long_back_cvt);
     RUN_TESTS(test_long_cvt);
     RUN_TESTS(test_utf8_shuffle_index_bound);
 
@@ -130,13 +132,19 @@ bool run_c_tests(void) {
     return show_test_counter(&counter);
 }
 
+#if SSRJSON_TEST_MODULE
+__attribute__((visibility("default"))) int ssrjson_run_tests(void) {
+#else
 int main(int argc, char **argv) {
+#endif
     int ret = 0;
     PyObject *pModule = NULL;
+#if !SSRJSON_TEST_MODULE
     if (!initialize_cpython()) {
         fprintf(stderr, "Fail to initialize");
         return 1;
     }
+#endif
     pModule = import_ssrjson();
     if (!pModule) {
         fprintf(stderr, "Fail to import ssrjson");
@@ -145,6 +153,9 @@ int main(int argc, char **argv) {
     }
     srand((u32)time(NULL));
 #if SSRJSON_IS_X64
+    int info[4];
+    cpuid(info, 1);
+    _SupportSSE4 = (info[2] & (1 << 20)) != 0;
     check_avx2();
     check_avx512();
 #endif
@@ -155,6 +166,8 @@ int main(int argc, char **argv) {
 
 done:
     Py_XDECREF(pModule);
+#if !SSRJSON_TEST_MODULE
     Py_Finalize();
+#endif
     return ret;
 }

@@ -61,9 +61,9 @@ This will generate a PDF report of the results. If you choose to, you may submit
 
 ### SIMD Acceleration
 
-ssrJSON is designed for modern hardware and extensively leverages SIMD instruction sets to accelerate encoding and decoding processes. This includes operations such as memory copying, integer type conversions, JSON encoding, and UTF-8 encoding. Currently, ssrJSON supports x86-64-v2 and above (requiring at least SSE4.2) as well as aarch64 devices. It does not support 32-bit systems or older x86-64 hardware with limited SIMD capabilities.
+ssrJSON is designed for modern hardware and extensively leverages SIMD instruction sets to accelerate encoding and decoding processes. This includes operations such as memory copying, integer type conversions, JSON encoding, and UTF-8 encoding. ssrJSON supports x86-64 and AArch64, Windows x86 (32-bit), Linux i686, and little-endian Linux ARMv7 hard-float. The 32-bit targets use the scalar backend; x86-64 automatically falls back to scalar when SSE4.2 is unavailable. ARMv7 does not require NEON.
 
-On the x86-64 platform, ssrJSON provides three distinct SIMD libraries optimized for SSE4.2, AVX2, and AVX512, respectively, automatically selecting the most appropriate library based on the device’s capabilities. For aarch64 architectures, it utilizes the NEON instruction set. Combined with Clang’s powerful vector extensions and compiler optimizations, ssrJSON can almost fully exploit CPU performance during encoding operations.
+On the x86-64 platform, ssrJSON provides a scalar backend and three SIMD libraries optimized for SSE4.2, AVX2, and AVX512, automatically selecting the most appropriate library based on the device’s capabilities. For aarch64 architectures, it utilizes the NEON instruction set. Combined with Clang’s powerful vector extensions and compiler optimizations, ssrJSON can almost fully exploit CPU performance during encoding operations.
 
 ### UTF-8 Cache of `str` Objects
 
@@ -126,7 +126,7 @@ Pre-built wheels are available on PyPI, you can install it using pip.
 pip install ssrjson
 ```
 
-Note: ssrJSON requires at least SSE4.2 on x86-64 ([x86-64-v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels)), or aarch64. 32-bit platforms are not supported. ssrJSON does not work with Python implementations other than CPython. Currently supported CPython versions are 3.10, 3.11, 3.12, 3.13, 3.14, 3.15.
+Note: x86-64 wheels include scalar fallback in the same package. Linux 32-bit wheels target glibc 2.34+ (i686) and glibc 2.35+ (ARMv7 hard-float). Windows support follows the selected CPython version. ssrJSON does not work with Python implementations other than CPython. Currently supported CPython versions are 3.10, 3.11, 3.12, 3.13, 3.14, 3.15.
 
 ### Build From Source
 
@@ -419,3 +419,8 @@ We would like to express our gratitude to the outstanding libraries and their au
 - [xxHash](https://github.com/Cyan4973/xxHash): ssrJSON leverages xxHash to efficiently compute hash values for key caching.
 - [klib](https://github.com/attractivechaos/klib): ssrJSON uses khash to implement circular detection in free-threading build.
 - [simdutf](https://github.com/simdutf/simdutf): the vectorized UTF-8 decoder used for `bytes` input adapts simdutf's UTF-8 to UTF-16 transcoding shapes and its lookup tables, together with Lemire's `utf8_lookup4` block validation algorithm.
+
+To build only the scalar backend, configure CMake with
+`-DBUILD_SHIPPING_SIMD=OFF -DBUILD_SCALAR=ON`.
+`get_current_features()["simd"]` reports `"SCALAR"` when that backend is active.
+The public API and UTF-8 cache controls are identical across backends.

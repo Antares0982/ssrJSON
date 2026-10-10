@@ -125,6 +125,10 @@ force_inline PyObject *create_empty_unicode(usize size, int kind) {
     assert(kind == 0 || kind == 1 || kind == 2 || kind == 4);
     usize offset = kind ? sizeof(PyCompactUnicodeObject) : sizeof(PyASCIIObject);
     usize tpsize = kind ? kind : 1;
+    if (unlikely(size > (PY_SSIZE_T_MAX - offset) / tpsize - 1)) {
+        PyErr_NoMemory();
+        return NULL;
+    }
     PyObject *str = PyObject_Malloc(offset + (size + 1) * tpsize);
     return_if_no_memory(str);
     init_pyunicode(str, size, kind);
@@ -143,6 +147,10 @@ force_inline void make_hash(PyASCIIObject *ascii, const void *unicode_str, size_
 force_noinline void init_pyunicode_noinline(void *head, Py_ssize_t size, int kind);
 
 force_inline void *pymem_malloc_wrapped(usize size) {
+    if (unlikely(size > PY_SSIZE_T_MAX)) {
+        PyErr_NoMemory();
+        return NULL;
+    }
     void *ptr = PyMem_Malloc(size);
     if (unlikely(!ptr)) { PyErr_NoMemory(); }
     return ptr;

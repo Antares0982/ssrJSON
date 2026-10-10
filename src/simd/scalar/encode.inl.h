@@ -20,41 +20,42 @@
  SOFTWARE.
  *============================================================================*/
 
-#ifndef SSRJSON_SIMD_IMPL_H
-#define SSRJSON_SIMD_IMPL_H
-
-#include "simd/simd_detect.h"
-#include "ssrjson.h"
-#include "vector_types.h"
-//
-
-#if SSRJSON_SCALAR
-#    include "scalar/full.h"
-#elif SSRJSON_SIMD_X64
-#    if __AVX512VL__ && __AVX512DQ__ && __AVX512BW__
-#        include "avx512vl_dq_bw/full.h"
-#    endif
-#    if __AVX512F__ && __AVX512CD__
-#        include "avx512f_cd/full.h"
-#    endif
-#    if __AVX2__
-#        include "avx2/full.h"
-#    endif
-#    if __AVX__
-#        include "avx/full.h"
-#    endif
-#    if __SSE4_1__
-#        include "sse4.1/full.h"
-#    endif
-#    if __SSSE3__
-#        include "ssse3/full.h"
-#    endif
-#    include "sse2/full.h"
-
-
-#elif SSRJSON_SIMD_NEON
-
-#    include "neon/full.h"
-
+#ifdef SSRJSON_CLANGD_CHECKING
+#    include "simd/scalar/common.h"
+#    define COMPILE_READ_UCS_LEVEL 1
+#    define COMPILE_WRITE_UCS_LEVEL 1
 #endif
-#endif // SSRJSON_SIMD_IMPL_H
+#define _CompileVectorBits 128
+#include "compile_context/srw_in.inl.h"
+extern const dst_t ControlEscapeTable[256 * 8];
+extern const Py_ssize_t _ControlJump[256];
+
+force_inline dst_t *encode_unicode_impl(dst_t *dst, const src_t *src, usize len) {
+    for (usize i = 0; i < len; ++i) {
+        src_t ch = src[i];
+#if COMPILE_READ_UCS_LEVEL == 1
+        if (ControlEscapeTable[ch * 8 + 1]) {
+#else
+        if (ch < _ControlMax || ch == _Quote || ch == _Slash) {
+#endif
+            memcpy(dst, ControlEscapeTable + ch * 8, 8 * sizeof(dst_t));
+            dst += _ControlJump[ch];
+        } else
+            *dst++ = (dst_t)ch;
+    }
+    return dst;
+}
+
+force_inline dst_t *encode_unicode_loop(dst_t *dst, const src_t **src, usize *len) {
+    dst = encode_unicode_impl(dst, *src, *len);
+    *src += *len;
+    *len = 0;
+    return dst;
+}
+
+force_inline dst_t *encode_trailing_copy_with_cvt(dst_t *dst, const src_t *src, usize len) {
+    return encode_unicode_impl(dst, src, len);
+}
+
+#include "compile_context/srw_out.inl.h"
+#undef _CompileVectorBits

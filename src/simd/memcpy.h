@@ -26,7 +26,11 @@
 #include "ssrjson.h"
 
 // provide inline version of memcpy.
-#if __AVX512F__
+#if SSRJSON_SCALAR
+#    define ssrjson_memcpy memcpy
+#    define ssrjson_memcpy_prealigned memcpy
+#    define SSRJSON_MEMCPY_SIMD_SIZE 16
+#elif __AVX512F__
 #    define ssrjson_memcpy(_d, _s, _size) ssrjson_memcpy_simd((_d), (_s), (_size), 512, false)
 #    define ssrjson_memcpy_prealigned(_d, _s, _size) ssrjson_memcpy_simd((_d), (_s), (_size), 512, true)
 #    define SSRJSON_MEMCPY_SIMD_SIZE 64

@@ -110,7 +110,8 @@ force_inline usize get_ndarray_reserve_cnt(const PyArrayInterface *array, Py_ssi
     assert(padding >= 3);     // for writing bool, we write 8 bytes at once
     assert(padding >= ssrjson_dtoa_write_length - ssrjson_dtoa_output_maxlen);
     assert(padding >= ssrjson_ftoa_write_length - ssrjson_ftoa_output_maxlen);
-    return ret + padding + get_ndarray_reserve_cnt_internal(nd, shape, base_nested_depth + 1, ndatype, is_in_obj);
+    return size_add(
+            ret + padding, get_ndarray_reserve_cnt_internal(nd, shape, base_nested_depth + 1, ndatype, is_in_obj));
 }
 
 force_inline ssrjson_nofail u8 *ndarray_traverse_dispatch(u8 *writer, const PyArrayInterface *array,

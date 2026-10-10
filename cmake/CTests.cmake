@@ -10,6 +10,9 @@ set(SRC_ENCODE_FUZZER src/ctests/encode_fuzzer.c)
 
 if(BUILD_MULTI_LIB)
   if("${TARGET_SIMD_ARCH}" STREQUAL "x86")
+    add_library(ssrjson_test_scalar OBJECT ${SRC_TEST_WITH_SIMD})
+    target_link_libraries(ssrjson_test_scalar PUBLIC commonBuild)
+    target_compile_definitions(ssrjson_test_scalar PRIVATE SSRJSON_SCALAR=1)
     add_library(ssrjson_test_sse4 OBJECT ${SRC_TEST_WITH_SIMD})
     target_link_libraries(ssrjson_test_sse4 PUBLIC commonBuild)
     add_library(ssrjson_test_avx2 OBJECT ${SRC_TEST_WITH_SIMD})
@@ -21,24 +24,38 @@ if(BUILD_MULTI_LIB)
     add_avx2_compile_option(ssrjson_test_avx2)
     add_sse4_compile_option(ssrjson_test_sse4)
 
-    add_executable(
-      ssrjson_test
-      ${SRC_TEST} $<TARGET_OBJECTS:ssrjson_test_avx512>
-      $<TARGET_OBJECTS:ssrjson_test_avx2> $<TARGET_OBJECTS:ssrjson_test_sse4>)
+    list(
+      APPEND SRC_TEST $<TARGET_OBJECTS:ssrjson_test_avx512>
+      $<TARGET_OBJECTS:ssrjson_test_avx2> $<TARGET_OBJECTS:ssrjson_test_sse4>
+      $<TARGET_OBJECTS:ssrjson_test_scalar>)
   elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
     add_library(ssrjson_test_neon OBJECT ${SRC_TEST_WITH_SIMD})
     target_link_libraries(ssrjson_test_neon PUBLIC commonBuild)
-    add_executable(ssrjson_test ${SRC_TEST} $<TARGET_OBJECTS:ssrjson_test_neon>)
+    list(APPEND SRC_TEST $<TARGET_OBJECTS:ssrjson_test_neon>)
   else()
     message(FATAL_ERROR "TARGET_SIMD_ARCH=${TARGET_SIMD_ARCH} not supported")
   endif()
 else()
-  add_executable(ssrjson_test ${SRC_TEST} ${SRC_TEST_WITH_SIMD})
+  list(APPEND SRC_TEST ${SRC_TEST_WITH_SIMD})
 endif()
 
-target_link_libraries(ssrjson_test PUBLIC commonBuild ${Python3_LIBRARIES})
-install(TARGETS ssrjson_test RUNTIME DESTINATION .)
-add_test(ssrjson_test ${CMAKE_CURRENT_BINARY_DIR}/ssrjson_test)
+if(Python3_LIBRARIES)
+  add_executable(ssrjson_test ${SRC_TEST})
+  target_link_libraries(ssrjson_test PUBLIC commonBuild ${Python3_LIBRARIES})
+  install(TARGETS ssrjson_test RUNTIME DESTINATION .)
+  add_test(NAME ssrjson_test COMMAND ssrjson_test)
+else()
+  add_library(ssrjson_test MODULE ${SRC_TEST})
+  target_link_libraries(ssrjson_test PUBLIC commonBuild)
+  target_compile_definitions(ssrjson_test PRIVATE SSRJSON_TEST_MODULE=1)
+  set_target_properties(ssrjson_test PROPERTIES PREFIX "")
+  add_test(
+    NAME ssrjson_test
+    COMMAND
+      ${Python3_EXECUTABLE} -c
+      "import ctypes; assert ctypes.PyDLL(r'$<TARGET_FILE:ssrjson_test>').ssrjson_run_tests() == 0"
+  )
+endif()
 
 if((CMAKE_C_COMPILER_ID MATCHES Clang)
    AND NOT WIN32

@@ -44,7 +44,7 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
         if (err) goto fail;                          \
     } while (0)
 
-#if SSRJSON_IS_X64
+#if SSRJSON_IS_X64 || SSRJSON_SCALAR
     err = PyDict_SetItemString(ret, "multi_lib", Py_False);
     if (err) goto fail;
     err = PyDict_SetItemString(ret, "free_threading", SSRJSON_GIL_ENABLED ? Py_False : Py_True);
@@ -59,7 +59,9 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
 #    endif
     if (err) goto fail;
 
-#    if HAS_AVX512
+#    if SSRJSON_SCALAR
+    DICT_SET_STRING_ITEM("simd", "SCALAR");
+#    elif HAS_AVX512
     DICT_SET_STRING_ITEM("simd", "AVX512");
 #    elif HAS_AVX2
     DICT_SET_STRING_ITEM("simd", "AVX2");
@@ -78,7 +80,7 @@ fail:;
 }
 
 const char *_update_simd_features(void) {
-#if SSRJSON_BUILD_NATIVE
+#if SSRJSON_BUILD_NATIVE || SSRJSON_SCALAR
     // if using native build, don't check for features, assume all features are available
     return NULL;
 #else

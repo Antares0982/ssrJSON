@@ -30,6 +30,16 @@
 #    define SSRJSON_IS_AARCH64 0
 #endif
 
+#ifndef SSRJSON_SCALAR
+#    if (SSRJSON_IS_X64 && !__SSE4_2__) || (!SSRJSON_IS_X64 && !SSRJSON_IS_AARCH64)
+#        define SSRJSON_SCALAR 1
+#    else
+#        define SSRJSON_SCALAR 0
+#    endif
+#endif
+#define SSRJSON_SIMD_X64 (SSRJSON_IS_X64 && !SSRJSON_SCALAR)
+#define SSRJSON_SIMD_NEON (SSRJSON_IS_AARCH64 && !SSRJSON_SCALAR)
+
 #define HAS_AVX512 0
 #define HAS_AVX2 0
 #define HAS_SSE4_2 0
@@ -37,7 +47,7 @@
 #define USING_AVX2 0
 #define USING_SSE4_2 0
 
-#if SSRJSON_IS_X64
+#if SSRJSON_SIMD_X64
 #    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
 #        define SIMD_FEATURE_NAME avx512
 #        undef USING_AVX512
@@ -81,12 +91,12 @@
 #        define SIMD_256_IU __m256i_u
 #    endif
 #    define SIMD_512 __m512i
-#elif SSRJSON_IS_AARCH64
+#elif SSRJSON_SIMD_NEON
 #    define SIMD_FEATURE_NAME neon
 #    define USING_AVX512 0
 #    define USING_AVX2 0
 #else
-#    error "unsupported architecture"
+#    define SIMD_FEATURE_NAME scalar
 #endif
 
 
@@ -99,12 +109,12 @@
 #    define SIMD_NAME_MODIFIER(x) x
 #endif
 
-#if SSRJSON_IS_X64
+#if SSRJSON_SIMD_X64
 #    include <immintrin.h>
 #    if defined(_MSC_VER)
 #        include <intrin.h>
 #    endif
-#elif SSRJSON_IS_AARCH64
+#elif SSRJSON_SIMD_NEON
 #    include <arm_neon.h>
 #    include <assert.h>
 static_assert(__LITTLE_ENDIAN__, "only little endian is supported");

@@ -28,15 +28,18 @@
 #include "compile_context/w_in.inl.h"
 
 force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usize size) {
-    dst_t *target_ptr = writer + size;
-    if (unlikely(target_ptr > ssrjson_cast(dst_t *, u_buf_info->end))) {
-        u8 *old_head = (u8 *)u_buf_info->head;
-        usize target_size = ssrjson_cast(u8 *, target_ptr) - ssrjson_cast(u8 *, u_buf_info->head);
+    usize offset = ssrjson_cast(u8 *, writer) - ssrjson_cast(u8 *, u_buf_info->head);
+    usize target_size = size_add(offset, size_mul(size, sizeof(dst_t)));
+    if (unlikely(target_size > PY_SSIZE_T_MAX)) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+    if (unlikely(target_size >
+                 ssrjson_cast(usize, ssrjson_cast(u8 *, u_buf_info->end) - ssrjson_cast(u8 *, u_buf_info->head)))) {
         EncodeUBufInfo new_info = _u_buf_reserve(*u_buf_info, target_size);
         return_if_unlikely(!new_info.head);
-        usize u8offset = ssrjson_cast(u8 *, writer) - old_head;
         *u_buf_info = new_info;
-        writer = ssrjson_cast(dst_t *, ssrjson_cast(u8 *, u_buf_info->head) + u8offset);
+        writer = ssrjson_cast(dst_t *, ssrjson_cast(u8 *, u_buf_info->head) + offset);
     }
     return writer;
 }

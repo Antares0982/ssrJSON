@@ -29,12 +29,12 @@
 #include "simd/simd_impl.h"
 #include "ssrjson.h"
 
-#if SSRJSON_IS_X64
+#if SSRJSON_SIMD_X64 || SSRJSON_SCALAR
 extern const u8 _Utf8ToUcsShuffle[64][16];
 extern const u8 _Utf8ToUcsIndex[4096][2];
 #endif
 
-#if SSRJSON_IS_X64
+#if SSRJSON_SIMD_X64 || SSRJSON_SCALAR
 #    define u8v_as_u16v(_x_) ((vector_a_u16_128)(_x_))
 #    define u8v_as_u32v(_x_) ((vector_a_u32_128)(_x_))
 #    define u16v_as_u8v(_x_) ((vector_a_u8_128)(_x_))
@@ -46,7 +46,7 @@ extern const u8 _Utf8ToUcsIndex[4096][2];
 #    define u32v_as_u8v(_x_) vreinterpretq_u8_u32(_x_)
 #endif
 
-#if SSRJSON_IS_X64 && __AVX512VL__ && __AVX512BW__
+#if SSRJSON_SIMD_X64 && __AVX512VL__ && __AVX512BW__
 force_inline bool utf8_has_stop_128(vector_a_u8_128 x) {
     vector_a_u8_128 quote = cmpeq_u8_128(x, broadcast_u8_128(_Quote));
     vector_a_u8_128 slash = cmpeq_u8_128(x, broadcast_u8_128(_Slash));
@@ -63,7 +63,7 @@ force_inline bool utf8_has_stop_128(vector_a_u8_128 x) {
 }
 #endif
 
-#if SSRJSON_IS_X64
+#if SSRJSON_SIMD_X64 || SSRJSON_SCALAR
 force_inline bool utf8_all_ascii_128(vector_a_u8_128 x) { return get_bitmask_from_u8_128(x) == 0; }
 #else
 force_inline bool utf8_all_ascii_128(vector_a_u8_128 x) { return testz_128(x & broadcast_u8_128(0x80)); }
@@ -75,7 +75,7 @@ force_inline bool utf8_any_byte_above_128(vector_a_u8_128 x, u8 limit) {
 
 /* Mark each code point's ending byte. */
 /* x86 uses bits; NEON uses nibbles. */
-#if SSRJSON_IS_X64
+#if SSRJSON_SIMD_X64 || SSRJSON_SCALAR
 typedef u32 utf8_eocp_t;
 
 #    define _UTF8_EOCP_ALL 0xffffu

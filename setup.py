@@ -1,5 +1,6 @@
 import os
 import sys
+import struct
 
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
@@ -100,7 +101,17 @@ else:
                     env["Python3_EXECUTABLE"] = sys.executable
 
             if os.name == "nt":
-                cmake_cmd = ["cmake", "-T", "ClangCL"] + common_flags + [".", "-B"]
+                cmake_cmd = (
+                    [
+                        "cmake",
+                        "-T",
+                        "ClangCL",
+                        "-A",
+                        "Win32" if struct.calcsize("P") == 4 else "x64",
+                    ]
+                    + common_flags
+                    + [".", "-B"]
+                )
                 build_cmd = ["cmake", "--build", build_dir, "--config", "Release"]
             else:
                 cmake_cmd = (

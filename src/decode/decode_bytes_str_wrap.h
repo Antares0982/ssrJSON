@@ -50,9 +50,9 @@
 #include "compile_context/sr_in.inl.h"
 
 force_inline anymask_t get_bytes_stop_anymask(vector_a x) {
-#if SSRJSON_IS_X64 && _CompileVectorBits == 512
+#if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     return get_escape_bitmask(x) | unsigned_cmpge_bitmask(x, broadcast(0x80));
-#elif SSRJSON_IS_X64
+#elif SSRJSON_SIMD_X64
     /* psubusb marks bytes above 0x7f. */
     return get_escape_mask(x) | unsigned_saturate_minus(x, broadcast(0x7f));
 #else

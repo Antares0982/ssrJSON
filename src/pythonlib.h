@@ -27,7 +27,7 @@
 #if SSRJSON_IS_X64
 
 typedef enum X86SIMDFeatureLevel {
-    X86SIMDFeatureLevelSSE2 = 0,
+    X86SIMDFeatureLevelScalar = 0,
     X86SIMDFeatureLevelSSE4_2 = 1,
     X86SIMDFeatureLevelAVX2 = 2,
     X86SIMDFeatureLevelAVX512 = 3,
@@ -67,7 +67,7 @@ force_inline X86SIMDFeatureLevel get_simd_feature(void) {
             return X86SIMDFeatureLevelSSE4_2;
     }
 
-    return X86SIMDFeatureLevelSSE2;
+    return X86SIMDFeatureLevelScalar;
 }
 #elif SSRJSON_IS_AARCH64
 
@@ -109,16 +109,19 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
                     PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
             PyObject *ssrjson_concat2(_func_name_, avx2)(                                          \
                     PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
+            PyObject *ssrjson_concat2(_func_name_, scalar)(                                        \
+                    PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
             PyObject *ssrjson_concat2(_func_name_, sse4_2)(                                        \
                     PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
             typedef PyObject *(*ssrjson_concat2(_func_name_, t))(                                  \
                     PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
-#        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)      \
-            _ret_type_ ssrjson_concat2(_func_name_, avx512)(__VA_ARGS__);       \
-            _ret_type_ ssrjson_concat2(_func_name_, avx2)(__VA_ARGS__);         \
-            _ret_type_ ssrjson_concat2(_func_name_, sse4_2)(__VA_ARGS__);       \
-            typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__); \
+#        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)                        \
+            SSRJSON_EXPORTED_SYMBOL _ret_type_ ssrjson_concat2(_func_name_, avx512)(__VA_ARGS__); \
+            SSRJSON_EXPORTED_SYMBOL _ret_type_ ssrjson_concat2(_func_name_, avx2)(__VA_ARGS__);   \
+            SSRJSON_EXPORTED_SYMBOL _ret_type_ ssrjson_concat2(_func_name_, scalar)(__VA_ARGS__); \
+            SSRJSON_EXPORTED_SYMBOL _ret_type_ ssrjson_concat2(_func_name_, sse4_2)(__VA_ARGS__); \
+            typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__);                   \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 
 #    elif SSRJSON_IS_AARCH64
@@ -128,9 +131,9 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args);
             typedef PyObject *(*ssrjson_concat2(_func_name_, t))(                                  \
                     PyObject * self, PyObject *const *args, Py_ssize_t nargsf, PyObject *kwnames); \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
-#        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)      \
-            _ret_type_ ssrjson_concat2(_func_name_, neon)(__VA_ARGS__);         \
-            typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__); \
+#        define DECLARE_MULTILIB_ANYFUNCTION(_func_name_, _ret_type_, ...)                      \
+            SSRJSON_EXPORTED_SYMBOL _ret_type_ ssrjson_concat2(_func_name_, neon)(__VA_ARGS__); \
+            typedef _ret_type_ (*ssrjson_concat2(_func_name_, t))(__VA_ARGS__);                 \
             extern ssrjson_concat2(_func_name_, t) ssrjson_concat2(_func_name_, interface);
 #    endif // SSRJSON_IS_X64
 
