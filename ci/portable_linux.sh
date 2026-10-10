@@ -3,8 +3,7 @@ set -euo pipefail
 cd /io
 git config --global --add safe.directory /io
 minor=${1%t}
-abi=$1
-export PATH="/opt/python/cp3${minor}-cp3${abi}/bin:$PATH"
+export PATH="/opt/python/cp3${minor}-cp3${1}/bin:$PATH"
 if ! command -v clang >/dev/null; then
     if command -v apt-get >/dev/null; then
         apt-get update
@@ -20,15 +19,12 @@ chown -R "$(id -u):$(id -g)" "$PIP_CACHE_DIR"
 export CC=clang CXX=clang++
 export LDFLAGS="-fuse-ld=lld"
 if [[ $(uname -m) == arm* ]]; then
+    export CC=gcc CXX=g++
     export CFLAGS='-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard'
     export CXXFLAGS="$CFLAGS"
 fi
-(
-    if [[ $(uname -m) == arm* ]]; then
-        export CC=gcc CXX=g++
-    fi
-    python -m pip install --cache-dir "$PIP_CACHE_DIR" 'cmake>=3.30' build pytest pytest-random-order psutil numpy
-)
+python -m pip install 'cmake>=3.30' build pytest pytest-random-order psutil numpy
+export CC=clang CXX=clang++
 chmod -R a+rX "$PIP_CACHE_DIR"
 python -c 'import numpy; print(numpy.__version__)'
 cmake_bin=$(python -c 'import cmake; print(cmake.CMAKE_BIN_DIR)')

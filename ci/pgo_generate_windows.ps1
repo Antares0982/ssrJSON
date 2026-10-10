@@ -51,7 +51,7 @@ $trainArgs = @(
     @{ Name = "avx512"; Exe = $Sde;    Args = @("-clx") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\avx512") },
     @{ Name = "avx2";   Exe = $Sde;    Args = @("-rpl") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\avx2") },
     @{ Name = "sse42";  Exe = $Sde;    Args = @("-ivb") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\sse42") },
-    @{ Name = "scalar"; Exe = $Sde; Args = @("-p4p") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\scalar") }
+    @{ Name = "scalar"; Exe = $Sde;    Args = @("-p4p") + $NoChipCheck + @("--", "python", "ci\pgo_train.py", "--build-dir", "build-pgo-instr", "--bench-dir", "bench", "--profile-dir", "$PgoData\scalar") }
 )
 
 foreach ($job in $trainArgs) {
