@@ -34,6 +34,18 @@
 #define COMPILE_READ_UCS_LEVEL COMPILE_UCS_LEVEL
 #include "compile_context/srw_in.inl.h"
 
+#if SSRJSON_SCALAR
+force_inline int decode_str_copy_loop(dst_t **dst_addr, const src_t **src_addr, const src_t *end, EscapeInfo *escape,
+                                      src_t *maximum) {
+    const src_t *start = *src_addr;
+    int ret = scan_string(src_addr, end, escape, maximum);
+    dst_t *dst = *dst_addr;
+    while (start < *src_addr) *dst++ = (dst_t)*start++;
+    *dst_addr = dst;
+    return ret;
+}
+
+#else
 force_inline int decode_str_copy_loop4(dst_t **dst_addr, const src_t **src_addr, const src_t *src_end,
                                        EscapeInfo *escapeval_addr, vector_a *maxvec_addr) {
     int ret;
@@ -78,17 +90,19 @@ force_inline int decode_str_copy_trailing(dst_t **dst_addr, const src_t **src_ad
     anymask_t check_mask;
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
-#if SSRJSON_SIMD_X64 && _CompileVectorBits == 256
+#    if SSRJSON_SIMD_X64 && _CompileVectorBits == 256
     avx2_trailing_cvt(*src_addr, src_end, *dst_addr);
-#else
+#    else
     cvt_to_dst(*dst_addr, vec);
-#endif
+#    endif
     usize done_count = _decode_str_trailing_decoder_impl(
             src_addr, src_end, check_mask, &ret, false, maxvec_addr, vec, escape_info_addr);
     *dst_addr += done_count;
     //
     return ret;
 }
+
+#endif
 
 #include "compile_context/srw_out.inl.h"
 #undef COMPILE_READ_UCS_LEVEL

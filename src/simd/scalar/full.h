@@ -22,32 +22,22 @@
 
 #ifndef SSRJSON_SCALAR_FULL_H
 #define SSRJSON_SCALAR_FULL_H
-#include "common.h"
-#define COMPILE_READ_UCS_LEVEL 1
-#include "simd/neon/checker/_sr_escape.inl.h"
-#undef COMPILE_READ_UCS_LEVEL
-#define COMPILE_READ_UCS_LEVEL 2
-#include "simd/neon/checker/_sr_escape.inl.h"
-#undef COMPILE_READ_UCS_LEVEL
-#define COMPILE_READ_UCS_LEVEL 4
-#include "simd/neon/checker/_sr_escape.inl.h"
-#undef COMPILE_READ_UCS_LEVEL
+
 #if defined(COMPILE_CONTEXT_DECODE)
 #    define COMPILE_READ_UCS_LEVEL 1
 #    include "decode.inl.h"
-#    include "simd/neon/decode/_r_decode_tools.inl.h"
+#    include "simd/_r_decode_tools.inl.h"
 #    undef COMPILE_READ_UCS_LEVEL
 #    define COMPILE_READ_UCS_LEVEL 2
 #    include "decode.inl.h"
-#    include "simd/neon/decode/_r_decode_tools.inl.h"
+#    include "simd/_r_decode_tools.inl.h"
 #    undef COMPILE_READ_UCS_LEVEL
 #    define COMPILE_READ_UCS_LEVEL 4
 #    include "decode.inl.h"
-#    include "simd/neon/decode/_r_decode_tools.inl.h"
+#    include "simd/_r_decode_tools.inl.h"
 #    undef COMPILE_READ_UCS_LEVEL
 #endif
 #if defined(COMPILE_CONTEXT_ENCODE)
-#    include "utf8.h"
 #    define COMPILE_READ_UCS_LEVEL 1
 #    define COMPILE_WRITE_UCS_LEVEL 1
 #    include "encode.inl.h"

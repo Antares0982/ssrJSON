@@ -62,7 +62,7 @@ force_inline u8 *b_buf_apd_nonascii_key_write_cache(u8 *writer, int src_pykind, 
     }
     assert(utf8_cache);
     // Note: the utf8 cache is allocated independently and has nothing to do with is_compact.
-    if (USING_AVX512 || utf8_length >= READ_BATCH_COUNT) {
+    if (USING_AVX512 || utf8_length >= (ENCODE_READ_PADDING / sizeof(src_t))) {
         return b_buf_apd_utf8_cache(writer, utf8_cache, utf8_length, !!COMPILE_INDENT_LEVEL);
     } else {
     no_cache_encode:;
@@ -103,7 +103,7 @@ force_inline u8 *b_buf_apd_nonascii_key_no_write_cache(u8 *writer, int src_pykin
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
     // Note: the utf8 cache is allocated independently and has nothing to do with is_compact.
-    if (utf8_cache && (USING_AVX512 || utf8_length >= READ_BATCH_COUNT)) {
+    if (utf8_cache && (USING_AVX512 || utf8_length >= (ENCODE_READ_PADDING / sizeof(src_t)))) {
         return b_buf_apd_utf8_cache(writer, utf8_cache, utf8_length, !!COMPILE_INDENT_LEVEL);
     } else {
         *writer++ = '"';

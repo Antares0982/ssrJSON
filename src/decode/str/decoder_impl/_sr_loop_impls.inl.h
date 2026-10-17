@@ -69,7 +69,7 @@ force_inline void _decode_str_trailing_read_src_impl(const src_t *src, const src
     vector_a vec = *(vector_u *)(src_end - READ_BATCH_COUNT);
     *out_vec = runtime_byte_rshift_128(vec, (READ_BATCH_COUNT - trailing_len) * sizeof(src_t));
     *out_check_mask = low_mask(get_escape_mask(*out_vec), trailing_len);
-#elif SSRJSON_SIMD_NEON || SSRJSON_SCALAR
+#elif SSRJSON_SIMD_NEON
     vector_a vec = *(vector_u *)(src_end - READ_BATCH_COUNT);
     *out_vec = runtime_byte_rshift_128(vec, (READ_BATCH_COUNT - trailing_len) * sizeof(src_t));
     *out_check_mask = low_mask(get_escape_mask(*out_vec), trailing_len);

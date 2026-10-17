@@ -71,3 +71,18 @@ def test_u8_escaping():
                     ssrjson.dumps_to_bytes(value, indent=indent, is_write_cache=cache)
                     == expected.encode()
                 )
+
+
+def test_scalar_scan_promotions():
+    for width in ("a", "\u00e9", "\u4e2d", "\U0001f600"):
+        for length in range(66):
+            prefix = "a" * length
+            for escaped in (r"\n", r"\u00e9", r"\u4e2d", r"\ud83d\ude00"):
+                text = '["' + prefix + escaped + width + '","' + width + '"]'
+                expected = json.loads(text)
+                assert ssrjson.loads(text) == expected
+                assert ssrjson.loads(text.encode()) == expected
+            for invalid in ("\x00", r"\u" + width + "ZZZ", "\\"):
+                text = '["' + prefix + invalid + '","' + width + '"]'
+                with pytest.raises(ssrjson.JSONDecodeError):
+                    ssrjson.loads(text)

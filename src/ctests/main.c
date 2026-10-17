@@ -92,6 +92,19 @@ bool wrap_run_test(int (*func)(void), const char *name, TestCounter *counter) {
 #    define RUN_TESTS(_name) RUN_ONE_TEST(_name);
 #endif
 
+#if BUILD_MULTI_LIB && SSRJSON_IS_X64
+#    define RUN_VECTOR_TESTS(name)                           \
+        do {                                                 \
+            if (_SupportAVX512) RUN_ONE_TEST(name##_avx512); \
+            if (_SupportAVX2) RUN_ONE_TEST(name##_avx2);     \
+            if (_SupportSSE4) RUN_ONE_TEST(name##_sse4_2);   \
+        } while (0)
+#elif SSRJSON_SCALAR
+#    define RUN_VECTOR_TESTS(name) ((void)0)
+#else
+#    define RUN_VECTOR_TESTS(name) RUN_TESTS(name)
+#endif
+
 bool show_test_counter(TestCounter *counter) {
     int failed = counter->total_count - (counter->passed_count + counter->skipped_count);
     bool success = !failed;
@@ -114,13 +127,13 @@ bool run_c_tests(void) {
     TestCounter counter;
     ZERO_FILL(counter);
 
-    RUN_TESTS(test_cvt_u8_to_u16);
-    RUN_TESTS(test_cvt_u8_to_u32);
-    RUN_TESTS(test_cvt_u16_to_u32);
-    RUN_TESTS(test_ucs2_encode_3bytes_utf8);
-    RUN_TESTS(test_ucs2_encode_2bytes_utf8);
-    RUN_TESTS(test_ucs4_encode_3bytes_utf8);
-    RUN_TESTS(test_ucs4_encode_2bytes_utf8);
+    RUN_VECTOR_TESTS(test_cvt_u8_to_u16);
+    RUN_VECTOR_TESTS(test_cvt_u8_to_u32);
+    RUN_VECTOR_TESTS(test_cvt_u16_to_u32);
+    RUN_VECTOR_TESTS(test_ucs2_encode_3bytes_utf8);
+    RUN_VECTOR_TESTS(test_ucs2_encode_2bytes_utf8);
+    RUN_VECTOR_TESTS(test_ucs4_encode_3bytes_utf8);
+    RUN_VECTOR_TESTS(test_ucs4_encode_2bytes_utf8);
     RUN_TESTS(test_long_back_cvt);
     RUN_TESTS(test_long_cvt);
     RUN_TESTS(test_utf8_shuffle_index_bound);

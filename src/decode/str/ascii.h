@@ -126,6 +126,7 @@ done:;
     return ret;
 }
 
+#if !SSRJSON_SCALAR
 force_inline int decode_str_fast_loop4_ascii(const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr) {
     int ret;
     //
@@ -204,11 +205,11 @@ force_inline int decode_str_copy_trailing_ascii_u8(u8 **dst_addr, const src_t **
     anymask_t check_mask;
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
-#if SSRJSON_SIMD_X64 && _CompileVectorBits == 256
+#    if SSRJSON_SIMD_X64 && _CompileVectorBits == 256
     avx2_trailing_cvt_u8_u8(*src_addr, src_end, *dst_addr);
-#else
+#    else
     *(vector_u *)(*dst_addr) = vec;
-#endif
+#    endif
     usize done_count = _decode_str_trailing_decoder_impl(
             src_addr, src_end, check_mask, &ret, false, NULL, vec, escape_info_addr);
     *dst_addr += done_count;
@@ -224,11 +225,11 @@ force_inline int decode_str_copy_trailing_ascii_u16(u16 **dst_addr, const src_t 
     anymask_t check_mask;
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
-#if SSRJSON_SIMD_X64 && _CompileVectorBits == 256
+#    if SSRJSON_SIMD_X64 && _CompileVectorBits == 256
     avx2_trailing_cvt_u8_u16(*src_addr, src_end, *dst_addr);
-#else
+#    else
     make_s_name(cvt_to_dst_u8_u16)(*dst_addr, vec);
-#endif
+#    endif
     usize done_count = _decode_str_trailing_decoder_impl(
             src_addr, src_end, check_mask, &ret, false, NULL, vec, escape_info_addr);
     *dst_addr += done_count;
@@ -244,17 +245,19 @@ force_inline int decode_str_copy_trailing_ascii_u32(u32 **dst_addr, const src_t 
     anymask_t check_mask;
     //
     _decode_str_trailing_read_src_impl(*src_addr, src_end, &vec, &check_mask);
-#if SSRJSON_SIMD_X64 && _CompileVectorBits == 256
+#    if SSRJSON_SIMD_X64 && _CompileVectorBits == 256
     avx2_trailing_cvt_u8_u32(*src_addr, src_end, *dst_addr);
-#else
+#    else
     make_s_name(cvt_to_dst_u8_u32)(*dst_addr, vec);
-#endif
+#    endif
     usize done_count = _decode_str_trailing_decoder_impl(
             src_addr, src_end, check_mask, &ret, false, NULL, vec, escape_info_addr);
     *dst_addr += done_count;
     //
     return ret;
 }
+
+#endif
 
 force_inline int process_escape_ascii_u8(EscapeInfo escape_info, u8 **u8writer_addr, u16 **u16writer_addr,
                                          u32 **u32writer_addr, usize *u8size_addr, bool *is_ascii_addr,
@@ -291,6 +294,7 @@ force_inline int process_escape_ascii_u8(EscapeInfo escape_info, u8 **u8writer_a
     }
 }
 
+#if !SSRJSON_SCALAR
 force_inline int decode_str_copy_loop4_ascii_u16(u16 **dst_addr, const src_t **src_addr, const src_t *src_end,
                                                  EscapeInfo *escapeval_addr) {
     int ret;
@@ -323,6 +327,8 @@ force_inline int decode_str_copy_loop_ascii_u16(u16 **dst_addr, const src_t **sr
     return ret;
 }
 
+#endif
+
 force_inline int process_escape_ascii_u16(EscapeInfo escape_info, u16 **u16writer_addr, u32 **u32writer_addr,
                                           usize *u16size_addr, usize u8size, void *temp_buffer) {
     u32 escape_val;
@@ -344,6 +350,7 @@ force_inline int process_escape_ascii_u16(EscapeInfo escape_info, u16 **u16write
     }
 }
 
+#if !SSRJSON_SCALAR
 force_inline int decode_str_copy_loop4_ascii_u32(u32 **dst_addr, const src_t **src_addr, const src_t *src_end,
                                                  EscapeInfo *escapeval_addr) {
     int ret;
@@ -376,6 +383,8 @@ force_inline int decode_str_copy_loop_ascii_u32(u32 **dst_addr, const src_t **sr
     return ret;
 }
 
+#endif
+
 force_inline void process_escape_ascii_u32(EscapeInfo escape_info, u32 **u32writer_addr) {
     u32 escape_val;
     usize escape_len;
@@ -384,11 +393,12 @@ force_inline void process_escape_ascii_u32(EscapeInfo escape_info, u32 **u32writ
     *(*u32writer_addr)++ = escape_val;
 }
 
+#if !SSRJSON_SCALAR
 internal_simd_noinline PyObject *
 decode_str_with_escape_ascii(const src_t *src_start, const src_t **src_addr, const src_t *src_end, void *temp_buffer,
                              bool is_key, EscapeInfo in_escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
-#define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
-#define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
+#    define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
+#    define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
     //
     const src_t *src = *src_addr;
     //
@@ -442,47 +452,47 @@ decode_str_with_escape_ascii(const src_t *src_start, const src_t **src_addr, con
 
 decode_loop_ucs1:;
     {
-#define LOOP_SWITCHER(_status_code_, _on_escape_)       \
-    {                                                   \
-        switch ((_status_code_)) {                      \
-            case DECODE_LOOPSTATE_CONTINUE: {           \
-                continue;                               \
-            }                                           \
-            case DECODE_LOOPSTATE_END: {                \
-                if (is_ascii) { goto done_ascii; }      \
-                goto done_ucs1;                         \
-            }                                           \
-            case DECODE_LOOPSTATE_ESCAPE: {             \
-                src += escape_info.escape_size;         \
-                int escape_status_code = (_on_escape_); \
-                switch (escape_status_code) {           \
-                    case 0:                             \
-                    case 1: {                           \
-                        break;                          \
-                    }                                   \
-                    case 2: {                           \
-                        goto decode_loop_ucs2;          \
-                    }                                   \
-                    case 4: {                           \
-                        goto decode_loop_ucs4;          \
-                    }                                   \
-                    default: {                          \
-                        ssrjson_unreachable();          \
-                    }                                   \
-                }                                       \
-                continue;                               \
-            }                                           \
-            case DECODE_LOOPSTATE_INVALID: {            \
-                assert(PyErr_Occurred());               \
-                goto failed;                            \
-            }                                           \
-            default: {                                  \
-                ssrjson_unreachable();                  \
-            }                                           \
-        }                                               \
-    }
-#define ON_ESCAPE \
-    process_escape_ascii_u8(escape_info, &u8writer, &u16writer, &u32writer, &u8size, &is_ascii, temp_buffer)
+#    define LOOP_SWITCHER(_status_code_, _on_escape_)       \
+        {                                                   \
+            switch ((_status_code_)) {                      \
+                case DECODE_LOOPSTATE_CONTINUE: {           \
+                    continue;                               \
+                }                                           \
+                case DECODE_LOOPSTATE_END: {                \
+                    if (is_ascii) { goto done_ascii; }      \
+                    goto done_ucs1;                         \
+                }                                           \
+                case DECODE_LOOPSTATE_ESCAPE: {             \
+                    src += escape_info.escape_size;         \
+                    int escape_status_code = (_on_escape_); \
+                    switch (escape_status_code) {           \
+                        case 0:                             \
+                        case 1: {                           \
+                            break;                          \
+                        }                                   \
+                        case 2: {                           \
+                            goto decode_loop_ucs2;          \
+                        }                                   \
+                        case 4: {                           \
+                            goto decode_loop_ucs4;          \
+                        }                                   \
+                        default: {                          \
+                            ssrjson_unreachable();          \
+                        }                                   \
+                    }                                       \
+                    continue;                               \
+                }                                           \
+                case DECODE_LOOPSTATE_INVALID: {            \
+                    assert(PyErr_Occurred());               \
+                    goto failed;                            \
+                }                                           \
+                default: {                                  \
+                    ssrjson_unreachable();                  \
+                }                                           \
+            }                                               \
+        }
+#    define ON_ESCAPE \
+        process_escape_ascii_u8(escape_info, &u8writer, &u16writer, &u32writer, &u8size, &is_ascii, temp_buffer)
         while (CAN_LOOP4()) {
             EscapeInfo escape_info;
             int state_code = decode_str_copy_loop4_ascii_u8(&u8writer, &src, src_end, &escape_info);
@@ -534,46 +544,46 @@ decode_loop_ucs1:;
             PyErr_SetString(JSONDecodeError, "Unexpected end of string");
             goto failed;
         }
-#undef ON_ESCAPE
-#undef LOOP_SWITCHER
+#    undef ON_ESCAPE
+#    undef LOOP_SWITCHER
     }
 decode_loop_ucs2:;
     {
-#define LOOP_SWITCHER(_status_code_, _on_escape_)       \
-    {                                                   \
-        switch ((_status_code_)) {                      \
-            case DECODE_LOOPSTATE_CONTINUE: {           \
-                continue;                               \
-            }                                           \
-            case DECODE_LOOPSTATE_END: {                \
-                goto done_ucs2;                         \
-            }                                           \
-            case DECODE_LOOPSTATE_ESCAPE: {             \
-                src += escape_info.escape_size;         \
-                int escape_status_code = (_on_escape_); \
-                switch (escape_status_code) {           \
-                    case 2: {                           \
-                        break;                          \
-                    }                                   \
-                    case 4: {                           \
-                        goto decode_loop_ucs4;          \
-                    }                                   \
-                    default: {                          \
-                        ssrjson_unreachable();          \
-                    }                                   \
-                }                                       \
-                continue;                               \
-            }                                           \
-            case DECODE_LOOPSTATE_INVALID: {            \
-                assert(PyErr_Occurred());               \
-                goto failed;                            \
-            }                                           \
-            default: {                                  \
-                ssrjson_unreachable();                  \
-            }                                           \
-        }                                               \
-    }
-#define ON_ESCAPE process_escape_ascii_u16(escape_info, &u16writer, &u32writer, &u16size, u8size, temp_buffer)
+#    define LOOP_SWITCHER(_status_code_, _on_escape_)       \
+        {                                                   \
+            switch ((_status_code_)) {                      \
+                case DECODE_LOOPSTATE_CONTINUE: {           \
+                    continue;                               \
+                }                                           \
+                case DECODE_LOOPSTATE_END: {                \
+                    goto done_ucs2;                         \
+                }                                           \
+                case DECODE_LOOPSTATE_ESCAPE: {             \
+                    src += escape_info.escape_size;         \
+                    int escape_status_code = (_on_escape_); \
+                    switch (escape_status_code) {           \
+                        case 2: {                           \
+                            break;                          \
+                        }                                   \
+                        case 4: {                           \
+                            goto decode_loop_ucs4;          \
+                        }                                   \
+                        default: {                          \
+                            ssrjson_unreachable();          \
+                        }                                   \
+                    }                                       \
+                    continue;                               \
+                }                                           \
+                case DECODE_LOOPSTATE_INVALID: {            \
+                    assert(PyErr_Occurred());               \
+                    goto failed;                            \
+                }                                           \
+                default: {                                  \
+                    ssrjson_unreachable();                  \
+                }                                           \
+            }                                               \
+        }
+#    define ON_ESCAPE process_escape_ascii_u16(escape_info, &u16writer, &u32writer, &u16size, u8size, temp_buffer)
         while (CAN_LOOP4()) {
             EscapeInfo escape_info;
             int state_code = decode_str_copy_loop4_ascii_u16(&u16writer, &src, src_end, &escape_info);
@@ -621,34 +631,34 @@ decode_loop_ucs2:;
             PyErr_SetString(JSONDecodeError, "Unexpected end of string");
             goto failed;
         }
-#undef ON_ESCAPE
-#undef LOOP_SWITCHER
+#    undef ON_ESCAPE
+#    undef LOOP_SWITCHER
     }
 decode_loop_ucs4:;
     {
-#define LOOP_SWITCHER(_status_code_)                               \
-    {                                                              \
-        switch ((_status_code_)) {                                 \
-            case DECODE_LOOPSTATE_CONTINUE: {                      \
-                continue;                                          \
-            }                                                      \
-            case DECODE_LOOPSTATE_END: {                           \
-                goto done_ucs4;                                    \
-            }                                                      \
-            case DECODE_LOOPSTATE_ESCAPE: {                        \
-                src += escape_info.escape_size;                    \
-                process_escape_ascii_u32(escape_info, &u32writer); \
-                continue;                                          \
-            }                                                      \
-            case DECODE_LOOPSTATE_INVALID: {                       \
-                assert(PyErr_Occurred());                          \
-                goto failed;                                       \
-            }                                                      \
-            default: {                                             \
-                ssrjson_unreachable();                             \
-            }                                                      \
-        }                                                          \
-    }
+#    define LOOP_SWITCHER(_status_code_)                               \
+        {                                                              \
+            switch ((_status_code_)) {                                 \
+                case DECODE_LOOPSTATE_CONTINUE: {                      \
+                    continue;                                          \
+                }                                                      \
+                case DECODE_LOOPSTATE_END: {                           \
+                    goto done_ucs4;                                    \
+                }                                                      \
+                case DECODE_LOOPSTATE_ESCAPE: {                        \
+                    src += escape_info.escape_size;                    \
+                    process_escape_ascii_u32(escape_info, &u32writer); \
+                    continue;                                          \
+                }                                                      \
+                case DECODE_LOOPSTATE_INVALID: {                       \
+                    assert(PyErr_Occurred());                          \
+                    goto failed;                                       \
+                }                                                      \
+                default: {                                             \
+                    ssrjson_unreachable();                             \
+                }                                                      \
+            }                                                          \
+        }
         while (CAN_LOOP4()) {
             EscapeInfo escape_info;
             int state_code = decode_str_copy_loop4_ascii_u32(&u32writer, &src, src_end, &escape_info);
@@ -684,7 +694,7 @@ decode_loop_ucs4:;
             PyErr_SetString(JSONDecodeError, "Unexpected end of string");
             goto failed;
         }
-#undef LOOP_SWITCHER
+#    undef LOOP_SWITCHER
     }
 done_ascii:;
     {
@@ -716,36 +726,36 @@ failed:;
     assert(PyErr_Occurred());
     *src_addr = src;
     return NULL;
-#undef CAN_LOOP4
-#undef CAN_LOOP
+#    undef CAN_LOOP4
+#    undef CAN_LOOP
 }
 
 force_inline PyObject *decode_str_ascii(const src_t **src_addr, const src_t *const src_end, void *temp_buffer,
                                         bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
-#define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
-#define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
-#define LOOP_SWITCHER(_status_code_)                                                                       \
-    switch (status_code) {                                                                                 \
-        case DECODE_LOOPSTATE_CONTINUE: {                                                                  \
-            continue;                                                                                      \
-        }                                                                                                  \
-        case DECODE_LOOPSTATE_END: {                                                                       \
-            goto done;                                                                                     \
-        }                                                                                                  \
-        case DECODE_LOOPSTATE_ESCAPE: {                                                                    \
-            PyObject *ret = decode_str_with_escape_ascii(original_src, &src, src_end, temp_buffer, is_key, \
-                                                         escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARG); \
-            *src_addr = src;                                                                               \
-            return ret;                                                                                    \
-        }                                                                                                  \
-        case DECODE_LOOPSTATE_INVALID: {                                                                   \
-            assert(PyErr_Occurred());                                                                      \
-            goto failed;                                                                                   \
-        }                                                                                                  \
-        default: {                                                                                         \
-            ssrjson_unreachable();                                                                         \
-        }                                                                                                  \
-    }
+#    define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
+#    define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
+#    define LOOP_SWITCHER(_status_code_)                                                                       \
+        switch (status_code) {                                                                                 \
+            case DECODE_LOOPSTATE_CONTINUE: {                                                                  \
+                continue;                                                                                      \
+            }                                                                                                  \
+            case DECODE_LOOPSTATE_END: {                                                                       \
+                goto done;                                                                                     \
+            }                                                                                                  \
+            case DECODE_LOOPSTATE_ESCAPE: {                                                                    \
+                PyObject *ret = decode_str_with_escape_ascii(original_src, &src, src_end, temp_buffer, is_key, \
+                                                             escape_info DECODER_TLS_KEYCACHE_ADDITIONAL_ARG); \
+                *src_addr = src;                                                                               \
+                return ret;                                                                                    \
+            }                                                                                                  \
+            case DECODE_LOOPSTATE_INVALID: {                                                                   \
+                assert(PyErr_Occurred());                                                                      \
+                goto failed;                                                                                   \
+            }                                                                                                  \
+            default: {                                                                                         \
+                ssrjson_unreachable();                                                                         \
+            }                                                                                                  \
+        }
 
 
     const src_t *src = *src_addr;
@@ -798,15 +808,17 @@ done:;
 failed:;
     *src_addr = src;
     return NULL;
-#undef LOOP_SWITCHER
-#undef CAN_LOOP4
-#undef CAN_LOOP
+#    undef LOOP_SWITCHER
+#    undef CAN_LOOP4
+#    undef CAN_LOOP
 }
 
 internal_simd_noinline PyObject *decode_str_ascii_not_key(const src_t **src_addr, const src_t *const src_end,
                                                           void *temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     return decode_str_ascii(src_addr, src_end, temp_buffer, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
 }
+
+#endif
 
 #include "compile_context/sr_out.inl.h"
 //

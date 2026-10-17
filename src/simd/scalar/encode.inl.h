@@ -21,11 +21,10 @@
  *============================================================================*/
 
 #ifdef SSRJSON_CLANGD_CHECKING
-#    include "simd/scalar/common.h"
+#    include "ssrjson.h"
 #    define COMPILE_READ_UCS_LEVEL 1
 #    define COMPILE_WRITE_UCS_LEVEL 1
 #endif
-#define _CompileVectorBits 128
 #include "compile_context/srw_in.inl.h"
 extern const dst_t ControlEscapeTable[256 * 8];
 extern const Py_ssize_t _ControlJump[256];
@@ -46,16 +45,4 @@ force_inline dst_t *encode_unicode_impl(dst_t *dst, const src_t *src, usize len)
     return dst;
 }
 
-force_inline dst_t *encode_unicode_loop(dst_t *dst, const src_t **src, usize *len) {
-    dst = encode_unicode_impl(dst, *src, *len);
-    *src += *len;
-    *len = 0;
-    return dst;
-}
-
-force_inline dst_t *encode_trailing_copy_with_cvt(dst_t *dst, const src_t *src, usize len) {
-    return encode_unicode_impl(dst, src, len);
-}
-
 #include "compile_context/srw_out.inl.h"
-#undef _CompileVectorBits

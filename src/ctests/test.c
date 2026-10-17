@@ -53,38 +53,39 @@
 #endif
 
 
+#if !SSRJSON_SCALAR
 int SIMD_NAME_MODIFIER(test_cvt_u8_to_u16)(void) {
     GUARDED_SIMD;
-#if (SSRJSON_SIMD_NEON || SSRJSON_SCALAR)
+#    if (SSRJSON_SIMD_NEON)
     u8 input[16];
     u16 dst[8];
-#elif SSRJSON_SIMD_X64
-#    if _CompileVectorBits == 512
+#    elif SSRJSON_SIMD_X64
+#        if _CompileVectorBits == 512
     GUARDED_SIMD;
     u8 input[32];
     u16 dst[32];
-#    elif _CompileVectorBits == 256
+#        elif _CompileVectorBits == 256
     GUARDED_SIMD;
     u8 input[16];
     u16 dst[16];
-#    else
+#        else
     u8 input[16];
     u16 dst[8];
+#        endif
 #    endif
-#endif
     usize loop_count = 16;
     for (usize _ = 0; _ < loop_count; _++) {
         //
         RANDOM_FILL(input);
         GARBAGE_FILL(dst);
 //
-#if _CompileVectorBits == 512
+#    if _CompileVectorBits == 512
         *(vector_u_u16_512 *)dst = cvt_u8_to_u16(*(vector_u_u8_256 *)input);
-#elif _CompileVectorBits == 256
+#    elif _CompileVectorBits == 256
         *(vector_u_u16_256 *)dst = cvt_u8_to_u16(*(vector_u_u8_128 *)input);
-#else
+#    else
         *(vector_u_u16_128 *)dst = cvt_u8_to_u16(*(vector_u_u8_128 *)input);
-#endif
+#    endif
         for (usize i = 0; i < count_of(dst); i++) { CHECK(dst[i] == input[i]); }
     }
     return PASSED;
@@ -92,37 +93,37 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u16)(void) {
 
 int SIMD_NAME_MODIFIER(test_cvt_u8_to_u32)(void) {
     GUARDED_SIMD;
-#if (SSRJSON_SIMD_NEON || SSRJSON_SCALAR)
+#    if (SSRJSON_SIMD_NEON)
     u8 input[16];
     u32 dst[4];
-#elif SSRJSON_SIMD_X64
-#    if _CompileVectorBits == 512
+#    elif SSRJSON_SIMD_X64
+#        if _CompileVectorBits == 512
     GUARDED_SIMD;
     u8 input[16];
     u32 dst[16];
-#    elif _CompileVectorBits == 256
+#        elif _CompileVectorBits == 256
     GUARDED_SIMD;
     u8 input[16];
     u32 dst[8];
-#    else
+#        else
     u8 input[16];
     u32 dst[4];
-#    endif
+#        endif
 
-#endif
+#    endif
     usize loop_count = 16;
     for (usize _ = 0; _ < loop_count; _++) {
         //
         RANDOM_FILL(input);
         GARBAGE_FILL(dst);
         //
-#if _CompileVectorBits == 512
+#    if _CompileVectorBits == 512
         *(vector_u_u32_512 *)dst = cvt_u8_to_u32(*(vector_u_u8_128 *)input);
-#elif _CompileVectorBits == 256
+#    elif _CompileVectorBits == 256
         *(vector_u_u32_256 *)dst = cvt_u8_to_u32(*(vector_u_u8_128 *)input);
-#else
+#    else
         *(vector_u_u32_128 *)dst = cvt_u8_to_u32(*(vector_u_u8_128 *)input);
-#endif
+#    endif
         for (usize i = 0; i < count_of(dst); i++) { CHECK(dst[i] == input[i]); }
     }
     return PASSED;
@@ -130,25 +131,25 @@ int SIMD_NAME_MODIFIER(test_cvt_u8_to_u32)(void) {
 
 int SIMD_NAME_MODIFIER(test_cvt_u16_to_u32)(void) {
     GUARDED_SIMD;
-#if (SSRJSON_SIMD_NEON || SSRJSON_SCALAR)
+#    if (SSRJSON_SIMD_NEON)
     u16 input[8];
     u32 dst[4];
-#elif SSRJSON_SIMD_X64
+#    elif SSRJSON_SIMD_X64
 
-#    if _CompileVectorBits == 512
+#        if _CompileVectorBits == 512
     GUARDED_SIMD;
     u16 input[16];
     u32 dst[16];
-#    elif _CompileVectorBits == 256
+#        elif _CompileVectorBits == 256
     GUARDED_SIMD;
     u16 input[8];
     u32 dst[8];
-#    else
+#        else
     u16 input[8];
     u32 dst[4];
-#    endif
+#        endif
 
-#endif
+#    endif
 
     usize loop_count = 16;
     for (usize _ = 0; _ < loop_count; _++) {
@@ -156,19 +157,19 @@ int SIMD_NAME_MODIFIER(test_cvt_u16_to_u32)(void) {
         RANDOM_FILL(input);
         GARBAGE_FILL(dst);
         //
-#if _CompileVectorBits == 512
+#    if _CompileVectorBits == 512
         *(vector_u_u32_512 *)dst = cvt_u16_to_u32(*(vector_u_u16_256 *)input);
-#elif _CompileVectorBits == 256
+#    elif _CompileVectorBits == 256
         *(vector_u_u32_256 *)dst = cvt_u16_to_u32(*(vector_u_u16_128 *)input);
-#else
+#    else
         *(vector_u_u32_128 *)dst = cvt_u16_to_u32(*(vector_u_u16_128 *)input);
-#endif
+#    endif
         for (usize i = 0; i < count_of(dst); i++) { CHECK(dst[i] == input[i]); }
     }
     return PASSED;
 }
 
-#if __SSSE3__
+#    if __SSSE3__
 force_inline int _test_ucs2_encode_ssse3(void) {
     u16 input[8];
     u8 output[24];
@@ -176,29 +177,25 @@ force_inline int _test_ucs2_encode_ssse3(void) {
     ucs2_encode_3bytes_utf8_ssse3(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
     return check_ucs2_3bytes(input, output, count_of(input));
 }
-#endif
+#    endif
 
 int SIMD_NAME_MODIFIER(test_ucs2_encode_3bytes_utf8)(void) {
     GUARDED_SIMD;
-#if (SSRJSON_SIMD_NEON || SSRJSON_SCALAR)
+#    if (SSRJSON_SIMD_NEON)
     u16 input[8];
     u8 output[24];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
-#    if SSRJSON_SCALAR
-    ucs2_encode_3bytes_utf8_scalar(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
-#    else
     ucs2_encode_3bytes_utf8_neon(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
-#    endif
     return check_ucs2_3bytes(input, output, count_of(input));
-#else
-#    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
+#    else
+#        if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
     GUARDED_SIMD;
     u16 input[32];
     u8 output[96];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
     ucs2_encode_3bytes_utf8_avx512(output, (vector_a_u16_512) * (vector_u_u16_512 *)input);
     return check_ucs2_3bytes(input, output, count_of(input));
-#    elif __AVX2__
+#        elif __AVX2__
     GUARDED_SIMD;
     {
         u16 input[16];
@@ -211,52 +208,48 @@ int SIMD_NAME_MODIFIER(test_ucs2_encode_3bytes_utf8)(void) {
         // also check ssse3 encoder
         return _test_ucs2_encode_ssse3();
     }
-#    elif __SSSE3__
+#        elif __SSSE3__
     return _test_ucs2_encode_ssse3();
-#    else
+#        else
     return INVALID;
+#        endif
 #    endif
-#endif
 }
 
 int SIMD_NAME_MODIFIER(test_ucs2_encode_2bytes_utf8)(void) {
     GUARDED_SIMD;
-#if (SSRJSON_SIMD_NEON || SSRJSON_SCALAR)
+#    if (SSRJSON_SIMD_NEON)
     u16 input[8];
     u8 output[16];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
-#    if SSRJSON_SCALAR
-    ucs2_encode_2bytes_utf8_scalar(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
-#    else
     ucs2_encode_2bytes_utf8_neon(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
-#    endif
     return check_ucs2_2bytes(input, output, count_of(input));
-#else
-#    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
+#    else
+#        if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
     GUARDED_SIMD;
     u16 input[32];
     u8 output[64];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs2_encode_2bytes_utf8_avx512(output, (vector_a_u16_512) * (vector_u_u16_512 *)input);
     return check_ucs2_2bytes(input, output, count_of(input));
-#    elif __AVX2__
+#        elif __AVX2__
     GUARDED_SIMD;
     u16 input[16];
     u8 output[32];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs2_encode_2bytes_utf8_avx2(output, (vector_a_u8_256) * (vector_u_u8_256 *)input);
     return check_ucs2_2bytes(input, output, count_of(input));
-#    else
+#        else
     u16 input[8];
     u8 output[16];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs2_encode_2bytes_utf8_sse2(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
     return check_ucs2_2bytes(input, output, count_of(input));
+#        endif
 #    endif
-#endif
 }
 
-#if __SSSE3__
+#    if __SSSE3__
 force_inline int _test_ucs4_encode_ssse3(void) {
     u32 input[4];
     u8 output[12];
@@ -264,29 +257,25 @@ force_inline int _test_ucs4_encode_ssse3(void) {
     ucs4_encode_3bytes_utf8_ssse3(output, (vector_a_u32_128) * (vector_u_u32_128 *)input);
     return check_ucs4_3bytes(input, output, count_of(input));
 }
-#endif
+#    endif
 
 int SIMD_NAME_MODIFIER(test_ucs4_encode_3bytes_utf8)(void) {
     GUARDED_SIMD;
-#if (SSRJSON_SIMD_NEON || SSRJSON_SCALAR)
+#    if (SSRJSON_SIMD_NEON)
     u32 input[4];
     u8 output[12];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
-#    if SSRJSON_SCALAR
-    ucs4_encode_3bytes_utf8_scalar(output, (vector_a_u32_128) * (vector_u_u32_128 *)input);
-#    else
     ucs4_encode_3bytes_utf8_neon(output, (vector_a_u32_128) * (vector_u_u32_128 *)input);
-#    endif
     return check_ucs4_3bytes(input, output, count_of(input));
-#else
-#    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
+#    else
+#        if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
     GUARDED_SIMD;
     u32 input[16];
     u8 output[48];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_3bytes_u16(); }
     ucs4_encode_3bytes_utf8_avx512(output, (vector_a_u32_512) * (vector_u_u32_512 *)input);
     return check_ucs4_3bytes(input, output, count_of(input));
-#    elif __AVX2__
+#        elif __AVX2__
     GUARDED_SIMD;
     {
         u32 input[8];
@@ -296,50 +285,48 @@ int SIMD_NAME_MODIFIER(test_ucs4_encode_3bytes_utf8)(void) {
         CHECK(check_ucs4_3bytes(input, output, count_of(input)));
     }
     return _test_ucs4_encode_ssse3();
-#    elif __SSSE3__
+#        elif __SSSE3__
     return _test_ucs4_encode_ssse3();
-#    else
+#        else
     return INVALID;
+#        endif
 #    endif
-#endif
 }
 
 int SIMD_NAME_MODIFIER(test_ucs4_encode_2bytes_utf8)(void) {
     GUARDED_SIMD;
-#if (SSRJSON_SIMD_NEON || SSRJSON_SCALAR)
+#    if (SSRJSON_SIMD_NEON)
     u32 input[4];
     u8 output[8];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
-#    if SSRJSON_SCALAR
-    ucs4_encode_2bytes_utf8_scalar(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
-#    else
     ucs4_encode_2bytes_utf8_neon(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
-#    endif
     return check_ucs4_2bytes(input, output, count_of(input));
-#else
-#    if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
+#    else
+#        if __AVX512F__ && __AVX512CD__ && __AVX512BW__ && __AVX512VL__ && __AVX512DQ__
     GUARDED_SIMD;
     u32 input[16];
     u8 output[32];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs4_encode_2bytes_utf8_avx512(output, (vector_a_u16_512) * (vector_u_u16_512 *)input);
     return check_ucs4_2bytes(input, output, count_of(input));
-#    elif __AVX2__
+#        elif __AVX2__
     GUARDED_SIMD;
     u32 input[8];
     u8 output[16];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs4_encode_2bytes_utf8_avx2(output, (vector_a_u8_256) * (vector_u_u8_256 *)input);
     return check_ucs4_2bytes(input, output, count_of(input));
-#    else
+#        else
     u32 input[4];
     u8 output[8];
     for (usize i = 0; i < count_of(input); ++i) { input[i] = get_random_2bytes_u16(); }
     ucs4_encode_2bytes_utf8_sse2(output, (vector_a_u8_128) * (vector_u_u8_128 *)input);
     return check_ucs4_2bytes(input, output, count_of(input));
+#        endif
 #    endif
-#endif
 }
+
+#endif
 
 int SIMD_NAME_MODIFIER(test_long_back_cvt)(void) {
     GUARDED_SIMD;

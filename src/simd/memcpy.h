@@ -46,6 +46,7 @@
 // use libc memcpy if need noinline version.
 #define ssrjson_memcpy_noinline memcpy
 
+#if !SSRJSON_SCALAR
 typedef u8 aligned1 __attribute__((__vector_size__(1), __aligned__(1)));
 typedef u16 aligned2 __attribute__((__vector_size__(2), __aligned__(2)));
 typedef u32 aligned4 __attribute__((__vector_size__(4), __aligned__(4)));
@@ -79,13 +80,13 @@ force_inline void __ssrjson_memcpy(u8 **restrict dest_addr, const u8 **restrict 
 
 force_inline void ssrjson_memcpy_aligned_all_power2(void *restrict dest, const void *restrict src,
                                                     ssrjson_compiletime size_t n_bytes) {
-#define COPY_ALIGNED(_size)                   \
-    {                                         \
-        register aligned##_size __tmp;        \
-        __tmp = *(const aligned##_size *)src; \
-        *(aligned##_size *)dest = __tmp;      \
-        break;                                \
-    }
+#    define COPY_ALIGNED(_size)                   \
+        {                                         \
+            register aligned##_size __tmp;        \
+            __tmp = *(const aligned##_size *)src; \
+            *(aligned##_size *)dest = __tmp;      \
+            break;                                \
+        }
 
     switch (ssrjson_consteval(n_bytes)) {
         case 1:
@@ -110,18 +111,18 @@ force_inline void ssrjson_memcpy_aligned_all_power2(void *restrict dest, const v
             ssrjson_unreachable();
         }
     }
-#undef COPY_ALIGNED
+#    undef COPY_ALIGNED
 }
 
 force_inline void ssrjson_memcpy_aligned_store_power2(void *restrict dest, const void *restrict src,
                                                       ssrjson_compiletime size_t n_bytes) {
-#define COPY_TO_ALIGNED_DST(_size)                          \
-    {                                                       \
-        register aligned##_size __tmp;                      \
-        __tmp = (aligned##_size)(*(unaligned##_size *)src); \
-        *(aligned##_size *)dest = __tmp;                    \
-        break;                                              \
-    }
+#    define COPY_TO_ALIGNED_DST(_size)                          \
+        {                                                       \
+            register aligned##_size __tmp;                      \
+            __tmp = (aligned##_size)(*(unaligned##_size *)src); \
+            *(aligned##_size *)dest = __tmp;                    \
+            break;                                              \
+        }
 
     switch (ssrjson_consteval(n_bytes)) {
         case 1:
@@ -146,7 +147,7 @@ force_inline void ssrjson_memcpy_aligned_store_power2(void *restrict dest, const
             ssrjson_unreachable();
         }
     }
-#undef COPY_TO_ALIGNED_DST
+#    undef COPY_TO_ALIGNED_DST
 }
 
 force_inline void __ssrjson_memcpy_aligned_store_power2(u8 **restrict dest_addr, const u8 **restrict src_addr,
@@ -254,4 +255,5 @@ force_inline void ssrjson_memcpy_simd(void *restrict dest, const void *restrict 
     if (n) __ssrjson_short_memcpy_large_first(&d, &s, n, per_cpy_bytesize);
 }
 
+#endif
 #endif // SSRJSON_MEMCPY_H

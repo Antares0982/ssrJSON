@@ -21,10 +21,9 @@
  *============================================================================*/
 
 #ifdef SSRJSON_CLANGD_CHECKING
-#    include "simd/scalar/common.h"
+#    include "ssrjson.h"
 #    define COMPILE_READ_UCS_LEVEL 1
 #endif
-#define _CompileVectorBits 128
 #include "compile_context/sr_in.inl.h"
 
 force_inline void fast_skip_spaces(const src_t **cur, const src_t *end) {
@@ -32,4 +31,3 @@ force_inline void fast_skip_spaces(const src_t **cur, const src_t *end) {
 }
 
 #include "compile_context/sr_out.inl.h"
-#undef _CompileVectorBits

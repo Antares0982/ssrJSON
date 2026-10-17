@@ -23,53 +23,59 @@
 #ifndef SSRJSON_SCALAR_UTF8_H
 #define SSRJSON_SCALAR_UTF8_H
 #include "encode/encode_utf8_shared.h"
-#define __readbefore_bytes_write_ucs1_trailing_128 0
-#define __excess_bytes_write_ucs1_trailing_128 8
-#define bytes_write_ucs1_trailing_128 encode_bytes_ucs1_scalar
-#define __readbefore_bytes_write_ucs1_raw_utf8_trailing_128 0
-#define __excess_bytes_write_ucs1_raw_utf8_trailing_128 8
-#define bytes_write_ucs1_raw_utf8_trailing_128 encode_bytes_ucs1_raw_utf8_scalar
-#define __readbefore_bytes_write_ucs2_trailing_128 0
-#define __excess_bytes_write_ucs2_trailing_128 8
-#define bytes_write_ucs2_trailing_128 encode_bytes_ucs2_scalar
-#define __readbefore_bytes_write_ucs2_raw_utf8_trailing_128 0
-#define __excess_bytes_write_ucs2_raw_utf8_trailing_128 8
-#define bytes_write_ucs2_raw_utf8_trailing_128 encode_bytes_ucs2_raw_utf8_scalar
 
-force_inline void ucs2_encode_2bytes_utf8_scalar(u8 *dst, vector_a_u16_128 x) {
-    for (usize i = 0; i < 8; ++i) {
-        *dst++ = (u8)((x[i] >> 6) | 0xc0);
-        *dst++ = (u8)((x[i] & 0x3f) | 0x80);
-    }
+#define __excess_bytes_write_ucs1_trailing_scalar 8
+
+force_inline u8 *bytes_write_ucs1_key(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_compact) {
+    return encode_bytes_ucs1_scalar(writer, src, len);
 }
 
-force_inline void ucs2_encode_3bytes_utf8_scalar(u8 *dst, vector_a_u16_128 x) {
-    for (usize i = 0; i < 8; ++i) {
-        *dst++ = (u8)((x[i] >> 12) | 0xe0);
-        *dst++ = (u8)(((x[i] >> 6) & 0x3f) | 0x80);
-        *dst++ = (u8)((x[i] & 0x3f) | 0x80);
-    }
+force_inline u8 *bytes_write_ucs1_str(u8 *writer, const u8 *src, usize len, ssrjson_compiletime bool is_compact) {
+    return encode_bytes_ucs1_scalar(writer, src, len);
 }
 
-#define __readbefore_bytes_write_ucs4_trailing_128 0
-#define __excess_bytes_write_ucs4_trailing_128 8
-#define bytes_write_ucs4_trailing_128 encode_bytes_ucs4_scalar
-#define __readbefore_bytes_write_ucs4_raw_utf8_trailing_128 0
-#define __excess_bytes_write_ucs4_raw_utf8_trailing_128 8
-#define bytes_write_ucs4_raw_utf8_trailing_128 encode_bytes_ucs4_raw_utf8_scalar
+#define __excess_bytes_write_ucs1_raw_utf8_trailing_scalar 8
 
-force_inline void ucs4_encode_2bytes_utf8_scalar(u8 *dst, vector_a_u32_128 x) {
-    for (usize i = 0; i < 4; ++i) {
-        *dst++ = (u8)((x[i] >> 6) | 0xc0);
-        *dst++ = (u8)((x[i] & 0x3f) | 0x80);
-    }
+force_inline u8 *bytes_write_ucs1_raw_utf8_wrapped(u8 *writer, const u8 *src, usize len,
+                                                   ssrjson_compiletime bool is_key,
+                                                   ssrjson_compiletime bool is_compact) {
+    return encode_bytes_ucs1_raw_utf8_scalar(writer, src, len);
 }
 
-force_inline void ucs4_encode_3bytes_utf8_scalar(u8 *dst, vector_a_u32_128 x) {
-    for (usize i = 0; i < 4; ++i) {
-        *dst++ = (u8)((x[i] >> 12) | 0xe0);
-        *dst++ = (u8)(((x[i] >> 6) & 0x3f) | 0x80);
-        *dst++ = (u8)((x[i] & 0x3f) | 0x80);
-    }
+#define __excess_bytes_write_ucs2_trailing_scalar 8
+
+force_inline u8 *bytes_write_ucs2_key(u8 *writer, const u16 *src, usize len, ssrjson_compiletime bool is_compact) {
+    return encode_bytes_ucs2_scalar(writer, src, len);
 }
+
+force_inline u8 *bytes_write_ucs2_str(u8 *writer, const u16 *src, usize len, ssrjson_compiletime bool is_compact) {
+    return encode_bytes_ucs2_scalar(writer, src, len);
+}
+
+#define __excess_bytes_write_ucs2_raw_utf8_trailing_scalar 8
+
+force_inline u8 *bytes_write_ucs2_raw_utf8_wrapped(u8 *writer, const u16 *src, usize len,
+                                                   ssrjson_compiletime bool is_key,
+                                                   ssrjson_compiletime bool is_compact) {
+    return encode_bytes_ucs2_raw_utf8_scalar(writer, src, len);
+}
+
+#define __excess_bytes_write_ucs4_trailing_scalar 8
+
+force_inline u8 *bytes_write_ucs4_key(u8 *writer, const u32 *src, usize len, ssrjson_compiletime bool is_compact) {
+    return encode_bytes_ucs4_scalar(writer, src, len);
+}
+
+force_inline u8 *bytes_write_ucs4_str(u8 *writer, const u32 *src, usize len, ssrjson_compiletime bool is_compact) {
+    return encode_bytes_ucs4_scalar(writer, src, len);
+}
+
+#define __excess_bytes_write_ucs4_raw_utf8_trailing_scalar 8
+
+force_inline u8 *bytes_write_ucs4_raw_utf8_wrapped(u8 *writer, const u32 *src, usize len,
+                                                   ssrjson_compiletime bool is_key,
+                                                   ssrjson_compiletime bool is_compact) {
+    return encode_bytes_ucs4_raw_utf8_scalar(writer, src, len);
+}
+
 #endif
