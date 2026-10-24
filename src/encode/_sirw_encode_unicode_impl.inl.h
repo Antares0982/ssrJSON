@@ -50,14 +50,17 @@ force_inline dst_t *u_buf_apd_key_rsv_idt(dst_t *writer, usize len, EncodeUBufIn
     // in encode_unicode_impl (see comments in AVX2 impl of encode_unicode_impl)
     // when indent level > 0, more 4 unicodes are written, else 2 unicodes
     const usize excess_count_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
-    const usize reserve_count_in_encoding = size_mul(max_json_bytes_per_unicode, len);
     const usize excess_count_in_encoding = ssrjson_max((ENCODE_READ_PADDING / sizeof(src_t)), 8) -
                                            max_json_bytes_per_unicode;
     usize excess_count_after = (COMPILE_INDENT_LEVEL > 0) ? 4 : 2;
     excess_count_after = ssrjson_max(excess_count_after, excess_count_in_encoding);
 
+    if (unlikely(size_mul_add_overflow(len, max_json_bytes_per_unicode, excess_count_before + excess_count_after))) {
+        PyErr_NoMemory();
+        return NULL;
+    }
     writer = u_buf_reserve(
-            writer, u_buf_info, size_add(size_add(excess_count_before, reserve_count_in_encoding), excess_count_after));
+            writer, u_buf_info, len * max_json_bytes_per_unicode + (excess_count_before + excess_count_after));
     if (likely(writer)) writer = write_unicode_indent(writer, cur_nested_depth);
     return writer;
 }
@@ -82,7 +85,6 @@ force_inline dst_t *u_buf_apd_key(const src_t *str_data, usize len, dst_t *write
 
 force_inline dst_t *u_buf_apd_str_rsv_idt(dst_t *writer, usize len, EncodeUBufInfo *u_buf_info, usize cur_nested_depth,
                                           ssrjson_compiletime bool is_in_obj) {
-    const usize reserve_count_in_encoding = size_mul(max_json_bytes_per_unicode, len);
     const usize excess_count_in_encoding = ssrjson_max((ENCODE_READ_PADDING / sizeof(src_t)), 8) -
                                            max_json_bytes_per_unicode;
     usize excess_count_after = 2;
@@ -94,8 +96,13 @@ force_inline dst_t *u_buf_apd_str_rsv_idt(dst_t *writer, usize len, EncodeUBufIn
         // in encode_unicode_impl (see comments in AVX2 impl of encode_unicode_impl)
         // '"' and ',': 2 unicodes
         const usize excess_count_before = 1;
-        return u_buf_reserve(writer, u_buf_info,
-                             size_add(size_add(excess_count_before, reserve_count_in_encoding), excess_count_after));
+        if (unlikely(
+                    size_mul_add_overflow(len, max_json_bytes_per_unicode, excess_count_before + excess_count_after))) {
+            PyErr_NoMemory();
+            return NULL;
+        }
+        return u_buf_reserve(
+                writer, u_buf_info, len * max_json_bytes_per_unicode + (excess_count_before + excess_count_after));
     } else {
         // write_unicode_indent and '"' writes `get_indent_char_count() + 1` unicodes
         // max_json_bytes_per_unicode * len is the written count when every character needs to be escaped
@@ -103,8 +110,13 @@ force_inline dst_t *u_buf_apd_str_rsv_idt(dst_t *writer, usize len, EncodeUBufIn
         // in encode_unicode_impl (see comments in AVX2 impl of encode_unicode_impl)
         // '"' and ',': 2 unicodes
         const usize excess_count_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
-        writer = u_buf_reserve(writer, u_buf_info,
-                               size_add(size_add(excess_count_before, reserve_count_in_encoding), excess_count_after));
+        if (unlikely(
+                    size_mul_add_overflow(len, max_json_bytes_per_unicode, excess_count_before + excess_count_after))) {
+            PyErr_NoMemory();
+            return NULL;
+        }
+        writer = u_buf_reserve(
+                writer, u_buf_info, len * max_json_bytes_per_unicode + (excess_count_before + excess_count_after));
         if (likely(writer)) writer = write_unicode_indent(writer, cur_nested_depth);
         return writer;
     }

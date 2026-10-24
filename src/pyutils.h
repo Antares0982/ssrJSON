@@ -147,10 +147,6 @@ force_inline void make_hash(PyASCIIObject *ascii, const void *unicode_str, size_
 force_noinline void init_pyunicode_noinline(void *head, Py_ssize_t size, int kind);
 
 force_inline void *pymem_malloc_wrapped(usize size) {
-    if (unlikely(size > PY_SSIZE_T_MAX)) {
-        PyErr_NoMemory();
-        return NULL;
-    }
     void *ptr = PyMem_Malloc(size);
     if (unlikely(!ptr)) { PyErr_NoMemory(); }
     return ptr;

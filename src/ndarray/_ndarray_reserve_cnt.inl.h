@@ -34,12 +34,13 @@
 force_inline usize get_1darray_reserve_cnt(usize cur_nested_depth, usize length, NDATypes ndatype) {
     if (!length) return 3;
     // pre indent size (with '\n' added below)
-    usize indent = size_mul(cur_nested_depth, COMPILE_INDENT_LEVEL);
+    usize indent = cur_nested_depth * COMPILE_INDENT_LEVEL;
     // elements with comma and extra indent
-    usize element = size_add(
-            get_elem_write_size(ndatype) + 1 + COMPILE_INDENT_LEVEL, COMPILE_INDENT_LEVEL ? size_add(indent, 1) : 0);
+    usize element = get_elem_write_size(ndatype) + 1 + COMPILE_INDENT_LEVEL + (COMPILE_INDENT_LEVEL ? indent + 1 : 0);
     // brackets and last comma, also remove comma of last element
-    return size_add(size_mul(length, element), COMPILE_INDENT_LEVEL ? size_add(indent, 3) : 2);
+    usize trailing = COMPILE_INDENT_LEVEL ? indent + 3 : 2;
+    if (unlikely(size_mul_add_overflow(length, element, trailing))) return SIZE_MAX;
+    return length * element + trailing;
 }
 
 force_inline usize get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype,
@@ -83,15 +84,18 @@ unwind:
         usize length = stack[top].length;
 #if COMPILE_INDENT_LEVEL > 0
         usize depth = stack[top].depth;
-        usize indent = size_add(size_mul(depth + 1, COMPILE_INDENT_LEVEL), 1);
+        usize indent = (depth + 1) * COMPILE_INDENT_LEVEL + 1;
         // inner arrays: cnt * length
         // indent between inner arrays: indent * (length - 1)
         // first bracket + '\n' + indent: indent + 1
         // last bracket + indent + comma - last inner comma: depth * COMPILE_INDENT_LEVEL + 2
-        cnt = size_add(size_mul(size_add(cnt, indent), length), size_add(size_mul(depth, COMPILE_INDENT_LEVEL), 3));
+        if (unlikely(__builtin_add_overflow(cnt, indent, &cnt))) return SIZE_MAX;
+        usize trailing = depth * COMPILE_INDENT_LEVEL + 3;
 #else
-        cnt = size_add(size_mul(cnt, length), 2); // inner arrays + bracket + bracket + comma - last inner comma
+        usize trailing = 2; // inner arrays + bracket + bracket + comma - last inner comma
 #endif
+        if (unlikely(size_mul_add_overflow(cnt, length, trailing))) return SIZE_MAX;
+        cnt = cnt * length + trailing;
     }
 
     return cnt;

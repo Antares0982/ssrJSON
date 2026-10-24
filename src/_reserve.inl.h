@@ -29,7 +29,11 @@
 
 force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usize size) {
     usize offset = ssrjson_cast(u8 *, writer) - ssrjson_cast(u8 *, u_buf_info->head);
-    usize target_size = size_add(offset, size_mul(size, sizeof(dst_t)));
+    if (unlikely(size_mul_add_overflow(size, sizeof(dst_t), offset))) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+    usize target_size = offset + size * sizeof(dst_t);
     if (unlikely(target_size > PY_SSIZE_T_MAX)) {
         PyErr_NoMemory();
         return NULL;

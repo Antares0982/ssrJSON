@@ -309,7 +309,7 @@ force_inline bool pylong_to_clong(PyObject *obj, u64 *value_out, int *sign_out) 
     return true;
 }
 
-#if PY_MINOR_VERSION >= 11 && PY_MINOR_VERSION <= 15 && SSRJSON_GIL_ENABLED
+#if !SSRJSON_SCALAR && PY_MINOR_VERSION >= 11 && PY_MINOR_VERSION <= 15 && SSRJSON_GIL_ENABLED
 /* CPython 3.11-3.15 GIL layout. */
 struct _dictkeysobject {
     Py_ssize_t dk_refcnt;
@@ -332,7 +332,7 @@ static_assert(sizeof(DictUnicodeEntry) == 2 * sizeof(PyObject *), "dict entry la
 #endif
 
 force_inline int pydict_next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {
-#if PY_MINOR_VERSION >= 11 && PY_MINOR_VERSION <= 15 && SSRJSON_GIL_ENABLED
+#if !SSRJSON_SCALAR && PY_MINOR_VERSION >= 11 && PY_MINOR_VERSION <= 15 && SSRJSON_GIL_ENABLED
     assert(PyDict_Check(op) && *ppos >= 0);
     PyDictObject *dict = (PyDictObject *)op;
     PyDictKeysObject *keys = dict->ma_keys;
@@ -353,7 +353,7 @@ force_inline int pydict_next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey, Py
         return 0;
     }
 #endif
-#if PY_MINOR_VERSION >= 13
+#if SSRJSON_SCALAR || PY_MINOR_VERSION >= 13
     return PyDict_Next(op, ppos, pkey, pvalue);
 #else
     return _PyDict_Next(op, ppos, pkey, pvalue, NULL);
