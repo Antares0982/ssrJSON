@@ -40,26 +40,26 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
     // write UTF-8.
     switch (src_pykind) {
         case 1: {
+            usize size;
             if (unlikely(size_mul_add_overflow(
-                        len, max_utf8_bytes_per_ucs1, __excess_bytes_write_ucs1_raw_utf8_trailing))) {
+                        len, max_utf8_bytes_per_ucs1, __excess_bytes_write_ucs1_raw_utf8_trailing, &size))) {
                 PyErr_NoMemory();
                 return false;
             }
-            new_buffer = pymem_malloc_wrapped(len * max_utf8_bytes_per_ucs1 +
-                                              __excess_bytes_write_ucs1_raw_utf8_trailing);
+            new_buffer = pymem_malloc_wrapped(size);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);
             writer = bytes_write_ucs1_raw_utf8_wrapped(writer, src_voidp, len, is_key, is_compact);
             break;
         }
         case 2: {
+            usize size;
             if (unlikely(size_mul_add_overflow(
-                        len, max_utf8_bytes_per_ucs2, __excess_bytes_write_ucs2_raw_utf8_trailing))) {
+                        len, max_utf8_bytes_per_ucs2, __excess_bytes_write_ucs2_raw_utf8_trailing, &size))) {
                 PyErr_NoMemory();
                 return false;
             }
-            new_buffer = pymem_malloc_wrapped(len * max_utf8_bytes_per_ucs2 +
-                                              __excess_bytes_write_ucs2_raw_utf8_trailing);
+            new_buffer = pymem_malloc_wrapped(size);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);
             writer = bytes_write_ucs2_raw_utf8_wrapped(writer, src_voidp, len, is_key, is_compact);
@@ -67,13 +67,13 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
             break;
         }
         case 4: {
+            usize size;
             if (unlikely(size_mul_add_overflow(
-                        len, max_utf8_bytes_per_ucs4, __excess_bytes_write_ucs4_raw_utf8_trailing))) {
+                        len, max_utf8_bytes_per_ucs4, __excess_bytes_write_ucs4_raw_utf8_trailing, &size))) {
                 PyErr_NoMemory();
                 return false;
             }
-            new_buffer = pymem_malloc_wrapped(len * max_utf8_bytes_per_ucs4 +
-                                              __excess_bytes_write_ucs4_raw_utf8_trailing);
+            new_buffer = pymem_malloc_wrapped(size);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);
             writer = bytes_write_ucs4_raw_utf8_wrapped(writer, src_voidp, len, is_key, is_compact);

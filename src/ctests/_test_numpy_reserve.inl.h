@@ -76,12 +76,17 @@ static usize test_get_ndarray_reserve_cnt_reference(int nd, Py_ssize_t *shape, u
 #define TEST_NDARRAY_RESERVE_MAX_DIM_SIZE 16
 
 int test_ndarray_reserve_cnt(void) {
-    CHECK(size_add(SIZE_MAX, 1) == SIZE_MAX);
-    CHECK(size_mul_add_overflow(SIZE_MAX, 2, 0));
-    CHECK(size_mul_add_overflow(SIZE_MAX / 2, 2, 2));
-    CHECK(!size_mul_add_overflow(SIZE_MAX / 2, 2, 1));
-    CHECK(!size_mul_add_overflow(SIZE_MAX, 0, 1));
-    CHECK(!size_mul_add_overflow(0, SIZE_MAX, SIZE_MAX));
+    usize result;
+    CHECK(size_add(SIZE_MAX, 1, &result));
+    CHECK(!size_add(SIZE_MAX - 1, 1, &result) && result == SIZE_MAX);
+    CHECK(size_mul_add_overflow(SIZE_MAX, 2, 0, &result));
+    CHECK(size_mul_add_overflow(SIZE_MAX / 2, 2, 2, &result));
+    CHECK(!size_mul_add_overflow(SIZE_MAX / 2, 2, 1, &result) && result == SIZE_MAX);
+    CHECK(!size_mul_add_overflow(SIZE_MAX, 0, 1, &result) && result == 1);
+    CHECK(!size_mul_add_overflow(0, SIZE_MAX, SIZE_MAX, &result) && result == SIZE_MAX);
+    result = 3;
+    CHECK(!size_add(result, 2, &result) && result == 5);
+    CHECK(!size_mul_add_overflow(result, 3, 2, &result) && result == 17);
     CHECK(pymem_malloc_wrapped(SIZE_MAX) == NULL);
     CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
     PyErr_Clear();

@@ -152,12 +152,13 @@ force_inline u8 *b_buf_apd_key_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
     assert(excess_bytes_in_encoding >= 4);
     const usize excess_bytes_after = excess_bytes_in_encoding;
     //
-    if (unlikely(size_mul_add_overflow(len, max_json_bytes_per_unicode, excess_bytes_before + excess_bytes_after))) {
+    usize reserve_bytes;
+    if (unlikely(size_mul_add_overflow(
+                len, max_json_bytes_per_unicode, excess_bytes_before + excess_bytes_after, &reserve_bytes))) {
         PyErr_NoMemory();
         return NULL;
     }
-    writer = u_buf_reserve(
-            writer, u_buf_info, len * max_json_bytes_per_unicode + (excess_bytes_before + excess_bytes_after));
+    writer = u_buf_reserve(writer, u_buf_info, reserve_bytes);
     if (likely(writer)) writer = write_unicode_indent(writer, cur_nested_depth);
     return writer;
 }
@@ -199,13 +200,13 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
         // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = 1;
-        if (unlikely(
-                    size_mul_add_overflow(len, max_json_bytes_per_unicode, excess_bytes_before + excess_bytes_after))) {
+        usize reserve_bytes;
+        if (unlikely(size_mul_add_overflow(
+                    len, max_json_bytes_per_unicode, excess_bytes_before + excess_bytes_after, &reserve_bytes))) {
             PyErr_NoMemory();
             return NULL;
         }
-        return u_buf_reserve(
-                writer, u_buf_info, len * max_json_bytes_per_unicode + (excess_bytes_before + excess_bytes_after));
+        return u_buf_reserve(writer, u_buf_info, reserve_bytes);
     } else {
         // write_unicode_indent and '"' writes `get_indent_char_count() + 1` bytes
         // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
@@ -214,13 +215,13 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
         // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
-        if (unlikely(
-                    size_mul_add_overflow(len, max_json_bytes_per_unicode, excess_bytes_before + excess_bytes_after))) {
+        usize reserve_bytes;
+        if (unlikely(size_mul_add_overflow(
+                    len, max_json_bytes_per_unicode, excess_bytes_before + excess_bytes_after, &reserve_bytes))) {
             PyErr_NoMemory();
             return NULL;
         }
-        writer = u_buf_reserve(
-                writer, u_buf_info, len * max_json_bytes_per_unicode + (excess_bytes_before + excess_bytes_after));
+        writer = u_buf_reserve(writer, u_buf_info, reserve_bytes);
         if (likely(writer)) writer = write_unicode_indent(writer, cur_nested_depth);
         return writer;
     }

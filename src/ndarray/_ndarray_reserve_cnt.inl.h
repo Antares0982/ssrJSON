@@ -39,8 +39,9 @@ force_inline usize get_1darray_reserve_cnt(usize cur_nested_depth, usize length,
     usize element = get_elem_write_size(ndatype) + 1 + COMPILE_INDENT_LEVEL + (COMPILE_INDENT_LEVEL ? indent + 1 : 0);
     // brackets and last comma, also remove comma of last element
     usize trailing = COMPILE_INDENT_LEVEL ? indent + 3 : 2;
-    if (unlikely(size_mul_add_overflow(length, element, trailing))) return SIZE_MAX;
-    return length * element + trailing;
+    usize cnt;
+    if (unlikely(size_mul_add_overflow(length, element, trailing, &cnt))) return SIZE_MAX;
+    return cnt;
 }
 
 force_inline usize get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype,
@@ -89,13 +90,12 @@ unwind:
         // indent between inner arrays: indent * (length - 1)
         // first bracket + '\n' + indent: indent + 1
         // last bracket + indent + comma - last inner comma: depth * COMPILE_INDENT_LEVEL + 2
-        if (unlikely(__builtin_add_overflow(cnt, indent, &cnt))) return SIZE_MAX;
+        if (unlikely(size_add(cnt, indent, &cnt))) return SIZE_MAX;
         usize trailing = depth * COMPILE_INDENT_LEVEL + 3;
 #else
         usize trailing = 2; // inner arrays + bracket + bracket + comma - last inner comma
 #endif
-        if (unlikely(size_mul_add_overflow(cnt, length, trailing))) return SIZE_MAX;
-        cnt = cnt * length + trailing;
+        if (unlikely(size_mul_add_overflow(cnt, length, trailing, &cnt))) return SIZE_MAX;
     }
 
     return cnt;
