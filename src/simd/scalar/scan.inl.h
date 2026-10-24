@@ -29,12 +29,29 @@
 
 force_inline int scan_string(const src_t **src_addr, const src_t *end, EscapeInfo *escape, src_t *maximum) {
     const src_t *src = *src_addr;
+    src_t max_char = *maximum;
+#if SSRJSON_IS_X64
+    const usize block_count = 64 / sizeof(src_t);
+    while ((usize)(end - src) >= block_count) {
+        src_t block_max = 0;
+        src_t special = 0;
+        for (usize i = 0; i < block_count; ++i) {
+            src_t ch = src[i];
+            if (ch > block_max) block_max = ch;
+            special |= (ch < _ControlMax) | (ch == _Quote) | (ch == _Slash);
+        }
+        if (special) break;
+        if (block_max > max_char) max_char = block_max;
+        src += block_count;
+    }
+#endif
     while (src < end) {
         src_t ch = *src;
         if (ch < _ControlMax || ch == _Quote || ch == _Slash) break;
-        if (ch > *maximum) *maximum = ch;
+        if (ch > max_char) max_char = ch;
         ++src;
     }
+    *maximum = max_char;
     *src_addr = src;
     if (src == end) {
         PyErr_SetString(JSONDecodeError, "Unexpected end of string");

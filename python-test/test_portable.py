@@ -3,6 +3,7 @@
 import json
 import math
 import struct
+import sys
 
 import pytest
 import ssrjson
@@ -75,7 +76,7 @@ def test_u8_escaping():
 
 def test_scalar_scan_promotions():
     for width in ("a", "\u00e9", "\u4e2d", "\U0001f600"):
-        for length in range(66):
+        for length in range(130):
             prefix = "a" * length
             for escaped in (r"\n", r"\u00e9", r"\u4e2d", r"\ud83d\ude00"):
                 text = '["' + prefix + escaped + width + '","' + width + '"]'
@@ -86,3 +87,21 @@ def test_scalar_scan_promotions():
                 text = '["' + prefix + invalid + '","' + width + '"]'
                 with pytest.raises(ssrjson.JSONDecodeError):
                     ssrjson.loads(text)
+            for char in ("a", width):
+                value = prefix + char
+                expected_size = sys.getsizeof(
+                    ssrjson.loads(json.dumps(value, ensure_ascii=False))
+                )
+                for obj in ([value, width], {value: width}):
+                    text = json.dumps(obj, ensure_ascii=False)
+                    actual = ssrjson.loads(text)
+                    expected = json.loads(text)
+                    assert actual == expected
+                    assert sys.getsizeof(next(iter(actual))) == expected_size
+            for invalid in (chr(code) for code in range(32)):
+                text = '["' + prefix + invalid + '","' + width + '"]'
+                with pytest.raises(ssrjson.JSONDecodeError):
+                    ssrjson.loads(text)
+            for tail in ("", "\\", r"\u", r"\u123", r"\ud800"):
+                with pytest.raises(ssrjson.JSONDecodeError):
+                    ssrjson.loads('"' + width + prefix + tail)
