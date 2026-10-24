@@ -27,7 +27,7 @@
 #    endif
 #endif
 //
-#include "simd/neon/common.h"
+#include "simd/simd_impl.h"
 //
 #define _CompileVectorBits 128
 #include "compile_context/sr_in.inl.h"

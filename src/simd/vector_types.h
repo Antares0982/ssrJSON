@@ -23,9 +23,10 @@
 #ifndef SSRJSON_SIMD_VECTOR_TYPES_H
 #define SSRJSON_SIMD_VECTOR_TYPES_H
 #include "ssrjson.h"
+#if !SSRJSON_SCALAR
 
 /* Common SIMD vector types. */
-#if defined(_MSC_VER) && !defined(__clang__)
+#    if defined(_MSC_VER) && !defined(__clang__)
 typedef u32 vector_a_u8_32;
 
 typedef __declspec(align(1)) struct {
@@ -116,8 +117,8 @@ typedef __declspec(align(4)) struct {
     u32 v[16];
 } vector_u_u32_512;
 
-#elif SSRJSON_IS_AARCH64
-#    include <arm_neon.h>
+#    elif SSRJSON_SIMD_NEON
+#        include <arm_neon.h>
 // smaller than 128
 typedef u8 vector_a_u8_32 __attribute__((__vector_size__(4), __aligned__(4)));
 typedef u8 vector_u_u8_32 __attribute__((__vector_size__(4), __aligned__(1)));
@@ -165,7 +166,7 @@ typedef u16 vector_a_u16_2048 __attribute__((__vector_size__(256), __aligned__(2
 typedef u16 vector_u_u16_2048 __attribute__((__vector_size__(256), __aligned__(2)));
 typedef u32 vector_a_u32_2048 __attribute__((__vector_size__(256), __aligned__(256)));
 typedef u32 vector_u_u32_2048 __attribute__((__vector_size__(256), __aligned__(4)));
-#else
+#    else
 typedef u8 vector_a_u8_32 __attribute__((__vector_size__(4), __aligned__(4)));
 typedef u8 vector_u_u8_32 __attribute__((__vector_size__(4), __aligned__(1)));
 typedef u16 vector_a_u16_32 __attribute__((__vector_size__(4), __aligned__(4)));
@@ -210,6 +211,7 @@ typedef u16 vector_a_u16_2048 __attribute__((__vector_size__(256), __aligned__(2
 typedef u16 vector_u_u16_2048 __attribute__((__vector_size__(256), __aligned__(2)));
 typedef u32 vector_a_u32_2048 __attribute__((__vector_size__(256), __aligned__(256)));
 typedef u32 vector_u_u32_2048 __attribute__((__vector_size__(256), __aligned__(4)));
-#endif
+#    endif
 
+#endif
 #endif // SSRJSON_SIMD_VECTOR_TYPES_H

@@ -59,7 +59,13 @@
 #define pyobj_scalar_value(T, obj) (*ssrjson_cast(T *, ssrjson_cast(PyObject *, (obj)) + 1))
 
 // copy 24 bytes in UCS4 case if only SSE is available
-#define _WriteBoolCopyCnt ((SSRJSON_IS_X64 && _CompileVectorBits <= 128 && COMPILE_WRITE_UCS_LEVEL == 4) ? 6 : 8)
+#if SSRJSON_SCALAR
+#    define ENCODE_READ_PADDING 0
+#    define _WriteBoolCopyCnt 8
+#else
+#    define ENCODE_READ_PADDING (_CompileVectorBits / 8)
+#    define _WriteBoolCopyCnt ((SSRJSON_SIMD_X64 && _CompileVectorBits <= 128 && COMPILE_WRITE_UCS_LEVEL == 4) ? 6 : 8)
+#endif
 
 #define WRITER_AS_U8(_writer_) (*ssrjson_cast(u8 **, &(_writer_)))
 #define WRITER_AS_U16(_writer_) (*ssrjson_cast(u16 **, &(_writer_)))
@@ -303,7 +309,7 @@ force_inline bool pylong_to_clong(PyObject *obj, u64 *value_out, int *sign_out) 
     return true;
 }
 
-#if PY_MINOR_VERSION >= 11 && PY_MINOR_VERSION <= 15 && SSRJSON_GIL_ENABLED
+#if !SSRJSON_SCALAR && PY_MINOR_VERSION >= 11 && PY_MINOR_VERSION <= 15 && SSRJSON_GIL_ENABLED
 /* CPython 3.11-3.15 GIL layout. */
 struct _dictkeysobject {
     Py_ssize_t dk_refcnt;
@@ -321,12 +327,12 @@ typedef struct {
     PyObject *me_value;
 } DictUnicodeEntry;
 
-static_assert(offsetof(PyDictKeysObject, dk_indices) == 32, "dict keys layout");
-static_assert(sizeof(DictUnicodeEntry) == 16, "dict entry layout");
+static_assert(offsetof(PyDictKeysObject, dk_indices) == 3 * sizeof(Py_ssize_t) + 8, "dict keys layout");
+static_assert(sizeof(DictUnicodeEntry) == 2 * sizeof(PyObject *), "dict entry layout");
 #endif
 
 force_inline int pydict_next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {
-#if PY_MINOR_VERSION >= 11 && PY_MINOR_VERSION <= 15 && SSRJSON_GIL_ENABLED
+#if !SSRJSON_SCALAR && PY_MINOR_VERSION >= 11 && PY_MINOR_VERSION <= 15 && SSRJSON_GIL_ENABLED
     assert(PyDict_Check(op) && *ppos >= 0);
     PyDictObject *dict = (PyDictObject *)op;
     PyDictKeysObject *keys = dict->ma_keys;
@@ -347,7 +353,7 @@ force_inline int pydict_next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey, Py
         return 0;
     }
 #endif
-#if PY_MINOR_VERSION >= 13
+#if SSRJSON_SCALAR || PY_MINOR_VERSION >= 13
     return PyDict_Next(op, ppos, pkey, pvalue);
 #else
     return _PyDict_Next(op, ppos, pkey, pvalue, NULL);

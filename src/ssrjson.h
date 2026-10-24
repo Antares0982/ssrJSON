@@ -132,6 +132,14 @@
 #    define ssrjson_nofail
 #endif
 
+#if SSRJSON_SCALAR || (!SSRJSON_IS_AARCH64 && !__SSE4_2__)
+#    define xjb64 xjb64_scalar
+#    define xjb32 xjb32_scalar
+#else
+#    define xjb64 xjb64_simd
+#    define xjb32 xjb32_simd
+#endif
+
 #define ssrjson_dtoa_handle_inf_nan 1
 #define ssrjson_dtoa_allocate_length 64
 #define ssrjson_dtoa_write_length 34
@@ -481,6 +489,13 @@ force_inline void u128_mul_add(u64 a, u64 b, u64 c, u64 *hi, u64 *lo) {
     *hi = h;
     *lo = t;
 #endif
+}
+
+/* Return true on overflow; output otherwise. */
+force_inline bool size_add(usize a, usize b, usize *out) { return __builtin_add_overflow(a, b, out); }
+
+force_inline bool size_mul_add_overflow(usize a, usize b, usize c, usize *out) {
+    return __builtin_mul_overflow(a, b, out) || __builtin_add_overflow(*out, c, out);
 }
 
 /* Used to write u64 literal for C89 which doesn't support "ULL" suffix. */

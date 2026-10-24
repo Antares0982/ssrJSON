@@ -1721,6 +1721,3 @@ __attribute__((visibility("default"))) char* xjb32(float value, char* buffer) {
 }  // extern "C"
 
 // ssrJSON modified block end
-
-// ssrJSON static assertions
-static_assert(XJB_USE_NEON || XJB_NO_MEMMOVE, "ssrJSON requirement");

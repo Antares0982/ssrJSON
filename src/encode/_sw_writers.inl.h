@@ -64,7 +64,7 @@ force_inline ssrjson_nofail dst_t *write_unicode_null(dst_t *writer) {
     *writer2++ = 0;
 #else // COMPILE_WRITE_UCS_LEVEL == 4
     *writer2++ = 0;
-#    if SSRJSON_IS_AARCH64 || _CompileVectorBits >= 256
+#    if SSRJSON_SIMD_NEON || _CompileVectorBits >= 256
     *writer2++ = 0;
     *writer2++ = 0;
 #    endif

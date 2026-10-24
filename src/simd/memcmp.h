@@ -38,17 +38,21 @@ force_inline bool __memcmp_neq_short(u8 **x_addr, u8 **y_addr, usize *size_addr,
 /* Compare memory blocks smaller than (or equal to) 64 bytes.
  * Return non-zero if not equal (be compatible with memcmp().) */
 force_inline int ssrjson_memcmp_neq_le64(u8 *x, u8 *y, usize size) {
+#if SSRJSON_SCALAR
     assert(size <= 64);
-#if _CompileVectorBits == 512
+    return memcmp(x, y, size) != 0;
+#else
+    assert(size <= 64);
+#    if _CompileVectorBits == 512
     if (size == 64) { return memcmp(x, y, 64) ? 1 : 0; }
-#endif
+#    endif
     if (size >= 32) {
         if (memcmp(x, y, 32)) return 1;
         x += 32;
         y += 32;
-#if _CompileVectorBits < 512
+#    if _CompileVectorBits < 512
         if (size == 64) return memcmp(x, y, 32) ? 1 : 0;
-#endif
+#    endif
         size -= 32;
     }
     if (__memcmp_neq_short(&x, &y, &size, 16)) return 1;
@@ -57,6 +61,7 @@ force_inline int ssrjson_memcmp_neq_le64(u8 *x, u8 *y, usize size) {
     if (__memcmp_neq_short(&x, &y, &size, 2)) return 1;
     if (__memcmp_neq_short(&x, &y, &size, 1)) return 1;
     return 0;
+#endif
 }
 
 #endif // SSRJSON_MEMCMP_H

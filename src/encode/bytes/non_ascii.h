@@ -40,16 +40,26 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
     // write UTF-8.
     switch (src_pykind) {
         case 1: {
-            new_buffer = pymem_malloc_wrapped(max_utf8_bytes_per_ucs1 * len +
-                                              __excess_bytes_write_ucs1_raw_utf8_trailing);
+            usize size;
+            if (unlikely(size_mul_add_overflow(
+                        len, max_utf8_bytes_per_ucs1, __excess_bytes_write_ucs1_raw_utf8_trailing, &size))) {
+                PyErr_NoMemory();
+                return false;
+            }
+            new_buffer = pymem_malloc_wrapped(size);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);
             writer = bytes_write_ucs1_raw_utf8_wrapped(writer, src_voidp, len, is_key, is_compact);
             break;
         }
         case 2: {
-            new_buffer = pymem_malloc_wrapped(max_utf8_bytes_per_ucs2 * len +
-                                              __excess_bytes_write_ucs2_raw_utf8_trailing);
+            usize size;
+            if (unlikely(size_mul_add_overflow(
+                        len, max_utf8_bytes_per_ucs2, __excess_bytes_write_ucs2_raw_utf8_trailing, &size))) {
+                PyErr_NoMemory();
+                return false;
+            }
+            new_buffer = pymem_malloc_wrapped(size);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);
             writer = bytes_write_ucs2_raw_utf8_wrapped(writer, src_voidp, len, is_key, is_compact);
@@ -57,8 +67,13 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
             break;
         }
         case 4: {
-            new_buffer = pymem_malloc_wrapped(max_utf8_bytes_per_ucs4 * len +
-                                              __excess_bytes_write_ucs4_raw_utf8_trailing);
+            usize size;
+            if (unlikely(size_mul_add_overflow(
+                        len, max_utf8_bytes_per_ucs4, __excess_bytes_write_ucs4_raw_utf8_trailing, &size))) {
+                PyErr_NoMemory();
+                return false;
+            }
+            new_buffer = pymem_malloc_wrapped(size);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);
             writer = bytes_write_ucs4_raw_utf8_wrapped(writer, src_voidp, len, is_key, is_compact);
@@ -104,7 +119,7 @@ force_inline u8 *b_buf_apd_nonascii_str_write_cache(u8 *writer, const void *src_
     assert(utf8_cache);
 
     // Also see comment in b_buf_apd_ascii_key
-    if (USING_AVX512 || utf8_length >= _CompileVectorBits / 8) {
+    if (USING_AVX512 || utf8_length >= ENCODE_READ_PADDING) {
         // is_compact is not needed here.
         *writer++ = '"';
         writer = bytes_write_ascii_noinline(writer, utf8_cache, utf8_length);
@@ -145,7 +160,7 @@ force_inline u8 *b_buf_apd_nonascii_str_no_write_cache(u8 *writer, const void *s
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
     // Also see comment in b_buf_apd_ascii_key
-    if (utf8_cache && (USING_AVX512 || utf8_length >= _CompileVectorBits / 8)) {
+    if (utf8_cache && (USING_AVX512 || utf8_length >= ENCODE_READ_PADDING)) {
         // is_compact is not needed here.
         *writer++ = '"';
         writer = bytes_write_ascii_noinline(writer, utf8_cache, utf8_length);

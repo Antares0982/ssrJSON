@@ -60,9 +60,9 @@ python -m ssrjson_benchmark
 
 ### SIMD 加速
 
-ssrJSON 面向现代硬件设计，在编码与解码过程中大量使用 SIMD 指令集来加速内存复制、整数类型转换、JSON 编码和 UTF-8 编码等操作。目前，ssrJSON 支持 x86-64-v2 及更高版本（至少需要 SSE4.2）以及 aarch64 设备；不支持 32 位，也不支持 SIMD 能力有限的旧 x86-64 硬件。
+ssrJSON 面向现代硬件设计，在编码与解码过程中大量使用 SIMD 指令集来加速内存复制、整数类型转换、JSON 编码和 UTF-8 编码等操作。目前支持 x86-64、AArch64、Windows x86 32 位、Linux i686，以及小端 Linux ARMv7 hard-float。32 位平台使用 scalar 后端；x86-64 在缺少 SSE4.2 时自动回退到 scalar。ARMv7 不要求 NEON。
 
-在 x86-64 平台上，ssrJSON 分别针对 SSE4.2、AVX2 和 AVX512 提供了三个独立的 SIMD 实现，运行时会根据设备能力自动选择最合适的一个；aarch64 架构则使用 NEON 指令集。借助 Clang 强大的向量扩展和编译器优化，ssrJSON 在编码时几乎能榨干 CPU 的性能。
+在 x86-64 平台上，ssrJSON 提供 scalar 后端，以及分别针对 SSE4.2、AVX2 和 AVX512 的三个 SIMD 实现，运行时会根据设备能力自动选择最合适的一个；aarch64 架构则使用 NEON 指令集。借助 Clang 强大的向量扩展和编译器优化，ssrJSON 在编码时几乎能榨干 CPU 的性能。
 
 ### `str` 对象的 UTF-8 缓存
 
@@ -125,7 +125,7 @@ PyPI 上提供了预构建的 wheel，你可以使用 pip 安装。
 pip install ssrjson
 ```
 
-注意：在 x86-64 上，ssrJSON 至少需要 SSE4.2（[x86-64-v2](https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels)）或 aarch64 架构，不支持 32 位平台，也无法在 CPython 以外的 Python 实现上运行。目前支持的 CPython 版本为 3.10、3.11、3.12、3.13、3.14、3.15。
+注意：x86-64 wheel 内置 scalar 自动回退。Linux 32 位 wheel 的最低 glibc 版本为 i686 的 2.34 和 ARMv7 hard-float 的 2.35。Windows 系统支持范围遵循所用 CPython 版本。ssrJSON 无法在 CPython 以外的 Python 实现上运行。目前支持的 CPython 版本为 3.10、3.11、3.12、3.13、3.14、3.15。
 
 ### 从源码构建
 
@@ -418,3 +418,8 @@ ssrJSON 实验性地支持 free-threading（Python ≥ 3.14），PyPI 上有相�
 - [xxHash](https://github.com/Cyan4973/xxHash)：ssrJSON 利用 xxHash 高效计算用于键缓存的哈希值。
 - [klib](https://github.com/attractivechaos/klib)：ssrJSON 使用 khash 在 free-threading 构建中实现循环引用检测。
 - [simdutf](https://github.com/simdutf/simdutf)：用于 `bytes` 输入的向量化 UTF-8 解码器，借鉴了 simdutf 的 UTF-8 到 UTF-16 转码模式及其查找表，并结合了 Lemire 的 `utf8_lookup4` 块校验算法。
+
+只构建 scalar 后端时，向 CMake 传入
+`-DBUILD_SHIPPING_SIMD=OFF -DBUILD_SCALAR=ON`。
+启用该后端时，`get_current_features()["simd"]` 返回 `"SCALAR"`。
+各后端的公开 API 和 UTF-8 cache 控制行为一致。

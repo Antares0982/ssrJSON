@@ -25,25 +25,60 @@
 
 #include "simd/simd_impl.h"
 
-#include "compile_feature_check.h"
-#include "long_cvt/part_back_cvt.h"
-#include "long_cvt/part_cvt.h"
-#undef _CompileVectorBits
+#if SSRJSON_SCALAR
+#    define COMPILE_READ_UCS_LEVEL 1
+#    define COMPILE_WRITE_UCS_LEVEL 2
+#    include "scalar/cvt.inl.h"
+#    undef COMPILE_WRITE_UCS_LEVEL
+#    undef COMPILE_READ_UCS_LEVEL
+#    define COMPILE_READ_UCS_LEVEL 1
+#    define COMPILE_WRITE_UCS_LEVEL 4
+#    include "scalar/cvt.inl.h"
+#    undef COMPILE_WRITE_UCS_LEVEL
+#    undef COMPILE_READ_UCS_LEVEL
+#    define COMPILE_READ_UCS_LEVEL 2
+#    define COMPILE_WRITE_UCS_LEVEL 1
+#    include "scalar/cvt.inl.h"
+#    undef COMPILE_WRITE_UCS_LEVEL
+#    undef COMPILE_READ_UCS_LEVEL
+#    define COMPILE_READ_UCS_LEVEL 2
+#    define COMPILE_WRITE_UCS_LEVEL 4
+#    include "scalar/cvt.inl.h"
+#    undef COMPILE_WRITE_UCS_LEVEL
+#    undef COMPILE_READ_UCS_LEVEL
+#    define COMPILE_READ_UCS_LEVEL 4
+#    define COMPILE_WRITE_UCS_LEVEL 1
+#    include "scalar/cvt.inl.h"
+#    undef COMPILE_WRITE_UCS_LEVEL
+#    undef COMPILE_READ_UCS_LEVEL
+#    define COMPILE_READ_UCS_LEVEL 4
+#    define COMPILE_WRITE_UCS_LEVEL 2
+#    include "scalar/cvt.inl.h"
+#    undef COMPILE_WRITE_UCS_LEVEL
+#    undef COMPILE_READ_UCS_LEVEL
 
-#define _CompileVectorBits 128
-#include "long_cvt/_s_long_cvt_wrap.inl.h"
-#undef _CompileVectorBits
+#else
+#    include "compile_feature_check.h"
+#    include "long_cvt/part_back_cvt.h"
+#    include "long_cvt/part_cvt.h"
+#    undef _CompileVectorBits
 
-#ifdef SSRJSON_SIMD_AVX2_CVT_H
-#    define _CompileVectorBits 256
+#    define _CompileVectorBits 128
 #    include "long_cvt/_s_long_cvt_wrap.inl.h"
 #    undef _CompileVectorBits
-#endif
 
-#ifdef SSRJSON_SIMD_AVX512VLDQBW_CVT_H
-#    define _CompileVectorBits 512
-#    include "long_cvt/_s_long_cvt_wrap.inl.h"
-#    undef _CompileVectorBits
+#    ifdef SSRJSON_SIMD_AVX2_CVT_H
+#        define _CompileVectorBits 256
+#        include "long_cvt/_s_long_cvt_wrap.inl.h"
+#        undef _CompileVectorBits
+#    endif
+
+#    ifdef SSRJSON_SIMD_AVX512VLDQBW_CVT_H
+#        define _CompileVectorBits 512
+#        include "long_cvt/_s_long_cvt_wrap.inl.h"
+#        undef _CompileVectorBits
+#    endif
+
 #endif
 
 #endif // SSRJSON_SIMD_LONG_CVT_H

@@ -32,20 +32,16 @@
 // Requires: iw context active, ndarray_common.h included.
 
 force_inline usize get_1darray_reserve_cnt(usize cur_nested_depth, usize length, NDATypes ndatype) {
-#if COMPILE_INDENT_LEVEL > 0
-    if (unlikely(!length)) { return 3; }
-    // pre indent size (with '\n')
-    usize cnt = (cur_nested_depth * COMPILE_INDENT_LEVEL + 1) * (length + 1);
-    // elements
-    cnt += length * (get_elem_write_size(ndatype) + 1 + COMPILE_INDENT_LEVEL); // comma and extra indent
+    if (!length) return 3;
+    // pre indent size (with '\n' added below)
+    usize indent = cur_nested_depth * COMPILE_INDENT_LEVEL;
+    // elements with comma and extra indent
+    usize element = get_elem_write_size(ndatype) + 1 + COMPILE_INDENT_LEVEL + (COMPILE_INDENT_LEVEL ? indent + 1 : 0);
     // brackets and last comma, also remove comma of last element
-    cnt += 3 - 1;
+    usize trailing = COMPILE_INDENT_LEVEL ? indent + 3 : 2;
+    usize cnt;
+    if (unlikely(size_mul_add_overflow(length, element, trailing, &cnt))) return SIZE_MAX;
     return cnt;
-#else
-    // calculate branchlessly
-    return length * (get_elem_write_size(ndatype) + 1) + 3 - 1 +
-           !length; // elements with comma, plus brackets and last comma, also remove comma of last element
-#endif
 }
 
 force_inline usize get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype,
@@ -89,13 +85,17 @@ unwind:
         usize length = stack[top].length;
 #if COMPILE_INDENT_LEVEL > 0
         usize depth = stack[top].depth;
-        cnt = cnt * length                                              // inner arrays
-              + ((depth + 1) * COMPILE_INDENT_LEVEL + 1) * (length - 1) // indent between inner arrays
-              + ((depth + 1) * COMPILE_INDENT_LEVEL + 1) + 1            // first bracket + '\n' + indent
-              + (depth * COMPILE_INDENT_LEVEL + 1) + 2 - 1; // last bracket + indent + comma - last inner comma
+        usize indent = (depth + 1) * COMPILE_INDENT_LEVEL + 1;
+        // inner arrays: cnt * length
+        // indent between inner arrays: indent * (length - 1)
+        // first bracket + '\n' + indent: indent + 1
+        // last bracket + indent + comma - last inner comma: depth * COMPILE_INDENT_LEVEL + 2
+        if (unlikely(size_add(cnt, indent, &cnt))) return SIZE_MAX;
+        usize trailing = depth * COMPILE_INDENT_LEVEL + 3;
 #else
-        cnt = cnt * length + 1 + 2 - 1; // inner arrays + bracket + bracket + comma - last inner comma
+        usize trailing = 2; // inner arrays + bracket + bracket + comma - last inner comma
 #endif
+        if (unlikely(size_mul_add_overflow(cnt, length, trailing, &cnt))) return SIZE_MAX;
     }
 
     return cnt;
