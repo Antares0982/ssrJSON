@@ -28,6 +28,10 @@
 #include "compile_context/w_in.inl.h"
 
 force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usize size) {
+    Py_ssize_t avail = ssrjson_cast(u8 *, u_buf_info->end) - ssrjson_cast(u8 *, writer);
+    if (likely(size <= PY_SSIZE_T_MAX / sizeof(dst_t) && ssrjson_cast(Py_ssize_t, size * sizeof(dst_t)) <= avail)) {
+        return writer;
+    }
     usize offset = ssrjson_cast(u8 *, writer) - ssrjson_cast(u8 *, u_buf_info->head);
     usize target_size;
     if (unlikely(size_mul_add_overflow(size, sizeof(dst_t), offset, &target_size))) {

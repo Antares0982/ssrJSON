@@ -495,7 +495,8 @@ force_inline void u128_mul_add(u64 a, u64 b, u64 c, u64 *hi, u64 *lo) {
 force_inline bool size_add(usize a, usize b, usize *out) { return __builtin_add_overflow(a, b, out); }
 
 force_inline bool size_mul_add_overflow(usize a, usize b, usize c, usize *out) {
-    return __builtin_mul_overflow(a, b, out) || __builtin_add_overflow(*out, c, out);
+    if (b && a > SIZE_MAX / b) return true;
+    return __builtin_add_overflow(a * b, c, out);
 }
 
 /* Used to write u64 literal for C89 which doesn't support "ULL" suffix. */
