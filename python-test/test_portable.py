@@ -35,6 +35,7 @@ def test_float_boundaries():
         value = struct.unpack("d", struct.pack("Q", bits))[0]
         for number in (value, -value):
             encoded = ssrjson.dumps(number)
+            assert encoded == json.dumps(number)
             assert math.isfinite(float(encoded))
             assert float(encoded) == number
             assert ssrjson.loads(encoded) == number

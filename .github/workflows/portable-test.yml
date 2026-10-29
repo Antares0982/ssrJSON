@@ -71,7 +71,7 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/io" -e SSRJSON_EMULATED="$EMULATED" -e PIP_CACHE_DIR=/io/.portable-pip-cache quay.io/pypa/${{ matrix.image }} bash /io/ci/portable_linux.sh '${{ matrix.pyver }}' $RELEASE
       - uses: actions/cache/save@v5
-        if: always() && steps.pip-cache.outcome == 'success'
+        if: (success() || failure()) && steps.pip-cache.outcome == 'success'
         with:
           path: .portable-pip-cache
           key: ${{ steps.pip-cache.outputs.cache-primary-key }}
