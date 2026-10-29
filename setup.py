@@ -102,13 +102,8 @@ else:
 
             if os.name == "nt":
                 cmake_cmd = (
-                    [
-                        "cmake",
-                        "-T",
-                        "ClangCL",
-                        "-A",
-                        "Win32" if struct.calcsize("P") == 4 else "x64",
-                    ]
+                    ["cmake", "-T", "ClangCL"]
+                    + (["-A", "Win32"] if struct.calcsize("P") == 4 else [])
                     + common_flags
                     + [".", "-B"]
                 )
