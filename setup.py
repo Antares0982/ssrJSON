@@ -1,6 +1,5 @@
 import os
 import sys
-import struct
 
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
@@ -35,6 +34,16 @@ def find_windows_python_cmake_env():
         lib_dir, f"python3{minor}{'t' if not IS_GIL_ENABLED else ''}.lib"
     )
     return include_dir, library_file
+
+
+def get_windows_cmake_platform():
+    from sysconfig import get_platform
+
+    platforms = {"win32": "Win32", "win-amd64": "x64", "win-arm64": "ARM64"}
+    platform = get_platform()
+    if platform not in platforms:
+        raise RuntimeError(f"Unsupported Windows platform: {platform}")
+    return platforms[platform]
 
 
 VERSION_STRING = get_version_from_pyproject_toml()
@@ -102,13 +111,7 @@ else:
 
             if os.name == "nt":
                 cmake_cmd = (
-                    [
-                        "cmake",
-                        "-T",
-                        "ClangCL",
-                        "-A",
-                        "Win32" if struct.calcsize("P") == 4 else "x64",
-                    ]
+                    ["cmake", "-T", "ClangCL", "-A", get_windows_cmake_platform()]
                     + common_flags
                     + [".", "-B"]
                 )

@@ -419,8 +419,3 @@ We would like to express our gratitude to the outstanding libraries and their au
 - [xxHash](https://github.com/Cyan4973/xxHash): ssrJSON leverages xxHash to efficiently compute hash values for key caching.
 - [klib](https://github.com/attractivechaos/klib): ssrJSON uses khash to implement circular detection in free-threading build.
 - [simdutf](https://github.com/simdutf/simdutf): the vectorized UTF-8 decoder used for `bytes` input adapts simdutf's UTF-8 to UTF-16 transcoding shapes and its lookup tables, together with Lemire's `utf8_lookup4` block validation algorithm.
-
-To build only the scalar backend, configure CMake with
-`-DBUILD_SHIPPING_SIMD=OFF -DBUILD_SCALAR=ON`.
-`get_current_features()["simd"]` reports `"SCALAR"` when that backend is active.
-The public API and UTF-8 cache controls are identical across backends.

@@ -41,7 +41,7 @@ if(BUILD_SHIPPING_SIMD)
      OR BUILD_SCALAR)
     message(
       FATAL_ERROR
-        "BUILD_SHIPPING_SIMD cannot be enabled with BUILD_AVX512, BUILD_AVX2, BUILD_SSE4 or BUILD_NATIVE"
+        "BUILD_SHIPPING_SIMD cannot be enabled with BUILD_AVX512, BUILD_AVX2, BUILD_SSE4, BUILD_NATIVE or BUILD_SCALAR"
     )
   endif()
 
@@ -53,7 +53,7 @@ else()
      AND (BUILD_NATIVE OR BUILD_SCALAR))
     message(
       FATAL_ERROR
-        "BUILD_AVX512, BUILD_AVX2, BUILD_SSE4 cannot be enabled with BUILD_NATIVE"
+        "BUILD_AVX512, BUILD_AVX2, BUILD_SSE4 cannot be enabled with BUILD_NATIVE or BUILD_SCALAR"
     )
   endif()
 
@@ -306,6 +306,9 @@ endif()
 
 if(BUILD_FUZZER)
   add_fuzzer_coverage_option(xjb)
+  if(TARGET xjb_simd)
+    add_fuzzer_coverage_option(xjb_simd)
+  endif()
 endif()
 
 # library ssrjson

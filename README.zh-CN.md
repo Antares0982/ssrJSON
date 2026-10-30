@@ -418,8 +418,3 @@ ssrJSON 实验性地支持 free-threading（Python ≥ 3.14），PyPI 上有相�
 - [xxHash](https://github.com/Cyan4973/xxHash)：ssrJSON 利用 xxHash 高效计算用于键缓存的哈希值。
 - [klib](https://github.com/attractivechaos/klib)：ssrJSON 使用 khash 在 free-threading 构建中实现循环引用检测。
 - [simdutf](https://github.com/simdutf/simdutf)：用于 `bytes` 输入的向量化 UTF-8 解码器，借鉴了 simdutf 的 UTF-8 到 UTF-16 转码模式及其查找表，并结合了 Lemire 的 `utf8_lookup4` 块校验算法。
-
-只构建 scalar 后端时，向 CMake 传入
-`-DBUILD_SHIPPING_SIMD=OFF -DBUILD_SCALAR=ON`。
-启用该后端时，`get_current_features()["simd"]` 返回 `"SCALAR"`。
-各后端的公开 API 和 UTF-8 cache 控制行为一致。
