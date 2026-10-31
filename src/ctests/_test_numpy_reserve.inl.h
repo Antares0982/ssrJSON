@@ -91,14 +91,22 @@ int test_ndarray_reserve_cnt(void) {
     CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
     PyErr_Clear();
     Py_ssize_t huge[] = {PY_SSIZE_T_MAX, PY_SSIZE_T_MAX};
-    CHECK(get_ndarray_reserve_cnt_internal(2, huge, 1, NDA_u64, false) == SIZE_MAX);
-    CHECK(get_1darray_reserve_cnt(1, PY_SSIZE_T_MAX, NDA_u64) == SIZE_MAX);
+    CHECK(!get_ndarray_reserve_cnt_internal(2, huge, 1, NDA_u64, false, &result));
+    CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+    PyErr_Clear();
+    huge[1] = 1;
+    CHECK(!get_ndarray_reserve_cnt_internal(2, huge, 1, NDA_u64, false, &result));
+    CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+    PyErr_Clear();
+    CHECK(!get_1darray_reserve_cnt(1, PY_SSIZE_T_MAX, NDA_u64, &result));
+    CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+    PyErr_Clear();
     Py_ssize_t deep_shape[MAX_NDARRAY_DIMENSION];
     for (int i = 0; i < MAX_NDARRAY_DIMENSION; i++) deep_shape[i] = 1;
     CHECK(get_ndarray_reserve_cnt_internal(
-                  MAX_NDARRAY_DIMENSION, deep_shape, SSRJSON_ENCODE_MAX_RECURSION + 1, NDA_u64, false) ==
-          test_get_ndarray_reserve_cnt_reference(
-                  MAX_NDARRAY_DIMENSION, deep_shape, SSRJSON_ENCODE_MAX_RECURSION + 1, NDA_u64, false));
+            MAX_NDARRAY_DIMENSION, deep_shape, SSRJSON_ENCODE_MAX_RECURSION + 1, NDA_u64, false, &result));
+    CHECK(result == test_get_ndarray_reserve_cnt_reference(
+                            MAX_NDARRAY_DIMENSION, deep_shape, SSRJSON_ENCODE_MAX_RECURSION + 1, NDA_u64, false));
     NDATypes all_types[] = {
             NDA_f64, NDA_f32, NDA_f16, NDA_i64, NDA_i32, NDA_i16, NDA_i8, NDA_u64, NDA_u32, NDA_u16, NDA_u8, NDA_bool};
     int num_types = sizeof(all_types) / sizeof(all_types[0]);
@@ -114,7 +122,8 @@ int test_ndarray_reserve_cnt(void) {
         bool is_in_obj = rand() & 1;
 
         usize expected = test_get_ndarray_reserve_cnt_reference(nd, shape, depth, ndatype, is_in_obj);
-        usize actual = get_ndarray_reserve_cnt_internal(nd, shape, depth, ndatype, is_in_obj);
+        usize actual;
+        CHECK(get_ndarray_reserve_cnt_internal(nd, shape, depth, ndatype, is_in_obj, &actual));
 
         if (expected != actual) {
             printf("\n  FAIL: indent=%d nd=%d depth=%zu ndatype=%d is_in_obj=%d shape=[", COMPILE_INDENT_LEVEL, nd,

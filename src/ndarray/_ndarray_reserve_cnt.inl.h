@@ -31,22 +31,27 @@
 
 // Requires: iw context active, ndarray_common.h included.
 
-force_inline usize get_1darray_reserve_cnt(usize cur_nested_depth, usize length, NDATypes ndatype) {
-    if (!length) return 3;
+force_inline bool get_1darray_reserve_cnt(usize cur_nested_depth, usize length, NDATypes ndatype, usize *out) {
+    if (!length) {
+        *out = 3;
+        return true;
+    }
     // pre indent size (with '\n' added below)
     usize indent = cur_nested_depth * COMPILE_INDENT_LEVEL;
     // elements with comma and extra indent
     usize element = get_elem_write_size(ndatype) + 1 + COMPILE_INDENT_LEVEL + (COMPILE_INDENT_LEVEL ? indent + 1 : 0);
     // brackets and last comma, also remove comma of last element
     usize trailing = COMPILE_INDENT_LEVEL ? indent + 3 : 2;
-    usize cnt;
-    if (unlikely(size_mul_add_overflow(length, element, trailing, &cnt))) return SIZE_MAX;
-    return cnt;
+    if (unlikely(size_mul_add_overflow(length, element, trailing, out))) {
+        PyErr_NoMemory();
+        return false;
+    }
+    return true;
 }
 
-force_inline usize get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype,
-                                                    bool is_in_obj) {
-    if (nd == 1) return get_1darray_reserve_cnt(cur_nested_depth, shape[0], ndatype);
+force_inline bool get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype,
+                                                   bool is_in_obj, usize *out) {
+    if (nd == 1) return get_1darray_reserve_cnt(cur_nested_depth, shape[0], ndatype, out);
 
     struct {
         usize length;
@@ -76,7 +81,7 @@ force_inline usize get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, u
     }
 
     // base case: 1-d array
-    cnt = get_1darray_reserve_cnt(cur_nested_depth, shape[0], ndatype);
+    if (unlikely(!get_1darray_reserve_cnt(cur_nested_depth, shape[0], ndatype, &cnt))) return false;
 unwind:
 
     // unwind: accumulate each outer dimension back
@@ -90,13 +95,18 @@ unwind:
         // indent between inner arrays: indent * (length - 1)
         // first bracket + '\n' + indent: indent + 1
         // last bracket + indent + comma - last inner comma: depth * COMPILE_INDENT_LEVEL + 2
-        if (unlikely(size_add(cnt, indent, &cnt))) return SIZE_MAX;
+        if (unlikely(size_add(cnt, indent, &cnt))) goto overflow;
         usize trailing = depth * COMPILE_INDENT_LEVEL + 3;
 #else
         usize trailing = 2; // inner arrays + bracket + bracket + comma - last inner comma
 #endif
-        if (unlikely(size_mul_add_overflow(cnt, length, trailing, &cnt))) return SIZE_MAX;
+        if (unlikely(size_mul_add_overflow(cnt, length, trailing, &cnt))) goto overflow;
     }
 
-    return cnt;
+    *out = cnt;
+    return true;
+
+overflow:
+    PyErr_NoMemory();
+    return false;
 }
