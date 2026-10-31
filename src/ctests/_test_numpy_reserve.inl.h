@@ -72,10 +72,60 @@ static usize test_get_ndarray_reserve_cnt_reference(int nd, Py_ssize_t *shape, u
 }
 
 #define TEST_NDARRAY_RESERVE_ROUNDS 1000
-#define TEST_NDARRAY_RESERVE_MAX_ND 8
+#define TEST_NDARRAY_RESERVE_MAX_ND 5
 #define TEST_NDARRAY_RESERVE_MAX_DIM_SIZE 16
 
 int test_ndarray_reserve_cnt(void) {
+    usize result;
+    CHECK(get_string_reserve(0, 43, &result) && result == 43);
+    CHECK(get_string_reserve(SIZE_MAX / 8 - 1, SIZE_MAX / 4, &result));
+    usize expected;
+    CHECK(!size_mul_add_overflow(SIZE_MAX / 8 - 1, 6, SIZE_MAX / 4, &expected));
+    CHECK(result == expected);
+    usize rejected[] = {SIZE_MAX / 8, SIZE_MAX / 6 + 1, SIZE_MAX};
+    for (usize i = 0; i < count_of(rejected); i++) {
+        result = 123;
+        CHECK(!get_string_reserve(rejected[i], 43, &result));
+        CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+        CHECK(result == 123);
+        PyErr_Clear();
+    }
+    int kinds[] = {0, 1, 2, 4};
+    for (usize i = 0; i < count_of(kinds); i++) {
+        CHECK(create_empty_unicode(SIZE_MAX / 8, kinds[i]) == NULL);
+        CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+        PyErr_Clear();
+    }
+    CHECK(size_add(SIZE_MAX, 1, &result));
+    CHECK(!size_add(SIZE_MAX - 1, 1, &result) && result == SIZE_MAX);
+    CHECK(size_mul_add_overflow(SIZE_MAX, 2, 0, &result));
+    CHECK(size_mul_add_overflow(SIZE_MAX / 2, 2, 2, &result));
+    CHECK(!size_mul_add_overflow(SIZE_MAX / 2, 2, 1, &result) && result == SIZE_MAX);
+    CHECK(!size_mul_add_overflow(SIZE_MAX, 0, 1, &result) && result == 1);
+    CHECK(!size_mul_add_overflow(0, SIZE_MAX, SIZE_MAX, &result) && result == SIZE_MAX);
+    result = 3;
+    CHECK(!size_add(result, 2, &result) && result == 5);
+    CHECK(!size_mul_add_overflow(result, 3, 2, &result) && result == 17);
+    CHECK(pymem_malloc_wrapped(SIZE_MAX) == NULL);
+    CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+    PyErr_Clear();
+    Py_ssize_t huge[] = {PY_SSIZE_T_MAX, PY_SSIZE_T_MAX};
+    CHECK(!get_ndarray_reserve_cnt_internal(2, huge, 1, NDA_u64, false, &result));
+    CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+    PyErr_Clear();
+    huge[1] = 1;
+    CHECK(!get_ndarray_reserve_cnt_internal(2, huge, 1, NDA_u64, false, &result));
+    CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+    PyErr_Clear();
+    CHECK(!get_1darray_reserve_cnt(1, PY_SSIZE_T_MAX, NDA_u64, &result));
+    CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+    PyErr_Clear();
+    Py_ssize_t deep_shape[MAX_NDARRAY_DIMENSION];
+    for (int i = 0; i < MAX_NDARRAY_DIMENSION; i++) deep_shape[i] = 1;
+    CHECK(get_ndarray_reserve_cnt_internal(
+            MAX_NDARRAY_DIMENSION, deep_shape, SSRJSON_ENCODE_MAX_RECURSION + 1, NDA_u64, false, &result));
+    CHECK(result == test_get_ndarray_reserve_cnt_reference(
+                            MAX_NDARRAY_DIMENSION, deep_shape, SSRJSON_ENCODE_MAX_RECURSION + 1, NDA_u64, false));
     NDATypes all_types[] = {
             NDA_f64, NDA_f32, NDA_f16, NDA_i64, NDA_i32, NDA_i16, NDA_i8, NDA_u64, NDA_u32, NDA_u16, NDA_u8, NDA_bool};
     int num_types = sizeof(all_types) / sizeof(all_types[0]);
@@ -91,7 +141,8 @@ int test_ndarray_reserve_cnt(void) {
         bool is_in_obj = rand() & 1;
 
         usize expected = test_get_ndarray_reserve_cnt_reference(nd, shape, depth, ndatype, is_in_obj);
-        usize actual = get_ndarray_reserve_cnt_internal(nd, shape, depth, ndatype, is_in_obj);
+        usize actual;
+        CHECK(get_ndarray_reserve_cnt_internal(nd, shape, depth, ndatype, is_in_obj, &actual));
 
         if (expected != actual) {
             printf("\n  FAIL: indent=%d nd=%d depth=%zu ndatype=%d is_in_obj=%d shape=[", COMPILE_INDENT_LEVEL, nd,

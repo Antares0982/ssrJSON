@@ -150,6 +150,9 @@ done:;
 
 /* Requires padded source and destination buffers. */
 force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const u8 *src_end, bool *is_ascii_addr) {
+#if SSRJSON_SCALAR
+    return decode_bytes_block_scalar(dst_addr, src_addr, src_end, is_ascii_addr, src_end + 1);
+#else
     const u8 *src = *src_addr;
     dst_t *dst = *dst_addr;
     /* Adapt scalar budget to mixed input. */
@@ -167,12 +170,12 @@ force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const
             continue;
         }
 
-#if COMPILE_WRITE_UCS_LEVEL != 4
+#    if COMPILE_WRITE_UCS_LEVEL != 4
         if (unlikely(utf8_any_byte_above_128(in, _PromoteAbove))) break;
-#endif
-#if COMPILE_WRITE_UCS_LEVEL == 1
+#    endif
+#    if COMPILE_WRITE_UCS_LEVEL == 1
         *is_ascii_addr = false;
-#endif
+#    endif
 
         utf8_eocp_t eocp = utf8_end_of_cp_bitmask_128(in, src[16]);
 
@@ -181,19 +184,19 @@ force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const
                 const vector_a_u8_128 sh = _UTF8_SHUF_SWAP2;
                 vector_a_u16_128 composed = utf8_compose_upto2_128(shuffle_128(in, sh));
                 if (unlikely(utf8_seq2x8_has_error_128(in))) goto invalid_block;
-#if COMPILE_WRITE_UCS_LEVEL == 1
+#    if COMPILE_WRITE_UCS_LEVEL == 1
                 *(vector_u_u8_64 *)dst = cvt_u16_to_u8_128(composed);
-#elif COMPILE_WRITE_UCS_LEVEL == 2
+#    elif COMPILE_WRITE_UCS_LEVEL == 2
                 *(vector_u_u16_128 *)dst = composed;
-#else
+#    else
                 cvt_to_dst_u16_u32_128(dst, composed);
-#endif
+#    endif
                 dst += 8;
                 src += 16;
                 budget = _MinScalarBudget;
                 continue;
             }
-#if COMPILE_WRITE_UCS_LEVEL == 4
+#    if COMPILE_WRITE_UCS_LEVEL == 4
             if ((eocp & _UTF8_EOCP_ALL) == _UTF8_EOCP_SEQ4X4) {
                 const vector_a_u8_128 sh = _UTF8_SHUF_REV4;
                 vector_a_u32_128 composed = utf8_compose_4_128(shuffle_128(in, sh));
@@ -204,24 +207,24 @@ force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const
                 budget = _MinScalarBudget;
                 continue;
             }
-#endif
-#if COMPILE_WRITE_UCS_LEVEL != 1
+#    endif
+#    if COMPILE_WRITE_UCS_LEVEL != 1
             if ((eocp & _UTF8_EOCP_LOW12) == _UTF8_EOCP_SEQ3X4) {
                 const vector_a_u8_128 sh = _UTF8_SHUF_REV3;
                 vector_a_u32_128 composed = utf8_compose_upto3_128(shuffle_128(in, sh));
                 if (unlikely(utf8_seq3x4_has_error_128(in, composed))) goto invalid_block;
-#    if COMPILE_WRITE_UCS_LEVEL == 2
+#        if COMPILE_WRITE_UCS_LEVEL == 2
                 *(vector_u_u16_64 *)dst = cvt_u32_to_u16_128(composed);
-#    else
+#        else
                 *(vector_u_u32_128 *)dst = composed;
-#    endif
+#        endif
                 dst += 4;
                 src += 12;
                 budget = _MinScalarBudget;
                 continue;
             }
-#endif
-#if COMPILE_WRITE_UCS_LEVEL != 4 && SSRJSON_IS_X64
+#    endif
+#    if COMPILE_WRITE_UCS_LEVEL != 4 && SSRJSON_SIMD_X64
             if (__builtin_popcount(get_bitmask_from_u8_128(in)) >= 12 && !utf8_any_byte_above_128(in, 0xdf)) {
                 /* Validate before indexing the shuffle table. */
                 u32 m12;
@@ -233,17 +236,17 @@ force_inline int decode_bytes_block(dst_t **dst_addr, const u8 **src_addr, const
                 /* Six code points fit twelve bytes. */
                 assert(idx < 64);
                 composed = utf8_compose_upto2_128(shuffle_128(in, *(const vector_u_u8_128 *)_Utf8ToUcsShuffle[idx]));
-#    if COMPILE_WRITE_UCS_LEVEL == 1
+#        if COMPILE_WRITE_UCS_LEVEL == 1
                 *(vector_u_u8_64 *)dst = cvt_u16_to_u8_128(composed);
-#    else
+#        else
                 *(vector_u_u16_128 *)dst = composed;
-#    endif
+#        endif
                 dst += 6;
                 src += _Utf8ToUcsIndex[m12][1];
                 budget = _MinScalarBudget;
                 continue;
             }
-#endif
+#    endif
         }
 
         {
@@ -266,6 +269,7 @@ invalid_block:;
     *src_addr = src;
     *dst_addr = dst;
     return DECODE_LOOPSTATE_INVALID;
+#endif
 }
 
 #undef _MinScalarBudget

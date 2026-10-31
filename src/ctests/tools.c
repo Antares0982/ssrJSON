@@ -57,7 +57,7 @@
 uintptr_t find_extension_symbol(const char *symbol_name) {
 #ifdef _WIN32
     static HMODULE handle = NULL;
-    if (!handle) handle = GetModuleHandle(NULL);
+    if (!handle) handle = GetModuleHandleW(L"ssrjson.pyd");
     if (!handle) return 0;
     uintptr_t ret = (uintptr_t)GetProcAddress(handle, symbol_name);
     return ret;

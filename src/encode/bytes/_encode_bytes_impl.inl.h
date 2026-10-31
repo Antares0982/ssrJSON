@@ -62,7 +62,7 @@ force_inline u8 *b_buf_apd_nonascii_key_write_cache(u8 *writer, int src_pykind, 
     }
     assert(utf8_cache);
     // Note: the utf8 cache is allocated independently and has nothing to do with is_compact.
-    if (USING_AVX512 || utf8_length >= READ_BATCH_COUNT) {
+    if (USING_AVX512 || utf8_length >= (ENCODE_READ_PADDING / sizeof(src_t))) {
         return b_buf_apd_utf8_cache(writer, utf8_cache, utf8_length, !!COMPILE_INDENT_LEVEL);
     } else {
     no_cache_encode:;
@@ -103,7 +103,7 @@ force_inline u8 *b_buf_apd_nonascii_key_no_write_cache(u8 *writer, int src_pykin
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
     // Note: the utf8 cache is allocated independently and has nothing to do with is_compact.
-    if (utf8_cache && (USING_AVX512 || utf8_length >= READ_BATCH_COUNT)) {
+    if (utf8_cache && (USING_AVX512 || utf8_length >= (ENCODE_READ_PADDING / sizeof(src_t)))) {
         return b_buf_apd_utf8_cache(writer, utf8_cache, utf8_length, !!COMPILE_INDENT_LEVEL);
     } else {
         *writer++ = '"';
@@ -145,7 +145,6 @@ force_inline u8 *b_buf_apd_key_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
     // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
     // when indent level > 0, more 4 unicodes are written, else 2 unicodes
     const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
-    const usize reserve_bytes_in_encoding = max_json_bytes_per_unicode * len;
     usize excess_bytes_in_encoding = 16 - max_json_bytes_per_unicode;                                     // ascii
     excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs1_trailing); // ucs1
     excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs2_trailing); // ucs2
@@ -153,7 +152,9 @@ force_inline u8 *b_buf_apd_key_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
     assert(excess_bytes_in_encoding >= 4);
     const usize excess_bytes_after = excess_bytes_in_encoding;
     //
-    writer = u_buf_reserve(writer, u_buf_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after);
+    usize reserve_bytes;
+    if (unlikely(!get_string_reserve(len, excess_bytes_before + excess_bytes_after, &reserve_bytes))) return NULL;
+    writer = u_buf_reserve(writer, u_buf_info, reserve_bytes);
     if (likely(writer)) writer = write_unicode_indent(writer, cur_nested_depth);
     return writer;
 }
@@ -187,7 +188,6 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
     excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs4_trailing); // ucs4
     assert(excess_bytes_in_encoding >= 4);
     const usize excess_bytes_after = excess_bytes_in_encoding;
-    const usize reserve_bytes_in_encoding = max_json_bytes_per_unicode * len;
     if (ssrjson_consteval(is_in_obj)) {
         // '"' writes 1 byte
         // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
@@ -196,7 +196,9 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
         // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = 1;
-        return u_buf_reserve(writer, u_buf_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after);
+        usize reserve_bytes;
+        if (unlikely(!get_string_reserve(len, excess_bytes_before + excess_bytes_after, &reserve_bytes))) return NULL;
+        return u_buf_reserve(writer, u_buf_info, reserve_bytes);
     } else {
         // write_unicode_indent and '"' writes `get_indent_char_count() + 1` bytes
         // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
@@ -205,8 +207,9 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
         // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
-        writer = u_buf_reserve(
-                writer, u_buf_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after);
+        usize reserve_bytes;
+        if (unlikely(!get_string_reserve(len, excess_bytes_before + excess_bytes_after, &reserve_bytes))) return NULL;
+        writer = u_buf_reserve(writer, u_buf_info, reserve_bytes);
         if (likely(writer)) writer = write_unicode_indent(writer, cur_nested_depth);
         return writer;
     }

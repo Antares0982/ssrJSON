@@ -24,7 +24,9 @@
 #define SSRJSON_DECODE_DECODE_BYTES_STR_WRAP_H
 
 #include "bytes/utf8_shared.h"
-#include "bytes/utf8_simd128.h"
+#if !SSRJSON_SCALAR
+#    include "bytes/utf8_simd128.h"
+#endif
 #include "decode_shared.h"
 #include "simd/memcpy.h"
 #include "simd/simd_impl.h"
@@ -49,15 +51,16 @@
 #define COMPILE_READ_UCS_LEVEL 1
 #include "compile_context/sr_in.inl.h"
 
+#if !SSRJSON_SCALAR
 force_inline anymask_t get_bytes_stop_anymask(vector_a x) {
-#if SSRJSON_IS_X64 && _CompileVectorBits == 512
+#    if SSRJSON_SIMD_X64 && _CompileVectorBits == 512
     return get_escape_bitmask(x) | unsigned_cmpge_bitmask(x, broadcast(0x80));
-#elif SSRJSON_IS_X64
+#    elif SSRJSON_SIMD_X64
     /* psubusb marks bytes above 0x7f. */
     return get_escape_mask(x) | unsigned_saturate_minus(x, broadcast(0x7f));
-#else
+#    else
     return get_escape_mask(x) | (x >= broadcast(0x80));
-#endif
+#    endif
 }
 
 /* Stop at the first special byte. */
@@ -86,6 +89,8 @@ force_inline bool decode_bytes_scan_loop4(const u8 **src_addr) {
     *src_addr = src + joined4_escape_anymask_to_done_count(check_mask[0], check_mask[1], check_mask[2], check_mask[3]);
     return false;
 }
+
+#endif
 
 internal_simd_noinline PyObject *decode_bytes_utf8(const u8 *src_start, const u8 **src_addr, const u8 *src_end,
                                                    void *temp_buffer,
@@ -266,6 +271,9 @@ force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, const u8 *s
     const u8 *src = *ptr + 1;
     const u8 *const src_start = src;
 
+#if SSRJSON_SCALAR
+    while (src < src_end && !char_is_ascii_stop(*src)) ++src;
+#else
     /* Source allocation provides readable SIMD padding. */
     if (ssrjson_consteval(!is_key)) {
         if (!decode_bytes_scan_loop(&src)) goto scan_stopped;
@@ -279,6 +287,7 @@ force_inline PyObject *loads_bytes(const u8 **ptr, u8 *write_buffer, const u8 *s
     }
 
 scan_stopped:;
+#endif
     {
         u8 c = *src;
         if (likely(c == _Quote)) {

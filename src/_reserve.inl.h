@@ -28,15 +28,37 @@
 #include "compile_context/w_in.inl.h"
 
 force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usize size) {
-    dst_t *target_ptr = writer + size;
-    if (unlikely(target_ptr > ssrjson_cast(dst_t *, u_buf_info->end))) {
-        u8 *old_head = (u8 *)u_buf_info->head;
-        usize target_size = ssrjson_cast(u8 *, target_ptr) - ssrjson_cast(u8 *, u_buf_info->head);
+#ifdef SSRJSON_64BIT
+    if (__builtin_constant_p(size) && size <= SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE / sizeof(dst_t)) {
+        // Buffers only grow from their initial capacity.
+        uintptr_t limit = ssrjson_cast(uintptr_t, u_buf_info->end) - size * sizeof(dst_t);
+        if (likely(ssrjson_cast(uintptr_t, writer) <= limit)) return writer;
+    } else {
+        Py_ssize_t avail = ssrjson_cast(u8 *, u_buf_info->end) - ssrjson_cast(u8 *, writer);
+        if (likely(size <= PY_SSIZE_T_MAX / sizeof(dst_t) && ssrjson_cast(Py_ssize_t, size * sizeof(dst_t)) <= avail)) {
+            return writer;
+        }
+    }
+#endif
+    usize offset = ssrjson_cast(u8 *, writer) - ssrjson_cast(u8 *, u_buf_info->head);
+    usize capacity = ssrjson_cast(u8 *, u_buf_info->end) - ssrjson_cast(u8 *, u_buf_info->head);
+#ifdef SSRJSON_32BIT
+    if (likely(offset <= capacity && size <= (capacity - offset) / sizeof(dst_t))) { return writer; }
+#endif
+    usize target_size;
+    if (unlikely(size_mul_add_overflow(size, sizeof(dst_t), offset, &target_size))) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+    if (unlikely(target_size > PY_SSIZE_T_MAX)) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+    if (unlikely(target_size > capacity)) {
         EncodeUBufInfo new_info = _u_buf_reserve(*u_buf_info, target_size);
         return_if_unlikely(!new_info.head);
-        usize u8offset = ssrjson_cast(u8 *, writer) - old_head;
         *u_buf_info = new_info;
-        writer = ssrjson_cast(dst_t *, ssrjson_cast(u8 *, u_buf_info->head) + u8offset);
+        writer = ssrjson_cast(dst_t *, ssrjson_cast(u8 *, u_buf_info->head) + offset);
     }
     return writer;
 }

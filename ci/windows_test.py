@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import sys
+import struct
 
 SSRJSON_FILE = "ssrjson.pyd"
 ASAN_DLL = "clang_rt.asan_dynamic-x86_64.dll"
@@ -27,6 +28,9 @@ def build(build_dir: str, build_type: str, asan: bool) -> None:
         "cmake",
         "-T",
         "ClangCL",
+        "-A",
+        "Win32" if struct.calcsize("P") == 4 else "x64",
+        f"-DPython3_EXECUTABLE={sys.executable}",
         "-S",
         ".",
         "-B",

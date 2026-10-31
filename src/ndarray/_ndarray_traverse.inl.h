@@ -99,8 +99,8 @@
 
 #include "_ndarray_reserve_cnt.inl.h"
 
-force_inline usize get_ndarray_reserve_cnt(const PyArrayInterface *array, Py_ssize_t base_nested_depth,
-                                           NDATypes ndatype, bool is_in_obj) {
+force_inline bool get_ndarray_reserve_cnt(const PyArrayInterface *array, Py_ssize_t base_nested_depth, NDATypes ndatype,
+                                          bool is_in_obj, usize *out) {
     int nd = array->nd;
     Py_ssize_t *shape = array->shape;
     usize ret = 0;
@@ -110,7 +110,14 @@ force_inline usize get_ndarray_reserve_cnt(const PyArrayInterface *array, Py_ssi
     assert(padding >= 3);     // for writing bool, we write 8 bytes at once
     assert(padding >= ssrjson_dtoa_write_length - ssrjson_dtoa_output_maxlen);
     assert(padding >= ssrjson_ftoa_write_length - ssrjson_ftoa_output_maxlen);
-    return ret + padding + get_ndarray_reserve_cnt_internal(nd, shape, base_nested_depth + 1, ndatype, is_in_obj);
+    usize cnt;
+    if (unlikely(!get_ndarray_reserve_cnt_internal(nd, shape, base_nested_depth + 1, ndatype, is_in_obj, &cnt)))
+        return false;
+    if (unlikely(size_add(cnt, ret + padding, out))) {
+        PyErr_NoMemory();
+        return false;
+    }
+    return true;
 }
 
 force_inline ssrjson_nofail u8 *ndarray_traverse_dispatch(u8 *writer, const PyArrayInterface *array,
@@ -205,7 +212,11 @@ static force_noinline u8 *u8_buffer_append_ndarray(u8 *writer, EncodeUBufInfo *u
         return NULL;
     }
 
-    usize reserve_cnt = get_ndarray_reserve_cnt(array, cur_nested_depth, ndatype, is_in_obj);
+    usize reserve_cnt;
+    if (unlikely(!get_ndarray_reserve_cnt(array, cur_nested_depth, ndatype, is_in_obj, &reserve_cnt))) {
+        Py_DECREF(capsule_obj);
+        return NULL;
+    }
     writer = u_buf_reserve_u8(writer, u_buf_info, reserve_cnt);
     if (unlikely(!writer)) {
         Py_DECREF(capsule_obj);

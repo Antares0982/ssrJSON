@@ -37,7 +37,14 @@ force_inline bool verify_escape_hex(const src_t *src, const src_t *src_end, int 
     }
     // need to verify the next 4 unicode for u16 and u32, since the size of hex conv table is 256
     // u8: no need to check
-#if COMPILE_READ_UCS_LEVEL == 2
+#if SSRJSON_SCALAR
+    for (int i = 0; i < 4; ++i) {
+        if (src[offset + i] > 0xff) {
+            PyErr_SetString(JSONDecodeError, "Invalid escape sequence in string");
+            return false;
+        }
+    }
+#elif COMPILE_READ_UCS_LEVEL == 2
     typedef union {
         u64 u64_value;
         vector_a_u16_64 vec;
@@ -126,8 +133,16 @@ force_inline bool _read_null(const src_t **restrict ptr, const src_t *restrict e
 
 /** Read 'Infinity' literal (ignoring case). */
 force_inline bool _read_inf(const src_t **ptr, const src_t *end) {
-#define r_inf_vector ssrjson_concat4(vector, a, src_t, READ_BIT_SIZEx8)
-#define r_inf_vector_u ssrjson_concat4(vector, u, src_t, READ_BIT_SIZEx8)
+#if SSRJSON_SCALAR
+    static const char literal[] = "INFINITY";
+    if (end - *ptr < 8) return false;
+    for (usize i = 0; i < 8; ++i)
+        if (((*ptr)[i] & ~(src_t)0x20) != (src_t)literal[i]) return false;
+    *ptr += 8;
+    return true;
+#else
+#    define r_inf_vector ssrjson_concat4(vector, a, src_t, READ_BIT_SIZEx8)
+#    define r_inf_vector_u ssrjson_concat4(vector, u, src_t, READ_BIT_SIZEx8)
     if (unlikely(end < *ptr + 8)) { return false; }
     r_inf_vector _mask = {~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20,
                           ~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20};
@@ -140,14 +155,23 @@ force_inline bool _read_inf(const src_t **ptr, const src_t *end) {
         return true;
     }
     return false;
-#undef r_inf_vector_u
-#undef r_inf_vector
+#    undef r_inf_vector_u
+#    undef r_inf_vector
+#endif
 }
 
 /** Read 'NaN' literal (ignoring case). */
 force_inline bool _read_nan(const src_t **restrict ptr, const src_t *restrict end) {
-#define r_nan_vector ssrjson_concat4(vector, a, src_t, READ_BIT_SIZEx4)
-#define r_nan_vector_u ssrjson_concat4(vector, u, src_t, READ_BIT_SIZEx4)
+#if SSRJSON_SCALAR
+    static const char literal[] = "NAN";
+    if (end - *ptr < 3) return false;
+    for (usize i = 0; i < 3; ++i)
+        if (((*ptr)[i] & ~(src_t)0x20) != (src_t)literal[i]) return false;
+    *ptr += 3;
+    return true;
+#else
+#    define r_nan_vector ssrjson_concat4(vector, a, src_t, READ_BIT_SIZEx4)
+#    define r_nan_vector_u ssrjson_concat4(vector, u, src_t, READ_BIT_SIZEx4)
     if (unlikely(end < *ptr + 3)) { return false; }
     // it is safe to load *end, so here we load `4 * sizeof(src_t)` bytes
     r_nan_vector _mask = {~(src_t)0x20, ~(src_t)0x20, ~(src_t)0x20, 0};
@@ -159,8 +183,9 @@ force_inline bool _read_nan(const src_t **restrict ptr, const src_t *restrict en
         return true;
     }
     return false;
-#undef r_nan_vector_u
-#undef r_nan_vector
+#    undef r_nan_vector_u
+#    undef r_nan_vector
+#endif
 }
 
 /** Read 'Infinity' or 'NaN' literal (ignoring case). */
