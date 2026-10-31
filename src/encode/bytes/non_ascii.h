@@ -34,18 +34,17 @@
 force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize len, const u8 **utf8_cache_out,
                                    usize *utf8_length_out, ssrjson_compiletime bool is_key,
                                    ssrjson_compiletime bool is_compact) {
+    /* Callers already reserved the JSON string. */
+    assert(len < SIZE_MAX / 8);
     // Alloc to max size
     void *new_buffer;
     u8 *writer;
     // write UTF-8.
     switch (src_pykind) {
         case 1: {
-            usize size;
-            if (unlikely(size_mul_add_overflow(
-                        len, max_utf8_bytes_per_ucs1, __excess_bytes_write_ucs1_raw_utf8_trailing, &size))) {
-                PyErr_NoMemory();
-                return false;
-            }
+            static_assert(max_utf8_bytes_per_ucs1 <= 4, "UTF-8 expansion bound");
+            static_assert(__excess_bytes_write_ucs1_raw_utf8_trailing <= SIZE_MAX / 4, "UTF-8 padding bound");
+            usize size = len * max_utf8_bytes_per_ucs1 + __excess_bytes_write_ucs1_raw_utf8_trailing;
             new_buffer = pymem_malloc_wrapped(size);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);
@@ -53,12 +52,9 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
             break;
         }
         case 2: {
-            usize size;
-            if (unlikely(size_mul_add_overflow(
-                        len, max_utf8_bytes_per_ucs2, __excess_bytes_write_ucs2_raw_utf8_trailing, &size))) {
-                PyErr_NoMemory();
-                return false;
-            }
+            static_assert(max_utf8_bytes_per_ucs2 <= 4, "UTF-8 expansion bound");
+            static_assert(__excess_bytes_write_ucs2_raw_utf8_trailing <= SIZE_MAX / 4, "UTF-8 padding bound");
+            usize size = len * max_utf8_bytes_per_ucs2 + __excess_bytes_write_ucs2_raw_utf8_trailing;
             new_buffer = pymem_malloc_wrapped(size);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);
@@ -67,12 +63,9 @@ force_inline bool write_cache_impl(const void *src_voidp, int src_pykind, usize 
             break;
         }
         case 4: {
-            usize size;
-            if (unlikely(size_mul_add_overflow(
-                        len, max_utf8_bytes_per_ucs4, __excess_bytes_write_ucs4_raw_utf8_trailing, &size))) {
-                PyErr_NoMemory();
-                return false;
-            }
+            static_assert(max_utf8_bytes_per_ucs4 <= 4, "UTF-8 expansion bound");
+            static_assert(__excess_bytes_write_ucs4_raw_utf8_trailing <= SIZE_MAX / 4, "UTF-8 padding bound");
+            usize size = len * max_utf8_bytes_per_ucs4 + __excess_bytes_write_ucs4_raw_utf8_trailing;
             new_buffer = pymem_malloc_wrapped(size);
             return_if_unlikely(!new_buffer);
             writer = ssrjson_cast(u8 *, new_buffer);

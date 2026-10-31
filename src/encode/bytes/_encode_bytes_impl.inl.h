@@ -153,11 +153,7 @@ force_inline u8 *b_buf_apd_key_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
     const usize excess_bytes_after = excess_bytes_in_encoding;
     //
     usize reserve_bytes;
-    if (unlikely(size_mul_add_overflow(
-                len, max_json_bytes_per_unicode, excess_bytes_before + excess_bytes_after, &reserve_bytes))) {
-        PyErr_NoMemory();
-        return NULL;
-    }
+    if (unlikely(!get_string_reserve(len, excess_bytes_before + excess_bytes_after, &reserve_bytes))) return NULL;
     writer = u_buf_reserve(writer, u_buf_info, reserve_bytes);
     if (likely(writer)) writer = write_unicode_indent(writer, cur_nested_depth);
     return writer;
@@ -201,11 +197,7 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = 1;
         usize reserve_bytes;
-        if (unlikely(size_mul_add_overflow(
-                    len, max_json_bytes_per_unicode, excess_bytes_before + excess_bytes_after, &reserve_bytes))) {
-            PyErr_NoMemory();
-            return NULL;
-        }
+        if (unlikely(!get_string_reserve(len, excess_bytes_before + excess_bytes_after, &reserve_bytes))) return NULL;
         return u_buf_reserve(writer, u_buf_info, reserve_bytes);
     } else {
         // write_unicode_indent and '"' writes `get_indent_char_count() + 1` bytes
@@ -216,11 +208,7 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
         usize reserve_bytes;
-        if (unlikely(size_mul_add_overflow(
-                    len, max_json_bytes_per_unicode, excess_bytes_before + excess_bytes_after, &reserve_bytes))) {
-            PyErr_NoMemory();
-            return NULL;
-        }
+        if (unlikely(!get_string_reserve(len, excess_bytes_before + excess_bytes_after, &reserve_bytes))) return NULL;
         writer = u_buf_reserve(writer, u_buf_info, reserve_bytes);
         if (likely(writer)) writer = write_unicode_indent(writer, cur_nested_depth);
         return writer;

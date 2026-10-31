@@ -125,7 +125,9 @@ force_inline PyObject *create_empty_unicode(usize size, int kind) {
     assert(kind == 0 || kind == 1 || kind == 2 || kind == 4);
     usize offset = kind ? sizeof(PyCompactUnicodeObject) : sizeof(PyASCIIObject);
     usize tpsize = kind ? kind : 1;
-    if (unlikely(size > (PY_SSIZE_T_MAX - offset) / tpsize - 1)) {
+    static_assert(sizeof(PyCompactUnicodeObject) + 4 <= SIZE_MAX / 4, "Unicode allocation padding");
+    /* PyObject_Malloc enforces the signed allocation limit. */
+    if (unlikely(size >= SIZE_MAX / 8)) {
         PyErr_NoMemory();
         return NULL;
     }

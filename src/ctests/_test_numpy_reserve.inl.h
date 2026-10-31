@@ -77,6 +77,25 @@ static usize test_get_ndarray_reserve_cnt_reference(int nd, Py_ssize_t *shape, u
 
 int test_ndarray_reserve_cnt(void) {
     usize result;
+    CHECK(get_string_reserve(0, 43, &result) && result == 43);
+    CHECK(get_string_reserve(SIZE_MAX / 8 - 1, SIZE_MAX / 4, &result));
+    usize expected;
+    CHECK(!size_mul_add_overflow(SIZE_MAX / 8 - 1, 6, SIZE_MAX / 4, &expected));
+    CHECK(result == expected);
+    usize rejected[] = {SIZE_MAX / 8, SIZE_MAX / 6 + 1, SIZE_MAX};
+    for (usize i = 0; i < count_of(rejected); i++) {
+        result = 123;
+        CHECK(!get_string_reserve(rejected[i], 43, &result));
+        CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+        CHECK(result == 123);
+        PyErr_Clear();
+    }
+    int kinds[] = {0, 1, 2, 4};
+    for (usize i = 0; i < count_of(kinds); i++) {
+        CHECK(create_empty_unicode(SIZE_MAX / 8, kinds[i]) == NULL);
+        CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+        PyErr_Clear();
+    }
     CHECK(size_add(SIZE_MAX, 1, &result));
     CHECK(!size_add(SIZE_MAX - 1, 1, &result) && result == SIZE_MAX);
     CHECK(size_mul_add_overflow(SIZE_MAX, 2, 0, &result));
