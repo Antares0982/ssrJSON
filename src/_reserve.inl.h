@@ -28,11 +28,16 @@
 #include "compile_context/w_in.inl.h"
 
 force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usize size) {
-    // memorize_*_to_* can leave the writer far past the end, so end - writer may overflow on 32-bit.
 #ifdef SSRJSON_64BIT
-    Py_ssize_t avail = ssrjson_cast(u8 *, u_buf_info->end) - ssrjson_cast(u8 *, writer);
-    if (likely(size <= PY_SSIZE_T_MAX / sizeof(dst_t) && ssrjson_cast(Py_ssize_t, size * sizeof(dst_t)) <= avail)) {
-        return writer;
+    if (__builtin_constant_p(size) && size <= SSRJSON_ENCODE_DST_BUFFER_INIT_SIZE / sizeof(dst_t)) {
+        // Buffers only grow from their initial capacity.
+        uintptr_t limit = ssrjson_cast(uintptr_t, u_buf_info->end) - size * sizeof(dst_t);
+        if (likely(ssrjson_cast(uintptr_t, writer) <= limit)) return writer;
+    } else {
+        Py_ssize_t avail = ssrjson_cast(u8 *, u_buf_info->end) - ssrjson_cast(u8 *, writer);
+        if (likely(size <= PY_SSIZE_T_MAX / sizeof(dst_t) && ssrjson_cast(Py_ssize_t, size * sizeof(dst_t)) <= avail)) {
+            return writer;
+        }
     }
 #endif
     usize offset = ssrjson_cast(u8 *, writer) - ssrjson_cast(u8 *, u_buf_info->head);
