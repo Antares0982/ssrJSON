@@ -77,18 +77,13 @@ static usize test_get_ndarray_reserve_cnt_reference(int nd, Py_ssize_t *shape, u
 
 int test_ndarray_reserve_cnt(void) {
     usize result;
-    CHECK(get_string_reserve(0, 43, &result) && result == 43);
-    CHECK(get_string_reserve(SIZE_MAX / 8 - 1, SIZE_MAX / 4, &result));
-    usize expected;
-    CHECK(!size_mul_add_overflow(SIZE_MAX / 8 - 1, 6, SIZE_MAX / 4, &expected));
-    CHECK(result == expected);
-    usize rejected[] = {SIZE_MAX / 8, SIZE_MAX / 6 + 1, SIZE_MAX};
-    for (usize i = 0; i < count_of(rejected); i++) {
-        result = 123;
-        CHECK(!get_string_reserve(rejected[i], 43, &result));
-        CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
-        CHECK(result == 123);
-        PyErr_Clear();
+    usize unit_sizes[] = {1, 2, 4};
+    for (usize i = 0; i < count_of(unit_sizes); i++) {
+        usize max_len = ENCODE_STRING_LEN_MAX(unit_sizes[i]);
+        CHECK(!size_mul_add_overflow(max_len, max_json_bytes_per_unicode, ENCODE_STRING_PADDING_MAX, &result));
+        CHECK(!size_mul_add_overflow(result, unit_sizes[i], 0, &result) && result <= PY_SSIZE_T_MAX);
+        CHECK(!size_mul_add_overflow(max_len + 1, max_json_bytes_per_unicode, ENCODE_STRING_PADDING_MAX, &result));
+        CHECK(size_mul_add_overflow(result, unit_sizes[i], 0, &result) || result > PY_SSIZE_T_MAX);
     }
     int kinds[] = {0, 1, 2, 4};
     for (usize i = 0; i < count_of(kinds); i++) {
