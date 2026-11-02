@@ -63,4 +63,18 @@ force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usi
     return writer;
 }
 
+force_inline dst_t *u_buf_reserve_str(dst_t *writer, EncodeUBufInfo *u_buf_info, usize len, usize padding) {
+    assert(padding <= ENCODE_STRING_PADDING_MAX);
+    if (unlikely(len > ENCODE_STRING_LEN_MAX(sizeof(dst_t)))) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+    usize size = len * max_json_bytes_per_unicode + padding;
+#ifdef SSRJSON_64BIT
+    Py_ssize_t avail = ssrjson_cast(u8 *, u_buf_info->end) - ssrjson_cast(u8 *, writer);
+    if (likely(ssrjson_cast(Py_ssize_t, size * sizeof(dst_t)) <= avail)) return writer;
+#endif
+    return u_buf_reserve(writer, u_buf_info, size);
+}
+
 #include "compile_context/w_out.inl.h"
