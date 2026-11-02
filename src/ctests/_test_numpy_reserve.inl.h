@@ -82,6 +82,13 @@ int test_ndarray_reserve_cnt(void) {
         usize max_len = ENCODE_STRING_LEN_MAX(unit_sizes[i]);
         CHECK(!size_mul_add_overflow(max_len, max_json_bytes_per_unicode, ENCODE_STRING_PADDING_MAX, &result));
         CHECK(!size_mul_add_overflow(result, unit_sizes[i], 0, &result) && result <= PY_SSIZE_T_MAX);
+        CHECK(max_len <= ENCODE_STRING_LEN_MAX_EXACT(unit_sizes[i]));
+#if SSRJSON_IS_AARCH64 && defined(SSRJSON_64BIT)
+        CHECK(max_len <= PY_SSIZE_T_MAX / 8 / unit_sizes[i]);
+#else
+        CHECK(max_len == ENCODE_STRING_LEN_MAX_EXACT(unit_sizes[i]));
+#endif
+        max_len = ENCODE_STRING_LEN_MAX_EXACT(unit_sizes[i]);
         CHECK(!size_mul_add_overflow(max_len + 1, max_json_bytes_per_unicode, ENCODE_STRING_PADDING_MAX, &result));
         CHECK(size_mul_add_overflow(result, unit_sizes[i], 0, &result) || result > PY_SSIZE_T_MAX);
     }

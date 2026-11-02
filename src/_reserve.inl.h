@@ -64,7 +64,9 @@ force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usi
 }
 
 force_inline dst_t *u_buf_reserve_str(dst_t *writer, EncodeUBufInfo *u_buf_info, usize len, usize padding) {
+    // Conservative AArch64 bounds reduce hot-path instructions.
     assert(padding <= ENCODE_STRING_PADDING_MAX);
+    // Enormous strings are rare in practice.
     if (unlikely(len > ENCODE_STRING_LEN_MAX(sizeof(dst_t)))) {
         PyErr_NoMemory();
         return NULL;

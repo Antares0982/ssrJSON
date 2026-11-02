@@ -210,8 +210,15 @@ force_inline Py_ssize_t get_indent_char_count(Py_ssize_t cur_nested_depth, Py_ss
 
 #define ENCODE_STRING_PADDING_MAX (4 * SSRJSON_ENCODE_MAX_RECURSION + 128)
 static_assert(ENCODE_STRING_PADDING_MAX < PY_SSIZE_T_MAX / 4, "String padding bound");
-#define ENCODE_STRING_LEN_MAX(_unit_size_) \
+#define ENCODE_STRING_LEN_MAX_EXACT(_unit_size_) \
     ((PY_SSIZE_T_MAX / (_unit_size_) - ENCODE_STRING_PADDING_MAX) / max_json_bytes_per_unicode)
+#if SSRJSON_IS_AARCH64 && defined(SSRJSON_64BIT)
+/* Large padding falls back to exact bounds. */
+#    define ENCODE_STRING_LEN_MAX(_unit_size_) \
+        ssrjson_min(PY_SSIZE_T_MAX / 8 / (_unit_size_), ENCODE_STRING_LEN_MAX_EXACT(_unit_size_))
+#else
+#    define ENCODE_STRING_LEN_MAX(_unit_size_) ENCODE_STRING_LEN_MAX_EXACT(_unit_size_)
+#endif
 
 // `is_dict` is known at compile time, but `is_tuple` is not
 force_inline EncodeContainerType get_encode_ctn_type(ssrjson_compiletime bool is_dict, bool is_tuple) {
