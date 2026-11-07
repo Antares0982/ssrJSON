@@ -24,7 +24,7 @@
 #define ENCODE_UTILS_IMPL_WRAP_H
 
 #include "encode_shared.h"
-#include "simd/long_cvt/part_cvt.h"
+#include "simd/long_cvt.h"
 #include "simd/simd_impl.h"
 //
 #include "simd/compile_feature_check.h"

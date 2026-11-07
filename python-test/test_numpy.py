@@ -18,6 +18,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
+import sys
 import types as _types
 
 import pytest
@@ -218,6 +219,25 @@ class TestSetupNumpyTypesFakeModule:
 
 
 class TestNumpy:
+    @pytest.mark.skipif(not HAS_NUMPY, reason="numpy not installed")
+    def test_reserve_overflow(self):
+        ssrjson.setup_numpy_types(np)
+        for dtype, shape, strides in (
+            (np.uint8, (sys.maxsize // 2 + 1,), (1,)),
+            (np.int8, ((2 * sys.maxsize + 1) // 5,), (1,)),
+            (np.uint8, (2, sys.maxsize // 4 + 1), (sys.maxsize // 4 + 1, 1)),
+        ):
+            # Metadata only; reservation must reject before traversal.
+            array = np.lib.stride_tricks.as_strided(
+                np.zeros(1, dtype=dtype), shape=shape, strides=strides, writeable=False
+            )
+            assert array.flags.c_contiguous
+            for indent in (None, 2, 4):
+                for dumps in (ssrjson.dumps, ssrjson.dumps_to_bytes):
+                    for value in (array, [array], {"key": array}):
+                        with pytest.raises(MemoryError):
+                            dumps(value, indent=indent)
+
     @pytest.mark.skipif(not HAS_NUMPY, reason="numpy not installed")
     def test_setup_numpy_types(self):
         """

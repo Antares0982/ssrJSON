@@ -57,6 +57,7 @@
  * Names using W context.
  */
 #define u_buf_reserve make_w_name(u_buf_reserve)
+#define u_buf_reserve_str make_w_name(u_buf_reserve_str)
 #define u64_to_unicode make_w_name(u64_to_unicode)
 #define u32_to_unicode make_w_name(u32_to_unicode)
 #define u16_to_unicode make_w_name(u16_to_unicode)

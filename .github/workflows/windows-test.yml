@@ -11,12 +11,20 @@ on:
       - "python-test/**"
       - "cmake/**"
       - "CMakeLists.txt"
+      - "ci/**"
+      - ".github/workflows/**"
+      - "setup.py"
+      - "pyproject.toml"
   pull_request:
     paths:
       - "src/**"
       - "python-test/**"
       - "cmake/**"
       - "CMakeLists.txt"
+      - "ci/**"
+      - ".github/workflows/**"
+      - "setup.py"
+      - "pyproject.toml"
 
 jobs:
   run-test:

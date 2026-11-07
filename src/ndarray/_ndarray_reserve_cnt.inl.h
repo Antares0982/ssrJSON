@@ -31,26 +31,27 @@
 
 // Requires: iw context active, ndarray_common.h included.
 
-force_inline usize get_1darray_reserve_cnt(usize cur_nested_depth, usize length, NDATypes ndatype) {
-#if COMPILE_INDENT_LEVEL > 0
-    if (unlikely(!length)) { return 3; }
-    // pre indent size (with '\n')
-    usize cnt = (cur_nested_depth * COMPILE_INDENT_LEVEL + 1) * (length + 1);
-    // elements
-    cnt += length * (get_elem_write_size(ndatype) + 1 + COMPILE_INDENT_LEVEL); // comma and extra indent
+force_inline bool get_1darray_reserve_cnt(usize cur_nested_depth, usize length, NDATypes ndatype, usize *out) {
+    if (!length) {
+        *out = 3;
+        return true;
+    }
+    // pre indent size (with '\n' added below)
+    usize indent = cur_nested_depth * COMPILE_INDENT_LEVEL;
+    // elements with comma and extra indent
+    usize element = get_elem_write_size(ndatype) + 1 + COMPILE_INDENT_LEVEL + (COMPILE_INDENT_LEVEL ? indent + 1 : 0);
     // brackets and last comma, also remove comma of last element
-    cnt += 3 - 1;
-    return cnt;
-#else
-    // calculate branchlessly
-    return length * (get_elem_write_size(ndatype) + 1) + 3 - 1 +
-           !length; // elements with comma, plus brackets and last comma, also remove comma of last element
-#endif
+    usize trailing = COMPILE_INDENT_LEVEL ? indent + 3 : 2;
+    if (unlikely(size_mul_add_overflow(length, element, trailing, out))) {
+        PyErr_NoMemory();
+        return false;
+    }
+    return true;
 }
 
-force_inline usize get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype,
-                                                    bool is_in_obj) {
-    if (nd == 1) return get_1darray_reserve_cnt(cur_nested_depth, shape[0], ndatype);
+force_inline bool get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, usize cur_nested_depth, NDATypes ndatype,
+                                                   bool is_in_obj, usize *out) {
+    if (nd == 1) return get_1darray_reserve_cnt(cur_nested_depth, shape[0], ndatype, out);
 
     struct {
         usize length;
@@ -80,7 +81,7 @@ force_inline usize get_ndarray_reserve_cnt_internal(int nd, Py_ssize_t *shape, u
     }
 
     // base case: 1-d array
-    cnt = get_1darray_reserve_cnt(cur_nested_depth, shape[0], ndatype);
+    if (unlikely(!get_1darray_reserve_cnt(cur_nested_depth, shape[0], ndatype, &cnt))) return false;
 unwind:
 
     // unwind: accumulate each outer dimension back
@@ -89,14 +90,23 @@ unwind:
         usize length = stack[top].length;
 #if COMPILE_INDENT_LEVEL > 0
         usize depth = stack[top].depth;
-        cnt = cnt * length                                              // inner arrays
-              + ((depth + 1) * COMPILE_INDENT_LEVEL + 1) * (length - 1) // indent between inner arrays
-              + ((depth + 1) * COMPILE_INDENT_LEVEL + 1) + 1            // first bracket + '\n' + indent
-              + (depth * COMPILE_INDENT_LEVEL + 1) + 2 - 1; // last bracket + indent + comma - last inner comma
+        usize indent = (depth + 1) * COMPILE_INDENT_LEVEL + 1;
+        // inner arrays: cnt * length
+        // indent between inner arrays: indent * (length - 1)
+        // first bracket + '\n' + indent: indent + 1
+        // last bracket + indent + comma - last inner comma: depth * COMPILE_INDENT_LEVEL + 2
+        if (unlikely(size_add(cnt, indent, &cnt))) goto overflow;
+        usize trailing = depth * COMPILE_INDENT_LEVEL + 3;
 #else
-        cnt = cnt * length + 1 + 2 - 1; // inner arrays + bracket + bracket + comma - last inner comma
+        usize trailing = 2; // inner arrays + bracket + bracket + comma - last inner comma
 #endif
+        if (unlikely(size_mul_add_overflow(cnt, length, trailing, &cnt))) goto overflow;
     }
 
-    return cnt;
+    *out = cnt;
+    return true;
+
+overflow:
+    PyErr_NoMemory();
+    return false;
 }

@@ -75,3 +75,5 @@
 #undef decode_str_fast_loop
 #undef decode_str_fast_trailing
 #undef get_cache_key_hash_and_size
+
+#undef scan_string

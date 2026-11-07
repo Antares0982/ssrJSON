@@ -41,6 +41,9 @@ force_inline void get_cache_key_hash_and_size_ucs2(const void **hash_string_ptr_
                                                    void *temp_buffer) {
     // complicated case when ucs level > 1
     if (need_size_cvt) {
+#if SSRJSON_SCALAR
+        make_s_name(long_cvt_u16_u8)(temp_buffer, src, count);
+#else
         // do convert
         {
             assert(tpsize == 1);
@@ -60,6 +63,7 @@ force_inline void get_cache_key_hash_and_size_ucs2(const void **hash_string_ptr_
             usize cnt = temp_count / 16;
             for (usize i = 0; i < cnt; ++i) { __partial_cvt_16_u16_u8(&temp_dst, &temp_src); }
         }
+#endif
         *hash_string_ptr_addr = temp_buffer;
         *hash_string_u8size_addr = count * tpsize;
     } else {
@@ -74,6 +78,11 @@ force_inline void get_cache_key_hash_and_size_ucs4(const void **hash_string_ptr_
                                                    void *temp_buffer) {
     // complicated case when ucs level > 1
     if (need_size_cvt) {
+#if SSRJSON_SCALAR
+        if (tpsize == 2) make_s_name(long_cvt_u32_u16)(temp_buffer, src, count);
+        else
+            make_s_name(long_cvt_u32_u8)(temp_buffer, src, count);
+#else
         // do inplace zip
         if (tpsize == 2) {
             // count <= 32
@@ -107,6 +116,7 @@ force_inline void get_cache_key_hash_and_size_ucs4(const void **hash_string_ptr_
             usize cnt = temp_count / 8;
             for (usize i = 0; i < cnt; ++i) { __partial_cvt_8_u32_u8(&temp_dst, &temp_src); }
         }
+#endif
         *hash_string_ptr_addr = temp_buffer;
         *hash_string_u8size_addr = count * tpsize;
     } else {

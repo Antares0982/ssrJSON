@@ -33,17 +33,29 @@
 // _r_impls and decoder_impl/_sr_loop_impls
 #define COMPILE_READ_UCS_LEVEL 1
 #include "decoder_impl/_sr_impls.inl.h"
-#include "decoder_impl/_sr_loop_impls.inl.h"
+#if SSRJSON_SCALAR
+#    include "simd/scalar/scan.inl.h"
+#else
+#    include "decoder_impl/_sr_loop_impls.inl.h"
+#endif
 #undef COMPILE_READ_UCS_LEVEL
 
 #define COMPILE_READ_UCS_LEVEL 2
 #include "decoder_impl/_sr_impls.inl.h"
-#include "decoder_impl/_sr_loop_impls.inl.h"
+#if SSRJSON_SCALAR
+#    include "simd/scalar/scan.inl.h"
+#else
+#    include "decoder_impl/_sr_loop_impls.inl.h"
+#endif
 #undef COMPILE_READ_UCS_LEVEL
 
 #define COMPILE_READ_UCS_LEVEL 4
 #include "decoder_impl/_sr_impls.inl.h"
-#include "decoder_impl/_sr_loop_impls.inl.h"
+#if SSRJSON_SCALAR
+#    include "simd/scalar/scan.inl.h"
+#else
+#    include "decoder_impl/_sr_loop_impls.inl.h"
+#endif
 #undef COMPILE_READ_UCS_LEVEL
 
 #undef _CompileVectorBits

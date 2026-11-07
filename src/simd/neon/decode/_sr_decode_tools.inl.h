@@ -27,7 +27,7 @@
 #        define COMPILE_READ_UCS_LEVEL 1
 #    endif
 #    ifndef SSRJSON_SIMD_NEON_DECODE_H
-#        include "_r_decode_tools.inl.h"
+#        include "simd/_r_decode_tools.inl.h"
 #    endif
 #endif
 

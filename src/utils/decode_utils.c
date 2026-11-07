@@ -44,7 +44,7 @@ bool _decode_obj_stack_resize(decode_obj_stack_ptr_t *decode_obj_writer_addr,
         *decode_obj_stack_end_addr = new_buffer + (SSRJSON_DECODE_OBJ_BUFFER_INIT_SIZE << 1);
     } else {
         usize old_capacity = decode_obj_stack_end - decode_obj_stack;
-        if (unlikely((PY_SSIZE_T_MAX >> 1) < old_capacity)) {
+        if (unlikely((PY_SSIZE_T_MAX / sizeof(PyObject *) / 2) < old_capacity)) {
             PyErr_NoMemory();
             return false;
         }

@@ -10,6 +10,8 @@ on:
       - "python-test/**"
       - "cmake/**"
       - "CMakeLists.txt"
+      - "ci/**"
+      - ".github/workflows/**"
       - "pysrc/**"
       - "pyproject.toml"
       - "setup.py"
@@ -21,6 +23,8 @@ on:
       - "python-test/**"
       - "cmake/**"
       - "CMakeLists.txt"
+      - "ci/**"
+      - ".github/workflows/**"
       - "pysrc/**"
       - "pyproject.toml"
       - "setup.py"
@@ -53,7 +57,6 @@ jobs:
         run: |
           python -m pip install pytest pytest-xdist pytest-random-order setuptools wheel numpy
           python -m pip install . --prefix build-py
-          minor=$(python -c "import sys;print(sys.version_info.minor)")
           export PYTHONPATH="$PWD/build-py/lib/python${{ matrix.python-version }}/site-packages:$PYTHONPATH"
           export SSRJSON_BINARY="$PWD/build-py/lib/python${{ matrix.python-version }}/site-packages/ssrjson/ssrjson.so"
           python - <<'PY'
@@ -61,6 +64,8 @@ jobs:
           import ssrjson
           data = {"key": [1, True, None]}
           assert ssrjson.__version__
+          assert ssrjson.get_current_features()["simd"] == "NEON"
+          assert ssrjson.get_current_features()["multi_lib"] is False
           assert ssrjson.loads(ssrjson.dumps(data)) == data
           assert all(importlib.resources.files(ssrjson).joinpath(name).is_file()
                      for name in ("__init__.pyi", "py.typed"))
@@ -70,3 +75,18 @@ jobs:
             exit 1
           fi
           python -m pytest --random-order python-test
+
+      - name: Test without shipping SIMD
+        if: matrix.python-version == '3.14'
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          cmake -S . -B build-single -DCMAKE_BUILD_TYPE=Release \
+            -DPython3_EXECUTABLE="$(command -v python)" \
+            -DBUILD_SHIPPING_SIMD=OFF -DBUILD_SCALAR=OFF -DBUILD_NATIVE=OFF
+          cmake --build build-single -j 3
+          export PYTHONPATH="$PWD/build-single"
+          python -c 'import ssrjson; assert ssrjson.get_current_features()["simd"] == "NEON"; assert ssrjson.get_current_features()["multi_lib"] is False'
+          ctest --test-dir build-single --output-on-failure
+          python -m pytest --random-order python-test/test_api.py python-test/test_portable.py

@@ -36,6 +36,16 @@ def find_windows_python_cmake_env():
     return include_dir, library_file
 
 
+def get_windows_cmake_platform():
+    from sysconfig import get_platform
+
+    platforms = {"win32": "Win32", "win-amd64": "x64", "win-arm64": "ARM64"}
+    platform = get_platform()
+    if platform not in platforms:
+        raise RuntimeError(f"Unsupported Windows platform: {platform}")
+    return platforms[platform]
+
+
 VERSION_STRING = get_version_from_pyproject_toml()
 
 if USE_NIX_PREBUILT:
@@ -100,7 +110,11 @@ else:
                     env["Python3_EXECUTABLE"] = sys.executable
 
             if os.name == "nt":
-                cmake_cmd = ["cmake", "-T", "ClangCL"] + common_flags + [".", "-B"]
+                cmake_cmd = (
+                    ["cmake", "-T", "ClangCL", "-A", get_windows_cmake_platform()]
+                    + common_flags
+                    + [".", "-B"]
+                )
                 build_cmd = ["cmake", "--build", build_dir, "--config", "Release"]
             else:
                 cmake_cmd = (

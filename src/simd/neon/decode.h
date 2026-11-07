@@ -27,15 +27,15 @@
 #include "common.h"
 
 #define COMPILE_READ_UCS_LEVEL 1
-#include "decode/_r_decode_tools.inl.h"
+#include "simd/_r_decode_tools.inl.h"
 #undef COMPILE_READ_UCS_LEVEL
 
 #define COMPILE_READ_UCS_LEVEL 2
-#include "decode/_r_decode_tools.inl.h"
+#include "simd/_r_decode_tools.inl.h"
 #undef COMPILE_READ_UCS_LEVEL
 
 #define COMPILE_READ_UCS_LEVEL 4
-#include "decode/_r_decode_tools.inl.h"
+#include "simd/_r_decode_tools.inl.h"
 #undef COMPILE_READ_UCS_LEVEL
 
 #define COMPILE_READ_UCS_LEVEL 1
