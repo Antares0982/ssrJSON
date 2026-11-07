@@ -14,7 +14,7 @@ set(BUILD_PGO_USE
     ""
     CACHE FILEPATH "Path to PGO profile file (.profdata)")
 option(BUILD_CTESTS "Build tests" ON)
-option(BUILD_SHIPPING_SIMD "Build all simd for shipping" ON)
+option(BUILD_SHIPPING_SIMD "Build all SIMD backends (ignored on AArch64)" ON)
 option(BUILD_AVX512 "Force build avx512, non-shipping" OFF)
 option(BUILD_AVX2 "Force build avx2, non-shipping" OFF)
 option(BUILD_SSE4 "Force build sse4, non-shipping" OFF)
@@ -33,7 +33,18 @@ if(BUILD_PGO_GENERATE AND BUILD_COVERAGE)
     FATAL_ERROR "Cannot enable both BUILD_PGO_GENERATE and BUILD_COVERAGE")
 endif()
 
-if(BUILD_SHIPPING_SIMD)
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+  set(TARGET_SIMD_ARCH scalar)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(^aarch64)|(^arm64)|(^ARM64)")
+  set(TARGET_SIMD_ARCH aarch)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(AMD64|amd64)|(^i.86$)")
+  set(TARGET_SIMD_ARCH x86)
+else()
+  message(FATAL_ERROR "Unsupported target architecture")
+endif()
+
+# AArch64 always builds one backend.
+if(BUILD_SHIPPING_SIMD AND NOT TARGET_SIMD_ARCH STREQUAL "aarch")
   if(BUILD_AVX512
      OR BUILD_AVX2
      OR BUILD_SSE4
@@ -143,15 +154,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # ------------------------------------------------------------------------------
 # Libraries
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 4)
-  set(TARGET_SIMD_ARCH scalar)
+if(TARGET_SIMD_ARCH STREQUAL "scalar")
   set(BUILD_MULTI_LIB 0)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(^aarch64)|(^arm64)|(^ARM64)")
-  set(TARGET_SIMD_ARCH aarch)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(AMD64|amd64)|(^i.86$)")
-  set(TARGET_SIMD_ARCH x86)
-else()
-  message(FATAL_ERROR "Unsupported target architecture")
 endif()
 
 # common definitions

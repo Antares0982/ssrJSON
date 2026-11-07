@@ -75,7 +75,7 @@ typedef enum AARCH64SIMDFeatureLevel {
     AARCH64SIMDFeatureLevelNEON = 0,
 } AARCH64SIMDFeatureLevel;
 
-#    define PLATFORM_SIMD_LEVEL AARCH64SIMDFeatureLevelNEON
+#    define PLATFORM_SIMD_LEVEL AARCH64SIMDFeatureLevel
 
 force_inline AARCH64SIMDFeatureLevel get_simd_feature(void) { return AARCH64SIMDFeatureLevelNEON; }
 #endif

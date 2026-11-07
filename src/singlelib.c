@@ -44,7 +44,6 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
         if (err) goto fail;                          \
     } while (0)
 
-#if SSRJSON_IS_X64 || SSRJSON_SCALAR
     err = PyDict_SetItemString(ret, "multi_lib", Py_False);
     if (err) goto fail;
     err = PyDict_SetItemString(ret, "free_threading", SSRJSON_GIL_ENABLED ? Py_False : Py_True);
@@ -52,26 +51,25 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
     err = PyDict_SetItemString(
             ret, "lockfree", (!SSRJSON_GIL_ENABLED && SSRJSON_FREE_THREADING_LOCKFREE) ? Py_True : Py_False);
     if (err) goto fail;
-#    ifdef SSRJSON_PGO_USE
+#ifdef SSRJSON_PGO_USE
     err = PyDict_SetItemString(ret, "pgo", Py_True);
-#    else
+#else
     err = PyDict_SetItemString(ret, "pgo", Py_False);
-#    endif
+#endif
     if (err) goto fail;
 
-#    if SSRJSON_SCALAR
+#if SSRJSON_SCALAR
     DICT_SET_STRING_ITEM("simd", "SCALAR");
-#    elif HAS_AVX512
-    DICT_SET_STRING_ITEM("simd", "AVX512");
-#    elif HAS_AVX2
-    DICT_SET_STRING_ITEM("simd", "AVX2");
-#    elif HAS_SSE4_2
-    DICT_SET_STRING_ITEM("simd", "SSE4.2");
-#    else
-    DICT_SET_STRING_ITEM("simd", "SSE2");
-#    endif
 #elif SSRJSON_IS_AARCH64
     DICT_SET_STRING_ITEM("simd", "NEON");
+#elif HAS_AVX512
+    DICT_SET_STRING_ITEM("simd", "AVX512");
+#elif HAS_AVX2
+    DICT_SET_STRING_ITEM("simd", "AVX2");
+#elif HAS_SSE4_2
+    DICT_SET_STRING_ITEM("simd", "SSE4.2");
+#else
+    DICT_SET_STRING_ITEM("simd", "SSE2");
 #endif
     return ret;
 fail:;
@@ -85,8 +83,8 @@ const char *_update_simd_features(void) {
     return NULL;
 #else
 
-    PLATFORM_SIMD_LEVEL simd_feature = get_simd_feature();
 #    if SSRJSON_IS_X64
+    PLATFORM_SIMD_LEVEL simd_feature = get_simd_feature();
 #        if HAS_AVX512
     // compile support 512 bits
     if (simd_feature < X86SIMDFeatureLevelAVX512) {
