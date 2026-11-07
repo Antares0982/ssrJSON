@@ -72,7 +72,11 @@ static usize test_get_ndarray_reserve_cnt_reference(int nd, Py_ssize_t *shape, u
 }
 
 #define TEST_NDARRAY_RESERVE_ROUNDS 1000
-#define TEST_NDARRAY_RESERVE_MAX_ND 5
+#ifdef SSRJSON_32BIT
+#    define TEST_NDARRAY_RESERVE_MAX_ND 5
+#else
+#    define TEST_NDARRAY_RESERVE_MAX_ND 8
+#endif
 #define TEST_NDARRAY_RESERVE_MAX_DIM_SIZE 16
 
 int test_ndarray_reserve_cnt(void) {

@@ -34,6 +34,7 @@ force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usi
         uintptr_t limit = ssrjson_cast(uintptr_t, u_buf_info->end) - size * sizeof(dst_t);
         if (likely(ssrjson_cast(uintptr_t, writer) <= limit)) return writer;
     } else {
+        // memorize_*_to_* can move writer beyond end.
         Py_ssize_t avail = ssrjson_cast(u8 *, u_buf_info->end) - ssrjson_cast(u8 *, writer);
         if (likely(size <= PY_SSIZE_T_MAX / sizeof(dst_t) && ssrjson_cast(Py_ssize_t, size * sizeof(dst_t)) <= avail)) {
             return writer;
@@ -43,6 +44,7 @@ force_inline dst_t *u_buf_reserve(dst_t *writer, EncodeUBufInfo *u_buf_info, usi
     usize offset = ssrjson_cast(u8 *, writer) - ssrjson_cast(u8 *, u_buf_info->head);
     usize capacity = ssrjson_cast(u8 *, u_buf_info->end) - ssrjson_cast(u8 *, u_buf_info->head);
 #ifdef SSRJSON_32BIT
+    // Avoid overflowing signed end - writer.
     if (likely(offset <= capacity && size <= (capacity - offset) / sizeof(dst_t))) { return writer; }
 #endif
     usize target_size;
@@ -73,6 +75,7 @@ force_inline dst_t *u_buf_reserve_str(dst_t *writer, EncodeUBufInfo *u_buf_info,
     }
     usize size = len * max_json_bytes_per_unicode + padding;
 #ifdef SSRJSON_64BIT
+    // Preserve negative availability after character-width promotion.
     Py_ssize_t avail = ssrjson_cast(u8 *, u_buf_info->end) - ssrjson_cast(u8 *, writer);
     if (likely(ssrjson_cast(Py_ssize_t, size * sizeof(dst_t)) <= avail)) return writer;
 #endif
