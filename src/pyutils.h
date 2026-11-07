@@ -127,7 +127,12 @@ force_inline PyObject *create_empty_unicode(usize size, int kind) {
     usize tpsize = kind ? kind : 1;
     static_assert(sizeof(PyCompactUnicodeObject) + 4 <= SIZE_MAX / 4, "Unicode allocation padding");
     /* PyObject_Malloc enforces the signed allocation limit. */
+#if SSRJSON_IS_AARCH64 && defined(SSRJSON_64BIT)
+    /* Use high bits for AArch64 bounds. */
+    if (unlikely(size > PY_SSIZE_T_MAX / 8)) {
+#else
     if (unlikely(size >= SIZE_MAX / 8)) {
+#endif
         PyErr_NoMemory();
         return NULL;
     }

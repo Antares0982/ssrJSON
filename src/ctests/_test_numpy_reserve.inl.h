@@ -98,6 +98,11 @@ int test_ndarray_reserve_cnt(void) {
     }
     int kinds[] = {0, 1, 2, 4};
     for (usize i = 0; i < count_of(kinds); i++) {
+#if SSRJSON_IS_AARCH64 && defined(SSRJSON_64BIT)
+        CHECK(create_empty_unicode((usize)PY_SSIZE_T_MAX / 8 + 1, kinds[i]) == NULL);
+        CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
+        PyErr_Clear();
+#endif
         CHECK(create_empty_unicode(SIZE_MAX / 8, kinds[i]) == NULL);
         CHECK(PyErr_ExceptionMatches(PyExc_MemoryError));
         PyErr_Clear();
