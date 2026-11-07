@@ -119,6 +119,61 @@ bool show_test_counter(TestCounter *counter) {
     return success;
 }
 
+static PyMemAllocatorEx string_allocator;
+static size_t string_alloc_size;
+static bool string_alloc_failed;
+
+static void *fail_string_alloc(void *ctx, size_t size) {
+    if (size == string_alloc_size) {
+        string_alloc_failed = true;
+        return NULL;
+    }
+    return string_allocator.malloc(ctx, size);
+}
+
+static int test_string_alloc_failure(void) {
+    PyObject *module = PyImport_ImportModule("ssrjson");
+    CHECK(module);
+    PyObject *loads = PyObject_GetAttrString(module, "loads");
+    Py_DECREF(module);
+    CHECK(loads);
+    PyObject *result = PyObject_CallFunction(loads, "s", "null");
+    CHECK(result);
+    Py_DECREF(result);
+
+    Py_ssize_t len = SSRJSON_STRING_BUFFER_SIZE / 4 + 2;
+    Py_UCS4 chars[] = {'a', 0xe9, 0x4e2d, 0x1f600};
+    for (usize i = 0; i < count_of(chars); i++) {
+        PyObject *input = PyUnicode_New(len, chars[i]);
+        CHECK(input);
+        CHECK(PyUnicode_Fill(input, 0, len, chars[i]) == len);
+        CHECK(PyUnicode_WriteChar(input, 0, '"') == 0);
+        CHECK(PyUnicode_WriteChar(input, 1, '\\') == 0);
+        CHECK(PyUnicode_WriteChar(input, 2, 'n') == 0);
+        CHECK(PyUnicode_WriteChar(input, len - 1, '"') == 0);
+
+        PyMem_GetAllocator(PYMEM_DOMAIN_MEM, &string_allocator);
+        PyMemAllocatorEx failing = string_allocator;
+        failing.malloc = fail_string_alloc;
+        string_alloc_size = 4 * len + 2 * _TailPadding;
+        string_alloc_failed = false;
+        PyMem_SetAllocator(PYMEM_DOMAIN_MEM, &failing);
+        result = PyObject_CallOneArg(loads, input);
+        PyMem_SetAllocator(PYMEM_DOMAIN_MEM, &string_allocator);
+
+        bool raised = !result && PyErr_ExceptionMatches(PyExc_MemoryError);
+        PyErr_Clear();
+        Py_XDECREF(result);
+        result = PyObject_CallOneArg(loads, input);
+        bool recovered = result && PyUnicode_GetLength(result) == len - 3 && PyUnicode_ReadChar(result, 0) == '\n';
+        Py_XDECREF(result);
+        Py_DECREF(input);
+        CHECK(string_alloc_failed && raised && recovered);
+    }
+    Py_DECREF(loads);
+    return PASSED;
+}
+
 bool run_c_tests(void) {
 #if SSRJSON_IS_X64
     bool support_avx512 = _SupportAVX512;
@@ -126,6 +181,8 @@ bool run_c_tests(void) {
 #endif
     TestCounter counter;
     ZERO_FILL(counter);
+
+    RUN_ONE_TEST(test_string_alloc_failure);
 
     RUN_VECTOR_TESTS(test_cvt_u8_to_u16);
     RUN_VECTOR_TESTS(test_cvt_u8_to_u32);

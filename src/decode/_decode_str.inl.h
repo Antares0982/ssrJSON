@@ -91,7 +91,9 @@ internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_conte
         // u8 *write_buffer;
         src_t *string_buffer_head;
         bool need_dealloc = false;
-        check_and_reserve_str_buffer(decoder_context, len, &string_buffer_head, &need_dealloc);
+        if (unlikely(!check_and_reserve_str_buffer(decoder_context, len, &string_buffer_head, &need_dealloc))) {
+            goto fail_alloc;
+        }
         cur++;
         ret = decode_str(&cur, end, string_buffer_head, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
         if (need_dealloc) { SSRJSON_FREE((void *)((u8 *)string_buffer_head - _TailPadding)); }
