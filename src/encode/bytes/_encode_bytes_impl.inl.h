@@ -159,7 +159,6 @@ force_inline u8 *b_buf_apd_key_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
 
 force_inline u8 *b_buf_apd_key(u8 *writer, PyObject *key, EncodeUBufInfo *u_buf_info, usize cur_nested_depth,
                                bool is_write_cache, ssrjson_compiletime bool is_compact) {
-    int src_pykind = PyUnicode_KIND(key);
     bool is_ascii = PyUnicode_IS_ASCII(key);
     usize len = PyUnicode_GET_LENGTH(key);
     const void *src_voidp = get_src_voidp(key, is_ascii, is_compact);
@@ -168,6 +167,7 @@ force_inline u8 *b_buf_apd_key(u8 *writer, PyObject *key, EncodeUBufInfo *u_buf_
         if (likely(is_ascii)) {
             return b_buf_apd_ascii_key(writer, src_voidp, len, !!COMPILE_INDENT_LEVEL, is_compact);
         } else {
+            int src_pykind = PyUnicode_KIND(key);
             if (is_write_cache) {
                 return b_buf_apd_nonascii_key_write_cache(writer, src_pykind, src_voidp, len, key, is_compact);
             } else {
@@ -211,11 +211,12 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
 
 // always `call b_buf_apd_str_rsv_idt` before calling this.
 // inline this to avoid a redundant null check on ascii path.
-force_inline u8 *b_buf_apd_str_impl(u8 *writer, int src_pykind, const void *src_voidp, usize len, PyObject *str,
-                                    bool is_ascii, bool is_write_cache, ssrjson_compiletime bool is_compact) {
+force_inline u8 *b_buf_apd_str_impl(u8 *writer, const void *src_voidp, usize len, PyObject *str, bool is_ascii,
+                                    bool is_write_cache, ssrjson_compiletime bool is_compact) {
     if (likely(is_ascii)) {
         return b_buf_apd_ascii_str(writer, src_voidp, len, is_compact);
     } else {
+        int src_pykind = PyUnicode_KIND(str);
         if (is_write_cache) {
             return b_buf_apd_nonascii_str_write_cache(writer, src_voidp, len, src_pykind, str, is_compact);
         } else {
@@ -224,22 +225,20 @@ force_inline u8 *b_buf_apd_str_impl(u8 *writer, int src_pykind, const void *src_
     }
 }
 
-force_inline u8 *b_buf_apd_str(u8 *writer, int src_pykind, const void *src_voidp, usize len, PyObject *str,
-                               bool is_ascii, bool is_write_cache, EncodeUBufInfo *u_buf_info, usize cur_nested_depth,
+force_inline u8 *b_buf_apd_str(u8 *writer, const void *src_voidp, usize len, PyObject *str, bool is_ascii,
+                               bool is_write_cache, EncodeUBufInfo *u_buf_info, usize cur_nested_depth,
                                ssrjson_compiletime bool is_in_obj, ssrjson_compiletime bool is_compact) {
     writer = b_buf_apd_str_rsv_idt(writer, len, u_buf_info, cur_nested_depth, is_in_obj);
-    if (likely(writer))
-        writer = b_buf_apd_str_impl(writer, src_pykind, src_voidp, len, str, is_ascii, is_write_cache, is_compact);
+    if (likely(writer)) writer = b_buf_apd_str_impl(writer, src_voidp, len, str, is_ascii, is_write_cache, is_compact);
     return writer;
 }
 
 static force_noinline u8 *encode_bytes_noncompact_val_in_obj(u8 *writer, EncodeUBufInfo *u_buf_info, PyObject *val,
                                                              Py_ssize_t cur_nested_depth, bool is_write_cache) {
     usize s_len = PyUnicode_GET_LENGTH(val);
-    int src_pykind = PyUnicode_KIND(val);
     bool is_ascii = PyUnicode_IS_ASCII(val);
     const void *src_voidp = ssrjson_pyunicode_cast(val)->data.any;
-    return b_buf_apd_str(writer, src_pykind, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
+    return b_buf_apd_str(writer, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
                          ssrjson_cast(usize, cur_nested_depth), true, false);
 }
 
@@ -247,10 +246,9 @@ static force_noinline u8 *encode_bytes_noncompact_val_not_obj(u8 *writer, Encode
                                                               Py_ssize_t cur_nested_depth, bool is_write_cache) {
 
     usize s_len = PyUnicode_GET_LENGTH(val);
-    int src_pykind = PyUnicode_KIND(val);
     bool is_ascii = PyUnicode_IS_ASCII(val);
     const void *src_voidp = ssrjson_pyunicode_cast(val)->data.any;
-    return b_buf_apd_str(writer, src_pykind, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
+    return b_buf_apd_str(writer, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
                          ssrjson_cast(usize, cur_nested_depth), false, false);
 }
 
@@ -291,10 +289,9 @@ force_inline u8 *encode_bytes_process_val(u8 *writer, EncodeValJumpFlag *jump_fl
     switch (obj_type) {
         case T_Unicode: {
             usize s_len = PyUnicode_GET_LENGTH(val);
-            int src_pykind = PyUnicode_KIND(val);
             bool is_ascii = PyUnicode_IS_ASCII(val);
             const void *src_voidp = is_ascii ? ssrjson_pyunicode_ascii_start(val) : ssrjson_pyunicode_ucs1_start(val);
-            writer = b_buf_apd_str(writer, src_pykind, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
+            writer = b_buf_apd_str(writer, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
                                    ssrjson_cast(usize, *cur_nested_depth_addr), is_in_obj, true);
             return_jump_fail_if_unlikely(!writer);
             break;
