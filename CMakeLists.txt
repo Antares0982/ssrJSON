@@ -362,30 +362,6 @@ if(BUILD_MULTI_LIB)
       add_fuzzer_coverage_option(ssrjson_scalar)
     endif()
 
-  elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
-    add_library(_ssrjson_common OBJECT ${SRC_FILES})
-    target_link_libraries(_ssrjson_common PUBLIC commonBuild)
-    target_compile_definitions(_ssrjson_common PUBLIC SSRJSON_EXPORTS=1)
-    target_compile_definitions(_ssrjson_common
-                               PRIVATE DISABLE_INTERNAL_NOINLINE=1)
-    add_library(ssrjson_neon OBJECT ${SRC_WITH_SIMD})
-    target_link_libraries(ssrjson_neon PUBLIC _ssrjson_common)
-    add_library(
-      ssrjson SHARED
-      $<TARGET_OBJECTS:ssrjson_neon> $<TARGET_OBJECTS:_ssrjson_common>
-      $<TARGET_OBJECTS:_ssrjson_common> $<TARGET_OBJECTS:xjb>)
-    target_link_libraries(ssrjson PUBLIC commonBuild)
-
-    if(BUILD_COVERAGE)
-      add_coverage_flags(_ssrjson_common)
-      add_coverage_flags(ssrjson_neon)
-    endif()
-
-    if(BUILD_FUZZER)
-      add_fuzzer_coverage_option(_ssrjson_common)
-      add_fuzzer_coverage_option(ssrjson_neon)
-    endif()
-
   else()
     message(FATAL_ERROR "TARGET_SIMD_ARCH=${TARGET_SIMD_ARCH} not supported")
   endif()

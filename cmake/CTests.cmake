@@ -28,10 +28,6 @@ if(BUILD_MULTI_LIB)
       APPEND SRC_TEST $<TARGET_OBJECTS:ssrjson_test_avx512>
       $<TARGET_OBJECTS:ssrjson_test_avx2> $<TARGET_OBJECTS:ssrjson_test_sse4>
       $<TARGET_OBJECTS:ssrjson_test_scalar>)
-  elseif("${TARGET_SIMD_ARCH}" STREQUAL "aarch")
-    add_library(ssrjson_test_neon OBJECT ${SRC_TEST_WITH_SIMD})
-    target_link_libraries(ssrjson_test_neon PUBLIC commonBuild)
-    list(APPEND SRC_TEST $<TARGET_OBJECTS:ssrjson_test_neon>)
   else()
     message(FATAL_ERROR "TARGET_SIMD_ARCH=${TARGET_SIMD_ARCH} not supported")
   endif()

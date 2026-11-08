@@ -126,7 +126,7 @@ Pre-built wheels are available on PyPI, you can install it using pip.
 pip install ssrjson
 ```
 
-Note: x86-64 wheels include scalar fallback in the same package. Linux 32-bit wheels target glibc 2.34+ (i686) and glibc 2.35+ (ARMv7 hard-float). Windows support follows the selected CPython version. ssrJSON does not work with Python implementations other than CPython. Currently supported CPython versions are 3.10, 3.11, 3.12, 3.13, 3.14, 3.15.
+Note: x86-64 wheels include scalar fallback in the same package. Linux 32-bit wheels target glibc 2.34+ (i686) and glibc 2.35+ (ARMv7 hard-float). The i686 wheels require SSE2 (Pentium 4 or newer); the scalar backend may still use instructions from the compiler's baseline target. Windows support follows the selected CPython version. ssrJSON does not work with Python implementations other than CPython. Currently supported CPython versions are 3.10, 3.11, 3.12, 3.13, 3.14, 3.15.
 
 ### Build From Source
 
@@ -140,6 +140,10 @@ mkdir build
 cmake -S . -B build  # On Windows, configure with `cmake -T ClangCL`
 cmake --build build
 ```
+
+On Windows, use `cmake -S . -B build -T ClangCL -A x64` with 64-bit Python,
+or `cmake -S . -B build -T ClangCL -A Win32` with 32-bit Python.
+`pip install .` selects the platform automatically.
 
 Or you like the `pip` way:
 

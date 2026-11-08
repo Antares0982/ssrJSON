@@ -76,7 +76,7 @@ jobs:
           fi
           python -m pytest --random-order python-test
 
-      - name: Test without shipping SIMD
+      - name: Test NEON with shipping SIMD disabled
         if: matrix.python-version == '3.14'
         env:
           CC: clang
@@ -90,3 +90,18 @@ jobs:
           python -c 'import ssrjson; assert ssrjson.get_current_features()["simd"] == "NEON"; assert ssrjson.get_current_features()["multi_lib"] is False'
           ctest --test-dir build-single --output-on-failure
           python -m pytest --random-order python-test/test_api.py python-test/test_portable.py
+
+      - name: Test scalar backend
+        if: matrix.python-version == '3.14'
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          cmake -S . -B build-scalar -DCMAKE_BUILD_TYPE=Release \
+            -DPython3_EXECUTABLE="$(command -v python)" \
+            -DBUILD_SHIPPING_SIMD=OFF -DBUILD_SCALAR=ON -DBUILD_NATIVE=OFF
+          cmake --build build-scalar -j 3
+          export PYTHONPATH="$PWD/build-scalar"
+          python -c 'import ssrjson; assert ssrjson.get_current_features()["simd"] == "SCALAR"; assert ssrjson.get_current_features()["multi_lib"] is False'
+          ctest --test-dir build-scalar --output-on-failure
+          python -m pytest --random-order python-test

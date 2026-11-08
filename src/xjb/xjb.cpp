@@ -112,6 +112,8 @@
 #    endif
 #endif
 
+static_assert(!XJB_USE_SIMD || XJB_USE_NEON || XJB_NO_MEMMOVE, "ssrJSON requirement");
+
 // Auto inferred: XJB_NO_MEMMOVE related macros
 #if XJB_NO_MEMMOVE
 #    define XJB_SHUFFLER_PARAM , move_shuffler

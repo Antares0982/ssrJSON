@@ -47,6 +47,10 @@ jobs:
     - name: Release Test (Build Only)
       run: |
         nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./ci/linux_test.py --build-dir build-py3.${{ matrix.pyver }} --build-type Release --build-only
+    - name: Test Release scalar fallback (SDE, Prescott)
+      if: matrix.pyver == '14'
+      run: |
+        nix develop .#devenv-py314 -c bash ci/test_scalar_linux.sh .nix-devenv/bin/python3.14 build-py3.14
     - name: DEBUG Tests (Build and Run)
       run: |
         nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./ci/linux_test.py --build-dir build-py3.${{ matrix.pyver }} --build-type Debug

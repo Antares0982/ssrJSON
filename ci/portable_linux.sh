@@ -22,6 +22,9 @@ if [[ $(uname -m) == arm* ]]; then
     export CC=gcc CXX=g++
     export CFLAGS='-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard'
     export CXXFLAGS="$CFLAGS"
+else
+    export CFLAGS='-march=pentium4'
+    export CXXFLAGS="$CFLAGS"
 fi
 python -m pip install 'cmake>=3.30' build pytest pytest-random-order psutil numpy
 export CC=clang CXX=clang++

@@ -142,6 +142,15 @@ jobs:
         python -m pip install pytest pytest-xdist pytest-random-order psutil numpy
         python -m pytest --random-order python-test
 
+    - name: Prepare old CPU emulation
+      if: matrix.pyver == '14'
+      run: |
+        nix develop .#devenv-py314 -c bash -c 'dirname "$(command -v sde64)" >> "$GITHUB_PATH"'
+
+    - name: Test wheel scalar fallback (SDE, Prescott)
+      if: matrix.pyver == '14'
+      run: bash ci/test_scalar_linux.sh "$(command -v python)"
+
   Linux-aarch64-Test-Tarball:
     runs-on: [Linux, ARM64, nixos-arm64]
     needs: Build-Tarball

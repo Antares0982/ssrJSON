@@ -69,7 +69,7 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
 #elif HAS_SSE4_2
     DICT_SET_STRING_ITEM("simd", "SSE4.2");
 #else
-    DICT_SET_STRING_ITEM("simd", "SSE2");
+#    error "Unsupported single-library SIMD backend"
 #endif
     return ret;
 fail:;

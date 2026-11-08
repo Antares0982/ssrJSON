@@ -85,9 +85,6 @@ bool wrap_run_test(int (*func)(void), const char *name, TestCounter *counter) {
             if (_SupportAVX2) RUN_ONE_TEST(_name##_avx2);     \
             if (_SupportSSE4) RUN_ONE_TEST(_name##_sse4_2);   \
         } while (0)
-#elif BUILD_MULTI_LIB && SSRJSON_IS_AARCH64
-#    define RUN_TESTS(_name) \
-        do { RUN_ONE_TEST(_name##_neon); } while (0)
 #else
 #    define RUN_TESTS(_name) RUN_ONE_TEST(_name);
 #endif
