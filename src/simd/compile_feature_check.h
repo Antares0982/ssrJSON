@@ -20,7 +20,9 @@
  SOFTWARE.
  *============================================================================*/
 
-#if USING_AVX512
+#if SSRJSON_SCALAR
+/* No vector width for scalar kernels. */
+#elif USING_AVX512
 #    define _CompileVectorBits 512
 #elif USING_AVX2
 #    define _CompileVectorBits 256

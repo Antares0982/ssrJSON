@@ -66,6 +66,10 @@ clangStdenv.mkDerivation {
         ${sde}/bin/sde64 -ivb -- ${python}/bin/python ../ci/pgo_train.py \
           --build-dir "$PWD/pgo-instr" --bench-dir "$PWD/../bench" \
           --profile-dir "$PWD/pgo_data/sse42" & pid3=$!
+        ${sde}/bin/sde64 -p4p -- ${python}/bin/python ../ci/pgo_train.py \
+          --build-dir "$PWD/pgo-instr" --bench-dir "$PWD/../bench" \
+          --profile-dir "$PWD/pgo_data/scalar" & pid4=$!
+        wait $pid4 > /dev/null 2>&1 || exit $?
         wait $pid1 > /dev/null 2>&1 || exit $?
         wait $pid2 > /dev/null 2>&1 || exit $?
         wait $pid3 > /dev/null 2>&1 || exit $?

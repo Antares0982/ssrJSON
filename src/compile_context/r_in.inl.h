@@ -123,4 +123,5 @@
 #    define decode_str_fast_trailing make_ucs_name(decode_str_fast_trailing)
 #    define get_cache_key_hash_and_size make_ucs_name(get_cache_key_hash_and_size)
 #endif
+#define scan_string make_r_name(scan_string)
 #endif // SSRJSON_COMPILE_CONTEXT_R

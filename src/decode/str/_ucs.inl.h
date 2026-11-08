@@ -58,6 +58,12 @@
 #define decode_str_copy_trailing_to_u16 ssrjson_concat2(make_ucs_name(decode_str_copy_trailing), u16)
 #define decode_str_copy_trailing_to_u32 ssrjson_concat2(make_ucs_name(decode_str_copy_trailing), u32)
 
+#if SSRJSON_SCALAR
+force_inline int decode_str_fast_loop(const src_t **src_addr, const src_t *end, EscapeInfo *escape, src_t *maximum) {
+    return scan_string(src_addr, end, escape, maximum);
+}
+
+#else
 force_inline int decode_str_fast_loop4(const src_t **src_addr, const src_t *src_end, EscapeInfo *escapeval_addr,
                                        vector_a *maxvec_addr) {
     int ret;
@@ -99,32 +105,44 @@ force_inline int decode_str_fast_trailing(const src_t **src_addr, const src_t *s
     return ret;
 }
 
+#endif
+
+#if SSRJSON_SCALAR
+#    define string_max_t src_t
+#    define string_max_zero() 0
+#    define string_max_fits(x, limit) ((x) <= (limit))
+#else
+#    define string_max_t vector_a
+#    define string_max_zero() setzero()
+#    define string_max_fits(x, limit) checkmax(x, limit)
+#endif
+
 // fast path unicode maker
 force_inline PyObject *make_unicode_from_src(const src_t *start, usize count, ssrjson_compiletime bool is_key,
-                                             vector_a maxvec,
+                                             string_max_t maxvec,
                                              void *temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
     const src_t upper_bound = (COMPILE_UCS_LEVEL == 1) ? 0x7f : ((COMPILE_UCS_LEVEL == 2) ? 0xff : 0xffff);
 
     PyObject *ret;
     decode_keyhash_t hash;
 
-    bool need_cvt = checkmax(maxvec, upper_bound);
+    bool need_cvt = string_max_fits(maxvec, upper_bound);
     int kind = COMPILE_UCS_LEVEL;
     bool need_size_cvt = need_cvt && COMPILE_UCS_LEVEL > 1;
     if (need_cvt) {
 #if COMPILE_UCS_LEVEL == 1
         kind = 0;
 #elif COMPILE_UCS_LEVEL == 2
-        if (checkmax(maxvec, 0x7f)) {
+        if (string_max_fits(maxvec, 0x7f)) {
             kind = 0;
         } else {
             kind = 1;
         }
 #else
-        if (checkmax(maxvec, 0x7f)) {
+        if (string_max_fits(maxvec, 0x7f)) {
             kind = 0;
         } else {
-            if (checkmax(maxvec, 0xff)) {
+            if (string_max_fits(maxvec, 0xff)) {
                 kind = 1;
             } else {
                 kind = 2;
@@ -153,7 +171,11 @@ force_inline PyObject *make_unicode_from_src(const src_t *start, usize count, ss
             const u8 *temp_src = temp_buffer;
             u8 *temp_dst = kind ? ssrjson_pyunicode_ucs1_start(ret) : ssrjson_pyunicode_ascii_start(ret);
             dst_void = temp_dst;
+#if SSRJSON_SCALAR
+            memcpy(temp_dst, temp_src, count * tpsize);
+#else
             __ssrjson_short_memcpy_small_first(&temp_dst, &temp_src, count * tpsize, 128);
+#endif
         } else {
             // always this case if `is_key` is false
             make_ucs_name(copy_to_new_unicode)(&dst_void, ret, need_cvt, start, count, kind);
@@ -172,9 +194,13 @@ done:;
 // `is_key` cannot be compile-time determined because of noinline.
 internal_simd_noinline PyObject *decode_str_with_escape(const src_t *src_start, const src_t **src_addr,
                                                         const src_t *src_end, void *temp_buffer, bool is_key,
-                                                        EscapeInfo in_escape_info, vector_a maxvec) {
-#define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
-#define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
+                                                        EscapeInfo in_escape_info, string_max_t maxvec) {
+#if SSRJSON_SCALAR
+#    define CAN_LOOP() (src < src_end)
+#else
+#    define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
+#    define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
+#endif
     //
     const src_t *src = *src_addr;
     //
@@ -283,16 +309,22 @@ decode_loop_ucs1:;
 #    define ON_ESCAPE \
         process_escape_ucs1_u8(escape_info, &u8writer, &u16writer, &u32writer, &u8size, &max_escape, temp_buffer)
 
+#    if !SSRJSON_SCALAR
         while (CAN_LOOP4()) {
             EscapeInfo escape_info;
             int state_code = decode_str_copy_loop4_to_u8(&u8writer, &src, src_end, &escape_info, &maxvec);
             LOOP_SWITCHER(state_code, ON_ESCAPE);
         }
+#    endif
         while (CAN_LOOP()) {
             EscapeInfo escape_info;
             int state_code = decode_str_copy_loop_to_u8(&u8writer, &src, src_end, &escape_info, &maxvec);
             LOOP_SWITCHER(state_code, ON_ESCAPE);
         }
+#    if SSRJSON_SCALAR
+        PyErr_SetString(JSONDecodeError, "Unexpected end of string");
+        goto failed;
+#    else
     trailing_ucs1:;
         if (likely(src < src_end)) {
             EscapeInfo escape_info;
@@ -332,6 +364,7 @@ decode_loop_ucs1:;
             PyErr_SetString(JSONDecodeError, "Unexpected end of string");
             goto failed;
         }
+#    endif
 #    undef ON_ESCAPE
 #    undef LOOP_SWITCHER
     }
@@ -380,17 +413,23 @@ decode_loop_ucs2:;
 #        define ON_ESCAPE \
             process_escape_ucs1_u16(escape_info, &u16writer, &u32writer, &u8size, &u16size, &max_escape, temp_buffer)
 #    endif
+#    if !SSRJSON_SCALAR
         while (CAN_LOOP4()) {
             EscapeInfo escape_info;
             int state_code = decode_str_copy_loop4_to_u16(&u16writer, &src, src_end, &escape_info, &maxvec);
             LOOP_SWITCHER(state_code, ON_ESCAPE);
         }
+#    endif
         while (CAN_LOOP()) {
             EscapeInfo escape_info;
             int state_code = decode_str_copy_loop_to_u16(&u16writer, &src, src_end, &escape_info, &maxvec);
             LOOP_SWITCHER(state_code, ON_ESCAPE);
         }
 
+#    if SSRJSON_SCALAR
+        PyErr_SetString(JSONDecodeError, "Unexpected end of string");
+        goto failed;
+#    else
     trailing_ucs2:;
         if (likely(src < src_end)) {
             EscapeInfo escape_info;
@@ -427,6 +466,7 @@ decode_loop_ucs2:;
             PyErr_SetString(JSONDecodeError, "Unexpected end of string");
             goto failed;
         }
+#    endif
 #    undef ON_ESCAPE
 #    undef LOOP_SWITCHER
     }
@@ -456,16 +496,22 @@ decode_loop_ucs4:;
             }                                                                \
         }                                                                    \
     }
+#if !SSRJSON_SCALAR
         while (CAN_LOOP4()) {
             EscapeInfo escape_info;
             int state_code = decode_str_copy_loop4_to_u32(&u32writer, &src, src_end, &escape_info, &maxvec);
             LOOP_SWITCHER(state_code);
         }
+#endif
         while (CAN_LOOP()) {
             EscapeInfo escape_info;
             int state_code = decode_str_copy_loop_to_u32(&u32writer, &src, src_end, &escape_info, &maxvec);
             LOOP_SWITCHER(state_code);
         }
+#if SSRJSON_SCALAR
+        PyErr_SetString(JSONDecodeError, "Unexpected end of string");
+        goto failed;
+#else
     trailing_ucs4:;
         if (likely(src < src_end)) {
             EscapeInfo escape_info;
@@ -491,6 +537,7 @@ decode_loop_ucs4:;
             PyErr_SetString(JSONDecodeError, "Unexpected end of string");
             goto failed;
         }
+#endif
 #undef LOOP_SWITCHER
     }
 #if COMPILE_UCS_LEVEL <= 1
@@ -498,7 +545,7 @@ done_ucs1:;
     {
         PyObject *ret;
         // check if down to ascii
-        if (max_escape <= 0x7f && checkmax(maxvec, 0x7f)) {
+        if (max_escape <= 0x7f && string_max_fits(maxvec, 0x7f)) {
             // ascii
             ret = make_unicode_from_raw_ascii(temp_buffer, u8writer - ssrjson_cast(u8 *, temp_buffer), is_key);
         } else {
@@ -513,8 +560,8 @@ done_ucs2:;
     {
         PyObject *ret;
 #    if COMPILE_UCS_LEVEL == 2
-        if (max_escape <= 0xff && checkmax(maxvec, 0xff)) {
-            bool is_ascii = (max_escape <= 0x7f && checkmax(maxvec, 0x7f));
+        if (max_escape <= 0xff && string_max_fits(maxvec, 0xff)) {
+            bool is_ascii = (max_escape <= 0x7f && string_max_fits(maxvec, 0x7f));
             ret = make_unicode_down_ucs2_u8(
                     temp_buffer, u16writer - ssrjson_cast(u16 *, temp_buffer), is_key, is_ascii);
         } else
@@ -537,9 +584,9 @@ done_ucs4:;
     {
         PyObject *ret;
 #if COMPILE_UCS_LEVEL == 4
-        if (max_escape <= 0xffff && checkmax(maxvec, 0xffff)) {
-            if (max_escape <= 0xff && checkmax(maxvec, 0xff)) {
-                bool is_ascii = (max_escape <= 0x7f && checkmax(maxvec, 0x7f));
+        if (max_escape <= 0xffff && string_max_fits(maxvec, 0xffff)) {
+            if (max_escape <= 0xff && string_max_fits(maxvec, 0xff)) {
+                bool is_ascii = (max_escape <= 0x7f && string_max_fits(maxvec, 0x7f));
                 ret = make_unicode_down_ucs4_u8(
                         temp_buffer, u32writer - ssrjson_cast(u32 *, temp_buffer), is_key, is_ascii);
             } else {
@@ -576,8 +623,12 @@ failed:;
 
 internal_simd_noinline PyObject *decode_str(const src_t **src_addr, const src_t *const src_end, void *temp_buffer,
                                             ssrjson_compiletime bool is_key DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
-#define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
-#define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
+#if SSRJSON_SCALAR
+#    define CAN_LOOP() (src < src_end)
+#else
+#    define CAN_LOOP4() (src_end - 4 * READ_BATCH_COUNT >= src)
+#    define CAN_LOOP() (src_end - 1 * READ_BATCH_COUNT >= src)
+#endif
 #define LOOP_SWITCHER(_status_code_)                                                        \
     switch (status_code) {                                                                  \
         case DECODE_LOOPSTATE_CONTINUE: {                                                   \
@@ -604,8 +655,9 @@ internal_simd_noinline PyObject *decode_str(const src_t **src_addr, const src_t 
     const src_t *src = *src_addr;
     const src_t *const original_src = src;
 
-    vector_a maxvec = setzero();
+    string_max_t maxvec = string_max_zero();
 
+#if !SSRJSON_SCALAR
     if (ssrjson_consteval(!is_key)) {
         while (CAN_LOOP4()) {
             EscapeInfo escape_info;
@@ -613,13 +665,17 @@ internal_simd_noinline PyObject *decode_str(const src_t **src_addr, const src_t 
             LOOP_SWITCHER(status_code);
         }
     }
-
+#endif
     while (CAN_LOOP()) {
         EscapeInfo escape_info;
         int status_code = decode_str_fast_loop(&src, src_end, &escape_info, &maxvec);
         LOOP_SWITCHER(status_code);
     }
 
+#if SSRJSON_SCALAR
+    PyErr_SetString(JSONDecodeError, "Unexpected end of string");
+    goto failed;
+#else
     if (likely(src < src_end)) {
         EscapeInfo escape_info;
         int status_code = decode_str_fast_trailing(&src, src_end, &escape_info, &maxvec);
@@ -645,6 +701,7 @@ internal_simd_noinline PyObject *decode_str(const src_t **src_addr, const src_t 
         PyErr_SetString(JSONDecodeError, "Unexpected end of string");
         goto failed;
     }
+#endif
 
 done:;
     *src_addr = src + 1; // skip the ending '"'
@@ -676,3 +733,7 @@ failed:;
 //
 #include "compile_context/sr_out.inl.h"
 #undef COMPILE_READ_UCS_LEVEL
+
+#undef string_max_t
+#undef string_max_zero
+#undef string_max_fits

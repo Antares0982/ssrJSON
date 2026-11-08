@@ -30,6 +30,7 @@
 #undef make_w_name
 //
 #undef u_buf_reserve
+#undef u_buf_reserve_str
 #undef u64_to_unicode
 #undef u32_to_unicode
 #undef u16_to_unicode

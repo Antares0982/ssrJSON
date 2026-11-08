@@ -13,6 +13,26 @@ LOADS_RECURSION_LIMIT = 1024
 
 
 class TestApi:
+    def test_current_features(self):
+        features = ssrjson.get_current_features()
+        for key in (
+            "multi_lib",
+            "free_threading",
+            "lockfree",
+            "pgo",
+            "write_utf8_cache",
+            "strict_arg_parse",
+        ):
+            assert isinstance(features[key], bool)
+        assert features["simd"] in {
+            "SCALAR",
+            "SSE2",
+            "SSE4.2",
+            "AVX2",
+            "AVX512",
+            "NEON",
+        }
+
     def test_loads_trailing(self):
         """
         loads() handles trailing whitespace

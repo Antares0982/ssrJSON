@@ -84,7 +84,6 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, ssrjson_
     //
     len = (usize)PyUnicode_GET_LENGTH(unicode);
     is_ascii = PyUnicode_IS_ASCII(unicode);
-    unicode_kind = PyUnicode_KIND(unicode);
     usize write_offset;
     if (ssrjson_consteval(to_bytes_obj)) {
         write_offset = PYBYTES_START_OFFSET;
@@ -98,12 +97,13 @@ force_inline PyObject *_ssrjson_dumps_single_unicode(PyObject *unicode, ssrjson_
     if (ssrjson_consteval(to_bytes_obj)) {
         const void *src_voidp = get_src_voidp(unicode, is_ascii, is_compact);
         // pass `is_in_obj = true` to avoid unwanted indent check
-        WRITER_AS_U8(writer) = b_buf_apd_str_indent0(WRITER_AS_U8(writer), unicode_kind, src_voidp, len, unicode,
-                                                     is_ascii, is_write_cache, &_u_buf_info, 0, true, is_compact);
+        WRITER_AS_U8(writer) = b_buf_apd_str_indent0(WRITER_AS_U8(writer), src_voidp, len, unicode, is_ascii,
+                                                     is_write_cache, &_u_buf_info, 0, true, is_compact);
         success = !!writer;
         WRITER_AS_U8(writer)
         --;
     } else {
+        unicode_kind = PyUnicode_KIND(unicode);
         switch (unicode_kind) {
             // pass `is_in_obj = true` to avoid unwanted indent check
             case 1: {

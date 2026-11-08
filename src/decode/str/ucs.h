@@ -42,4 +42,13 @@
 #undef COMPILE_UCS_LEVEL
 #undef _CompileVectorBits
 
+#if SSRJSON_SCALAR
+#    define decode_str_ascii decode_str_ucs1
+
+internal_simd_noinline PyObject *decode_str_ascii_not_key(const u8 **src_addr, const u8 *src_end,
+                                                          void *temp_buffer DECODER_TLS_KEYCACHE_ADDITIONAL_ARGDEF) {
+    return decode_str_ucs1(src_addr, src_end, temp_buffer, false DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+}
+#endif
+
 #endif // SSRJSON_DECODE_STR_UCS_H

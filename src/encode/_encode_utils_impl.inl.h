@@ -26,7 +26,7 @@
 #    endif
 #    ifndef COMPILE_WRITE_UCS_LEVEL
 #        include "encode_shared.h"
-#        include "simd/long_cvt/part_cvt.h"
+#        include "simd/long_cvt.h"
 #        include "simd/simd_impl.h"
 #        define COMPILE_WRITE_UCS_LEVEL 2
 #        include "simd/compile_feature_check.h"
@@ -48,7 +48,7 @@ extern u8 *xjb32(float value, u8 *buffer);
  * Convert the u8 buffer to the buffer.
  * The space (cnt * sizeof(dst_t)) must be reserved before calling this function.
  */
-#if COMPILE_WRITE_UCS_LEVEL > 1
+#if COMPILE_WRITE_UCS_LEVEL > 1 && !SSRJSON_SCALAR
 force_inline ssrjson_nofail void _cvt_up_from_u8_cnt32(dst_t *writer, const u8 *buffer) {
 #    if COMPILE_WRITE_UCS_LEVEL == 2
     __partial_cvt_32_u8_u16(&writer, &buffer);
@@ -110,7 +110,11 @@ force_inline ssrjson_nofail dst_t *u64_to_unicode(register dst_t *writer, u64 va
 #if COMPILE_WRITE_UCS_LEVEL == 1
     return buffer_end;
 #else
+#    if SSRJSON_SCALAR
+    ssrjson_concat3(long_cvt_u8, dst_t, scalar)(writer, buffer, buffer_end - buffer);
+#    else
     _cvt_up_from_u8_cnt32(writer, buffer);
+#    endif
     return writer + (buffer_end - buffer);
 #endif
 }
@@ -133,7 +137,11 @@ force_inline ssrjson_nofail dst_t *u32_to_unicode(register dst_t *writer, u32 va
 #if COMPILE_WRITE_UCS_LEVEL == 1
     return buffer_end;
 #else
+#    if SSRJSON_SCALAR
+    ssrjson_concat3(long_cvt_u8, dst_t, scalar)(writer, buffer, buffer_end - buffer);
+#    else
     _cvt_up_from_u8_cnt16(writer, buffer);
+#    endif
     return writer + (buffer_end - buffer);
 #endif
 }
@@ -156,7 +164,11 @@ force_inline ssrjson_nofail dst_t *u16_to_unicode(register dst_t *writer, u16 va
 #if COMPILE_WRITE_UCS_LEVEL == 1
     return buffer_end;
 #else
+#    if SSRJSON_SCALAR
+    ssrjson_concat3(long_cvt_u8, dst_t, scalar)(writer, buffer, buffer_end - buffer);
+#    else
     _cvt_up_from_u8_cnt8(writer, buffer);
+#    endif
     return writer + (buffer_end - buffer);
 #endif
 }
@@ -179,7 +191,11 @@ force_inline ssrjson_nofail dst_t *u8_to_unicode(register dst_t *writer, u8 val,
 #if COMPILE_WRITE_UCS_LEVEL == 1
     return buffer_end;
 #else
+#    if SSRJSON_SCALAR
+    ssrjson_concat3(long_cvt_u8, dst_t, scalar)(writer, buffer, buffer_end - buffer);
+#    else
     _cvt_up_from_u8_cnt4(writer, buffer);
+#    endif
     return writer + (buffer_end - buffer);
 #endif
 }
@@ -201,7 +217,11 @@ force_inline ssrjson_nofail dst_t *f64_to_unicode(register dst_t *writer, double
 #else
     usize write_len = buffer_end - buffer;
     assert(write_len <= ssrjson_dtoa_output_maxlen);
+#    if SSRJSON_SCALAR
+    ssrjson_concat3(long_cvt_u8, dst_t, scalar)(writer, buffer, buffer_end - buffer);
+#    else
     _cvt_up_from_u8_cnt32(writer, buffer);
+#    endif
     return writer + write_len;
 #endif
 }
@@ -223,7 +243,11 @@ force_inline ssrjson_nofail dst_t *f32_to_unicode(register dst_t *writer, float 
 #else
     usize write_len = buffer_end - buffer;
     assert(write_len <= ssrjson_ftoa_output_maxlen);
+#    if SSRJSON_SCALAR
+    ssrjson_concat3(long_cvt_u8, dst_t, scalar)(writer, buffer, buffer_end - buffer);
+#    else
     _cvt_up_from_u8_cnt24(writer, buffer);
+#    endif
     return writer + write_len;
 #endif
 }

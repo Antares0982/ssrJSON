@@ -46,8 +46,8 @@ const char *_update_simd_features(void) {
     const char *err = NULL;
     X86SIMDFeatureLevel simd_feature = get_simd_feature();
     switch (simd_feature) {
-        case X86SIMDFeatureLevelSSE2: {
-            err = "Current hardware is not supported; SSE4.2 is required.";
+        case X86SIMDFeatureLevelScalar: {
+            BATCH_SET_INTERFACE(scalar);
             break;
         }
         case X86SIMDFeatureLevelSSE4_2: {
@@ -109,8 +109,8 @@ PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
             if (err) goto fail;                          \
         } while (0)
     switch (CurrentSIMDFeatureLevel) {
-        case X86SIMDFeatureLevelSSE2: {
-            DICT_SET_STRING_ITEM("simd", "SSE2");
+        case X86SIMDFeatureLevelScalar: {
+            DICT_SET_STRING_ITEM("simd", "SCALAR");
             break;
         }
         case X86SIMDFeatureLevelSSE4_2: {
@@ -135,51 +135,6 @@ fail:;
     Py_DECREF(ret);
     return NULL;
 }
-#elif SSRJSON_IS_AARCH64 // SSRJSON_IS_X64
-const char *_update_simd_features(void) {
-    BATCH_SET_INTERFACE(neon);
-    return NULL;
-}
-
-MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Dumps)
-MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_Decode)
-MAKE_FORWARD_PYFASTFUNCTION_IMPL(ssrjson_DumpsToBytes)
-
-PyObject *ssrjson_get_current_features(PyObject *self, PyObject *args) {
-    int err;
-    PyObject *ret = PyDict_New();
-    if (!ret) return NULL;
-    // Only x86-64 has multiple SIMD levels
-    err = PyDict_SetItemString(ret, "multi_lib", Py_False);
-    if (err) goto fail;
-    PyObject *write_cache_bool = _WriteUTF8CacheValue ? Py_True : Py_False;
-    err = PyDict_SetItemString(ret, "write_utf8_cache", write_cache_bool);
-    if (err) goto fail;
-    PyObject *strict_argparse_bool = _NonstrictArgparse ? Py_False : Py_True;
-    err = PyDict_SetItemString(ret, "strict_arg_parse", strict_argparse_bool);
-    if (err) goto fail;
-    err = PyDict_SetItemString(ret, "free_threading", SSRJSON_GIL_ENABLED ? Py_False : Py_True);
-    if (err) goto fail;
-    err = PyDict_SetItemString(
-            ret, "lockfree", (!SSRJSON_GIL_ENABLED && SSRJSON_FREE_THREADING_LOCKFREE) ? Py_True : Py_False);
-    if (err) goto fail;
-#    ifdef SSRJSON_PGO_USE
-    err = PyDict_SetItemString(ret, "pgo", Py_True);
-#    else
-    err = PyDict_SetItemString(ret, "pgo", Py_False);
-#    endif
-    if (err) goto fail;
-    PyObject *neon = PyUnicode_FromString("NEON");
-    if (!neon) goto fail;
-    err = PyDict_SetItemString(ret, "simd", neon);
-    Py_DECREF(neon);
-    if (err) goto fail;
-    return ret;
-fail:;
-    Py_DECREF(ret);
-    return NULL;
-}
-
 #else // SSRJSON_IS_X64
 static_assert(false, "multilib not supported on this platform");
 #endif

@@ -31,6 +31,7 @@
 #if SSRJSON_IS_X64
 bool _SupportAVX512 = false;
 bool _SupportAVX2 = false;
+bool _SupportSSE4 = false;
 
 void check_avx512(void) {
     int info[4];
@@ -77,17 +78,28 @@ bool wrap_run_test(int (*func)(void), const char *name, TestCounter *counter) {
 
 #define RUN_ONE_TEST(_name) wrap_run_test(_name, #_name, &counter)
 #if BUILD_MULTI_LIB && SSRJSON_IS_X64
-#    define RUN_TESTS(_name)              \
-        do {                              \
-            RUN_ONE_TEST(_name##_avx512); \
-            RUN_ONE_TEST(_name##_avx2);   \
-            RUN_ONE_TEST(_name##_sse4_2); \
+#    define RUN_TESTS(_name)                                  \
+        do {                                                  \
+            RUN_ONE_TEST(_name##_scalar);                     \
+            if (_SupportAVX512) RUN_ONE_TEST(_name##_avx512); \
+            if (_SupportAVX2) RUN_ONE_TEST(_name##_avx2);     \
+            if (_SupportSSE4) RUN_ONE_TEST(_name##_sse4_2);   \
         } while (0)
-#elif BUILD_MULTI_LIB && SSRJSON_IS_AARCH64
-#    define RUN_TESTS(_name) \
-        do { RUN_ONE_TEST(_name##_neon); } while (0)
 #else
 #    define RUN_TESTS(_name) RUN_ONE_TEST(_name);
+#endif
+
+#if BUILD_MULTI_LIB && SSRJSON_IS_X64
+#    define RUN_VECTOR_TESTS(name)                           \
+        do {                                                 \
+            if (_SupportAVX512) RUN_ONE_TEST(name##_avx512); \
+            if (_SupportAVX2) RUN_ONE_TEST(name##_avx2);     \
+            if (_SupportSSE4) RUN_ONE_TEST(name##_sse4_2);   \
+        } while (0)
+#elif SSRJSON_SCALAR
+#    define RUN_VECTOR_TESTS(name) ((void)0)
+#else
+#    define RUN_VECTOR_TESTS(name) RUN_TESTS(name)
 #endif
 
 bool show_test_counter(TestCounter *counter) {
@@ -104,6 +116,61 @@ bool show_test_counter(TestCounter *counter) {
     return success;
 }
 
+static PyMemAllocatorEx string_allocator;
+static size_t string_alloc_size;
+static bool string_alloc_failed;
+
+static void *fail_string_alloc(void *ctx, size_t size) {
+    if (size == string_alloc_size) {
+        string_alloc_failed = true;
+        return NULL;
+    }
+    return string_allocator.malloc(ctx, size);
+}
+
+static int test_string_alloc_failure(void) {
+    PyObject *module = PyImport_ImportModule("ssrjson");
+    CHECK(module);
+    PyObject *loads = PyObject_GetAttrString(module, "loads");
+    Py_DECREF(module);
+    CHECK(loads);
+    PyObject *result = PyObject_CallFunction(loads, "s", "null");
+    CHECK(result);
+    Py_DECREF(result);
+
+    Py_ssize_t len = SSRJSON_STRING_BUFFER_SIZE / 4 + 2;
+    Py_UCS4 chars[] = {'a', 0xe9, 0x4e2d, 0x1f600};
+    for (usize i = 0; i < count_of(chars); i++) {
+        PyObject *input = PyUnicode_New(len, chars[i]);
+        CHECK(input);
+        CHECK(PyUnicode_Fill(input, 0, len, chars[i]) == len);
+        CHECK(PyUnicode_WriteChar(input, 0, '"') == 0);
+        CHECK(PyUnicode_WriteChar(input, 1, '\\') == 0);
+        CHECK(PyUnicode_WriteChar(input, 2, 'n') == 0);
+        CHECK(PyUnicode_WriteChar(input, len - 1, '"') == 0);
+
+        PyMem_GetAllocator(PYMEM_DOMAIN_MEM, &string_allocator);
+        PyMemAllocatorEx failing = string_allocator;
+        failing.malloc = fail_string_alloc;
+        string_alloc_size = 4 * len + 2 * _TailPadding;
+        string_alloc_failed = false;
+        PyMem_SetAllocator(PYMEM_DOMAIN_MEM, &failing);
+        result = PyObject_CallOneArg(loads, input);
+        PyMem_SetAllocator(PYMEM_DOMAIN_MEM, &string_allocator);
+
+        bool raised = !result && PyErr_ExceptionMatches(PyExc_MemoryError);
+        PyErr_Clear();
+        Py_XDECREF(result);
+        result = PyObject_CallOneArg(loads, input);
+        bool recovered = result && PyUnicode_GetLength(result) == len - 3 && PyUnicode_ReadChar(result, 0) == '\n';
+        Py_XDECREF(result);
+        Py_DECREF(input);
+        CHECK(string_alloc_failed && raised && recovered);
+    }
+    Py_DECREF(loads);
+    return PASSED;
+}
+
 bool run_c_tests(void) {
 #if SSRJSON_IS_X64
     bool support_avx512 = _SupportAVX512;
@@ -112,14 +179,16 @@ bool run_c_tests(void) {
     TestCounter counter;
     ZERO_FILL(counter);
 
-    RUN_TESTS(test_cvt_u8_to_u16);
-    RUN_TESTS(test_cvt_u8_to_u32);
-    RUN_TESTS(test_cvt_u16_to_u32);
-    RUN_TESTS(test_ucs2_encode_3bytes_utf8);
-    RUN_TESTS(test_ucs2_encode_2bytes_utf8);
-    RUN_TESTS(test_ucs4_encode_3bytes_utf8);
-    RUN_TESTS(test_ucs4_encode_2bytes_utf8);
-    RUN_TESTS(test_long_back_cvt_u8_u16);
+    RUN_ONE_TEST(test_string_alloc_failure);
+
+    RUN_VECTOR_TESTS(test_cvt_u8_to_u16);
+    RUN_VECTOR_TESTS(test_cvt_u8_to_u32);
+    RUN_VECTOR_TESTS(test_cvt_u16_to_u32);
+    RUN_VECTOR_TESTS(test_ucs2_encode_3bytes_utf8);
+    RUN_VECTOR_TESTS(test_ucs2_encode_2bytes_utf8);
+    RUN_VECTOR_TESTS(test_ucs4_encode_3bytes_utf8);
+    RUN_VECTOR_TESTS(test_ucs4_encode_2bytes_utf8);
+    RUN_TESTS(test_long_back_cvt);
     RUN_TESTS(test_long_cvt);
     RUN_TESTS(test_utf8_shuffle_index_bound);
 
@@ -130,13 +199,19 @@ bool run_c_tests(void) {
     return show_test_counter(&counter);
 }
 
+#if SSRJSON_TEST_MODULE
+__attribute__((visibility("default"))) int ssrjson_run_tests(void) {
+#else
 int main(int argc, char **argv) {
+#endif
     int ret = 0;
     PyObject *pModule = NULL;
+#if !SSRJSON_TEST_MODULE
     if (!initialize_cpython()) {
         fprintf(stderr, "Fail to initialize");
         return 1;
     }
+#endif
     pModule = import_ssrjson();
     if (!pModule) {
         fprintf(stderr, "Fail to import ssrjson");
@@ -145,6 +220,9 @@ int main(int argc, char **argv) {
     }
     srand((u32)time(NULL));
 #if SSRJSON_IS_X64
+    int info[4];
+    cpuid(info, 1);
+    _SupportSSE4 = (info[2] & (1 << 20)) != 0;
     check_avx2();
     check_avx512();
 #endif
@@ -155,6 +233,8 @@ int main(int argc, char **argv) {
 
 done:
     Py_XDECREF(pModule);
+#if !SSRJSON_TEST_MODULE
     Py_Finalize();
+#endif
     return ret;
 }

@@ -23,6 +23,7 @@
 #ifndef SSRJSON_UNION_VECTOR_H
 #define SSRJSON_UNION_VECTOR_H
 #include "vector_types.h"
+#if !SSRJSON_SCALAR
 
 typedef union {
     vector_a_u8_128 x[2];
@@ -123,4 +124,5 @@ typedef union {
     vector_a_u32_2048 z;
 } unionvector_a_u32_512_x4;
 
+#endif
 #endif // SSRJSON_UNION_VECTOR_H

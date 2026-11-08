@@ -62,7 +62,7 @@ force_inline u8 *b_buf_apd_nonascii_key_write_cache(u8 *writer, int src_pykind, 
     }
     assert(utf8_cache);
     // Note: the utf8 cache is allocated independently and has nothing to do with is_compact.
-    if (USING_AVX512 || utf8_length >= READ_BATCH_COUNT) {
+    if (USING_AVX512 || utf8_length >= (ENCODE_READ_PADDING / sizeof(src_t))) {
         return b_buf_apd_utf8_cache(writer, utf8_cache, utf8_length, !!COMPILE_INDENT_LEVEL);
     } else {
     no_cache_encode:;
@@ -103,7 +103,7 @@ force_inline u8 *b_buf_apd_nonascii_key_no_write_cache(u8 *writer, int src_pykin
     usize utf8_length;
     get_utf8_cache(str, &utf8_cache, &utf8_length);
     // Note: the utf8 cache is allocated independently and has nothing to do with is_compact.
-    if (utf8_cache && (USING_AVX512 || utf8_length >= READ_BATCH_COUNT)) {
+    if (utf8_cache && (USING_AVX512 || utf8_length >= (ENCODE_READ_PADDING / sizeof(src_t)))) {
         return b_buf_apd_utf8_cache(writer, utf8_cache, utf8_length, !!COMPILE_INDENT_LEVEL);
     } else {
         *writer++ = '"';
@@ -145,7 +145,6 @@ force_inline u8 *b_buf_apd_key_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
     // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
     // when indent level > 0, more 4 unicodes are written, else 2 unicodes
     const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
-    const usize reserve_bytes_in_encoding = max_json_bytes_per_unicode * len;
     usize excess_bytes_in_encoding = 16 - max_json_bytes_per_unicode;                                     // ascii
     excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs1_trailing); // ucs1
     excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs2_trailing); // ucs2
@@ -153,14 +152,13 @@ force_inline u8 *b_buf_apd_key_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
     assert(excess_bytes_in_encoding >= 4);
     const usize excess_bytes_after = excess_bytes_in_encoding;
     //
-    writer = u_buf_reserve(writer, u_buf_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after);
+    writer = u_buf_reserve_str(writer, u_buf_info, len, excess_bytes_before + excess_bytes_after);
     if (likely(writer)) writer = write_unicode_indent(writer, cur_nested_depth);
     return writer;
 }
 
 force_inline u8 *b_buf_apd_key(u8 *writer, PyObject *key, EncodeUBufInfo *u_buf_info, usize cur_nested_depth,
                                bool is_write_cache, ssrjson_compiletime bool is_compact) {
-    int src_pykind = PyUnicode_KIND(key);
     bool is_ascii = PyUnicode_IS_ASCII(key);
     usize len = PyUnicode_GET_LENGTH(key);
     const void *src_voidp = get_src_voidp(key, is_ascii, is_compact);
@@ -169,6 +167,7 @@ force_inline u8 *b_buf_apd_key(u8 *writer, PyObject *key, EncodeUBufInfo *u_buf_
         if (likely(is_ascii)) {
             return b_buf_apd_ascii_key(writer, src_voidp, len, !!COMPILE_INDENT_LEVEL, is_compact);
         } else {
+            int src_pykind = PyUnicode_KIND(key);
             if (is_write_cache) {
                 return b_buf_apd_nonascii_key_write_cache(writer, src_pykind, src_voidp, len, key, is_compact);
             } else {
@@ -187,7 +186,6 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
     excess_bytes_in_encoding = ssrjson_max(excess_bytes_in_encoding, __excess_bytes_write_ucs4_trailing); // ucs4
     assert(excess_bytes_in_encoding >= 4);
     const usize excess_bytes_after = excess_bytes_in_encoding;
-    const usize reserve_bytes_in_encoding = max_json_bytes_per_unicode * len;
     if (ssrjson_consteval(is_in_obj)) {
         // '"' writes 1 byte
         // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
@@ -196,7 +194,7 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
         // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = 1;
-        return u_buf_reserve(writer, u_buf_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after);
+        return u_buf_reserve_str(writer, u_buf_info, len, excess_bytes_before + excess_bytes_after);
     } else {
         // write_unicode_indent and '"' writes `get_indent_char_count() + 1` bytes
         // max_json_bytes_per_unicode * len is the written bytes when every character needs to be escaped
@@ -205,8 +203,7 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
         // for ucs1,2,4: see AVX2 __excess_bytes_write_ucs2_trailing as an example
         // '"' and ',': 2 bytes
         const usize excess_bytes_before = get_indent_char_count(cur_nested_depth, COMPILE_INDENT_LEVEL) + 1;
-        writer = u_buf_reserve(
-                writer, u_buf_info, excess_bytes_before + reserve_bytes_in_encoding + excess_bytes_after);
+        writer = u_buf_reserve_str(writer, u_buf_info, len, excess_bytes_before + excess_bytes_after);
         if (likely(writer)) writer = write_unicode_indent(writer, cur_nested_depth);
         return writer;
     }
@@ -214,11 +211,12 @@ force_inline u8 *b_buf_apd_str_rsv_idt(u8 *writer, usize len, EncodeUBufInfo *u_
 
 // always `call b_buf_apd_str_rsv_idt` before calling this.
 // inline this to avoid a redundant null check on ascii path.
-force_inline u8 *b_buf_apd_str_impl(u8 *writer, int src_pykind, const void *src_voidp, usize len, PyObject *str,
-                                    bool is_ascii, bool is_write_cache, ssrjson_compiletime bool is_compact) {
+force_inline u8 *b_buf_apd_str_impl(u8 *writer, const void *src_voidp, usize len, PyObject *str, bool is_ascii,
+                                    bool is_write_cache, ssrjson_compiletime bool is_compact) {
     if (likely(is_ascii)) {
         return b_buf_apd_ascii_str(writer, src_voidp, len, is_compact);
     } else {
+        int src_pykind = PyUnicode_KIND(str);
         if (is_write_cache) {
             return b_buf_apd_nonascii_str_write_cache(writer, src_voidp, len, src_pykind, str, is_compact);
         } else {
@@ -227,22 +225,20 @@ force_inline u8 *b_buf_apd_str_impl(u8 *writer, int src_pykind, const void *src_
     }
 }
 
-force_inline u8 *b_buf_apd_str(u8 *writer, int src_pykind, const void *src_voidp, usize len, PyObject *str,
-                               bool is_ascii, bool is_write_cache, EncodeUBufInfo *u_buf_info, usize cur_nested_depth,
+force_inline u8 *b_buf_apd_str(u8 *writer, const void *src_voidp, usize len, PyObject *str, bool is_ascii,
+                               bool is_write_cache, EncodeUBufInfo *u_buf_info, usize cur_nested_depth,
                                ssrjson_compiletime bool is_in_obj, ssrjson_compiletime bool is_compact) {
     writer = b_buf_apd_str_rsv_idt(writer, len, u_buf_info, cur_nested_depth, is_in_obj);
-    if (likely(writer))
-        writer = b_buf_apd_str_impl(writer, src_pykind, src_voidp, len, str, is_ascii, is_write_cache, is_compact);
+    if (likely(writer)) writer = b_buf_apd_str_impl(writer, src_voidp, len, str, is_ascii, is_write_cache, is_compact);
     return writer;
 }
 
 static force_noinline u8 *encode_bytes_noncompact_val_in_obj(u8 *writer, EncodeUBufInfo *u_buf_info, PyObject *val,
                                                              Py_ssize_t cur_nested_depth, bool is_write_cache) {
     usize s_len = PyUnicode_GET_LENGTH(val);
-    int src_pykind = PyUnicode_KIND(val);
     bool is_ascii = PyUnicode_IS_ASCII(val);
     const void *src_voidp = ssrjson_pyunicode_cast(val)->data.any;
-    return b_buf_apd_str(writer, src_pykind, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
+    return b_buf_apd_str(writer, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
                          ssrjson_cast(usize, cur_nested_depth), true, false);
 }
 
@@ -250,10 +246,9 @@ static force_noinline u8 *encode_bytes_noncompact_val_not_obj(u8 *writer, Encode
                                                               Py_ssize_t cur_nested_depth, bool is_write_cache) {
 
     usize s_len = PyUnicode_GET_LENGTH(val);
-    int src_pykind = PyUnicode_KIND(val);
     bool is_ascii = PyUnicode_IS_ASCII(val);
     const void *src_voidp = ssrjson_pyunicode_cast(val)->data.any;
-    return b_buf_apd_str(writer, src_pykind, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
+    return b_buf_apd_str(writer, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
                          ssrjson_cast(usize, cur_nested_depth), false, false);
 }
 
@@ -294,10 +289,9 @@ force_inline u8 *encode_bytes_process_val(u8 *writer, EncodeValJumpFlag *jump_fl
     switch (obj_type) {
         case T_Unicode: {
             usize s_len = PyUnicode_GET_LENGTH(val);
-            int src_pykind = PyUnicode_KIND(val);
             bool is_ascii = PyUnicode_IS_ASCII(val);
             const void *src_voidp = is_ascii ? ssrjson_pyunicode_ascii_start(val) : ssrjson_pyunicode_ucs1_start(val);
-            writer = b_buf_apd_str(writer, src_pykind, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
+            writer = b_buf_apd_str(writer, src_voidp, s_len, val, is_ascii, is_write_cache, u_buf_info,
                                    ssrjson_cast(usize, *cur_nested_depth_addr), is_in_obj, true);
             return_jump_fail_if_unlikely(!writer);
             break;
