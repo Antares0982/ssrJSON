@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.0.25
+
+### New Features
+
+- Add automatic scalar fallback on x86-64 CPUs without SSE4.2 (#42)
+- Support Windows x86, Linux i686, and little-endian Linux ARMv7 hard-float; ARMv7 does not require NEON
+- Add 32-bit wheels: Linux i686 requires SSE2 and glibc 2.34+; ARMv7 requires glibc 2.35+
+
+### API Changes
+
+- AArch64 builds use a single NEON backend by default, ignore `BUILD_SHIPPING_SIMD`, and report `get_current_features()["multi_lib"]` as `False`; `BUILD_SCALAR` explicitly selects scalar
+
+### Bug Fixes
+
+- Raise `MemoryError` on size overflow in encoder buffer reservations, NumPy array sizing, and decoder buffer growth
+- Handle allocation failure when encoding a top-level JSON string
+
+### Performance
+
+- Use single-pass scalar string scans that support compiler auto-vectorization
+- Reduce AArch64 allocation-check overhead with conservative string-size bounds
+- Defer Unicode kind extraction to non-ASCII paths in `dumps_to_bytes`
+
+### Build & CI
+
+- Add `BUILD_SCALAR` for explicit scalar builds and select the CMake platform matching Python on Windows
+- Add 32-bit build, test, and release coverage, plus old-CPU scalar fallback checks for x86-64 Linux and Windows wheels
+- Include scalar in x86-64 PGO training and test explicit scalar builds on AArch64
+- Update portable CI actions for Node.js 24 and refresh dependency caches between runs
+
 ## 0.0.24
 
 No code change since 0.0.23.
