@@ -10,6 +10,9 @@ fi
 "$1" -m venv --system-site-packages build-oldcpu-venv
 python_bin="$PWD/build-oldcpu-venv/bin/python"
 "$python_bin" -m pip install pytest pytest-random-order
+# Match headers to the active interpreter.
+python_pkgconfig=$("$python_bin" -c 'import sysconfig; print(sysconfig.get_config_var("LIBPC"))')
+export PKG_CONFIG_PATH="$python_pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 CC=clang CXX=clang++ "$python_bin" -m pip install --force-reinstall --no-cache-dir --no-binary=numpy \
     --config-settings=setup-args=-Dcpu-baseline=none \
     --config-settings=setup-args=-Dcpu-dispatch=none \
