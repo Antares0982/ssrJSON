@@ -125,7 +125,7 @@ PyPI 上提供了预构建的 wheel，你可以使用 pip 安装。
 pip install ssrjson
 ```
 
-注意：x86-64 wheel 内置 scalar 自动回退。Linux 32 位 wheel 的最低 glibc 版本为 i686 的 2.34 和 ARMv7 hard-float 的 2.35。Windows 系统支持范围遵循所用 CPython 版本。ssrJSON 无法在 CPython 以外的 Python 实现上运行。目前支持的 CPython 版本为 3.10、3.11、3.12、3.13、3.14、3.15。
+注意：x86-64 wheel 内置 scalar 自动回退。Linux 32 位 wheel 的最低 glibc 版本为 i686 的 2.34 和 ARMv7 hard-float 的 2.35。i686 wheel 要求 SSE2（Pentium 4 或更新的处理器）；scalar 后端仍可能使用编译器目标架构所要求的基础指令集。Windows 系统支持范围遵循所用 CPython 版本。ssrJSON 无法在 CPython 以外的 Python 实现上运行。目前支持的 CPython 版本为 3.10、3.11、3.12、3.13、3.14、3.15。
 
 ### 从源码构建
 
@@ -139,6 +139,10 @@ mkdir build
 cmake -S . -B build  # 在 Windows 上，使用 `cmake -T ClangCL` 配置
 cmake --build build
 ```
+
+在 Windows 上，使用 64 位 Python 时运行 `cmake -S . -B build -T ClangCL -A x64`，
+使用 32 位 Python 时运行 `cmake -S . -B build -T ClangCL -A Win32`。
+`pip install .` 会自动选择对应的平台。
 
 或者，如果你更习惯用 `pip`：
 
