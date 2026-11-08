@@ -23,6 +23,10 @@ bench/*.py
 /localfiles
 /.claude
 /.opencode
+/AGENTS.md
+/CLAUDE.md
+/.agents
+/.codex
 
 # reserved for packaging
 /result
