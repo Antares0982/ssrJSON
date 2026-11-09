@@ -409,7 +409,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
                 assert(old_buffer->next->level == old_buffer->level + 1);
                 assert(old_buffer->next->prev == old_buffer);
                 // do update
-                decoder_context = &old_buffer->ctx;
+                decoder_context = &old_buffer->next->ctx;
                 tls_data_ptr->cur_buffer = old_buffer->next;
             } else {
                 u64 newlevel = old_buffer->level + 1;
