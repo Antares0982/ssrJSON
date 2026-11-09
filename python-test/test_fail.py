@@ -257,3 +257,19 @@ class TestFail:
         ):
             with pytest.raises(ssrjson.JSONDecodeError, match=r"at position %d$" % pos):
                 ssrjson.loads(s)
+
+    def test_unterminated_string_error_position(self):
+        """An unterminated string reports the end of the input, not a position past it."""
+        for s in (
+            '"' + "a" * 10,
+            '"' + "a" * 100,
+            '["' + "a" * 100,
+            '"' + "中" * 10,
+            '["' + "中" * 10,
+            '{"k": "' + "\U0001f408" * 40,
+        ):
+            for inp in (s, s.encode()):
+                with pytest.raises(
+                    ssrjson.JSONDecodeError, match=r"at position %d$" % len(inp)
+                ):
+                    ssrjson.loads(inp)
