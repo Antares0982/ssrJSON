@@ -247,3 +247,13 @@ class TestFail:
         self._decode_fail_with_match("{\n  \n}a", err)
         self._decode_fail_with_match("{}                \n    a", err)
         self._decode_fail_with_match("{\n  \n}                \n    a", err)
+
+    def test_root_string_error_position_is_character_index(self):
+        """Errors in a root-level string of UCS2/UCS4 str input report a character index, not a byte offset."""
+        for s, pos in (
+            ('"中中\x01中"', 3),
+            ('"\U0001f408\U0001f408\x01"', 3),
+            ('"' + "é" * 5 + "\x02" + "é" + '"', 6),
+        ):
+            with pytest.raises(ssrjson.JSONDecodeError, match=r"at position %d$" % pos):
+                ssrjson.loads(s)

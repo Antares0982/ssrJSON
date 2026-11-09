@@ -68,7 +68,7 @@ internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_conte
 #define return_err(_pos, _type, _msg)                                                             \
     do {                                                                                          \
         if (_type == JSONDecodeError) {                                                           \
-            PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, ((u8 *)_pos) - (u8 *)dat); \
+            PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, (size_t)((_pos) - (dat))); \
         } else {                                                                                  \
             PyErr_SetString(_type, _msg);                                                         \
         }                                                                                         \
