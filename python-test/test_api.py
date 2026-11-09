@@ -428,3 +428,37 @@ def test_subinterpreter_lifetime():
     )
     assert r.returncode == 0, r.stderr[-2000:]
     assert r.stdout.strip() == "ok"
+
+
+_UTF8_CACHE_SCRIPT = r"""
+import ssrjson
+s = "é" * 100
+k = "ключ" * 5
+assert ssrjson.dumps_to_bytes(s, is_write_cache=True) == ('"' + s + '"').encode()
+assert ssrjson.dumps_to_bytes({k: s + "好"}, is_write_cache=True)
+del s, k
+print("ok")
+"""
+
+
+def test_utf8_cache_allocator_domain():
+    # The debug allocator aborts if the cache is freed through a different API than it was allocated with.
+    import os
+    import subprocess
+    import sys
+
+    env = os.environ.copy()
+    if getattr(sys, "_is_gil_enabled", lambda: True)():
+        env["PYTHONMALLOC"] = "malloc_debug"
+    else:
+        # free-threaded builds only accept mimalloc; -X dev still installs the debug hooks
+        env.pop("PYTHONMALLOC", None)
+    r = subprocess.run(
+        [sys.executable, "-X", "dev", "-c", _UTF8_CACHE_SCRIPT],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=120,
+    )
+    assert r.returncode == 0, r.stderr[-2000:]
+    assert r.stdout.strip() == "ok"
