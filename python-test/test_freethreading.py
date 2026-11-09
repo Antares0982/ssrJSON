@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import threading
@@ -203,6 +204,50 @@ class TestFreeThreading:
             t.start()
 
         for t in threads:
+            t.join()
+
+        assert not excs, f"Exceptions occurred in threads: {excs}"
+
+    @pytest.mark.skipif(
+        SKIP_RW_RACE_TEST,
+        reason="GIL enabled or lockfree build",
+    )
+    def test_encode_race_container_shrink(self):
+        """Containers that shrink while being encoded: the size must be read after the container is locked."""
+        inner = list(range(64))
+        d = {"k": 1}
+        shared = [inner, {"d": inner, "e": d}, [inner], d]
+        stop = threading.Event()
+        excs = []
+
+        def writer():
+            try:
+                while not stop.is_set():
+                    inner.extend(range(64))
+                    del inner[1:]
+                    d.clear()
+                    d["k"] = 1
+            except Exception as e:
+                excs.append(e)
+
+        def reader(fn):
+            try:
+                for _ in range(20000):
+                    json.loads(fn(shared))
+            except Exception as e:
+                excs.append(e)
+
+        writers = [threading.Thread(target=writer) for _ in range(2)]
+        readers = [
+            threading.Thread(target=reader, args=(fn,))
+            for fn in (ssrjson.dumps, ssrjson.dumps_to_bytes) * 2
+        ]
+        for t in writers + readers:
+            t.start()
+        for t in readers:
+            t.join()
+        stop.set()
+        for t in writers:
             t.join()
 
         assert not excs, f"Exceptions occurred in threads: {excs}"

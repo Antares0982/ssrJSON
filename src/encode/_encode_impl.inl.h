@@ -543,7 +543,12 @@ force_inline EncodeUnicodeWriter encode_process_val(EncodeUnicodeWriter writer, 
             break;
         }
         case T_List: {
-            Py_ssize_t this_list_size = PyList_GET_SIZE(val);
+            Py_ssize_t this_list_size;
+#if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
+            return_jump_fail_if_unlikely(!encode_lock_nested_list(pyobj_set, val, &this_list_size));
+#else
+            this_list_size = PyList_GET_SIZE(val);
+#endif
             if (unlikely(this_list_size == 0)) {
                 _CAST_WRITER(writer) = u_buf_apd_empty_arr(
                         _CAST_WRITER(writer), u_buf_info, *cur_nested_depth_addr, is_in_obj);
@@ -552,18 +557,6 @@ force_inline EncodeUnicodeWriter encode_process_val(EncodeUnicodeWriter writer, 
                 _CAST_WRITER(writer) = u_buf_apd_arr_begin(
                         _CAST_WRITER(writer), u_buf_info, *cur_nested_depth_addr, is_in_obj);
                 return_jump_fail_if_unlikely(!writer);
-#if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
-                {
-                    int ret;
-                    kh_put(ptr_set, pyobj_set, (u64)val, &ret);
-                    if (unlikely(ret == 0)) {
-                        PyErr_SetString(JSONEncodeError, "Circular reference detected");
-                        *jump_flag_out = JumpFlag_Fail;
-                        return NULL;
-                    }
-                    PyMutex_Lock(&ssrjson_pyobj_cast(val)->ob_mutex);
-                }
-#endif
                 ctn_size_grow();
                 EncodeCtnWithIndex *cur_write_ctn = ctn_stack + ((*cur_nested_depth_addr)++);
                 cur_write_ctn->ctn = *cur_obj_addr;
@@ -577,7 +570,13 @@ force_inline EncodeUnicodeWriter encode_process_val(EncodeUnicodeWriter writer, 
             break;
         }
         case T_Dict: {
-            if (unlikely(PyDict_GET_SIZE(val) == 0)) {
+            bool dict_empty;
+#if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
+            return_jump_fail_if_unlikely(!encode_lock_nested_dict(pyobj_set, val, &dict_empty));
+#else
+            dict_empty = PyDict_GET_SIZE(val) == 0;
+#endif
+            if (unlikely(dict_empty)) {
                 _CAST_WRITER(writer) = u_buf_apd_empty_obj(
                         _CAST_WRITER(writer), u_buf_info, *cur_nested_depth_addr, is_in_obj);
                 return_jump_fail_if_unlikely(!writer);
@@ -585,18 +584,6 @@ force_inline EncodeUnicodeWriter encode_process_val(EncodeUnicodeWriter writer, 
                 _CAST_WRITER(writer) = u_buf_apd_obj_begin(
                         _CAST_WRITER(writer), u_buf_info, *cur_nested_depth_addr, is_in_obj);
                 return_jump_fail_if_unlikely(!writer);
-#if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
-                {
-                    int ret;
-                    kh_put(ptr_set, pyobj_set, (u64)val, &ret);
-                    if (unlikely(ret == 0)) {
-                        PyErr_SetString(JSONEncodeError, "Circular reference detected");
-                        *jump_flag_out = JumpFlag_Fail;
-                        return NULL;
-                    }
-                    PyMutex_Lock(&ssrjson_pyobj_cast(val)->ob_mutex);
-                }
-#endif
                 ctn_size_grow();
                 EncodeCtnWithIndex *cur_write_ctn = ctn_stack + ((*cur_nested_depth_addr)++);
                 cur_write_ctn->ctn = *cur_obj_addr;
@@ -822,6 +809,10 @@ internal_simd_noinline PyObject *ssrjson_dumps_obj(
     // this is the starting, we don't need an indent before container.
     // so is_in_obj always pass true
     if (PyDict_Check(cur_obj)) {
+#    if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
+        goto_fail_if_unlikely(!encode_lock_ctn(pyobj_set, cur_obj));
+        toplevel_locked_obj = cur_obj;
+#    endif
         if (unlikely(PyDict_GET_SIZE(cur_obj) == 0)) {
             _CAST_WRITER(writer) = u_buf_apd_empty_obj(_CAST_WRITER(writer), &_u_buf_info, 0, true);
             assert(writer);
@@ -829,19 +820,14 @@ internal_simd_noinline PyObject *ssrjson_dumps_obj(
         }
         _CAST_WRITER(writer) = u_buf_apd_obj_begin(_CAST_WRITER(writer), &_u_buf_info, 0, true);
         assert(writer && !cur_nested_depth);
-#    if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
-        {
-            toplevel_locked_obj = cur_obj;
-            int ret;
-            kh_put(ptr_set, pyobj_set, (u64)cur_obj, &ret);
-            assert(ret == 1);
-            PyMutex_Lock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
-        }
-#    endif
         cur_nested_depth = 1;
         // NOTE: ctn_stack[0] is always invalid
         goto dict_pair_begin;
     } else if (PyList_Check(cur_obj)) {
+#    if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
+        goto_fail_if_unlikely(!encode_lock_ctn(pyobj_set, cur_obj));
+        toplevel_locked_obj = cur_obj;
+#    endif
         cur_list_size = PyList_GET_SIZE(cur_obj);
         if (unlikely(cur_list_size == 0)) {
             _CAST_WRITER(writer) = u_buf_apd_empty_arr(_CAST_WRITER(writer), &_u_buf_info, 0, true);
@@ -850,15 +836,6 @@ internal_simd_noinline PyObject *ssrjson_dumps_obj(
         }
         _CAST_WRITER(writer) = u_buf_apd_arr_begin(_CAST_WRITER(writer), &_u_buf_info, 0, true);
         assert(writer && !cur_nested_depth);
-#    if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
-        {
-            toplevel_locked_obj = cur_obj;
-            int ret;
-            kh_put(ptr_set, pyobj_set, (u64)cur_obj, &ret);
-            assert(ret == 1);
-            PyMutex_Lock(&ssrjson_pyobj_cast(cur_obj)->ob_mutex);
-        }
-#    endif
         cur_nested_depth = 1;
         // NOTE: ctn_stack[0] is always invalid
         cur_is_tuple = false;
