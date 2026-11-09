@@ -193,6 +193,7 @@ internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnico
         PyErr_Format(JSONDecodeError, "input data is empty");
         return NULL;
     }
+    assert(ascii_head->state.compact);
 #if COMPILE_UCS_LEVEL > 0
     const src_t *buffer = ssrjson_cast(src_t *, ssrjson_pycompactunicode_cast(in_unicode) + 1);
 #else

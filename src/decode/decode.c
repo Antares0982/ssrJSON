@@ -443,6 +443,23 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
 
     //
     if (PyUnicode_Check(s)) {
+        // str subclass instances (and legacy strings before 3.12) are not compact: their characters live in
+        // a separate, exactly sized buffer that the SIMD readers must not over-read. Decode a compact copy.
+        PyObject *compact_copy = NULL;
+        if (unlikely(!ssrjson_pyascii_cast(s)->state.compact)) {
+#if PY_MINOR_VERSION < 12
+            if (unlikely(PyUnicode_READY(s) < 0)) {
+                ret = NULL;
+                goto done;
+            }
+#endif
+            compact_copy = PyUnicode_FromKindAndData(PyUnicode_KIND(s), PyUnicode_DATA(s), PyUnicode_GET_LENGTH(s));
+            if (unlikely(!compact_copy)) {
+                ret = NULL;
+                goto done;
+            }
+            s = compact_copy;
+        }
         PyASCIIObject *ascii_head = ssrjson_pyascii_cast(s);
         PyUnicodeObject *in_unicode = ssrjson_pyunicode_cast(s);
         int pyunicode_kind = ascii_head->state.ascii ? 0 : ascii_head->state.kind;
@@ -472,6 +489,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
                 ssrjson_unreachable();
             }
         }
+        Py_XDECREF(compact_copy);
         goto done;
     }
     //
