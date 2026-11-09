@@ -381,13 +381,19 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
     }
 #endif
 #if SSRJSON_GIL_ENABLED
-    if (likely(!object_hook && !array_hook)) {
+    const bool use_default_ctx = likely(!object_hook && !array_hook && !_DefaultDecoderCtxInUse);
+    if (use_default_ctx) {
         decoder_context = &_DefaultDecoderCtx;
+        _DefaultDecoderCtxInUse = true;
     } else
 #endif
     {
         // need to update decoder_context and _CurrentTLSData, i.e. tls_data_ptr->cur_buffer
         tls_data_ptr = tls_get_decoder_data();
+        if (unlikely(!tls_data_ptr)) {
+            PyErr_NoMemory();
+            return NULL;
+        }
         if (!tls_data_ptr->cur_buffer) {
             // this is the first ctx
             DecoderBufferLinkedList *new_linked_list = ssrjson_aligned_alloc(64, sizeof(DecoderBufferLinkedList));
@@ -494,7 +500,12 @@ fail:;
     PyErr_Format(PyExc_TypeError, "the JSON object must be str, bytes or bytearray, not %s", Py_TYPE(s)->tp_name);
 
 done:;
-    if (ssrjson_consteval(!SSRJSON_GIL_ENABLED) || unlikely(object_hook || array_hook)) {
+#if SSRJSON_GIL_ENABLED
+    if (likely(use_default_ctx)) {
+        _DefaultDecoderCtxInUse = false;
+    } else
+#endif
+    {
         DecoderBufferLinkedList *used_buffer = tls_data_ptr->cur_buffer;
         DecoderBufferLinkedList *goback_buffer = used_buffer->prev;
         if (unlikely(used_buffer->next)) {
