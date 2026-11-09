@@ -415,9 +415,11 @@ force_inline void init_pybytes(PyObject *in_new_bytes, usize final_len) {
     PyBytesObject *new_bytes = ssrjson_pybytes_cast(in_new_bytes);
     PyObject_Init(in_new_bytes, &PyBytes_Type);
     new_bytes->ob_base.ob_size = (Py_ssize_t)final_len;
-#if PY_MINOR_VERSION < 11
+    // Deprecated since 3.11 but bytes_hash() still caches the hash here; garbage would be returned as the hash.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     new_bytes->ob_shash = -1;
-#endif
+#pragma clang diagnostic pop
     new_bytes->ob_sval[final_len] = 0;
 }
 

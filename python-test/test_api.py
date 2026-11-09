@@ -462,3 +462,11 @@ def test_utf8_cache_allocator_domain():
     )
     assert r.returncode == 0, r.stderr[-2000:]
     assert r.stdout.strip() == "ok"
+
+
+def test_dumps_to_bytes_hash():
+    for obj in ([1], {"a": 1}, "x" * 100, {"k": "é" * 50}, list(range(1000))):
+        b = ssrjson.dumps_to_bytes(obj)
+        fresh = bytes(bytearray(b))
+        assert hash(b) == hash(fresh)
+        assert fresh in {b}
