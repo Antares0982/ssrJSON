@@ -53,6 +53,14 @@ static void module_free(void *m);
 
 static int ssrjson_exec(PyObject *module);
 
+typedef struct {
+    bool counted;
+} ssrjson_module_state;
+
+// Module objects that share the process-wide state below (re-import after removal from sys.modules creates another).
+static Py_ssize_t _ModuleInstanceCount = 0;
+static bool _TLSInitialized = false;
+
 static struct PyModuleDef_Slot ssrjson_slots[] = {
         {Py_mod_exec, (void *)ssrjson_exec}, // stage 2
 #if PY_MINOR_VERSION >= 12
@@ -66,16 +74,21 @@ static struct PyModuleDef_Slot ssrjson_slots[] = {
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
         "ssrjson",
-        0,             /* m_doc */
-        0,             /* m_size */
-        NULL,          /* m_methods */
-        ssrjson_slots, /* m_slots */
-        NULL,          /* m_traverse */
-        NULL,          /* m_clear */
-        module_free    /* m_free */
+        0,                            /* m_doc */
+        sizeof(ssrjson_module_state), /* m_size */
+        NULL,                         /* m_methods */
+        ssrjson_slots,                /* m_slots */
+        NULL,                         /* m_traverse */
+        NULL,                         /* m_clear */
+        module_free                   /* m_free */
 };
 
 static void module_free(void *m) {
+    ssrjson_module_state *state = PyModule_GetState((PyObject *)m);
+    if (!state || !state->counted) return;
+    state->counted = false;
+    if (--_ModuleInstanceCount > 0) return;
+
 #if SSRJSON_GIL_ENABLED
     for (size_t i = 0; i < SSRJSON_KEY_CACHE_SIZE; i++) {
         Py_XDECREF(_DecodeKeyCache[i].key);
@@ -106,6 +119,7 @@ static void module_free(void *m) {
     }
 
     if (unlikely(!_ssrjson_library_tls_free())) { printf("ssrjson: failed to free TLS\n"); }
+    _TLSInitialized = false;
 }
 
 #if PY_MINOR_VERSION >= 13
@@ -165,7 +179,7 @@ static int ssrjson_exec(PyObject *module) {
 
 #define ADD_FUNC_CHECKED(_func_def_)                                   \
     {                                                                  \
-        func = PyCFunction_NewEx(&_func_def_, NULL, module_string);    \
+        func = PyCFunction_NewEx(&_func_def_, module, module_string);  \
         if (!func) {                                                   \
             Py_DECREF(module_string);                                  \
             return -1;                                                 \
@@ -196,27 +210,22 @@ static int ssrjson_exec(PyObject *module) {
     if (PyModule_AddStringConstant(module, "__version__", SSRJSON_VERSION) < 0) { return -1; }
 
     // Add: JSONDecodeError
+    // The global owns the reference from PyErr_NewException; each module object adds its own.
     if (!JSONDecodeError) {
         JSONDecodeError = PyErr_NewException("ssrjson.JSONDecodeError", PyExc_ValueError, NULL);
         if (!JSONDecodeError) { return -1; }
-        // global variable needs an additional ref
-        Py_INCREF(JSONDecodeError);
     }
 
     err = PyModule_AddObjectRef(module, "JSONDecodeError", JSONDecodeError);
-    Py_DECREF(JSONDecodeError);
     RETURN_WHEN_ERR();
 
     // Add: JSONEncodeError
     if (!JSONEncodeError) {
         JSONEncodeError = PyErr_NewException("ssrjson.JSONEncodeError", PyExc_ValueError, NULL);
         if (!JSONEncodeError) { return -1; }
-        // global variable needs an additional ref
-        Py_INCREF(JSONEncodeError);
     }
 
     err = PyModule_AddObjectRef(module, "JSONEncodeError", JSONEncodeError);
-    Py_DECREF(JSONEncodeError);
     RETURN_WHEN_ERR();
 
     PyObject *module_string = PyUnicode_FromString("ssrjson");
@@ -234,9 +243,12 @@ static int ssrjson_exec(PyObject *module) {
     Py_DECREF(module_string);
 
     // TLS init.
-    if (unlikely(!_ssrjson_library_tls_init())) {
-        PyErr_SetString(PyExc_ImportError, "Failed to initialize TLS");
-        return -1;
+    if (!_TLSInitialized) {
+        if (unlikely(!_ssrjson_library_tls_init())) {
+            PyErr_SetString(PyExc_ImportError, "Failed to initialize TLS");
+            return -1;
+        }
+        _TLSInitialized = true;
     }
 
     // codes below should not fail.
@@ -255,9 +267,12 @@ static int ssrjson_exec(PyObject *module) {
 
     // do ssrjson internal init.
 #if SSRJSON_GIL_ENABLED
-    memset(_DecodeKeyCache, 0, sizeof(_DecodeKeyCache));
+    if (_ModuleInstanceCount == 0) { memset(_DecodeKeyCache, 0, sizeof(_DecodeKeyCache)); }
 #endif
 
+    ssrjson_module_state *state = PyModule_GetState(module);
+    state->counted = true;
+    _ModuleInstanceCount++;
     return 0;
 #undef ADD_FUNC_CHECKED
 #undef RETURN_WHEN_ERR

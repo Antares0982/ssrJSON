@@ -331,3 +331,100 @@ class TestApi:
         # would raise ValueError: invalid literal for int() with base 10: b'1596728892'
         int(ssrjson.dumps(1596728892))
         int(ssrjson.dumps_to_bytes(1596728892))
+
+
+_MODULE_LIFETIME_SCRIPT = r"""
+import gc, sys
+import ssrjson
+
+def check(loads, dumps, E):
+    try:
+        loads("[")
+    except E:
+        pass
+    else:
+        raise AssertionError("no JSONDecodeError")
+    assert loads('[{"a": 1}]', object_hook=lambda d: d) == [{"a": 1}]
+    assert dumps({"a": [1]}) == '{"a":[1]}'
+
+# 1. Module object dropped while a function reference is still alive.
+loads, dumps, E = ssrjson.loads, ssrjson.dumps, ssrjson.JSONDecodeError
+del sys.modules["ssrjson"], ssrjson
+gc.collect()
+check(loads, dumps, E)
+
+# 2. Second module object from a re-import; the first one is freed.
+import ssrjson as first
+del sys.modules["ssrjson"]
+import ssrjson as second
+assert first.JSONDecodeError is second.JSONDecodeError
+del first, loads, dumps
+gc.collect()
+check(second.loads, second.dumps, second.JSONDecodeError)
+print("ok")
+"""
+
+
+def test_module_lifetime():
+    import os
+    import subprocess
+    import sys
+
+    r = subprocess.run(
+        [sys.executable, "-c", _MODULE_LIFETIME_SCRIPT],
+        capture_output=True,
+        text=True,
+        env=os.environ.copy(),
+        timeout=120,
+    )
+    assert r.returncode == 0, r.stderr[-2000:]
+    assert r.stdout.strip() == "ok"
+
+
+_SUBINTERPRETER_SCRIPT = r"""
+import gc
+import _xxsubinterpreters as interpreters
+import ssrjson
+
+SUB = '''
+import ssrjson
+assert ssrjson.loads('[1, {"a": [true]}]') == [1, {"a": [True]}]
+'''
+iid = interpreters.create()
+interpreters.run_string(iid, SUB)
+for _ in range(3):
+    other = interpreters.create()
+    interpreters.run_string(other, SUB)
+    interpreters.destroy(other)
+interpreters.run_string(iid, SUB)
+interpreters.destroy(iid)
+gc.collect()
+try:
+    ssrjson.loads("[")
+except ssrjson.JSONDecodeError:
+    pass
+else:
+    raise AssertionError("no JSONDecodeError")
+assert ssrjson.loads('{"a": [1]}', object_hook=lambda d: d) == {"a": [1]}
+print("ok")
+"""
+
+
+def test_subinterpreter_lifetime():
+    # Before 3.12 there is no Py_mod_multiple_interpreters slot, so subinterpreters share ssrjson's
+    # process-wide state; destroying one must not tear it down for the others.
+    import os
+    import subprocess
+    import sys
+
+    if sys.version_info >= (3, 12):
+        pytest.skip("import in subinterpreters is refused on 3.12+")
+    r = subprocess.run(
+        [sys.executable, "-c", _SUBINTERPRETER_SCRIPT],
+        capture_output=True,
+        text=True,
+        env=os.environ.copy(),
+        timeout=120,
+    )
+    assert r.returncode == 0, r.stderr[-2000:]
+    assert r.stdout.strip() == "ok"
