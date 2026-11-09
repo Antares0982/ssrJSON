@@ -201,6 +201,8 @@ Supported NumPy types:
 
 `np.float64` is a subclass of Python `float` and is always handled by the standard float path, regardless of whether `setup_numpy_types` has been called.
 
+NumPy 1.21.2 or later is required (the first release with Python 3.10 wheels). Subclasses of `ndarray` are encoded from their array data; an overridden `__array_struct__` is not called. Structured dtypes (dtypes with fields) are not supported.
+
 When encoding an ndarray, ssrJSON reads element data directly from the array's memory buffer. Combined with the xjb64/xjb32 floating-point encoding algorithms and yyjson-derived integer encoding algorithms, this gives ssrJSON a significant performance advantage.
 
 Simple benchmark shows ssrJSON outperforms orjson in encoding numpy arrays:

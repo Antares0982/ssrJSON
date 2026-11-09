@@ -162,7 +162,32 @@ force_inline ssrjson_nofail u8 *ndarray_traverse_dispatch(u8 *writer, const PyAr
 
 static force_noinline u8 *u8_buffer_append_ndarray(u8 *writer, EncodeUBufInfo *u_buf_info, Py_ssize_t cur_nested_depth,
                                                    PyObject *obj, bool is_in_obj) {
-    PyObject *capsule_obj = PyObject_GetAttrString(obj, "__array_struct__");
+    // Call numpy's getters directly: a subclass override would run Python code while the
+    // encoder holds borrowed references and the shared container stack.
+    const NumpyGetters getters = _NumpyGetters;
+    if (unlikely(!getters.array_struct)) {
+        PyErr_SetString(JSONEncodeError, "numpy.ndarray has no C-level __array_struct__");
+        return NULL;
+    }
+    // For a dtype with fields, numpy's __array_struct__ getter calls Python code
+    // (numpy._core._internal._array_descr); such dtypes are unsupported anyway.
+    {
+        PyObject *dtype =
+                Py_TYPE(getters.array_dtype)->tp_descr_get(getters.array_dtype, obj, (PyObject *)Py_TYPE(obj));
+        if (unlikely(!dtype)) { return NULL; }
+        PyObject *fields =
+                Py_TYPE(getters.dtype_fields)->tp_descr_get(getters.dtype_fields, dtype, (PyObject *)Py_TYPE(dtype));
+        Py_DECREF(dtype);
+        if (unlikely(!fields)) { return NULL; }
+        const bool has_fields = fields != Py_None;
+        Py_DECREF(fields);
+        if (unlikely(has_fields)) {
+            PyErr_SetString(JSONEncodeError, "unsupported numpy dtype");
+            return NULL;
+        }
+    }
+    PyObject *descr = getters.array_struct;
+    PyObject *capsule_obj = Py_TYPE(descr)->tp_descr_get(descr, obj, (PyObject *)Py_TYPE(obj));
     if (unlikely(!capsule_obj)) { return NULL; }
     if (unlikely(!PyCapsule_IsValid(capsule_obj, NULL))) {
         Py_DECREF(capsule_obj);

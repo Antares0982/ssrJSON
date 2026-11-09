@@ -258,4 +258,14 @@ typedef struct {
 
 extern NumpyTypes _NumpyTypes;
 
+/* C getset descriptors of numpy, called directly so that encoding an ndarray never runs Python code.
+ * All members are NULL when any of them is unavailable. */
+typedef struct NumpyGetters {
+    PyObject *array_struct; // ndarray.__array_struct__
+    PyObject *array_dtype;  // ndarray.dtype
+    PyObject *dtype_fields; // dtype.fields
+} NumpyGetters;
+
+extern NumpyGetters _NumpyGetters;
+
 #endif // SSRJSON_PYUTILS_H

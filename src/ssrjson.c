@@ -100,6 +100,9 @@ static void module_free(void *m) {
             Py_XDECREF(np[i]);
             np[i] = NULL;
         }
+        Py_CLEAR(_NumpyGetters.array_struct);
+        Py_CLEAR(_NumpyGetters.array_dtype);
+        Py_CLEAR(_NumpyGetters.dtype_fields);
     }
 
     if (unlikely(!_ssrjson_library_tls_free())) { printf("ssrjson: failed to free TLS\n"); }
@@ -289,6 +292,18 @@ PyObject *ssrjson_write_utf8_cache(PyObject *self, PyObject *arg) {
     Py_RETURN_NONE;
 }
 
+/* Store a new reference to `obj.name` in *out, or NULL if there is no such attribute.
+ * Returns false with an exception set on any other error. */
+static bool _get_attr_optional(PyObject *obj, const char *name, PyObject **out) {
+    *out = PyObject_GetAttrString(obj, name);
+    if (*out) return true;
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError)) return false;
+    PyErr_Clear();
+    return true;
+}
+
+static bool _is_getset_descr(PyObject *obj) { return obj && Py_IS_TYPE(obj, &PyGetSetDescr_Type); }
+
 /* Fetch numpy type objects from `mod` and install them into _NumpyTypes.
  * `mod` must be a borrowed reference; this function does NOT decref it. */
 force_inline PyObject *_setup_numpy_types_impl(PyObject *mod) {
@@ -318,13 +333,43 @@ force_inline PyObject *_setup_numpy_types_impl(PyObject *mod) {
         filled = i + 1;
     }
 
+    // Keep only C-level getters, so encoding an ndarray never runs Python code.
+    NumpyGetters getters = {0};
+    {
+        PyObject *dtype_type = NULL;
+        if (unlikely(!_get_attr_optional(mod, "dtype", &dtype_type))) { goto fail; }
+        if (dtype_type && !PyType_Check(dtype_type)) { Py_CLEAR(dtype_type); }
+        if (unlikely(!_get_attr_optional((PyObject *)tmp.ndarray, "__array_struct__", &getters.array_struct) ||
+                     !_get_attr_optional((PyObject *)tmp.ndarray, "dtype", &getters.array_dtype) ||
+                     (dtype_type && !_get_attr_optional(dtype_type, "fields", &getters.dtype_fields)))) {
+            Py_XDECREF(dtype_type);
+            goto fail_getters;
+        }
+        Py_XDECREF(dtype_type);
+        if (!_is_getset_descr(getters.array_struct) || !_is_getset_descr(getters.array_dtype) ||
+            !_is_getset_descr(getters.dtype_fields)) {
+            Py_CLEAR(getters.array_struct);
+            Py_CLEAR(getters.array_dtype);
+            Py_CLEAR(getters.dtype_fields);
+        }
+    }
+
     // Release old references then install new ones
     PyTypeObject **np = (PyTypeObject **)&_NumpyTypes;
     for (int i = 0; i < NUMPY_TYPES_COUNT; i++) { Py_XDECREF(np[i]); }
     _NumpyTypes = tmp;
+    NumpyGetters old_getters = _NumpyGetters;
+    _NumpyGetters = getters;
+    Py_XDECREF(old_getters.array_struct);
+    Py_XDECREF(old_getters.array_dtype);
+    Py_XDECREF(old_getters.dtype_fields);
 
     Py_RETURN_NONE;
 
+fail_getters:
+    Py_XDECREF(getters.array_struct);
+    Py_XDECREF(getters.array_dtype);
+    Py_XDECREF(getters.dtype_fields);
 fail:
     for (int j = 0; j < filled; j++) { Py_DECREF(tp[j]); }
     return NULL;
