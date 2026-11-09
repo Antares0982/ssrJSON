@@ -506,10 +506,27 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
     }
     //
     if (PyByteArray_Check(s)) {
+#if SSRJSON_GIL_ENABLED
         char *buffer = PyByteArray_AS_STRING(s);
         Py_ssize_t length = PyByteArray_GET_SIZE(s);
         ret = ssrjson_decode_bytes(
                 decoder_context, buffer, length, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+#else
+        // Another thread may resize the bytearray while it is read; copy its storage while holding the
+        // object's critical section, which every resize also takes (same as bytearray.copy()).
+        // Unlike the buffer protocol, this reads the raw storage of subclasses, as the GIL build does.
+        PyObject *snapshot;
+        Py_BEGIN_CRITICAL_SECTION(s);
+        snapshot = PyBytes_FromStringAndSize(PyByteArray_AS_STRING(s), PyByteArray_GET_SIZE(s));
+        Py_END_CRITICAL_SECTION();
+        if (unlikely(!snapshot)) {
+            ret = NULL;
+            goto done;
+        }
+        ret = ssrjson_decode_bytes(decoder_context, PyBytes_AS_STRING(snapshot), PyBytes_GET_SIZE(snapshot),
+                                   object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+        Py_DECREF(snapshot);
+#endif
         goto done;
     }
 

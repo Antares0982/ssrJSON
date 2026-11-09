@@ -251,3 +251,43 @@ class TestFreeThreading:
             t.join()
 
         assert not excs, f"Exceptions occurred in threads: {excs}"
+
+    @pytest.mark.skipif(IS_GIL_ENABLED, reason="GIL enabled")
+    def test_decode_race_bytearray_resize(self):
+        """loads(bytearray) while other threads resize it: the input must be read as one consistent snapshot."""
+        big = b'"' + b"a" * (4 << 20) + b'"'
+        small = b'"' + b"b" * 100 + b'"'
+        ba = bytearray(big)
+        stop = threading.Event()
+        bad = []
+
+        def writer():
+            while not stop.is_set():
+                for v in (small, big):
+                    try:
+                        ba[:] = v
+                    except BufferError:
+                        pass  # a reader is copying it right now
+
+        def reader():
+            try:
+                for _ in range(300):
+                    r = ssrjson.loads(ba)
+                    if r != "b" * 100 and not (
+                        len(r) == len(big) - 2 and r.count("a") == len(r)
+                    ):
+                        bad.append(r[:20])
+            except Exception as e:
+                bad.append(e)
+
+        writers = [threading.Thread(target=writer) for _ in range(2)]
+        readers = [threading.Thread(target=reader) for _ in range(4)]
+        for t in writers + readers:
+            t.start()
+        for t in readers:
+            t.join()
+        stop.set()
+        for t in writers:
+            t.join()
+
+        assert not bad, f"inconsistent reads: {bad[:3]}"

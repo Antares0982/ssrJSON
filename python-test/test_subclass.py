@@ -353,3 +353,19 @@ class TestLoadsStrSubclass:
             assert ssrjson.loads(SubStr(s)) == expected
             assert ssrjson.loads(SubStr(s), object_hook=lambda d: d) == expected
         assert ssrjson.loads(E.A) == {"k": [1, 2]}
+
+
+class TestLoadsBytearraySubclass:
+    def test_buffer_override_ignored(self):
+        # Free-threaded builds snapshot bytearray input; they must read the same storage as GIL builds.
+        calls = []
+
+        class BA(bytearray):
+            def __buffer__(self, flags):
+                calls.append(1)
+                return memoryview(b'["from __buffer__"]')
+
+        ba = BA(b'["real", {"k": [1]}]')
+        assert ssrjson.loads(ba) == ["real", {"k": [1]}]
+        assert ssrjson.loads(ba, object_hook=lambda d: d) == ["real", {"k": [1]}]
+        assert calls == []
