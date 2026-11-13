@@ -95,3 +95,34 @@ class TestInt:
                 ssrjson.loads,
                 template.replace("@", "7568627624816930841."),
             )
+
+    def test_dumps_int_boundaries(self):
+        import json
+
+        values = [0]
+        for p in range(20):
+            values.extend(10**p + d for d in (-2, -1, 0, 1, 2))
+        for b in range(1, 65):
+            values.extend(2**b + d for d in (-1, 0, 1))
+        for digits in range(1, 21):
+            values.extend(
+                random.randint(10 ** (digits - 1), 10**digits - 1) for _ in range(200)
+            )
+        values = [v for v in values if 0 <= v <= 18446744073709551615]
+        values += [-v for v in values if 0 < v <= 9223372036854775808]
+        expected = json.dumps(values, separators=(",", ":"))
+        assert ssrjson.dumps(values) == expected
+        assert ssrjson.dumps_to_bytes(values) == expected.encode("utf-8")
+        assert ssrjson.dumps(values, indent=2) == json.dumps(values, indent=2)
+        # the UCS1, UCS2 and UCS4 writers each have their own integer path
+        for tail in ("\xe9", "\u597d", "\U0001f408"):
+            assert ssrjson.dumps(values + [tail])[: len(expected) - 1] == expected[:-1]
+            assert ssrjson.dumps([tail] + values)[5:] == expected[1:]
+        for v in values:
+            assert ssrjson.dumps(v) == str(v)
+            assert ssrjson.dumps_to_bytes(v) == str(v).encode("utf-8")
+
+    def test_dumps_int_out_of_range(self):
+        for v in (18446744073709551616, -9223372036854775809, 2**90, -(2**90)):
+            pytest.raises(ssrjson.JSONEncodeError, ssrjson.dumps, [v])
+            pytest.raises(ssrjson.JSONEncodeError, ssrjson.dumps_to_bytes, [v])
