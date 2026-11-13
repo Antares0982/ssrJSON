@@ -328,3 +328,44 @@ class TestSubclass:
         obj["list"] = SubList([{"obj": obj}])
         with pytest.raises(ssrjson.JSONEncodeError):
             ssrjson.dumps(obj)
+
+
+class TestLoadsStrSubclass:
+    def test_loads_str_subclass(self):
+        import enum
+
+        class E(str, enum.Enum):
+            A = '{"k": [1, 2]}'
+
+        cases = [
+            "[1,2,3]",
+            '{"a": "é", "b": [true, null]}',
+            '["好", "\U0001f408"]',
+            '"' + "x" * 300 + '"',
+            "[" + ",".join(["1"] * 20000) + "]",
+            # short keys right at the start: the key readers may look before the data
+            '{"\U0001f62c": 1}',
+            '[{"\U0001f62c": 2, "\U0001f62c\U0001f62c": [3]}]',
+            '{"\u4e2d": "\u00e9", "\u00e9": 1}',
+        ]
+        for s in cases:
+            expected = json.loads(s)
+            assert ssrjson.loads(SubStr(s)) == expected
+            assert ssrjson.loads(SubStr(s), object_hook=lambda d: d) == expected
+        assert ssrjson.loads(E.A) == {"k": [1, 2]}
+
+
+class TestLoadsBytearraySubclass:
+    def test_buffer_override_ignored(self):
+        # Free-threaded builds snapshot bytearray input; they must read the same storage as GIL builds.
+        calls = []
+
+        class BA(bytearray):
+            def __buffer__(self, flags):
+                calls.append(1)
+                return memoryview(b'["from __buffer__"]')
+
+        ba = BA(b'["real", {"k": [1]}]')
+        assert ssrjson.loads(ba) == ["real", {"k": [1]}]
+        assert ssrjson.loads(ba, object_hook=lambda d: d) == ["real", {"k": [1]}]
+        assert calls == []

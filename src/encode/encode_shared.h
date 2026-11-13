@@ -415,9 +415,11 @@ force_inline void init_pybytes(PyObject *in_new_bytes, usize final_len) {
     PyBytesObject *new_bytes = ssrjson_pybytes_cast(in_new_bytes);
     PyObject_Init(in_new_bytes, &PyBytes_Type);
     new_bytes->ob_base.ob_size = (Py_ssize_t)final_len;
-#if PY_MINOR_VERSION < 11
+    // Deprecated since 3.11 but bytes_hash() still caches the hash here; garbage would be returned as the hash.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     new_bytes->ob_shash = -1;
-#endif
+#pragma clang diagnostic pop
     new_bytes->ob_sval[final_len] = 0;
 }
 
@@ -772,6 +774,55 @@ force_inline u8 *init_b_buf(EncodeUBufInfo *u_buf_info) {
  *============================================================================*/
 #if !SSRJSON_GIL_ENABLED && !SSRJSON_FREE_THREADING_LOCKFREE
 KHASH_SET_INIT_INT64(ptr_set)
+
+/* Lock a list/dict before reading its size: another thread may resize it in between.
+ * Returns false with an exception set on a circular reference or allocation failure. */
+force_inline bool encode_lock_ctn(khash_t(ptr_set) * pyobj_set, PyObject *ctn) {
+    int ret;
+    kh_put(ptr_set, pyobj_set, (u64)ctn, &ret);
+    if (unlikely(ret <= 0)) {
+        if (ret < 0) {
+            PyErr_NoMemory();
+        } else {
+            PyErr_SetString(JSONEncodeError, "Circular reference detected");
+        }
+        return false;
+    }
+    PyMutex_Lock(&ssrjson_pyobj_cast(ctn)->ob_mutex);
+    return true;
+}
+
+/* Undo encode_lock_ctn for a container that turned out to be empty. */
+force_inline void encode_unlock_ctn(khash_t(ptr_set) * pyobj_set, PyObject *ctn) {
+    kh_del(ptr_set, pyobj_set, kh_get(ptr_set, pyobj_set, (u64)ctn));
+    PyMutex_Unlock(&ssrjson_pyobj_cast(ctn)->ob_mutex);
+}
+
+/* For a nested list: an empty one is written without locking (it was empty when its size was read);
+ * a non-empty one is locked, then its size is read again. On success *size_out is the size to iterate,
+ * and the list is locked iff it is non-zero. */
+force_inline bool encode_lock_nested_list(khash_t(ptr_set) * pyobj_set, PyObject *list, Py_ssize_t *size_out) {
+    Py_ssize_t size = PyList_GET_SIZE(list);
+    if (likely(size != 0)) {
+        if (unlikely(!encode_lock_ctn(pyobj_set, list))) return false;
+        size = PyList_GET_SIZE(list);
+        if (unlikely(size == 0)) encode_unlock_ctn(pyobj_set, list);
+    }
+    *size_out = size;
+    return true;
+}
+
+/* Same as encode_lock_nested_list, for a nested dict. The dict is locked iff *empty_out is false. */
+force_inline bool encode_lock_nested_dict(khash_t(ptr_set) * pyobj_set, PyObject *dict, bool *empty_out) {
+    bool empty = PyDict_GET_SIZE(dict) == 0;
+    if (likely(!empty)) {
+        if (unlikely(!encode_lock_ctn(pyobj_set, dict))) return false;
+        empty = PyDict_GET_SIZE(dict) == 0;
+        if (unlikely(empty)) encode_unlock_ctn(pyobj_set, dict);
+    }
+    *empty_out = empty;
+    return true;
+}
 #endif
 
 #endif // SSRJSON_ENCODE_SHARED_H

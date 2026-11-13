@@ -60,6 +60,7 @@ typedef struct DecoderTLSData {
 
 #if SSRJSON_GIL_ENABLED
 extern DecoderBuffers _DefaultDecoderCtx;
+extern bool _DefaultDecoderCtxInUse;
 #endif
 
 force_inline DecodeCtnWithSize *get_decode_ctn_stack_buffer(DecoderBuffers *decoder_context) {

@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import threading
@@ -206,3 +207,87 @@ class TestFreeThreading:
             t.join()
 
         assert not excs, f"Exceptions occurred in threads: {excs}"
+
+    @pytest.mark.skipif(
+        SKIP_RW_RACE_TEST,
+        reason="GIL enabled or lockfree build",
+    )
+    def test_encode_race_container_shrink(self):
+        """Containers that shrink while being encoded: the size must be read after the container is locked."""
+        inner = list(range(64))
+        d = {"k": 1}
+        shared = [inner, {"d": inner, "e": d}, [inner], d]
+        stop = threading.Event()
+        excs = []
+
+        def writer():
+            try:
+                while not stop.is_set():
+                    inner.extend(range(64))
+                    del inner[1:]
+                    d.clear()
+                    d["k"] = 1
+            except Exception as e:
+                excs.append(e)
+
+        def reader(fn):
+            try:
+                for _ in range(20000):
+                    json.loads(fn(shared))
+            except Exception as e:
+                excs.append(e)
+
+        writers = [threading.Thread(target=writer) for _ in range(2)]
+        readers = [
+            threading.Thread(target=reader, args=(fn,))
+            for fn in (ssrjson.dumps, ssrjson.dumps_to_bytes) * 2
+        ]
+        for t in writers + readers:
+            t.start()
+        for t in readers:
+            t.join()
+        stop.set()
+        for t in writers:
+            t.join()
+
+        assert not excs, f"Exceptions occurred in threads: {excs}"
+
+    @pytest.mark.skipif(IS_GIL_ENABLED, reason="GIL enabled")
+    def test_decode_race_bytearray_resize(self):
+        """loads(bytearray) while other threads resize it: the input must be read as one consistent snapshot."""
+        big = b'"' + b"a" * (4 << 20) + b'"'
+        small = b'"' + b"b" * 100 + b'"'
+        ba = bytearray(big)
+        stop = threading.Event()
+        bad = []
+
+        def writer():
+            while not stop.is_set():
+                for v in (small, big):
+                    try:
+                        ba[:] = v
+                    except BufferError:
+                        pass  # a reader is copying it right now
+
+        def reader():
+            try:
+                for _ in range(300):
+                    r = ssrjson.loads(ba)
+                    if r != "b" * 100 and not (
+                        len(r) == len(big) - 2 and r.count("a") == len(r)
+                    ):
+                        bad.append(r[:20])
+            except Exception as e:
+                bad.append(e)
+
+        writers = [threading.Thread(target=writer) for _ in range(2)]
+        readers = [threading.Thread(target=reader) for _ in range(4)]
+        for t in writers + readers:
+            t.start()
+        for t in readers:
+            t.join()
+        stop.set()
+        for t in writers:
+            t.join()
+
+        assert not bad, f"inconsistent reads: {bad[:3]}"

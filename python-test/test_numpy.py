@@ -1376,3 +1376,66 @@ class TestNumpyEdgeCases:
         arr = np.array([99], dtype=np.int32)
         result = ssrjson.dumps_to_bytes(arr)
         assert result == b"[99]"
+
+
+@pytest.mark.skipif(not HAS_NUMPY, reason="numpy not installed")
+class TestNumpySubclassOverride:
+    def test_array_struct_override_not_called(self):
+        ssrjson.setup_numpy_types(np)
+        calls = []
+        root = []
+
+        class Sub(np.ndarray):
+            @property
+            def __array_struct__(self):
+                calls.append(1)
+                ssrjson.dumps([[[{"k": [1]}]], [[2]]])
+                root.clear()
+                return np.asarray(self).__array_struct__
+
+        a = np.arange(3).view(Sub)
+        expected = '[[[[[0,1,2],1,2],3],4],{"x":[5,6]},"tail"]'
+        for dumps in (ssrjson.dumps, ssrjson.dumps_to_bytes):
+            for indent in (None, 2):
+                root[:] = [[[[a, 1, 2], 3], 4], {"x": [5, 6]}, "tail"]
+                out = dumps(root, indent=indent)
+                if isinstance(out, bytes):
+                    out = out.decode()
+                assert ssrjson.dumps(ssrjson.loads(out)) == expected
+        assert calls == []
+
+
+@pytest.mark.skipif(not HAS_NUMPY, reason="numpy not installed")
+class TestNumpyDtypeWithFields:
+    def test_rejected_without_running_python(self):
+        # For dtypes with fields, numpy's __array_struct__ getter calls the Python function
+        # numpy._core._internal._array_descr; the encoder must reject them before that.
+        ssrjson.setup_numpy_types(np)
+        try:
+            import numpy._core._internal as internal
+        except ImportError:
+            import numpy.core._internal as internal
+        calls = []
+        orig = internal._array_descr
+
+        def spy(descr):
+            calls.append(descr)
+            return orig(descr)
+
+        dtypes = [
+            np.dtype([("a", "i4"), ("b", "f8")]),
+            # kind is "i", but it has fields too
+            np.dtype(("i4", [("r", "u1"), ("g", "u1"), ("b", "u1"), ("a", "u1")])),
+        ]
+        internal._array_descr = spy
+        try:
+            for dt in dtypes:
+                arr = np.zeros(3, dtype=dt)
+                for dumps in (ssrjson.dumps, ssrjson.dumps_to_bytes):
+                    with pytest.raises(
+                        ssrjson.JSONEncodeError, match="unsupported numpy dtype"
+                    ):
+                        dumps([1, {"k": arr}])
+        finally:
+            internal._array_descr = orig
+        assert calls == []

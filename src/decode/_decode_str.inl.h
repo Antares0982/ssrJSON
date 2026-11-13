@@ -68,7 +68,7 @@ internal_simd_noinline PyObject *loads_root_single(DecoderBuffers *decoder_conte
 #define return_err(_pos, _type, _msg)                                                             \
     do {                                                                                          \
         if (_type == JSONDecodeError) {                                                           \
-            PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, ((u8 *)_pos) - (u8 *)dat); \
+            PyErr_Format(JSONDecodeError, "%s, at position %zu", _msg, (size_t)((_pos) - (dat))); \
         } else {                                                                                  \
             PyErr_SetString(_type, _msg);                                                         \
         }                                                                                         \
@@ -193,6 +193,7 @@ internal_simd_noinline PyObject *decode(DecoderBuffers *decoder_context, PyUnico
         PyErr_Format(JSONDecodeError, "input data is empty");
         return NULL;
     }
+    assert(ascii_head->state.compact);
 #if COMPILE_UCS_LEVEL > 0
     const src_t *buffer = ssrjson_cast(src_t *, ssrjson_pycompactunicode_cast(in_unicode) + 1);
 #else

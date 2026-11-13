@@ -381,13 +381,19 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
     }
 #endif
 #if SSRJSON_GIL_ENABLED
-    if (likely(!object_hook && !array_hook)) {
+    const bool use_default_ctx = likely(!object_hook && !array_hook && !_DefaultDecoderCtxInUse);
+    if (use_default_ctx) {
         decoder_context = &_DefaultDecoderCtx;
+        _DefaultDecoderCtxInUse = true;
     } else
 #endif
     {
         // need to update decoder_context and _CurrentTLSData, i.e. tls_data_ptr->cur_buffer
         tls_data_ptr = tls_get_decoder_data();
+        if (unlikely(!tls_data_ptr)) {
+            PyErr_NoMemory();
+            return NULL;
+        }
         if (!tls_data_ptr->cur_buffer) {
             // this is the first ctx
             DecoderBufferLinkedList *new_linked_list = ssrjson_aligned_alloc(64, sizeof(DecoderBufferLinkedList));
@@ -409,7 +415,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
                 assert(old_buffer->next->level == old_buffer->level + 1);
                 assert(old_buffer->next->prev == old_buffer);
                 // do update
-                decoder_context = &old_buffer->ctx;
+                decoder_context = &old_buffer->next->ctx;
                 tls_data_ptr->cur_buffer = old_buffer->next;
             } else {
                 u64 newlevel = old_buffer->level + 1;
@@ -437,6 +443,23 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
 
     //
     if (PyUnicode_Check(s)) {
+        // str subclass instances (and legacy strings before 3.12) are not compact: their characters live in
+        // a separate, exactly sized buffer that the SIMD readers must not over-read. Decode a compact copy.
+        PyObject *compact_copy = NULL;
+        if (unlikely(!ssrjson_pyascii_cast(s)->state.compact)) {
+#if PY_MINOR_VERSION < 12
+            if (unlikely(PyUnicode_READY(s) < 0)) {
+                ret = NULL;
+                goto done;
+            }
+#endif
+            compact_copy = PyUnicode_FromKindAndData(PyUnicode_KIND(s), PyUnicode_DATA(s), PyUnicode_GET_LENGTH(s));
+            if (unlikely(!compact_copy)) {
+                ret = NULL;
+                goto done;
+            }
+            s = compact_copy;
+        }
         PyASCIIObject *ascii_head = ssrjson_pyascii_cast(s);
         PyUnicodeObject *in_unicode = ssrjson_pyunicode_cast(s);
         int pyunicode_kind = ascii_head->state.ascii ? 0 : ascii_head->state.kind;
@@ -466,6 +489,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
                 ssrjson_unreachable();
             }
         }
+        Py_XDECREF(compact_copy);
         goto done;
     }
     //
@@ -482,10 +506,27 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
     }
     //
     if (PyByteArray_Check(s)) {
+#if SSRJSON_GIL_ENABLED
         char *buffer = PyByteArray_AS_STRING(s);
         Py_ssize_t length = PyByteArray_GET_SIZE(s);
         ret = ssrjson_decode_bytes(
                 decoder_context, buffer, length, object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+#else
+        // Another thread may resize the bytearray while it is read; copy its storage while holding the
+        // object's critical section, which every resize also takes (same as bytearray.copy()).
+        // Unlike the buffer protocol, this reads the raw storage of subclasses, as the GIL build does.
+        PyObject *snapshot;
+        Py_BEGIN_CRITICAL_SECTION(s);
+        snapshot = PyBytes_FromStringAndSize(PyByteArray_AS_STRING(s), PyByteArray_GET_SIZE(s));
+        Py_END_CRITICAL_SECTION();
+        if (unlikely(!snapshot)) {
+            ret = NULL;
+            goto done;
+        }
+        ret = ssrjson_decode_bytes(decoder_context, PyBytes_AS_STRING(snapshot), PyBytes_GET_SIZE(snapshot),
+                                   object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+        Py_DECREF(snapshot);
+#endif
         goto done;
     }
 
@@ -494,7 +535,12 @@ fail:;
     PyErr_Format(PyExc_TypeError, "the JSON object must be str, bytes or bytearray, not %s", Py_TYPE(s)->tp_name);
 
 done:;
-    if (ssrjson_consteval(!SSRJSON_GIL_ENABLED) || unlikely(object_hook || array_hook)) {
+#if SSRJSON_GIL_ENABLED
+    if (likely(use_default_ctx)) {
+        _DefaultDecoderCtxInUse = false;
+    } else
+#endif
+    {
         DecoderBufferLinkedList *used_buffer = tls_data_ptr->cur_buffer;
         DecoderBufferLinkedList *goback_buffer = used_buffer->prev;
         if (unlikely(used_buffer->next)) {

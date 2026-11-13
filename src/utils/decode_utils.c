@@ -67,5 +67,6 @@ bool _decode_obj_stack_resize(decode_obj_stack_ptr_t *decode_obj_writer_addr,
  *============================================================================*/
 #if SSRJSON_GIL_ENABLED
 DecoderBuffers _DefaultDecoderCtx;
+bool _DefaultDecoderCtxInUse = false;
 decode_cache_t _DecodeKeyCache[SSRJSON_KEY_CACHE_SIZE];
 #endif
