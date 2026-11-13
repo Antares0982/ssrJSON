@@ -692,11 +692,61 @@ force_inline u8 *write_u64_len_5_8(u32 val, u8 *buf) {
     }
 }
 
-/* Write at most 20 bytes */
+#if SSRJSON_SIMD_X64
+/* Powers of ten, except that the first entry is 0 so that every value has at least one digit. */
+extern const u64 EncodePow10Table[20];
+
+/* Count of decimal digits of `val`. */
+force_inline u32 u64_dec_digits(u64 val) {
+    u32 t = ((64 - u64_lz_bits(val | 1)) * 1233) >> 12;
+    return t + (val >= EncodePow10Table[t]);
+}
+
+/* Write the decimal digits of `val` (val < 10^16) left-aligned, padded with leading zeros to `digits` digits.
+ * `digits` must be in 1..16 and not less than the digit count of `val`. Always stores 16 bytes. */
+force_inline void write_u64_digits_simd(u64 val, u8 *buf, u32 digits) {
+    u64 hgh = val / 100000000;
+    u64 low = val - hgh * 100000000;
+    __m128i x = _mm_set_epi64x((i64)hgh, (i64)low);
+    /* each 64-bit lane: low 32 bits = x % 10000, high 32 bits = x / 10000 */
+    __m128i q4 = _mm_srli_epi64(_mm_mul_epu32(x, _mm_set1_epi64x(109951163)), 40);
+    __m128i y = _mm_add_epi64(x, _mm_mul_epu32(q4, _mm_set1_epi64x(((i64)1 << 32) - 10000)));
+    /* each 32-bit lane: low 16 bits = y % 100, high 16 bits = y / 100 */
+    __m128i q2 = _mm_srli_epi16(_mm_mulhi_epu16(y, _mm_set1_epi16(5243)), 3);
+    __m128i z = _mm_or_si128(_mm_sub_epi16(y, _mm_mullo_epi16(q2, _mm_set1_epi16(100))), _mm_slli_epi32(q2, 16));
+    /* each 16-bit lane: low byte = z % 10, high byte = z / 10 */
+    __m128i q1 = _mm_mulhi_epu16(z, _mm_set1_epi16(6554));
+    __m128i bcd = _mm_add_epi16(z, _mm_mullo_epi16(q1, _mm_set1_epi16((1 << 8) - 10)));
+    /* byte i now holds the digit of weight 10^i; output byte i takes the digit of weight 10^(digits - 1 - i) */
+    __m128i ascii = _mm_add_epi8(bcd, _mm_set1_epi8('0'));
+    const __m128i neg_iota = _mm_setr_epi8(0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15);
+    __m128i shuffle = _mm_add_epi8(_mm_set1_epi8((char)(digits - 1)), neg_iota);
+    _mm_storeu_si128((__m128i *)buf, _mm_shuffle_epi8(ascii, shuffle));
+}
+#endif
+
+/* Write at most 20 digits. On x86 SIMD builds, up to 16 bytes past the returned pointer may be
+ * overwritten, staying within 20 bytes from `buf`. */
 force_inline u8 *write_u64(u64 val, u8 *buf) {
     u64 tmp, hgh;
     u32 mid, low;
 
+#if SSRJSON_SIMD_X64
+    /* The table-driven path below is faster up to 8 digits. */
+    if (val >= 100000000) {
+        u32 digits;
+        if (unlikely(val >= U64(0x002386F2, 0x6FC10000))) { /* 10^16: 17-20 digits */
+            hgh = val / U64(0x002386F2, 0x6FC10000);        /* 1-4 digits */
+            val -= hgh * U64(0x002386F2, 0x6FC10000);
+            buf = write_u32_len_1_8((u32)hgh, buf);
+            digits = 16;
+        } else {
+            digits = u64_dec_digits(val);
+        }
+        write_u64_digits_simd(val, buf, digits);
+        return buf + digits;
+    }
+#endif
     if (val < 100000000) { /* 1-8 digits */
         buf = write_u32_len_1_8((u32)val, buf);
         return buf;

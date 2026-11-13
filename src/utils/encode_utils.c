@@ -28,6 +28,16 @@
 #define RESERVE_MAX ((~(usize)PY_SSIZE_T_MAX) >> 1)
 static_assert((ssrjson_cast(usize, RESERVE_MAX) & (ssrjson_cast(usize, RESERVE_MAX) - 1)) == 0, "");
 
+const u64 EncodePow10Table[20] = {
+        U64(0x00000000, 0x00000000), U64(0x00000000, 0x0000000A), U64(0x00000000, 0x00000064),
+        U64(0x00000000, 0x000003E8), U64(0x00000000, 0x00002710), U64(0x00000000, 0x000186A0),
+        U64(0x00000000, 0x000F4240), U64(0x00000000, 0x00989680), U64(0x00000000, 0x05F5E100),
+        U64(0x00000000, 0x3B9ACA00), U64(0x00000002, 0x540BE400), U64(0x00000017, 0x4876E800),
+        U64(0x000000E8, 0xD4A51000), U64(0x00000918, 0x4E72A000), U64(0x00005AF3, 0x107A4000),
+        U64(0x00038D7E, 0xA4C68000), U64(0x002386F2, 0x6FC10000), U64(0x01634578, 0x5D8A0000),
+        U64(0x0DE0B6B3, 0xA7640000), U64(0x8AC72304, 0x89E80000),
+};
+
 EncodeUBufInfo _u_buf_reserve(EncodeUBufInfo u_buf_info, usize target_size) {
 #if ENCODE_RESERVE_DEBUG
     void *new_ptr = PyObject_Realloc(u_buf_info.head, target_size);

@@ -23,6 +23,7 @@
 - Reduce AArch64 allocation-check overhead with conservative string-size bounds
 - Defer Unicode kind extraction to non-ASCII paths in `dumps_to_bytes`
 - Convert Python integers of 2^30 and above to C integers inline when encoding on CPython 3.12+
+- Write integers of 9 or more digits with SSSE3 on x86
 
 ### Build & CI
 
