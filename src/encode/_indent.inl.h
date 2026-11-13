@@ -29,15 +29,21 @@
 
 force_inline ssrjson_nofail dst_t *write_unicode_indent(dst_t *writer, Py_ssize_t _cur_nested_depth) {
 #if COMPILE_INDENT_LEVEL > 0
+    // Write one nesting level per store. Writing one space at a time lets PGO builds vectorize
+    // the loop for u32 into masked scatters, which are slow.
+    static const dst_t level_buf[COMPILE_INDENT_LEVEL] = {
+            ' ',
+            ' ',
+#    if COMPILE_INDENT_LEVEL == 4
+            ' ',
+            ' ',
+#    endif // COMPILE_INDENT_LEVEL == 4
+    };
     *writer++ = '\n';
     usize cur_nested_depth = (usize)_cur_nested_depth;
     for (usize i = 0; i < cur_nested_depth; i++) {
-        *writer++ = ' ';
-        *writer++ = ' ';
-#    if COMPILE_INDENT_LEVEL == 4
-        *writer++ = ' ';
-        *writer++ = ' ';
-#    endif // COMPILE_INDENT_LEVEL == 4
+        memcpy(writer, level_buf, sizeof(level_buf));
+        writer += COMPILE_INDENT_LEVEL;
     }
 #endif // COMPILE_INDENT_LEVEL > 0
     return writer;
