@@ -31,7 +31,7 @@ jobs:
           python - <<'PY'
           import json, os
           p = json.load(open('ci/pyver.json'))
-          versions = [str(p['curVer'])]
+          versions = [str(p['curVer']), f"{p['curVer']}t"]
           if os.environ['RELEASE'] == 'true':
               versions = [str(v) for v in range(p['minSupportVer'], p['latestWheelBuildableVer'] + 1)]
               versions += [f'{v}t' for v in range(p['minSupportNoGILVer'], p['latestWheelBuildableVer'] + 1)]

@@ -2,6 +2,7 @@
 
 import inspect
 import json
+import sys
 
 import pytest
 
@@ -103,7 +104,7 @@ class TestApi:
         """
         loads() recursion limit excessively high value
         """
-        n = 10000000
+        n = 100_000 if sys.maxsize <= 2**32 else 10_000_000
         value = b"[" * n + b"]" * n
         pytest.raises(ssrjson.JSONDecodeError, ssrjson.loads, value)
 
@@ -135,7 +136,7 @@ class TestApi:
         """
         loads() recursion limit excessively high value pretty
         """
-        n = 10000000
+        n = 100_000 if sys.maxsize <= 2**32 else 10_000_000
         value = b"[\n  " * n + b"]" * n
         pytest.raises(ssrjson.JSONDecodeError, ssrjson.loads, value)
 

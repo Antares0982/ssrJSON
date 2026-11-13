@@ -54,9 +54,9 @@
 /* double number exponent bit mask */
 #define F64_EXP_MASK U64(0x7FF00000, 0x00000000)
 
-/* Extract a value of type `T` at fixed offset `sizeof(PyObject)` from a PyObject pointer.
- * For f16, use u16 as the intermediate type. */
-#define pyobj_scalar_value(T, obj) (*ssrjson_cast(T *, ssrjson_cast(PyObject *, (obj)) + 1))
+/* Respect NumPy scalar alignment after PyObject_HEAD. */
+#define pyobj_scalar_value(T, obj) \
+    (*ssrjson_cast(T *, ssrjson_cast(u8 *, (obj)) + size_align_up(sizeof(PyObject), _Alignof(T))))
 
 // copy 24 bytes in UCS4 case if only SSE is available
 #if SSRJSON_SCALAR

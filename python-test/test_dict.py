@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: (Apache-2.0 OR MIT)
 
+import sys
+
 import pytest
 
 import ssrjson
@@ -22,7 +24,9 @@ class TestDict:
         ) == {"1": False}
 
     def test_dict_empty(self):
-        obj = [{"key": [{}] * 4096}] * 4096  # type:ignore
+        # Bound memory on 32-bit builds.
+        count = 1024 if sys.maxsize <= 2**32 else 4096
+        obj = [{"key": [{}] * count}] * count  # type:ignore
         assert ssrjson.loads(ssrjson.dumps(obj)) == obj
         assert ssrjson.loads(ssrjson.dumps_to_bytes(obj)) == obj
 
