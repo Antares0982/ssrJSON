@@ -267,19 +267,20 @@ force_inline bool pylong_is_zero(PyObject *obj) {
 /* Magnitude of a nonzero int, if below 2^64. PyLong_As(Unsigned)LongLong is slow for more than one digit:
  * _PyLong_AsByteArray stores the result byte by byte and reloads it whole, which defeats store forwarding. */
 force_inline bool pylong_magnitude(PyObject *obj, u64 *mag) {
+    PyLongObject *const long_obj = ssrjson_cast(PyLongObject *, obj);
 #    if PY_MINOR_VERSION >= 12
-    const digit *d = ((PyLongObject *)obj)->long_value.ob_digit;
-    usize n = ((PyLongObject *)obj)->long_value.lv_tag >> _PyLong_NON_SIZE_BITS;
+    const digit *d = long_obj->long_value.ob_digit;
+    usize n = long_obj->long_value.lv_tag >> _PyLong_NON_SIZE_BITS;
 #    else
-    const digit *d = ((PyLongObject *)obj)->ob_digit;
-    usize n = (usize)Py_ABS(Py_SIZE(obj));
+    const digit *d = long_obj->ob_digit;
+    usize n = ssrjson_cast(usize, Py_ABS(Py_SIZE(obj)));
 #    endif
     if (likely(n == 1)) {
         *mag = d[0];
         return true;
     }
     if (n == 2 || (n == 3 && d[2] < 16)) {
-        *mag = (u64)d[0] | ((u64)d[1] << 30) | (n == 3 ? (u64)d[2] << 60 : 0);
+        *mag = ssrjson_cast(u64, d[0]) | (ssrjson_cast(u64, d[1]) << 30) | (n == 3 ? ssrjson_cast(u64, d[2]) << 60 : 0);
         return true;
     }
     return false;
@@ -302,8 +303,8 @@ force_inline bool pylong_value_unsigned(PyObject *obj, u64 *value) {
 force_inline i64 pylong_value_signed(PyObject *obj, i64 *value) {
 #if PyLong_SHIFT == 30
     u64 mag;
-    if (likely(pylong_magnitude(obj, &mag) && mag <= ((u64)1 << 63))) {
-        *value = (i64)(0 - mag);
+    if (likely(pylong_magnitude(obj, &mag) && mag <= (ssrjson_cast(u64, 1) << 63))) {
+        *value = ssrjson_cast(i64, 0 - mag);
         return true;
     }
 #endif
@@ -707,7 +708,7 @@ force_inline void write_u64_digits_simd(u64 val, u8 *buf, u32 digits) {
     __m128i x = _mm_set_epi64x((i64)hgh, (i64)low);
     /* each 64-bit lane: low 32 bits = x % 10000, high 32 bits = x / 10000 */
     __m128i q4 = _mm_srli_epi64(_mm_mul_epu32(x, _mm_set1_epi64x(109951163)), 40);
-    __m128i y = _mm_add_epi64(x, _mm_mul_epu32(q4, _mm_set1_epi64x(((i64)1 << 32) - 10000)));
+    __m128i y = _mm_add_epi64(x, _mm_mul_epu32(q4, _mm_set1_epi64x((ssrjson_cast(i64, 1) << 32) - 10000)));
     /* each 32-bit lane: low 16 bits = y % 100, high 16 bits = y / 100 */
     __m128i q2 = _mm_srli_epi16(_mm_mulhi_epu16(y, _mm_set1_epi16(5243)), 3);
     __m128i z = _mm_or_si128(_mm_sub_epi16(y, _mm_mullo_epi16(q2, _mm_set1_epi16(100))), _mm_slli_epi32(q2, 16));
@@ -717,7 +718,7 @@ force_inline void write_u64_digits_simd(u64 val, u8 *buf, u32 digits) {
     /* byte i now holds the digit of weight 10^i; output byte i takes the digit of weight 10^(digits - 1 - i) */
     __m128i ascii = _mm_add_epi8(bcd, _mm_set1_epi8('0'));
     const __m128i neg_iota = _mm_setr_epi8(0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15);
-    __m128i shuffle = _mm_add_epi8(_mm_set1_epi8((char)(digits - 1)), neg_iota);
+    __m128i shuffle = _mm_add_epi8(_mm_set1_epi8(ssrjson_cast(char, digits - 1)), neg_iota);
     _mm_storeu_si128((__m128i *)buf, _mm_shuffle_epi8(ascii, shuffle));
 }
 #endif
