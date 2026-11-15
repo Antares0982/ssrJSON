@@ -2,13 +2,13 @@
 
 import argparse
 import os
-from pathlib import Path
 import shutil
 import struct
 import subprocess
 import sys
 import sysconfig
 import tempfile
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -121,18 +121,6 @@ def main():
     else:
         run([sys.executable, "-m", "build", "--sdist", "--outdir", artifacts])
         tarball = next(artifacts.glob("*.tar.gz"))
-    run(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--force-reinstall",
-            "--no-cache-dir",
-            tarball,
-        ]
-    )
-    test(prefix)
     with tempfile.TemporaryDirectory() as wheel_dir:
         run(
             [
@@ -148,6 +136,8 @@ def main():
             ]
         )
         wheel = next(Path(wheel_dir).glob("*.whl"))
+        run([sys.executable, "-m", "pip", "install", "--force-reinstall", wheel])
+        test(prefix)
         if sys.platform == "linux":
             run(
                 [

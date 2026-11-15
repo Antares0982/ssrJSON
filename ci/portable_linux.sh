@@ -26,7 +26,7 @@ else
     export CFLAGS='-march=pentium4'
     export CXXFLAGS="$CFLAGS"
 fi
-python -m pip install 'cmake>=3.30' build pytest pytest-random-order psutil numpy
+python -m pip install 'cmake>=3.30' build pytest pytest-random-order pytest-xdist psutil numpy
 export CC=clang CXX=clang++
 chmod -R a+rX "$PIP_CACHE_DIR"
 python -c 'import numpy; print(numpy.__version__)'
