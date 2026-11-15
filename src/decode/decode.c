@@ -336,6 +336,15 @@ force_inline bool decode_argparse_with_kw(PyObject *const *args, usize npargs, P
     return true;
 }
 
+/* Non-compact str (subclass instances, legacy strings before 3.12) keeps its characters in an exactly sized
+ * buffer that the SIMD readers must not over-read. Returns a compact copy (new reference), or NULL on error. */
+force_inline PyObject *make_compact_unicode_copy(PyObject *s) {
+#if PY_MINOR_VERSION < 12
+    if (unlikely(PyUnicode_READY(s) < 0)) return NULL;
+#endif
+    return PyUnicode_FromKindAndData(PyUnicode_KIND(s), PyUnicode_DATA(s), PyUnicode_GET_LENGTH(s));
+}
+
 PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *args, Py_ssize_t nargsf,
                                              PyObject *kwnames) {
     PyObject *ret;
@@ -443,22 +452,13 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
 
     //
     if (PyUnicode_Check(s)) {
-        // str subclass instances (and legacy strings before 3.12) are not compact: their characters live in
-        // a separate, exactly sized buffer that the SIMD readers must not over-read. Decode a compact copy.
         PyObject *compact_copy = NULL;
         if (unlikely(!ssrjson_pyascii_cast(s)->state.compact)) {
-#if PY_MINOR_VERSION < 12
-            if (unlikely(PyUnicode_READY(s) < 0)) {
+            s = compact_copy = make_compact_unicode_copy(s);
+            if (unlikely(!s)) {
                 ret = NULL;
                 goto done;
             }
-#endif
-            compact_copy = PyUnicode_FromKindAndData(PyUnicode_KIND(s), PyUnicode_DATA(s), PyUnicode_GET_LENGTH(s));
-            if (unlikely(!compact_copy)) {
-                ret = NULL;
-                goto done;
-            }
-            s = compact_copy;
         }
         PyASCIIObject *ascii_head = ssrjson_pyascii_cast(s);
         PyUnicodeObject *in_unicode = ssrjson_pyunicode_cast(s);
