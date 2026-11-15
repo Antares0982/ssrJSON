@@ -408,6 +408,7 @@ if(APPLE)
     "-pedantic"
     "-pedantic-errors"
     "-Wno-psabi"
+    "-Wno-deprecated-declarations"
     "-Wno-language-extension-token"
     "-fno-stack-protector")
 

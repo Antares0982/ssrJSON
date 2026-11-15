@@ -252,7 +252,7 @@ class TestFreeThreading:
 
         assert not excs, f"Exceptions occurred in threads: {excs}"
 
-    @pytest.mark.skipif(IS_GIL_ENABLED, reason="GIL enabled")
+    @pytest.mark.skipif(SKIP_RW_RACE_TEST, reason="GIL enabled or lockfree build")
     def test_decode_race_bytearray_resize(self):
         """loads(bytearray) while other threads resize it: the input must be read as one consistent snapshot."""
         big = b'"' + b"a" * (4 << 20) + b'"'

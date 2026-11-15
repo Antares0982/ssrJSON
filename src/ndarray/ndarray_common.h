@@ -257,5 +257,34 @@ force_inline NDATypes to_ndatype(char typekind, int itemsize) {
     }
 }
 
+force_inline PyObject *call_getter(PyObject *descr, PyObject *obj) {
+    return Py_TYPE(descr)->tp_descr_get(descr, obj, (PyObject *)Py_TYPE(obj));
+}
+
+/* Returns obj.__array_struct__ (new reference), or NULL with an error set.
+ * Calls numpy's getters directly: a subclass override would run Python code while the
+ * encoder holds borrowed references and the shared container stack. */
+force_inline PyObject *get_ndarray_array_struct(PyObject *obj) {
+    const NumpyGetters getters = _NumpyGetters;
+    if (unlikely(!getters.array_struct)) {
+        PyErr_SetString(JSONEncodeError, "numpy.ndarray has no C-level __array_struct__");
+        return NULL;
+    }
+    // For a dtype with fields, numpy's __array_struct__ getter calls Python code
+    // (numpy._core._internal._array_descr); such dtypes are unsupported anyway.
+    PyObject *dtype = call_getter(getters.array_dtype, obj);
+    if (unlikely(!dtype)) return NULL;
+    PyObject *fields = call_getter(getters.dtype_fields, dtype);
+    Py_DECREF(dtype);
+    if (unlikely(!fields)) return NULL;
+    const bool has_fields = fields != Py_None;
+    Py_DECREF(fields);
+    if (unlikely(has_fields)) {
+        PyErr_SetString(JSONEncodeError, "unsupported numpy dtype");
+        return NULL;
+    }
+    return call_getter(getters.array_struct, obj);
+}
+
 
 #endif // SSRJSON_NDARRAY_H

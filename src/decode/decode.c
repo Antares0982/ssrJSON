@@ -506,7 +506,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
     }
     //
     if (PyByteArray_Check(s)) {
-#if SSRJSON_GIL_ENABLED
+#if SSRJSON_GIL_ENABLED || SSRJSON_FREE_THREADING_LOCKFREE
         char *buffer = PyByteArray_AS_STRING(s);
         Py_ssize_t length = PyByteArray_GET_SIZE(s);
         ret = ssrjson_decode_bytes(
