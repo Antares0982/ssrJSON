@@ -524,7 +524,7 @@ PyObject *SIMD_NAME_MODIFIER(ssrjson_Decode)(PyObject *self, PyObject *const *ar
             goto done;
         }
         ret = ssrjson_decode_bytes(decoder_context, PyBytes_AS_STRING(snapshot), PyBytes_GET_SIZE(snapshot),
-                                   object_hook, array_hook DECODER_TLS_KEYCACHE_ADDITIONAL_ARG);
+                                   object_hook, array_hook, decoder_key_cache_arr);
         Py_DECREF(snapshot);
 #endif
         goto done;
