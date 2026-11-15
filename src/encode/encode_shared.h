@@ -263,28 +263,33 @@ force_inline bool pylong_is_zero(PyObject *obj) {
 #endif
 }
 
-// PyErr may occur.
-force_inline bool pylong_value_unsigned(PyObject *obj, u64 *value) {
-#if PY_MINOR_VERSION >= 12
-    if (likely(((PyLongObject *)obj)->long_value.lv_tag < (2 << _PyLong_NON_SIZE_BITS))) {
-        *value = (u64) * ((PyLongObject *)obj)->long_value.ob_digit;
+#if PyLong_SHIFT == 30
+/* Magnitude of a nonzero int, if below 2^64. PyLong_As(Unsigned)LongLong is slow for more than one digit:
+ * _PyLong_AsByteArray stores the result byte by byte and reloads it whole, which defeats store forwarding. */
+force_inline bool pylong_magnitude(PyObject *obj, u64 *mag) {
+#    if PY_MINOR_VERSION >= 12
+    const digit *d = ((PyLongObject *)obj)->long_value.ob_digit;
+    usize n = ((PyLongObject *)obj)->long_value.lv_tag >> _PyLong_NON_SIZE_BITS;
+#    else
+    const digit *d = ((PyLongObject *)obj)->ob_digit;
+    usize n = (usize)Py_ABS(Py_SIZE(obj));
+#    endif
+    if (likely(n == 1)) {
+        *mag = d[0];
         return true;
     }
-#    if PyLong_SHIFT == 30
-    {
-        // PyLong_AsUnsignedLongLong is slow for more than one digit; values up to 64 bits take at most 3.
-        const digit *digits = ((PyLongObject *)obj)->long_value.ob_digit;
-        uintptr_t ndigits = ((PyLongObject *)obj)->long_value.lv_tag >> _PyLong_NON_SIZE_BITS;
-        if (ndigits == 2) {
-            *value = (u64)digits[0] | ((u64)digits[1] << 30);
-            return true;
-        }
-        if (ndigits == 3 && digits[2] < 16) {
-            *value = (u64)digits[0] | ((u64)digits[1] << 30) | ((u64)digits[2] << 60);
-            return true;
-        }
+    if (n == 2 || (n == 3 && d[2] < 16)) {
+        *mag = (u64)d[0] | ((u64)d[1] << 30) | (n == 3 ? (u64)d[2] << 60 : 0);
+        return true;
     }
-#    endif
+    return false;
+}
+#endif
+
+// PyErr may occur.
+force_inline bool pylong_value_unsigned(PyObject *obj, u64 *value) {
+#if PyLong_SHIFT == 30
+    if (likely(pylong_magnitude(obj, value))) return true;
 #endif
     unsigned long long v = PyLong_AsUnsignedLongLong(obj);
     if (unlikely(v == (unsigned long long)-1 && PyErr_Occurred())) { return false; }
@@ -293,22 +298,14 @@ force_inline bool pylong_value_unsigned(PyObject *obj, u64 *value) {
     return true;
 }
 
+// For negative ints only. PyErr may occur.
 force_inline i64 pylong_value_signed(PyObject *obj, i64 *value) {
-#if PY_MINOR_VERSION >= 12
-    if (likely(((PyLongObject *)obj)->long_value.lv_tag < (2 << _PyLong_NON_SIZE_BITS))) {
-        i64 sign = 1 - (i64)((((PyLongObject *)obj)->long_value.lv_tag & 3));
-        *value = sign * (i64) * ((PyLongObject *)obj)->long_value.ob_digit;
+#if PyLong_SHIFT == 30
+    u64 mag;
+    if (likely(pylong_magnitude(obj, &mag) && mag <= ((u64)1 << 63))) {
+        *value = (i64)(0 - mag);
         return true;
     }
-#    if PyLong_SHIFT == 30
-    if ((((PyLongObject *)obj)->long_value.lv_tag >> _PyLong_NON_SIZE_BITS) == 2) {
-        // Two digits hold 60 bits, so the magnitude always fits; wider values use the checked API below.
-        const digit *digits = ((PyLongObject *)obj)->long_value.ob_digit;
-        i64 sign = 1 - (i64)((((PyLongObject *)obj)->long_value.lv_tag & 3));
-        *value = sign * (i64)((u64)digits[0] | ((u64)digits[1] << 30));
-        return true;
-    }
-#    endif
 #endif
     long long v = PyLong_AsLongLong(obj);
     if (unlikely(v == -1 && PyErr_Occurred())) { return false; }
