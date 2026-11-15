@@ -152,7 +152,7 @@ jobs:
       run: bash ci/test_scalar_linux.sh "$(command -v python)"
 
   Linux-aarch64-Test-Tarball:
-    runs-on: [Linux, ARM64, nixos-arm64]
+    runs-on: ubuntu-24.04-arm
     needs: Build-Tarball
     strategy:
       fail-fast: true
@@ -162,6 +162,14 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v5
+
+    - name: Install nix
+      uses: cachix/install-nix-action@v31
+
+    - name: Setup cachix
+      uses: cachix/cachix-action@v17
+      with:
+        name: antares0982
 
     - name: Prepare
       id: prepare
@@ -181,7 +189,7 @@ jobs:
         nix develop .#buildenv-py3${{ matrix.pyver }} -c bash ci/release-test.sh "$ARTIFACT_NAME" "${{ steps.prepare.outputs.PYTHONPATH }}"
 
   Linux-aarch64-Build-And-Test-Wheel:
-    runs-on: [Linux, ARM64, nixos-arm64]
+    runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: true
       matrix:
@@ -190,6 +198,14 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v5
+
+    - name: Install nix
+      uses: cachix/install-nix-action@v31
+
+    - name: Setup cachix
+      uses: cachix/cachix-action@v17
+      with:
+        name: antares0982
 
     - name: Prepare
       id: prepare
