@@ -324,7 +324,7 @@ force_inline bool pylong_to_clong(PyObject *obj, u64 *value_out, int *sign_out) 
         *sign_out = -1;
         return true;
     }
-    if (pylong_is_unsigned(obj)) {
+    if (likely(pylong_is_unsigned(obj))) {
         if (unlikely(!pylong_value_unsigned(obj, value_out))) {
             PyErr_SetString(JSONEncodeError, "convert value to unsigned long long failed");
             return false;
@@ -729,29 +729,29 @@ force_inline u8 *write_u64(u64 val, u8 *buf) {
     u64 tmp, hgh;
     u32 mid, low;
 
-#if SSRJSON_SIMD_X64
-    /* The table-driven path below is faster up to 8 digits. */
-    if (val >= 100000000) {
-        u32 digits;
-        if (unlikely(val >= U64(0x002386F2, 0x6FC10000))) { /* 10^16: 17-20 digits */
-            hgh = val / U64(0x002386F2, 0x6FC10000);        /* 1-4 digits */
-            val -= hgh * U64(0x002386F2, 0x6FC10000);
-            buf = write_u32_len_1_8((u32)hgh, buf);
-            digits = 16;
-        } else {
-            digits = u64_dec_digits(val);
-        }
-        write_u64_digits_simd(val, buf, digits);
-        return buf + digits;
-    }
-#endif
+    /* Tested first so that the common small ints take a single branch. */
     if (val < 100000000) { /* 1-8 digits */
         buf = write_u32_len_1_8((u32)val, buf);
         return buf;
-
-    } else if (val < (u64)100000000 * 100000000) { /* 9-16 digits */
-        hgh = val / 100000000;                     /* (val / 100000000) */
-        low = (u32)(val - hgh * 100000000);        /* (val % 100000000) */
+    }
+#if SSRJSON_SIMD_X64
+    /* AArch64 keeps the table-driven path: a NEON port of write_u64_digits_simd was slower end to end on
+     * Cortex-A76, whose out-of-order window is too small to hide the long dependency chain. */
+    u32 digits;
+    if (unlikely(val >= U64(0x002386F2, 0x6FC10000))) { /* 10^16: 17-20 digits */
+        hgh = val / U64(0x002386F2, 0x6FC10000);        /* 1-4 digits */
+        val -= hgh * U64(0x002386F2, 0x6FC10000);
+        buf = write_u32_len_1_8((u32)hgh, buf);
+        digits = 16;
+    } else {
+        digits = u64_dec_digits(val);
+    }
+    write_u64_digits_simd(val, buf, digits);
+    return buf + digits;
+#else
+    if (val < (u64)100000000 * 100000000) { /* 9-16 digits */
+        hgh = val / 100000000;              /* (val / 100000000) */
+        low = (u32)(val - hgh * 100000000); /* (val % 100000000) */
         buf = write_u32_len_1_8((u32)hgh, buf);
         buf = write_u32_len_8(low, buf);
         return buf;
@@ -766,6 +766,7 @@ force_inline u8 *write_u64(u64 val, u8 *buf) {
         buf = write_u32_len_8(low, buf);
         return buf;
     }
+#endif
 }
 
 /* Write at most 10 bytes */
