@@ -749,9 +749,9 @@ force_inline u8 *write_u64(u64 val, u8 *buf) {
     write_u64_digits_simd(val, buf, digits);
     return buf + digits;
 #else
-    if (val < (u64)100000000 * 100000000) { /* 9-16 digits */
-        hgh = val / 100000000;              /* (val / 100000000) */
-        low = (u32)(val - hgh * 100000000); /* (val % 100000000) */
+    if (val < ssrjson_cast(u64, 100000000) * 100000000) { /* 9-16 digits */
+        hgh = val / 100000000;                            /* (val / 100000000) */
+        low = ssrjson_cast(u32, val - hgh * 100000000);   /* (val % 100000000) */
         buf = write_u32_len_1_8((u32)hgh, buf);
         buf = write_u32_len_8(low, buf);
         return buf;
