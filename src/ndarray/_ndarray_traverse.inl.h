@@ -162,7 +162,7 @@ force_inline ssrjson_nofail u8 *ndarray_traverse_dispatch(u8 *writer, const PyAr
 
 static force_noinline u8 *u8_buffer_append_ndarray(u8 *writer, EncodeUBufInfo *u_buf_info, Py_ssize_t cur_nested_depth,
                                                    PyObject *obj, bool is_in_obj) {
-    PyObject *capsule_obj = PyObject_GetAttrString(obj, "__array_struct__");
+    PyObject *capsule_obj = get_ndarray_array_struct(obj);
     if (unlikely(!capsule_obj)) { return NULL; }
     if (unlikely(!PyCapsule_IsValid(capsule_obj, NULL))) {
         Py_DECREF(capsule_obj);

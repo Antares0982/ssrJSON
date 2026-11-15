@@ -118,7 +118,9 @@ def test(build_dir: str, asan: bool):
 
     if asan:
         new_env["LD_PRELOAD"] = find_libasan_ldd(build_dir)
-        new_env["PYTHONMALLOC"] = "malloc"
+        # free-threaded builds only accept mimalloc and refuse to start with PYTHONMALLOC=malloc
+        if IS_GIL_ENABLED:
+            new_env["PYTHONMALLOC"] = "malloc"
         minor_ver = get_minor_version(python_exe)
         is_below_314 = minor_ver < 14
         # known leak issues in python < 3.14

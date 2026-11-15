@@ -89,3 +89,14 @@ class TestObjectHook:
             assert ssrjson.loads('{"c": 3}', object_hook=hook2) == {"c": 3}
 
         assert ssrjson.loads('{"a": {"b": 2}}', object_hook=hook) == {"a": {"b": 2}}
+
+    def test_hook_reentrant_loads_with_hook(self):
+        def hook(d):
+            if "p" in d:
+                d["p"] = ssrjson.loads(d["p"], object_hook=hook)
+            return d
+
+        inner = '{"x": [1, 2, 3]}'
+        big = "[" + ",".join(["1"] * 2000) + "]"
+        s = json.dumps([{"p": inner}, {"p": inner}, {"p": big}, {"z": 1}])
+        self._test_both(s, hook)

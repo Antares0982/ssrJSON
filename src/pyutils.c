@@ -111,3 +111,4 @@ ssrjson_align(64) u64 _PyFastType[8];
 
 // Numpy type pointers
 NumpyTypes _NumpyTypes = {0};
+NumpyGetters _NumpyGetters = {0};

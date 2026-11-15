@@ -153,19 +153,31 @@ force_inline void make_hash(PyASCIIObject *ascii, const void *unicode_str, size_
 
 force_noinline void init_pyunicode_noinline(void *head, Py_ssize_t size, int kind);
 
+/* These allocate the UTF-8 cache of str objects, which CPython frees with
+ * PyObject_Free before 3.13 and with PyMem_Free since; the domains must match. */
+#if PY_MINOR_VERSION >= 13
+#    define SSRJSON_UTF8_CACHE_MALLOC PyMem_Malloc
+#    define SSRJSON_UTF8_CACHE_REALLOC PyMem_Realloc
+#    define SSRJSON_UTF8_CACHE_FREE PyMem_Free
+#else
+#    define SSRJSON_UTF8_CACHE_MALLOC PyObject_Malloc
+#    define SSRJSON_UTF8_CACHE_REALLOC PyObject_Realloc
+#    define SSRJSON_UTF8_CACHE_FREE PyObject_Free
+#endif
+
 force_inline void *pymem_malloc_wrapped(usize size) {
-    void *ptr = PyMem_Malloc(size);
+    void *ptr = SSRJSON_UTF8_CACHE_MALLOC(size);
     if (unlikely(!ptr)) { PyErr_NoMemory(); }
     return ptr;
 }
 
 force_inline void *pymem_realloc_wrapped(void *ptr, usize size) {
-    void *new_ptr = PyMem_Realloc(ptr, size);
+    void *new_ptr = SSRJSON_UTF8_CACHE_REALLOC(ptr, size);
     if (unlikely(!new_ptr)) { PyErr_NoMemory(); }
     return new_ptr;
 }
 
-force_inline void pymem_free_wrapped(void *ptr) { PyMem_Free(ptr); }
+force_inline void pymem_free_wrapped(void *ptr) { SSRJSON_UTF8_CACHE_FREE(ptr); }
 
 force_inline const u8 *pyunicode_get_utf8_cache(PyObject *unicode) {
 #if !SSRJSON_GIL_ENABLED
@@ -257,5 +269,15 @@ typedef struct {
 #define NUMPY_TYPES_COUNT 12
 
 extern NumpyTypes _NumpyTypes;
+
+/* C getset descriptors of numpy, called directly so that encoding an ndarray never runs Python code.
+ * All members are NULL when any of them is unavailable. */
+typedef struct NumpyGetters {
+    PyObject *array_struct; // ndarray.__array_struct__
+    PyObject *array_dtype;  // ndarray.dtype
+    PyObject *dtype_fields; // dtype.fields
+} NumpyGetters;
+
+extern NumpyGetters _NumpyGetters;
 
 #endif // SSRJSON_PYUTILS_H

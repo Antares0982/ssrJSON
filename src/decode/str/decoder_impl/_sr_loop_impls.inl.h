@@ -174,7 +174,7 @@ force_inline usize _decode_str_trailing_decoder_impl(const src_t **src_addr, con
     if (unlikely(testz_escape_mask(check_mask))) {
         // err, no string ending in src
         done_count = 0;
-        src += READ_BATCH_COUNT;
+        src = src_end;
         PyErr_SetString(JSONDecodeError, "Unexpected ending in string");
         *ret_addr = DECODE_LOOPSTATE_INVALID;
     } else {
