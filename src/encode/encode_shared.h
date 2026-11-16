@@ -263,13 +263,34 @@ force_inline bool pylong_is_zero(PyObject *obj) {
 #endif
 }
 
-// PyErr may occur.
-force_inline bool pylong_value_unsigned(PyObject *obj, u64 *value) {
-#if PY_MINOR_VERSION >= 12
-    if (likely(((PyLongObject *)obj)->long_value.lv_tag < (2 << _PyLong_NON_SIZE_BITS))) {
-        *value = (u64) * ((PyLongObject *)obj)->long_value.ob_digit;
+#if PyLong_SHIFT == 30
+/* Magnitude of a nonzero int, if below 2^64. PyLong_As(Unsigned)LongLong is slow for more than one digit:
+ * _PyLong_AsByteArray stores the result byte by byte and reloads it whole, which defeats store forwarding. */
+force_inline bool pylong_magnitude(PyObject *obj, u64 *mag) {
+    PyLongObject *const long_obj = ssrjson_cast(PyLongObject *, obj);
+#    if PY_MINOR_VERSION >= 12
+    const digit *d = long_obj->long_value.ob_digit;
+    usize n = long_obj->long_value.lv_tag >> _PyLong_NON_SIZE_BITS;
+#    else
+    const digit *d = long_obj->ob_digit;
+    usize n = ssrjson_cast(usize, Py_ABS(Py_SIZE(obj)));
+#    endif
+    if (likely(n == 1)) {
+        *mag = d[0];
         return true;
     }
+    if (n == 2 || (n == 3 && d[2] < 16)) {
+        *mag = ssrjson_cast(u64, d[0]) | (ssrjson_cast(u64, d[1]) << 30) | (n == 3 ? ssrjson_cast(u64, d[2]) << 60 : 0);
+        return true;
+    }
+    return false;
+}
+#endif
+
+// PyErr may occur.
+force_inline bool pylong_value_unsigned(PyObject *obj, u64 *value) {
+#if PyLong_SHIFT == 30
+    if (likely(pylong_magnitude(obj, value))) return true;
 #endif
     unsigned long long v = PyLong_AsUnsignedLongLong(obj);
     if (unlikely(v == (unsigned long long)-1 && PyErr_Occurred())) { return false; }
@@ -278,11 +299,12 @@ force_inline bool pylong_value_unsigned(PyObject *obj, u64 *value) {
     return true;
 }
 
+// For negative ints only. PyErr may occur.
 force_inline i64 pylong_value_signed(PyObject *obj, i64 *value) {
-#if PY_MINOR_VERSION >= 12
-    if (likely(((PyLongObject *)obj)->long_value.lv_tag < (2 << _PyLong_NON_SIZE_BITS))) {
-        i64 sign = 1 - (i64)((((PyLongObject *)obj)->long_value.lv_tag & 3));
-        *value = sign * (i64) * ((PyLongObject *)obj)->long_value.ob_digit;
+#if PyLong_SHIFT == 30
+    u64 mag;
+    if (likely(pylong_magnitude(obj, &mag) && mag <= (ssrjson_cast(u64, 1) << 63))) {
+        *value = ssrjson_cast(i64, 0 - mag);
         return true;
     }
 #endif
@@ -302,7 +324,7 @@ force_inline bool pylong_to_clong(PyObject *obj, u64 *value_out, int *sign_out) 
         *sign_out = -1;
         return true;
     }
-    if (pylong_is_unsigned(obj)) {
+    if (likely(pylong_is_unsigned(obj))) {
         if (unlikely(!pylong_value_unsigned(obj, value_out))) {
             PyErr_SetString(JSONEncodeError, "convert value to unsigned long long failed");
             return false;
@@ -668,18 +690,68 @@ force_inline u8 *write_u64_len_5_8(u32 val, u8 *buf) {
     }
 }
 
-/* Write at most 20 bytes */
+#if SSRJSON_SIMD_X64
+/* Powers of ten, except that the first entry is 0 so that every value has at least one digit. */
+extern const u64 EncodePow10Table[20];
+
+/* Count of decimal digits of `val`. */
+force_inline u32 u64_dec_digits(u64 val) {
+    u32 t = ((64 - u64_lz_bits(val | 1)) * 1233) >> 12;
+    return t + (val >= EncodePow10Table[t]);
+}
+
+/* Write the decimal digits of `val` (val < 10^16) left-aligned, padded with leading zeros to `digits` digits.
+ * `digits` must be in 1..16 and not less than the digit count of `val`. Always stores 16 bytes. */
+force_inline void write_u64_digits_simd(u64 val, u8 *buf, u32 digits) {
+    u64 hgh = val / 100000000;
+    u64 low = val - hgh * 100000000;
+    __m128i x = _mm_set_epi64x((i64)hgh, (i64)low);
+    /* each 64-bit lane: low 32 bits = x % 10000, high 32 bits = x / 10000 */
+    __m128i q4 = _mm_srli_epi64(_mm_mul_epu32(x, _mm_set1_epi64x(109951163)), 40);
+    __m128i y = _mm_add_epi64(x, _mm_mul_epu32(q4, _mm_set1_epi64x((ssrjson_cast(i64, 1) << 32) - 10000)));
+    /* each 32-bit lane: low 16 bits = y % 100, high 16 bits = y / 100 */
+    __m128i q2 = _mm_srli_epi16(_mm_mulhi_epu16(y, _mm_set1_epi16(5243)), 3);
+    __m128i z = _mm_or_si128(_mm_sub_epi16(y, _mm_mullo_epi16(q2, _mm_set1_epi16(100))), _mm_slli_epi32(q2, 16));
+    /* each 16-bit lane: low byte = z % 10, high byte = z / 10 */
+    __m128i q1 = _mm_mulhi_epu16(z, _mm_set1_epi16(6554));
+    __m128i bcd = _mm_add_epi16(z, _mm_mullo_epi16(q1, _mm_set1_epi16((1 << 8) - 10)));
+    /* byte i now holds the digit of weight 10^i; output byte i takes the digit of weight 10^(digits - 1 - i) */
+    __m128i ascii = _mm_add_epi8(bcd, _mm_set1_epi8('0'));
+    const __m128i neg_iota = _mm_setr_epi8(0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15);
+    __m128i shuffle = _mm_add_epi8(_mm_set1_epi8(ssrjson_cast(char, digits - 1)), neg_iota);
+    _mm_storeu_si128((__m128i *)buf, _mm_shuffle_epi8(ascii, shuffle));
+}
+#endif
+
+/* Write at most 20 digits. On x86 SIMD builds, up to 16 bytes past the returned pointer may be
+ * overwritten, staying within 20 bytes from `buf`. */
 force_inline u8 *write_u64(u64 val, u8 *buf) {
     u64 tmp, hgh;
     u32 mid, low;
 
+    /* Tested first so that the common small ints take a single branch. */
     if (val < 100000000) { /* 1-8 digits */
         buf = write_u32_len_1_8((u32)val, buf);
         return buf;
-
-    } else if (val < (u64)100000000 * 100000000) { /* 9-16 digits */
-        hgh = val / 100000000;                     /* (val / 100000000) */
-        low = (u32)(val - hgh * 100000000);        /* (val % 100000000) */
+    }
+#if SSRJSON_SIMD_X64
+    /* AArch64 keeps the table-driven path: a NEON port of write_u64_digits_simd was slower end to end on
+     * Cortex-A76, whose out-of-order window is too small to hide the long dependency chain. */
+    u32 digits;
+    if (unlikely(val >= U64(0x002386F2, 0x6FC10000))) { /* 10^16: 17-20 digits */
+        hgh = val / U64(0x002386F2, 0x6FC10000);        /* 1-4 digits */
+        val -= hgh * U64(0x002386F2, 0x6FC10000);
+        buf = write_u32_len_1_8((u32)hgh, buf);
+        digits = 16;
+    } else {
+        digits = u64_dec_digits(val);
+    }
+    write_u64_digits_simd(val, buf, digits);
+    return buf + digits;
+#else
+    if (val < ssrjson_cast(u64, 100000000) * 100000000) { /* 9-16 digits */
+        hgh = val / 100000000;                            /* (val / 100000000) */
+        low = ssrjson_cast(u32, val - hgh * 100000000);   /* (val % 100000000) */
         buf = write_u32_len_1_8((u32)hgh, buf);
         buf = write_u32_len_8(low, buf);
         return buf;
@@ -694,6 +766,7 @@ force_inline u8 *write_u64(u64 val, u8 *buf) {
         buf = write_u32_len_8(low, buf);
         return buf;
     }
+#endif
 }
 
 /* Write at most 10 bytes */
