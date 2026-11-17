@@ -25,6 +25,7 @@ jobs:
       uses: cachix/install-nix-action@v31
 
     - name: Setup cachix
+      if: inputs.dry-run
       uses: cachix/cachix-action@v17
       with:
         name: antares0982
@@ -107,6 +108,7 @@ jobs:
       uses: cachix/install-nix-action@v31
 
     - name: Setup cachix
+      if: inputs.dry-run
       uses: cachix/cachix-action@v17
       with:
         name: antares0982
@@ -167,6 +169,7 @@ jobs:
       uses: cachix/install-nix-action@v31
 
     - name: Setup cachix
+      if: inputs.dry-run
       uses: cachix/cachix-action@v17
       with:
         name: antares0982
@@ -203,6 +206,7 @@ jobs:
       uses: cachix/install-nix-action@v31
 
     - name: Setup cachix
+      if: inputs.dry-run
       uses: cachix/cachix-action@v17
       with:
         name: antares0982
@@ -400,6 +404,7 @@ jobs:
       uses: cachix/install-nix-action@v31
 
     - name: Setup cachix
+      if: inputs.dry-run
       uses: cachix/cachix-action@v17
       with:
         name: antares0982

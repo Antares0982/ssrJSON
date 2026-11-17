@@ -11,27 +11,47 @@
 ### API Changes
 
 - AArch64 builds use a single NEON backend by default, ignore `BUILD_SHIPPING_SIMD`, and report `get_current_features()["multi_lib"]` as `False`; `BUILD_SCALAR` explicitly selects scalar
+- `get_current_features()["simd"]` reports `"SCALAR"` when the scalar backend is active
 
 ### Bug Fixes
 
 - Raise `MemoryError` on size overflow in encoder buffer reservations, NumPy array sizing, and decoder buffer growth
-- Handle allocation failure when encoding a top-level JSON string
+- Handle allocation failure when decoding a top-level JSON string
+- Correct overlapping Unicode widening on ARMv7 (#42)
+- Fix NumPy scalar alignment and CPython 3.12/3.13 immortal-object checks on 32-bit builds
+- Prevent decoder buffer corruption in reentrant `loads()` calls from hooks or garbage-collection finalizers (#45)
+- Safely decode non-compact `str` input, including `str` subclasses (#45)
+- Avoid encoder reentrancy through NumPy ndarray subclass overrides and structured-dtype callbacks (#45)
+- Keep shared module state alive across re-imports and while exported functions remain referenced (#45)
+- Match UTF-8 cache allocation to CPython's allocator to prevent mismatched frees (#45)
+- Initialize the hash cache of `dumps_to_bytes()` output so hashing and dict/set lookups work correctly (#45)
+- Fix list/dict size races during encoding and bytearray resize races during decoding in free-threaded builds with locking enabled (#45)
+- Report character positions for errors in root-level `str` strings and the end of input for unterminated strings (#45)
 
 ### Performance
 
 - Use single-pass scalar string scans that support compiler auto-vectorization
 - Reduce AArch64 allocation-check overhead with conservative string-size bounds
 - Defer Unicode kind extraction to non-ASCII paths in `dumps_to_bytes`
-- Convert Python integers of 2^30 and above to C integers inline when encoding on CPython 3.12+
-- Write integers of 9 or more digits with SSSE3 on x86
-- Write indentation one nesting level per store, so clang PGO builds no longer use slow AVX-512 scatters for UCS4 output
+- Convert Python integers that fit in `int64_t` or `uint64_t` inline when encoding on CPython builds with 30-bit integer digits, including CPython 3.10/3.11 (#46)
+- Write integers of 9 or more digits with SSSE3 on x86-64 SIMD backends (#46)
+- Write indentation one nesting level per store, so clang PGO builds no longer use slow AVX-512 scatters for UCS4 output (#46)
 
 ### Build & CI
 
 - Add `BUILD_SCALAR` for explicit scalar builds and select the CMake platform matching Python on Windows
+- Allow non-Windows extension builds without an embeddable libpython and run C tests through Python when it is unavailable
 - Add 32-bit build, test, and release coverage, plus old-CPU scalar fallback checks for x86-64 Linux and Windows wheels
 - Include scalar in x86-64 PGO training and test explicit scalar builds on AArch64
 - Update portable CI actions for Node.js 24 and refresh dependency caches between runs
+- Add free-threaded Python to the regular portable CI matrix
+- Move AArch64 release jobs and ARMv7 portable tests to GitHub-hosted ARM64 runners; parallelize ARMv7 tests and avoid duplicate portable package builds
+- Expand decode fuzzing to hooks, bytearray input, and `str` subclasses; fix allocator setup for free-threaded ASAN runs (#45)
+- Run Linux fuzzers without Nix, disable Cachix for non-dry-run releases, and update the Nix development flake lock
+
+### Contributors
+
+- [@Nambers](https://github.com/Nambers) co-authored scalar fallback and portable-platform support ([#42](https://github.com/Antares0982/ssrJSON/pull/42)), contributed memory-safety and correctness fixes plus decode fuzzing improvements ([#45](https://github.com/Antares0982/ssrJSON/pull/45)), and optimized integer encoding and indentation ([#46](https://github.com/Antares0982/ssrJSON/pull/46))
 
 ## 0.0.24
 

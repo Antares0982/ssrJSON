@@ -8,6 +8,7 @@ mkdir -p $BUILD_DIR
 
 cmake . -B $BUILD_DIR \
 	-DCMAKE_BUILD_TYPE=Debug \
+	-DPython3_EXECUTABLE="$(command -v python3)" \
 	-DASAN_ENABLED=ON \
 	-DBUILD_FUZZER=ON
 

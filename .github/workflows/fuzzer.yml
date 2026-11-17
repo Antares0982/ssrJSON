@@ -22,17 +22,17 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v5
 
-    - name: Install nix
-      uses: cachix/install-nix-action@v31
-
-    - name: Setup cachix
-      uses: cachix/cachix-action@v17
+    - name: Set up Python
+      uses: actions/setup-python@v6
       with:
-        name: antares0982
+        python-version: '3.14'
 
     - name: Build Fuzzer
+      env:
+        CC: clang
+        CXX: clang++
       run: |
-        nix develop -c bash ci/build_fuzz.sh
+        bash ci/build_fuzz.sh
 
     - name: Run Decode Fuzzer
       run: |
@@ -47,17 +47,20 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v5
 
-    - name: Install nix
-      uses: cachix/install-nix-action@v31
-
-    - name: Setup cachix
-      uses: cachix/cachix-action@v17
+    - name: Set up Python
+      uses: actions/setup-python@v6
       with:
-        name: antares0982
+        python-version: '3.14'
+
+    - name: Install NumPy
+      run: python -m pip install numpy
 
     - name: Build Fuzzer
+      env:
+        CC: clang
+        CXX: clang++
       run: |
-        nix develop -c bash ci/build_fuzz.sh
+        bash ci/build_fuzz.sh
 
     - name: Run Encode Fuzzer
       run: |
