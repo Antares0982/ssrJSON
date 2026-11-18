@@ -457,10 +457,11 @@ jobs:
       max-total-time: '300'
 
   Publish:
-    if: ${{ !cancelled() && !failure() }}
+    if: ${{ !cancelled() && (success() || (inputs.dry-run && !failure())) }}
     runs-on: ubuntu-latest
     environment: Publish
     permissions:
+      actions: read
       contents: write
       id-token: write
     needs:
@@ -482,6 +483,15 @@ jobs:
       run: |
         echo "DRY_RUN=${{ github.event.inputs['dry-run'] }}" >> $GITHUB_ENV
         echo "${{ github.event.inputs['dry-run'] }}"
+
+    # Matrix summaries can hide cancelled jobs.
+    - name: Verify every upstream job succeeded
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100" |
+          python3 ci/check_release_jobs.py
 
     - name: Download Artifacts
       uses: actions/download-artifact@v8
