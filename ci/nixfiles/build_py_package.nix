@@ -1,5 +1,6 @@
 {
   python,
+  mkPackagingEnv,
   pkgs,
   cmake,
   callPackage,
@@ -12,6 +13,7 @@ let
   wheel = callPackage ./build_wheel.nix {
     inherit
       python
+      mkPackagingEnv
       useNoGIL
       usePgo
       sde

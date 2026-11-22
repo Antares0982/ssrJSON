@@ -159,6 +159,7 @@ typedef PyObject *pyobj_ptr_t;
 
 /* Some feature checks. */
 
+static_assert(PY_VERSION_HEX >= 0x030B0000, "ssrJSON requires CPython 3.11 or newer");
 static_assert(sizeof(PyASCIIObject) >= 16, "sizeof(PyASCIIObject) < 16");
 static_assert(offsetof(PyBytesObject, ob_sval) >= 16, "offsetof(PyBytesObject, ob_sval) < 16");
 static_assert(!PY_BIG_ENDIAN, "does not support big-endian platform");

@@ -4,17 +4,17 @@ set -euo pipefail
 usage() {
     echo "Usage: $0 <wheel_file> [python_executable]"
     echo "  wheel_file        Path to the .whl file to verify"
-    echo "  python_executable Python to use (default: python3.14)"
+    echo "  python_executable Python to use (default: python3.15)"
     exit 1
 }
 
 [[ $# -lt 1 ]] && usage
 
 WHEEL_FILE="$1"
-PYTHON="${2:-python3.14}"
+PYTHON="${2:-python3.15}"
 
 if ! command -v "$PYTHON" &>/dev/null; then
-    PYTHON="/Library/Frameworks/Python.framework/Versions/3.14/bin/python3"
+    PYTHON="/Library/Frameworks/Python.framework/Versions/3.15/bin/python3"
 fi
 
 if [[ ! -f "$WHEEL_FILE" ]]; then
