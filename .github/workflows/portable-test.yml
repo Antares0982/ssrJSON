@@ -40,7 +40,8 @@ jobs:
           PY
   linux:
     needs: matrix
-    runs-on: ${{ matrix.target == 'armv7l' && 'ubuntu-26.04-arm' || 'ubuntu-latest' }}
+    # i686 container networking: actions/runner-images#14790
+    runs-on: ${{ matrix.target == 'armv7l' && 'ubuntu-26.04-arm' || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
