@@ -1,0 +1,11 @@
+[project]
+name = "ssrjson-packaging"
+version = "0"
+requires-python = ">=3.11"
+dependencies = ["build", "setuptools>=61", "wheel"]
+
+[project.optional-dependencies]
+repair = ["auditwheel"]
+
+[tool.uv]
+package = false

@@ -53,7 +53,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15", "15t"]
+        pyver: ["11", "12", "13", "14", "15", "16", "15t", "16t"]
 
     steps:
     - name: Checkout
@@ -84,7 +84,7 @@ jobs:
 
     - name: Run Python Tests
       run: |
-        python -m pip install pytest pytest-xdist pytest-random-order psutil numpy
+        python -m pip install pytest pytest-xdist pytest-random-order psutil "numpy; python_version < '3.16'"
         python -m pytest --random-order python-test
 
   Linux-x86_64-Build-And-Test-Wheel:
@@ -92,7 +92,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15", "14t", "15t"]
+        pyver: ["11", "12", "13", "14", "15", "14t", "15t"]
 
     steps:
     - name: Checkout
@@ -145,12 +145,12 @@ jobs:
         python -m pytest --random-order python-test
 
     - name: Prepare old CPU emulation
-      if: matrix.pyver == '14'
+      if: matrix.pyver == '15'
       run: |
-        nix develop .#devenv-py314 -c bash -c 'dirname "$(command -v sde64)" >> "$GITHUB_PATH"'
+        nix develop .#devenv-py315 -c bash -c 'dirname "$(command -v sde64)" >> "$GITHUB_PATH"'
 
     - name: Test wheel scalar fallback (SDE, Prescott)
-      if: matrix.pyver == '14'
+      if: matrix.pyver == '15'
       run: bash ci/test_scalar_linux.sh "$(command -v python)"
 
   Linux-aarch64-Test-Tarball:
@@ -159,7 +159,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15", "15t"]
+        pyver: ["11", "12", "13", "14", "15", "16", "15t", "16t"]
 
     steps:
     - name: Checkout
@@ -196,7 +196,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15", "14t", "15t"]
+        pyver: ["11", "12", "13", "14", "15", "14t", "15t"]
 
     steps:
     - name: Checkout
@@ -243,7 +243,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15", "15t"]
+        pyver: ["11", "12", "13", "14", "15", "16", "15t", "16t"]
 
     steps:
     - name: Checkout
@@ -273,7 +273,7 @@ jobs:
 
     - name: Run Python Tests
       run: |
-        python -m pip install pytest pytest-xdist pytest-random-order numpy
+        python -m pip install pytest pytest-xdist pytest-random-order "numpy; python_version < '3.16'"
         python -m pytest --random-order python-test
 
   Windows-Build-And-Test-Wheel:
@@ -281,7 +281,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15", "14t", "15t"]
+        pyver: ["11", "12", "13", "14", "15", "14t", "15t"]
 
     steps:
     - name: Checkout
@@ -352,7 +352,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15", "15t"]
+        pyver: ["11", "12", "13", "14", "15", "16", "15t", "16t"]
 
     steps:
     - name: Checkout
@@ -383,7 +383,7 @@ jobs:
 
     - name: Run Python Tests
       run: |
-        python -m pip install pytest pytest-xdist pytest-random-order numpy
+        python -m pip install pytest pytest-xdist pytest-random-order "numpy; python_version < '3.16'"
         python -m pytest --random-order python-test
 
   MacOS-Build-And-Test-Wheel:
@@ -391,7 +391,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15", "14t", "15t"]
+        pyver: ["11", "12", "13", "14", "15", "14t", "15t"]
 
     steps:
     - name: Checkout

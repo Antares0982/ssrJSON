@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15", "14t", "15t"]
+        pyver: ["11", "12", "13", "14", "15", "16", "14t", "15t", "16t"]
     steps:
     - name: Checkout
       uses: actions/checkout@v5
@@ -48,9 +48,9 @@ jobs:
       run: |
         nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./ci/linux_test.py --build-dir build-py3.${{ matrix.pyver }} --build-type Release --build-only
     - name: Test Release scalar fallback (SDE, Prescott)
-      if: matrix.pyver == '14'
+      if: matrix.pyver == '15'
       run: |
-        nix develop .#devenv-py314 -c bash ci/test_scalar_linux.sh .nix-devenv/bin/python3.14 build-py3.14
+        nix develop .#devenv-py315 -c bash ci/test_scalar_linux.sh .nix-devenv/bin/python3.15 build-py3.15
     - name: DEBUG Tests (Build and Run)
       run: |
         nix develop .#buildenv-py3${{ matrix.pyver }} -c python ./ci/linux_test.py --build-dir build-py3.${{ matrix.pyver }} --build-type Debug
@@ -81,7 +81,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: ["14t", "15t"]
+        pyver: ["14t", "15t", "16t"]
     steps:
     - name: Checkout
       uses: actions/checkout@v5

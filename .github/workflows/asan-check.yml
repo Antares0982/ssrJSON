@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: ["10", "11", "12", "13", "14", "15", "14t", "15t"]
+        pyver: ["11", "12", "13", "14", "15", "16", "14t", "15t", "16t"]
     steps:
     - name: Checkout
       uses: actions/checkout@v5
@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15", "3.14t", "3.15t"]
+        pyver: ["3.11", "3.12", "3.13", "3.14", "3.15", "3.16", "3.14t", "3.15t", "3.16t"]
     steps:
     - name: Checkout
       uses: actions/checkout@v5
@@ -41,7 +41,7 @@ jobs:
         python-version: ${{ matrix.pyver }}
         allow-prereleases: true
     - name: Install test dependencies
-      run: pip install pytest pytest-xdist pytest-random-order numpy
+      run: pip install pytest pytest-xdist pytest-random-order "numpy; python_version < '3.16'"
     - name: Run asan check
       run: python ./ci/macos_asan_test.py --asan
     - name: Run asan check (lockfree)

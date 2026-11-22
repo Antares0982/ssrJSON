@@ -1,19 +1,14 @@
 {
   clangStdenv,
   python,
+  mkPackagingEnv,
   cmake,
   callPackage,
   lib,
   ...
 }:
 let
-  pyenv = python.withPackages (
-    pypkgs: with pypkgs; [
-      build
-      setuptools
-      wheel
-    ]
-  );
+  pyenv = mkPackagingEnv { inherit python; };
   ssrJSONVersion = callPackage ./ssrjson_version.nix { };
   srcFilter = import ./source_filter.nix { inherit lib; };
 in
@@ -29,7 +24,5 @@ clangStdenv.mkDerivation {
     mkdir -p $out
     cp dist/*.tar.gz $out
   '';
-  buildInputs = [
-    pyenv
-  ];
+  nativeBuildInputs = [ pyenv ];
 }

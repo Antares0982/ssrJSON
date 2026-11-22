@@ -3,6 +3,8 @@
   lib,
   clangStdenv,
   python,
+  mkPackagingEnv,
+  patchelf,
   cmake,
   forNonNix ? true,
   useNoGIL ? false,
@@ -25,18 +27,11 @@ let
       ;
   };
 
-  pyenv = python.withPackages (
-    pypkgs:
-    with pypkgs;
-    [
-      build
-      setuptools
-      wheel
-    ]
-    ++ lib.optionals (system != "aarch64-darwin") [
-      auditwheel
-    ]
-  );
+  linux = clangStdenv.hostPlatform.isLinux;
+  pyenv = mkPackagingEnv {
+    inherit python;
+    repair = linux;
+  };
   targetGLIBCVerString = "34";
   auditWheelPlats = {
     "x86_64-linux" = "manylinux_2_${targetGLIBCVerString}_x86_64";
@@ -94,5 +89,5 @@ clangStdenv.mkDerivation {
       cp dist/*.whl $out
       mv $out/$(ls $out) $out/ssrjson-${ssrJSONVersion}-cp3${python.sourceVersion.minor}-cp3${pyver-abiname}-macosx_${builtins.toString macOSTargetVersion}_0_arm64.whl
     '';
-  buildInputs = [ pyenv ];
+  nativeBuildInputs = [ pyenv ] ++ lib.optional linux patchelf;
 }

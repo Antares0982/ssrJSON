@@ -126,7 +126,7 @@ Pre-built wheels are available on PyPI, you can install it using pip.
 pip install ssrjson
 ```
 
-Note: x86-64 wheels include scalar fallback in the same package. Linux 32-bit wheels target glibc 2.34+ (i686) and glibc 2.35+ (ARMv7 hard-float). The i686 wheels require SSE2 (Pentium 4 or newer); the scalar backend may still use instructions from the compiler's baseline target. Windows support follows the selected CPython version. ssrJSON does not work with Python implementations other than CPython. Currently supported CPython versions are 3.10, 3.11, 3.12, 3.13, 3.14, 3.15.
+Note: x86-64 wheels include scalar fallback in the same package. Linux 32-bit wheels target glibc 2.34+ (i686) and glibc 2.35+ (ARMv7 hard-float). The i686 wheels require SSE2 (Pentium 4 or newer); the scalar backend may still use instructions from the compiler's baseline target. Windows support follows the selected CPython version. ssrJSON does not work with Python implementations other than CPython. CPython 3.11 through 3.15 have release wheels. CPython 3.16 prereleases are supported from source, including free-threaded builds.
 
 ### Build From Source
 
@@ -201,7 +201,7 @@ Supported NumPy types:
 
 `np.float64` is a subclass of Python `float` and is always handled by the standard float path, regardless of whether `setup_numpy_types` has been called.
 
-NumPy 1.21.2 or later is required (the first release with Python 3.10 wheels). Subclasses of `ndarray` are encoded from their array data; an overridden `__array_struct__` is not called. Structured dtypes (dtypes with fields) are not supported.
+NumPy 1.21.2 or later is required. Subclasses of `ndarray` are encoded from their array data; an overridden `__array_struct__` is not called. Structured dtypes (dtypes with fields) are not supported.
 
 When encoding an ndarray, ssrJSON reads element data directly from the array's memory buffer. Combined with the xjb64/xjb32 floating-point encoding algorithms and yyjson-derived integer encoding algorithms, this gives ssrJSON a significant performance advantage.
 

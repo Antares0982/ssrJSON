@@ -36,7 +36,7 @@
           p
           "default"
         ];
-        update = old: ssrjson-devShells.${p}.devenv-py314t;
+        update = old: ssrjson-devShells.${p}.devenv-py315t;
       }) platforms;
       UseFreeThreadingByDefault = false;
     in
@@ -54,6 +54,9 @@
           pkgs-legacy = import nixpkgs-legacy { inherit (pkgs.stdenv.hostPlatform) system; };
           versionUtils = pkgs.callPackage "${nixfiles}/version_utils.nix" { inherit pkgs-legacy; };
           pythonVerConfig = versionUtils.pythonVerConfig;
+          mkPackagingEnv = pkgs.callPackage ./ci/nixfiles/packaging {
+            inherit (ssrjson-nix-dev.inputs) uv2nix pyproject-nix pyproject-build-systems;
+          };
           stablePython = versionUtils.stablePython;
           verToPackageDef = ver: {
             name = "ssrjson-py3" + (builtins.toString ver);
@@ -89,7 +92,7 @@
             name = "ssrjson-wheel-py3" + (builtins.toString ver);
             value = pkgs.callPackage "${nixfiles}/build_wheel.nix" {
               python = versionUtils.pyVerToPyPackage ver;
-              inherit sde;
+              inherit sde mkPackagingEnv;
             };
           };
           verToWheelDefNoGIL = ver: {
@@ -97,15 +100,14 @@
             value = pkgs.callPackage "${nixfiles}/build_wheel.nix" {
               python = versionUtils.pyVerToPyPackageNoGIL ver;
               useNoGIL = true;
-              inherit sde;
+              inherit sde mkPackagingEnv;
             };
           };
-          toPackageName = ver: "python3" + (toString ver) + "Packages";
           verToPyPackageDef = ver: {
             name = "ssrjson-pypackage-py3" + (builtins.toString ver);
             value = pkgs.callPackage "${nixfiles}/build_py_package.nix" rec {
               python = versionUtils.pyVerToPyPackage ver;
-              inherit sde;
+              inherit sde mkPackagingEnv;
             };
           };
           verToPyPackageDefNoGIL = ver: {
@@ -113,7 +115,7 @@
             value = pkgs.callPackage "${nixfiles}/build_py_package.nix" rec {
               python = versionUtils.pyVerToPyPackageNoGIL ver;
               useNoGIL = true;
-              inherit sde;
+              inherit sde mkPackagingEnv;
             };
           };
           ssrjsonPackages = builtins.listToAttrs (map verToPackageDef versionUtils.versions);
@@ -143,6 +145,7 @@
         {
           ssrjson-tarball = pkgs.callPackage "${nixfiles}/build_tarball.nix" {
             python = stablePython;
+            inherit mkPackagingEnv;
           };
           default = ssrjsonDefaultPackage;
         }
