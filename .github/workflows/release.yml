@@ -144,14 +144,11 @@ jobs:
         python -m pip install pytest pytest-xdist pytest-random-order psutil numpy
         python -m pytest --random-order python-test
 
-    - name: Prepare old CPU emulation
-      if: matrix.pyver == '15'
-      run: |
-        nix develop .#devenv-py315 -c bash -c 'dirname "$(command -v sde64)" >> "$GITHUB_PATH"'
-
     - name: Test wheel scalar fallback (SDE, Prescott)
       if: matrix.pyver == '15'
-      run: bash ci/test_scalar_linux.sh "$(command -v python)"
+      run: |
+        nix develop -u LD_LIBRARY_PATH .#devenv-py315 -c bash ci/test_scalar_linux.sh \
+          .nix-devenv/bin/python3.15 "${{ steps.build-wheel.outputs.ARTIFACT_NAME }}"
 
   Linux-aarch64-Test-Tarball:
     runs-on: ubuntu-24.04-arm

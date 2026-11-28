@@ -253,9 +253,11 @@ class TestFreeThreading:
         assert not excs, f"Exceptions occurred in threads: {excs}"
 
     @pytest.mark.skipif(SKIP_RW_RACE_TEST, reason="GIL enabled or lockfree build")
+    @pytest.mark.filterwarnings("error::pytest.PytestUnhandledThreadExceptionWarning")
     def test_decode_race_bytearray_resize(self):
         """loads(bytearray) while other threads resize it: the input must be read as one consistent snapshot."""
-        big = b'"' + b"a" * (4 << 20) + b'"'
+        size = 64 << 10 if sys.maxsize <= 2**32 else 4 << 20
+        big = b'"' + b"a" * size + b'"'
         small = b'"' + b"b" * 100 + b'"'
         ba = bytearray(big)
         stop = threading.Event()
