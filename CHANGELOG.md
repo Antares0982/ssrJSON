@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.26
+
+### Python Compatibility
+
+- Drop CPython 3.10 support. CPython 3.11 is now the minimum supported version (#47)
+- Support CPython 3.16 prereleases from source, including free-threaded builds. Release wheels cover CPython 3.11 through 3.15 (#47)
+
 ## 0.0.25
 
 ### New Features
